@@ -213,6 +213,15 @@ function normalizeTraceSkill(value: unknown): TraceSkill | null {
   };
 }
 
+function streamSkillLabel(data: Record<string, unknown>, skill: TraceSkill): string {
+  if (skill.state === 'suspended') return '挂起技能';
+  const decision = typeof data.runtimeDecision === 'string' ? data.runtimeDecision : '';
+  if (decision === 'start_skill') return '选择技能';
+  if (decision === 'suspend_current_and_start_new_skill') return '切换技能';
+  if (decision === 'exit_current_skill') return '恢复技能';
+  return '推进技能';
+}
+
 function normalizeTraceTool(value: unknown): TraceTool | null {
   if (!value || typeof value !== 'object') return null;
   const item = value as Record<string, unknown>;
@@ -716,7 +725,7 @@ export default function ChatWindowPage() {
             .map((entry) => normalizeTraceSkill(entry))
             .filter((entry): entry is TraceSkill => Boolean(entry))
             .forEach((skill) => {
-              const label = skill.state === 'suspended' ? '挂起技能' : '选择技能';
+              const label = streamSkillLabel(item.data, skill);
               upsertTraceLine(turnId, {
                 id: `skill_${skill.skillId}_${skill.state || 'active'}`,
                 kind: 'skill',

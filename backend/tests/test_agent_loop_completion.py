@@ -1,7 +1,7 @@
 from app.core.agent_loop import AgentLoop
 from app.core.skill_runtime import SkillRuntime
 from app.db.models import ChatSession, Skill, Tool
-from app.session.session_schema import StepAgentResult
+from app.session.session_schema import RouterDecision, StepAgentResult
 from app.tools.tool_schema import ToolCall, ToolResult
 
 
@@ -196,6 +196,7 @@ def test_context_repair_skips_satisfied_collect_step_and_uses_schema_tool() -> N
         _purchase_skill(),
         [_purchase_tool(), _order_add_tool()],
         _model_config(),
+        RouterDecision(decision="continue_current_skill", target_skill_id="purchase"),
     )
 
     assert session.active_step_id == "confirm_product"
@@ -213,6 +214,72 @@ def test_context_repair_skips_satisfied_collect_step_and_uses_schema_tool() -> N
         event_type == "step_agent_result_repaired"
         and payload.get("mode") == "schema_tool_call"
         for _, _, event_type, payload in loop.events.records
+    )
+
+
+def test_context_repair_does_not_infer_tool_when_router_is_clarifying() -> None:
+    loop = object.__new__(AgentLoop)
+    loop.events = FakeEvents()
+    loop.step_agent = _FakeStepAgent(
+        [StepAgentResult(reply="请问您想办理哪类业务？", next_step_id="confirm_product")]
+    )
+    session = ChatSession(
+        id="session_test",
+        tenant_id="tenant_demo",
+        active_skill_id="purchase",
+        active_step_id="confirm_product",
+        slots_json={"product_id": "A1", "quantity": 1, "user_name": "hm"},
+    )
+
+    step_result = loop._run_step_agent_with_context_repair(
+        _request("我想查询订单"),
+        session,
+        _purchase_skill(),
+        [_purchase_tool()],
+        _model_config(),
+        RouterDecision(decision="clarify", target_skill_id="skill_order_query"),
+    )
+
+    assert step_result.tool_call is None
+    assert not any(
+        event_type == "step_agent_result_repaired"
+        and payload.get("mode") == "schema_tool_call"
+        for _, _, event_type, payload in loop.events.records
+    )
+
+
+def test_tool_step_self_loop_advances_to_reply_and_completes_after_success() -> None:
+    loop = object.__new__(AgentLoop)
+    loop.events = FakeEvents()
+    session = ChatSession(
+        id="session_test",
+        tenant_id="tenant_demo",
+        active_skill_id="purchase",
+        active_step_id="confirm_product",
+        slots_json={"product_id": "A1", "quantity": 1, "user_name": "hm"},
+    )
+    step_result = StepAgentResult(
+        tool_call=ToolCall(name="product.purchase", arguments={"product_id": "A1", "quantity": 1}),
+        next_step_id="confirm_product",
+        is_step_completed=True,
+    )
+
+    advanced = loop._advance_after_successful_tool(
+        "tenant_demo",
+        session,
+        _purchase_skill_with_incomplete_required_info(),
+        step_result,
+        ToolResult(tool_name="product.purchase", success=True, data={"order_id": "MOCK-1"}),
+    )
+
+    assert advanced
+    assert session.active_step_id == "reply_result"
+    assert step_result.next_step_id == "reply_result"
+    assert loop._should_complete_skill(
+        _purchase_skill_with_incomplete_required_info(),
+        session,
+        step_result,
+        ToolResult(tool_name="product.purchase", success=True, data={"order_id": "MOCK-1"}),
     )
 
 
@@ -407,6 +474,15 @@ def _purchase_skill() -> Skill:
         },
         status="published",
     )
+
+
+def _purchase_skill_with_incomplete_required_info() -> Skill:
+    skill = _purchase_skill()
+    skill.content_json = {
+        **(skill.content_json or {}),
+        "required_info": ["user_id", "product_id", "quantity"],
+    }
+    return skill
 
 
 def _purchase_tool() -> Tool:

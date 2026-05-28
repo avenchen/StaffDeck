@@ -186,7 +186,15 @@ class AgentLoop:
             self.db.refresh(chat_session)
 
             active_skill = self._get_active_skill(request.tenant_id, chat_session.active_skill_id)
-            yield self._stream_event("skill_state", chat_session, self._skill_state_payload(chat_session, skills))
+            yield self._stream_event(
+                "skill_state",
+                chat_session,
+                self._skill_state_payload(
+                    chat_session,
+                    skills,
+                    self._runtime_stream_context(router_decision, before_skill, before_step, chat_session),
+                ),
+            )
             yield self._stream_status(
                 chat_session,
                 "stepping",
@@ -200,6 +208,7 @@ class AgentLoop:
                 active_skill,
                 tools,
                 model_config,
+                router_decision,
                 repair_stream_events,
             )
             self.db.commit()
@@ -449,7 +458,7 @@ class AgentLoop:
             {"active_skill_id": chat_session.active_skill_id, "active_step_id": chat_session.active_step_id},
         )
         step_result = self._run_step_agent_with_context_repair(
-            request, chat_session, active_skill, tools, model_config
+            request, chat_session, active_skill, tools, model_config, router_decision
         )
 
         tool_result: ToolResult | None = None
@@ -774,7 +783,18 @@ class AgentLoop:
 
         active_skill = self._get_active_skill(request.tenant_id, chat_session.active_skill_id)
         if stream_events is not None:
-            stream_events.append(("skill_state", self._skill_state_payload(chat_session, skills)))
+            stream_events.append(
+                (
+                    "skill_state",
+                    self._skill_state_payload(
+                        chat_session,
+                        skills,
+                        self._runtime_stream_context(
+                            router_decision, before_skill, before_step, chat_session
+                        ),
+                    ),
+                )
+            )
             stream_events.append(
                 (
                     "status",
@@ -793,6 +813,7 @@ class AgentLoop:
             active_skill,
             tools,
             model_config,
+            router_decision,
             stream_events,
         )
         self.db.commit()
@@ -835,6 +856,7 @@ class AgentLoop:
         active_skill: Skill | None,
         tools: list[Tool],
         model_config: ModelConfig,
+        router_decision: RouterDecision,
         stream_events: list[tuple[str, dict[str, object]]] | None = None,
     ) -> StepAgentResult:
         step_result = self._run_step_agent_once(
@@ -872,7 +894,11 @@ class AgentLoop:
                 request.tenant_id, chat_session, active_skill
             )
 
-        if not step_result.tool_call and not step_result.handoff:
+        if (
+            not step_result.tool_call
+            and not step_result.handoff
+            and self._router_allows_schema_tool_repair(router_decision, chat_session)
+        ):
             inferred_tool_call = self._tool_call_from_active_step(chat_session, active_skill, tools)
             if inferred_tool_call:
                 step_result.tool_call = inferred_tool_call
@@ -890,6 +916,24 @@ class AgentLoop:
                 )
 
         return step_result
+
+    def _router_allows_schema_tool_repair(
+        self, router_decision: RouterDecision, chat_session: ChatSession
+    ) -> bool:
+        if router_decision.decision not in {
+            "start_skill",
+            "continue_current_skill",
+            "jump_within_current_skill",
+            "suspend_current_and_start_new_skill",
+        }:
+            return False
+        if (
+            router_decision.target_skill_id
+            and chat_session.active_skill_id
+            and router_decision.target_skill_id != chat_session.active_skill_id
+        ):
+            return False
+        return True
 
     def _run_step_agent_once(
         self,
@@ -1049,7 +1093,10 @@ class AgentLoop:
         if (
             not active_skill
             or not step_result.tool_call
-            or step_result.next_step_id
+            or (
+                step_result.next_step_id
+                and step_result.next_step_id != chat_session.active_step_id
+            )
             or not tool_result
             or not tool_result.success
         ):
@@ -1243,6 +1290,10 @@ class AgentLoop:
             return False
         if tool_result and not tool_result.success:
             return False
+        if tool_result and tool_result.success and self._current_step_can_finish_after_tool(
+            skill, chat_session
+        ):
+            return True
         if self._is_answer_ready_skill_state(skill, chat_session):
             return True
         if not step_result.next_step_id and not step_result.tool_call:
@@ -1314,6 +1365,21 @@ class AgentLoop:
             if isinstance(step, dict) and step.get("step_id") == active_step_id:
                 return step
         return None
+
+    def _current_step_can_finish_after_tool(
+        self, skill: Skill, chat_session: ChatSession
+    ) -> bool:
+        step = self._current_skill_step(skill, chat_session.active_step_id)
+        if not step:
+            return False
+        actions = [str(action) for action in step.get("allowed_actions", [])]
+        if not self._actions_allow_final_reply(actions):
+            return False
+        expected = [str(field) for field in step.get("expected_user_info", [])]
+        return all(
+            self._skill_slot_satisfied(chat_session.slots_json or {}, field)
+            for field in expected
+        )
 
     def _actions_allow_final_reply(self, actions: list[str]) -> bool:
         return any(action in {"answer_user", "reply"} for action in actions)
@@ -1418,7 +1484,27 @@ class AgentLoop:
             event_type = "handoff_triggered"
         self.events.record(tenant_id, chat_session.id, event_type, payload)
 
-    def _skill_state_payload(self, chat_session: ChatSession, skills: list[Skill]) -> dict[str, object]:
+    def _runtime_stream_context(
+        self,
+        decision: RouterDecision,
+        before_skill: str | None,
+        before_step: str | None,
+        chat_session: ChatSession,
+    ) -> dict[str, object]:
+        return {
+            "runtimeDecision": decision.decision,
+            "fromSkillId": before_skill,
+            "fromStepId": before_step,
+            "toSkillId": chat_session.active_skill_id,
+            "toStepId": chat_session.active_step_id,
+        }
+
+    def _skill_state_payload(
+        self,
+        chat_session: ChatSession,
+        skills: list[Skill],
+        runtime_context: dict[str, object] | None = None,
+    ) -> dict[str, object]:
         skill_names = {skill.skill_id: skill.name for skill in skills}
         current_skills: list[dict[str, object]] = []
         for frame in chat_session.skill_stack_json or []:
@@ -1446,6 +1532,7 @@ class AgentLoop:
             "activeSkillId": chat_session.active_skill_id,
             "activeStepId": chat_session.active_step_id,
             "currentSkills": current_skills,
+            **(runtime_context or {}),
         }
 
     def _tool_activity_payload(self, tenant_id: str, tool_name: str, tool_result: ToolResult) -> dict[str, object]:
