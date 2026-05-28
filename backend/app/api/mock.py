@@ -5,8 +5,12 @@ from decimal import Decimal
 from typing import Any
 from uuid import uuid4
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
+from sqlmodel import Session
+
+from app.db import get_session
+from app.db.models import MockOrder, utc_now
 
 router = APIRouter(prefix="/api/mock", tags=["mock"])
 
@@ -54,8 +58,13 @@ class MockOrderAddRequest(BaseModel):
 
 
 @router.post("/order/query")
-def mock_order_query(request: MockOrderQueryRequest) -> dict[str, Any]:
+def mock_order_query(
+    request: MockOrderQueryRequest, db: Session = Depends(get_session)
+) -> dict[str, Any]:
     order_id = _normalize_id(request.order_id)
+    dynamic_record = _find_dynamic_order(db, order_id)
+    if dynamic_record:
+        return _order_hit(order_id, "primary_order_center", dynamic_record)
     record = PRIMARY_ORDER_CENTER.get(order_id)
     if not record:
         return _order_miss(order_id, "primary_order_center")
@@ -72,11 +81,13 @@ def mock_order_archive_query(request: MockOrderQueryRequest) -> dict[str, Any]:
 
 
 @router.post("/product/purchase")
-def mock_product_purchase(request: MockProductPurchaseRequest) -> dict[str, Any]:
+def mock_product_purchase(
+    request: MockProductPurchaseRequest, db: Session = Depends(get_session)
+) -> dict[str, Any]:
     unit_price = _mock_price(request.product_id)
     total_amount = unit_price * Decimal(request.quantity)
     order_id = f"MOCK{uuid4().hex[:10].upper()}"
-    return {
+    result = {
         "order_id": order_id,
         "purchase_id": f"PUR{uuid4().hex[:10].upper()}",
         "user_id": request.user_id,
@@ -91,14 +102,32 @@ def mock_product_purchase(request: MockProductPurchaseRequest) -> dict[str, Any]
         "order_status": "paid",
         "created_at": _now_iso(),
     }
+    _upsert_dynamic_order(
+        db,
+        order_id=order_id,
+        user_id=request.user_id,
+        product_id=request.product_id,
+        sku_id=request.sku_id,
+        quantity=request.quantity,
+        status="paid",
+        payment_status="paid",
+        order_status="paid",
+        total_amount=float(total_amount),
+        currency="CNY",
+        metadata={"purchase_id": result["purchase_id"], "payment_method": request.payment_method},
+    )
+    return result
 
 
 @router.post("/order/add")
-def mock_order_add(request: MockOrderAddRequest) -> dict[str, Any]:
+def mock_order_add(
+    request: MockOrderAddRequest, db: Session = Depends(get_session)
+) -> dict[str, Any]:
     unit_price = _mock_price(request.product_id)
     total_amount = unit_price * Decimal(request.quantity)
-    return {
-        "order_id": request.order_id or f"ADD{uuid4().hex[:10].upper()}",
+    order_id = _normalize_id(request.order_id) if request.order_id else f"ADD{uuid4().hex[:10].upper()}"
+    result = {
+        "order_id": order_id,
         "user_id": request.user_id,
         "product_id": request.product_id,
         "sku_id": request.sku_id,
@@ -109,6 +138,21 @@ def mock_order_add(request: MockOrderAddRequest) -> dict[str, Any]:
         "status": request.status,
         "created_at": _now_iso(),
     }
+    _upsert_dynamic_order(
+        db,
+        order_id=order_id,
+        user_id=request.user_id,
+        product_id=request.product_id,
+        sku_id=request.sku_id,
+        quantity=request.quantity,
+        status=request.status,
+        payment_status=None,
+        order_status=request.status,
+        total_amount=float(total_amount),
+        currency="CNY",
+        metadata={},
+    )
+    return result
 
 
 def _mock_price(product_id: str) -> Decimal:
@@ -137,6 +181,69 @@ def _order_miss(order_id: str, source: str) -> dict[str, Any]:
         "miss_reason": "source_miss",
         "hint": "当前订单中心未命中，可尝试其他已配置的订单查询工具。",
     }
+
+
+def _find_dynamic_order(db: object, order_id: str) -> dict[str, Any] | None:
+    if not isinstance(db, Session):
+        return None
+    row = db.get(MockOrder, order_id)
+    if not row:
+        return None
+    return {
+        "status": row.status,
+        "signed_days": row.signed_days,
+        "refundable": row.refundable,
+        "user_id": row.user_id,
+        "product_id": row.product_id,
+        "sku_id": row.sku_id,
+        "quantity": row.quantity,
+        "payment_status": row.payment_status,
+        "order_status": row.order_status,
+        "total_amount": row.total_amount,
+        "currency": row.currency,
+        "created_at": row.created_at.isoformat(),
+        "recommendation": "该订单已在 mock 订单中心创建，可继续进行订单查询、取消或售后流程。",
+        **(row.metadata_json or {}),
+    }
+
+
+def _upsert_dynamic_order(
+    db: object,
+    *,
+    order_id: str,
+    user_id: str,
+    product_id: str,
+    sku_id: str | None,
+    quantity: int,
+    status: str,
+    payment_status: str | None,
+    order_status: str | None,
+    total_amount: float,
+    currency: str,
+    metadata: dict[str, Any],
+) -> None:
+    if not isinstance(db, Session):
+        return
+    normalized_order_id = _normalize_id(order_id)
+    row = db.get(MockOrder, normalized_order_id)
+    now = utc_now()
+    if not row:
+        row = MockOrder(order_id=normalized_order_id, created_at=now)
+    row.user_id = user_id
+    row.product_id = product_id
+    row.sku_id = sku_id
+    row.quantity = quantity
+    row.status = status
+    row.payment_status = payment_status
+    row.order_status = order_status
+    row.signed_days = 0
+    row.refundable = True
+    row.total_amount = total_amount
+    row.currency = currency
+    row.metadata_json = metadata
+    row.updated_at = now
+    db.add(row)
+    db.commit()
 
 
 def _now_iso() -> str:

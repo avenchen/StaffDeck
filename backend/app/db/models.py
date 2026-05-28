@@ -115,6 +115,26 @@ class Tool(SQLModel, table=True):
     updated_at: datetime = Field(default_factory=utc_now)
 
 
+class MockOrder(SQLModel, table=True):
+    __tablename__ = "mock_orders"
+
+    order_id: str = Field(primary_key=True)
+    user_id: Optional[str] = Field(default=None, index=True)
+    product_id: Optional[str] = Field(default=None, index=True)
+    sku_id: Optional[str] = None
+    quantity: int = 1
+    status: str = Field(default="created", index=True)
+    payment_status: Optional[str] = None
+    order_status: Optional[str] = None
+    signed_days: int = 0
+    refundable: bool = True
+    total_amount: float = 0.0
+    currency: str = "CNY"
+    metadata_json: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
+    created_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime = Field(default_factory=utc_now)
+
+
 class ChatSession(SQLModel, table=True):
     __tablename__ = "sessions"
 
