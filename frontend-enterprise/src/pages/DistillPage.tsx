@@ -10,7 +10,7 @@ import {
   StopOutlined,
 } from '@ant-design/icons';
 import { Alert, Button, Card, Empty, Input, Space, Typography, message } from 'antd';
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api, streamPost, TENANT_ID } from '../api/client';
 import type { SkillCard, SkillRead } from '../types';
@@ -156,7 +156,7 @@ export default function DistillPage() {
             const draftSkill = item.data.draft_skill as SkillCard;
             const nextWarnings = Array.isArray(item.data.warnings) ? item.data.warnings.map(String) : [];
             appendThinkingDetail(assistantId, `已生成技能草稿：${draftSkill.name}`);
-            setDraft(draftSkill);
+            animateDraftChange(blankSkillForAnimation(draftSkill), draftSkill, allTargetPaths(draftSkill), 120);
             setWarnings(nextWarnings);
             setSelectedPaths(DEFAULT_TARGET_PATHS);
             updateMessage(
@@ -372,7 +372,12 @@ export default function DistillPage() {
     message.info('已拒绝改写并还原');
   }
 
-  function animateDraftChange(previousDraft: SkillCard, nextDraft: SkillCard, changedPaths: string[]) {
+  function animateDraftChange(
+    previousDraft: SkillCard,
+    nextDraft: SkillCard,
+    changedPaths: string[],
+    markDelay = 520,
+  ) {
     clearAnimationTimers();
     const paths = changedPaths;
     if (paths.length === 0) {
@@ -410,7 +415,7 @@ export default function DistillPage() {
         }
       }, 38);
       animationTimersRef.current.push(interval);
-    }, 520);
+    }, markDelay);
     animationTimersRef.current.push(startTimer);
   }
 
@@ -576,10 +581,10 @@ function SkillSource({
   return (
     <div className="skill-source-md">
       <div className="skill-source-group-title">基础信息</div>
-      <button
-        type="button"
+      <SelectableTarget
         className={targetClass('skill-source-section', 'basic', selectedPaths, highlightedPaths, updatingPaths)}
-        onClick={() => onToggle({ path: 'basic', label: '基础信息' })}
+        target={{ path: 'basic', label: '基础信息' }}
+        onToggle={onToggle}
       >
         {selectedPaths.includes('basic') && <span className="selection-mark"><CheckOutlined /></span>}
         <div className="skill-source-code">
@@ -588,24 +593,24 @@ function SkillSource({
           <SourceTextLine path="basic" field="version" label="- version: `" value={skill.version} suffix="`" diffs={textDiffs} />
           <SourceTextLine path="basic" field="business_domain" label="- business_domain: " value={skill.business_domain || '-'} diffs={textDiffs} />
           <SourceTextLine path="basic" field="description" label="- description: " value={skill.description || '-'} diffs={textDiffs} />
-          <SourceListLine label="- trigger_intents: " values={skill.trigger_intents} />
-          <SourceListLine label="- user_utterance_examples: " values={skill.user_utterance_examples} />
-          <SourceListLine label="- goal: " values={skill.goal} />
-          <SourceListLine label="- required_info: " values={skill.required_info} />
-          <SourceListLine label="- response_rules: " values={skill.response_rules} />
+          <SourceListLine path="basic" field="trigger_intents" label="- trigger_intents: " values={skill.trigger_intents} diffs={textDiffs} />
+          <SourceListLine path="basic" field="user_utterance_examples" label="- user_utterance_examples: " values={skill.user_utterance_examples} diffs={textDiffs} />
+          <SourceListLine path="basic" field="goal" label="- goal: " values={skill.goal} diffs={textDiffs} />
+          <SourceListLine path="basic" field="required_info" label="- required_info: " values={skill.required_info} diffs={textDiffs} />
+          <SourceListLine path="basic" field="response_rules" label="- response_rules: " values={skill.response_rules} diffs={textDiffs} />
         </div>
-      </button>
+      </SelectableTarget>
       <div className="skill-source-group-title">详细步骤</div>
       <div className="skill-source-steps">
         {skill.steps.map((step, index) => {
           const stepId = String(step.step_id || `step_${index + 1}`);
           const path = stepTargetPath(index);
           return (
-            <button
-              type="button"
+            <SelectableTarget
               key={path}
               className={targetClass('skill-source-section', path, selectedPaths, highlightedPaths, updatingPaths)}
-              onClick={() => onToggle({ path, label: `步骤 ${index + 1}：${step.name || stepId}` })}
+              target={{ path, label: `步骤 ${index + 1}：${step.name || stepId}` }}
+              onToggle={onToggle}
             >
               {selectedPaths.includes(path) && <span className="selection-mark"><CheckOutlined /></span>}
               <div className="skill-source-code">
@@ -614,10 +619,10 @@ function SkillSource({
                 </div>
                 <SourceTextLine path={path} field="step_id" label="- step_id: `" value={stepId} suffix="`" diffs={textDiffs} />
                 <SourceTextLine path={path} field="instruction" label="- instruction: " value={String(step.instruction || '-')} diffs={textDiffs} />
-                <SourceListLine label="- expected_user_info: " values={asStringList(step.expected_user_info)} />
-                <SourceListLine label="- allowed_actions: " values={asStringList(step.allowed_actions)} />
+                <SourceListLine path={path} field="expected_user_info" label="- expected_user_info: " values={asStringList(step.expected_user_info)} diffs={textDiffs} />
+                <SourceListLine path={path} field="allowed_actions" label="- allowed_actions: " values={asStringList(step.allowed_actions)} diffs={textDiffs} />
               </div>
-            </button>
+            </SelectableTarget>
           );
         })}
       </div>
@@ -642,10 +647,10 @@ function SkillFlow({
 }) {
   return (
     <div className="skill-flow">
-      <button
-        type="button"
+      <SelectableTarget
         className={targetClass('skill-flow-node root', 'basic', selectedPaths, highlightedPaths, updatingPaths)}
-        onClick={() => onToggle({ path: 'basic', label: '基础信息' })}
+        target={{ path: 'basic', label: '基础信息' }}
+        onToggle={onToggle}
       >
         {selectedPaths.includes('basic') && <span className="selection-mark"><CheckOutlined /></span>}
         <span>基础信息</span>
@@ -657,7 +662,7 @@ function SkillFlow({
           <em>必填 {joinPlain(skill.required_info)}</em>
           <em>意图 {joinPlain(skill.trigger_intents)}</em>
         </div>
-      </button>
+      </SelectableTarget>
       {skill.steps.map((step, index) => {
         const stepId = String(step.step_id || `step_${index + 1}`);
         const path = stepTargetPath(index);
@@ -667,10 +672,10 @@ function SkillFlow({
         return (
           <div className="skill-flow-step" key={path}>
             <div className="skill-flow-line" />
-            <button
-              type="button"
+            <SelectableTarget
               className={targetClass('skill-flow-node', path, selectedPaths, highlightedPaths, updatingPaths)}
-              onClick={() => onToggle({ path, label: `步骤 ${index + 1}：${step.name || stepId}` })}
+              target={{ path, label: `步骤 ${index + 1}：${step.name || stepId}` }}
+              onToggle={onToggle}
             >
               {selectedPaths.includes(path) && <span className="selection-mark"><CheckOutlined /></span>}
               <span>Step {index + 1}</span>
@@ -681,7 +686,7 @@ function SkillFlow({
                 <em>字段 {joinPlain(asStringList(step.expected_user_info))}</em>
                 <em>动作 {joinPlain(asStringList(step.allowed_actions))}</em>
               </div>
-            </button>
+            </SelectableTarget>
             {toolActions.length > 0 && (
               <div className="skill-flow-tools">
                 {toolActions.map((action) => (
@@ -722,11 +727,55 @@ function SourceTextLine({
   );
 }
 
-function SourceListLine({ label, values }: { label: string; values: string[] | undefined }) {
+function SelectableTarget({
+  className,
+  target,
+  onToggle,
+  children,
+}: {
+  className: string;
+  target: TargetSelection;
+  onToggle: (target: TargetSelection) => void;
+  children: ReactNode;
+}) {
+  function handleClick(event: MouseEvent<HTMLDivElement>) {
+    if (hasSelectedText()) {
+      event.preventDefault();
+      return;
+    }
+    onToggle(target);
+  }
+
+  function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    onToggle(target);
+  }
+
+  return (
+    <div role="button" tabIndex={0} className={className} onClick={handleClick} onKeyDown={handleKeyDown}>
+      {children}
+    </div>
+  );
+}
+
+function SourceListLine({
+  path,
+  field,
+  label,
+  values,
+  diffs,
+}: {
+  path: string;
+  field: string;
+  label: string;
+  values: string[] | undefined;
+  diffs: TextDiffAnimation[];
+}) {
   return (
     <div className="skill-source-line">
       <span>{label}</span>
-      <span>{joinList(values)}</span>
+      <InlineDiffText path={path} field={field} value={joinList(values)} diffs={diffs} />
     </div>
   );
 }
@@ -784,6 +833,10 @@ function asStringList(value: unknown): string[] {
   return Array.isArray(value) ? value.map(String) : [];
 }
 
+function hasSelectedText(): boolean {
+  return Boolean(window.getSelection()?.toString().trim());
+}
+
 function allTargetPaths(skill: SkillCard): string[] {
   return [
     'basic',
@@ -813,6 +866,29 @@ function targetClass(
 
 function cloneSkill(skill: SkillCard): SkillCard {
   return JSON.parse(JSON.stringify(skill)) as SkillCard;
+}
+
+function blankSkillForAnimation(skill: SkillCard): SkillCard {
+  const blank = cloneSkill(skill);
+  blank.skill_id = '';
+  blank.name = '';
+  blank.version = '';
+  blank.business_domain = '';
+  blank.description = '';
+  blank.trigger_intents = [];
+  blank.user_utterance_examples = [];
+  blank.goal = [];
+  blank.required_info = [];
+  blank.response_rules = [];
+  blank.steps = skill.steps.map((step) => ({
+    ...step,
+    step_id: '',
+    name: '',
+    instruction: '',
+    expected_user_info: [],
+    allowed_actions: [],
+  }));
+  return blank;
 }
 
 function diffTargetPaths(previousDraft: SkillCard, nextDraft: SkillCard, targetPaths: string[]): string[] {
@@ -846,16 +922,37 @@ function collectTextDiffs(previousDraft: SkillCard, nextDraft: SkillCard, change
   const paths = changedPaths.includes('all') ? allTargetPaths(nextDraft) : changedPaths;
   paths.forEach((path) => {
     if (path === 'basic') {
-      ['skill_id', 'name', 'version', 'business_domain', 'description'].forEach((field) => {
-        const diff = makeTextDiff(path, field, getTextField(previousDraft, path, field), getTextField(nextDraft, path, field));
+      [
+        'skill_id',
+        'name',
+        'version',
+        'business_domain',
+        'description',
+        'trigger_intents',
+        'user_utterance_examples',
+        'goal',
+        'required_info',
+        'response_rules',
+      ].forEach((field) => {
+        const diff = makeTextDiff(
+          path,
+          field,
+          getDisplayField(previousDraft, path, field),
+          getDisplayField(nextDraft, path, field),
+        );
         if (diff) diffs.push(diff);
       });
       return;
     }
     const stepIndex = stepIndexFromPath(path);
     if (stepIndex === null) return;
-    ['step_id', 'name', 'instruction'].forEach((field) => {
-      const diff = makeTextDiff(path, field, getTextField(previousDraft, path, field), getTextField(nextDraft, path, field));
+    ['step_id', 'name', 'instruction', 'expected_user_info', 'allowed_actions'].forEach((field) => {
+      const diff = makeTextDiff(
+        path,
+        field,
+        getDisplayField(previousDraft, path, field),
+        getDisplayField(nextDraft, path, field),
+      );
       if (diff) diffs.push(diff);
     });
   });
@@ -890,15 +987,14 @@ function makeTextDiff(path: string, field: string, oldText: string, newText: str
   };
 }
 
-function getTextField(skill: SkillCard, path: string, field: string): string {
-  if (path === 'basic') {
-    const value = (skill as unknown as Record<string, unknown>)[field];
-    return typeof value === 'string' ? value : '';
-  }
-  const stepIndex = stepIndexFromPath(path);
-  if (stepIndex === null) return '';
-  const value = (skill.steps[stepIndex] || {})[field];
-  return typeof value === 'string' ? value : '';
+function getDisplayField(skill: SkillCard, path: string, field: string): string {
+  const value =
+    path === 'basic'
+      ? (skill as unknown as Record<string, unknown>)[field]
+      : skill.steps[stepIndexFromPath(path) ?? -1]?.[field];
+  if (Array.isArray(value)) return joinList(value.map(String));
+  if (typeof value === 'string') return value;
+  return '';
 }
 
 function setTextField(skill: SkillCard, path: string, field: string, value: string): void {

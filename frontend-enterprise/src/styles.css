@@ -752,12 +752,20 @@ select,
   border: 1px solid var(--border);
   border-radius: 12px;
   cursor: pointer;
+  user-select: text;
+  box-sizing: border-box;
 }
 
 .skill-source-section:hover,
 .skill-source-section.active {
   border-color: var(--foreground);
   box-shadow: var(--shadow-soft);
+}
+
+.skill-source-section:focus-visible,
+.skill-flow-node:focus-visible {
+  outline: 2px solid var(--foreground);
+  outline-offset: 2px;
 }
 
 .skill-source-section.active {
@@ -903,6 +911,8 @@ select,
   border: 1px solid var(--border);
   border-radius: 14px;
   cursor: pointer;
+  user-select: text;
+  box-sizing: border-box;
 }
 
 .skill-flow-node.root {
