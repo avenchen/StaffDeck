@@ -2,7 +2,9 @@ import {
   BranchesOutlined,
   CheckOutlined,
   CodeOutlined,
+  DownOutlined,
   LoadingOutlined,
+  RightOutlined,
   SaveOutlined,
   SendOutlined,
   StopOutlined,
@@ -18,6 +20,8 @@ type ChatItem = {
   role: 'user' | 'assistant';
   content: string;
   thinking?: 'running' | 'done';
+  thinkingDetails?: string[];
+  thinkingOpen?: boolean;
   actionState?: 'pending' | 'confirmed' | 'rejected';
 };
 
@@ -117,7 +121,11 @@ export default function DistillPage() {
     const payload = parseInitialSkillPrompt(text);
     setLoading(true);
     setStreamStatus('正在生成技能草稿');
-    const assistantId = pushMessage('assistant', '', { thinking: 'running' });
+    const assistantId = pushMessage('assistant', '', {
+      thinking: 'running',
+      thinkingDetails: ['准备生成技能草稿'],
+      thinkingOpen: false,
+    });
     const controller = new AbortController();
     abortRef.current = controller;
     try {
@@ -125,9 +133,14 @@ export default function DistillPage() {
         '/api/enterprise/skills/distill/stream',
         { tenant_id: TENANT_ID, ...payload },
         (item) => {
+          if (item.event === 'status') {
+            appendThinkingDetail(assistantId, String(item.data.text || '正在处理'));
+            return;
+          }
           if (item.event === 'complete') {
             const draftSkill = item.data.draft_skill as SkillCard;
             const nextWarnings = Array.isArray(item.data.warnings) ? item.data.warnings.map(String) : [];
+            appendThinkingDetail(assistantId, `已生成技能草稿：${draftSkill.name}`);
             setDraft(draftSkill);
             setWarnings(nextWarnings);
             setSelectedPaths(DEFAULT_TARGET_PATHS);
@@ -142,6 +155,7 @@ export default function DistillPage() {
         controller.signal,
       );
     } catch (error) {
+      appendThinkingDetail(assistantId, '生成失败，已保留当前草稿');
       updateMessage(assistantId, '生成失败，当前草稿未变更。', { thinking: 'done' });
       if (controller.signal.aborted) {
         message.info('已停止生成');
@@ -156,12 +170,17 @@ export default function DistillPage() {
   async function rewriteSelectedTarget(text: string, currentDraft: SkillCard | null = draft) {
     if (!currentDraft) return;
     const previousDraft = cloneSkill(currentDraft);
+    const targets = selectedPaths.length > 0 ? selectedPaths : allTargetPaths(currentDraft);
+    const scopeLabel = targetLabel(targets, currentDraft);
     setLoading(true);
     setStreamStatus('正在改写选中内容');
-    const assistantId = pushMessage('assistant', '', { thinking: 'running' });
+    const assistantId = pushMessage('assistant', '', {
+      thinking: 'running',
+      thinkingDetails: [`改写范围：${scopeLabel}`, '准备发送模型改写请求'],
+      thinkingOpen: false,
+    });
     const controller = new AbortController();
     let receivedMessageChunk = false;
-    const targets = selectedPaths.length > 0 ? selectedPaths : allTargetPaths(currentDraft);
     abortRef.current = controller;
     try {
       await streamPost(
@@ -172,10 +191,14 @@ export default function DistillPage() {
           instruction: text,
           target_path: targets[0],
           target_paths: targets,
-          target_label: targetLabel(targets, currentDraft),
+          target_label: scopeLabel,
           conversation: messages.map((item) => ({ role: item.role, content: item.content })),
         },
         (item) => {
+          if (item.event === 'status') {
+            appendThinkingDetail(assistantId, String(item.data.text || '正在处理'));
+            return;
+          }
           if (item.event === 'message_chunk') {
             const content = typeof item.data.content === 'string' ? item.data.content : '';
             if (content) {
@@ -188,6 +211,9 @@ export default function DistillPage() {
             const nextDraft = item.data.draft_skill as SkillCard;
             const nextWarnings = Array.isArray(item.data.warnings) ? item.data.warnings.map(String) : [];
             const changedPaths = diffTargetPaths(previousDraft, nextDraft, targets);
+            const changedLabel = changedPaths.length > 0 ? targetLabel(changedPaths, nextDraft) : '未检测到结构变化';
+            appendThinkingDetail(assistantId, `模型返回改写结果：${changedLabel}`);
+            appendThinkingDetail(assistantId, '右侧已更新预览，等待确认或拒绝');
             animateDraftChange(previousDraft, nextDraft, changedPaths);
             setPendingChange({ assistantId, previousDraft, nextDraft, changedPaths });
             setSelectedPaths((current) => reconcileSelectedPaths(current, nextDraft));
@@ -206,6 +232,7 @@ export default function DistillPage() {
         controller.signal,
       );
     } catch (error) {
+      appendThinkingDetail(assistantId, '改写失败，已保留当前草稿');
       updateMessage(assistantId, '改写失败，当前草稿未变更。', { thinking: 'done' });
       if (controller.signal.aborted) {
         message.info('已停止改写');
@@ -279,6 +306,25 @@ export default function DistillPage() {
   function appendMessage(id: string, content: string) {
     setMessages((current) =>
       current.map((item) => (item.id === id ? { ...item, content: `${item.content}${content}` } : item)),
+    );
+  }
+
+  function appendThinkingDetail(id: string, detail: string) {
+    const nextDetail = detail.trim();
+    if (!nextDetail) return;
+    setMessages((current) =>
+      current.map((item) => {
+        if (item.id !== id) return item;
+        const previous = item.thinkingDetails || [];
+        if (previous[previous.length - 1] === nextDetail) return item;
+        return { ...item, thinkingDetails: [...previous, nextDetail] };
+      }),
+    );
+  }
+
+  function toggleThinking(id: string) {
+    setMessages((current) =>
+      current.map((item) => (item.id === id ? { ...item, thinkingOpen: !item.thinkingOpen } : item)),
     );
   }
 
@@ -363,9 +409,25 @@ export default function DistillPage() {
                 <div key={item.id} className={`skill-chat-row ${item.role}`}>
                   <div className="skill-chat-bubble">
                     {item.role === 'assistant' && item.thinking && (
-                      <div className={`skill-chat-thinking ${item.thinking}`}>
-                        {item.thinking === 'running' ? <LoadingOutlined /> : <CheckOutlined />}
-                        <span>{item.thinking === 'running' ? '正在思考' : '已完成思考'}</span>
+                      <div className={`skill-chat-thinking-block ${item.thinking}`}>
+                        <button
+                          type="button"
+                          className="skill-chat-thinking"
+                          onClick={() => toggleThinking(item.id)}
+                        >
+                          {item.thinking === 'running' ? <LoadingOutlined /> : <CheckOutlined />}
+                          <span>{item.thinking === 'running' ? '正在思考' : '已完成思考'}</span>
+                          {item.thinkingOpen ? <DownOutlined /> : <RightOutlined />}
+                        </button>
+                        {item.thinkingOpen && (
+                          <div className="skill-chat-thinking-details">
+                            {(item.thinkingDetails || []).map((detail, index) => (
+                              <div key={`${item.id}_detail_${index}`} className="skill-chat-thinking-detail">
+                                {detail}
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     )}
                     {item.content ? <div>{item.content}</div> : item.thinking === 'running' ? null : '正在处理...'}

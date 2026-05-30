@@ -644,22 +644,60 @@ select,
   background: var(--surface-muted);
 }
 
-.skill-chat-thinking {
+.skill-chat-thinking-block {
   margin-bottom: 8px;
+}
+
+.skill-chat-thinking {
+  padding: 0;
   display: inline-flex;
   align-items: center;
   gap: 7px;
   color: var(--muted);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
   font-size: 13px;
   font-weight: 720;
+  line-height: 1.5;
 }
 
-.skill-chat-thinking.running {
-  color: #1677ff;
+.skill-chat-thinking:hover {
+  color: var(--foreground);
 }
 
-.skill-chat-thinking.done {
-  color: #0f766e;
+.skill-chat-thinking-block.running .skill-chat-thinking,
+.skill-chat-thinking-block.done .skill-chat-thinking {
+  color: var(--muted);
+}
+
+.skill-chat-thinking-details {
+  margin: 8px 0 4px;
+  padding: 8px 10px;
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  background: var(--surface-subtle);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.skill-chat-thinking-detail {
+  position: relative;
+  padding-left: 14px;
+}
+
+.skill-chat-thinking-detail::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.72em;
+  width: 5px;
+  height: 5px;
+  background: var(--muted);
+  border-radius: 999px;
 }
 
 .skill-chat-confirm {
