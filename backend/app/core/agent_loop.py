@@ -1727,7 +1727,14 @@ class AgentLoop:
         actions = self._step_actions(steps[step_index])
         if not actions:
             return True
-        terminal_actions = {"answer_user", "reply", "handoff_human", "continue_flow"}
+        terminal_actions = {
+            "answer_user",
+            "reply",
+            "handoff_human",
+            "continue_flow",
+            "ask_user",
+            "ask_clarification",
+        }
         return all(action in terminal_actions or action.startswith("call_tool:") for action in actions)
 
     def _current_skill_step(self, skill: Skill, active_step_id: str | None) -> dict[str, Any] | None:

@@ -83,6 +83,24 @@ def test_terminal_skill_completion_when_required_slots_are_complete() -> None:
     )
 
 
+def test_terminal_collect_step_can_complete_with_ask_user_action_when_slots_are_complete() -> None:
+    loop = object.__new__(AgentLoop)
+    session = ChatSession(
+        id="session_test",
+        tenant_id="tenant_demo",
+        active_skill_id="refund",
+        active_step_id="collect_refund_reason",
+        slots_json={"order_id": "A12345", "refund_reason": "不喜欢"},
+    )
+
+    assert loop._should_complete_skill(
+        _refund_collect_terminal_skill(),
+        session,
+        StepAgentResult(is_step_completed=True, next_step_id="collect_refund_reason"),
+        None,
+    )
+
+
 def test_stale_terminal_skill_is_cleared_before_next_route() -> None:
     loop = object.__new__(AgentLoop)
     loop.runtime = SkillRuntime()
@@ -596,6 +614,34 @@ def _refund_skill() -> Skill:
                     "name": "反馈结果",
                     "expected_user_info": [],
                     "allowed_actions": ["answer_user", "handoff_human"],
+                },
+            ],
+        },
+        status="published",
+    )
+
+
+def _refund_collect_terminal_skill() -> Skill:
+    return Skill(
+        tenant_id="tenant_demo",
+        skill_id="refund",
+        name="售后退款流程",
+        content_json={
+            "skill_id": "refund",
+            "name": "售后退款流程",
+            "required_info": ["order_id", "refund_reason"],
+            "steps": [
+                {
+                    "step_id": "collect_order",
+                    "name": "收集订单号",
+                    "expected_user_info": ["order_id"],
+                    "allowed_actions": ["ask_user", "continue_flow"],
+                },
+                {
+                    "step_id": "collect_refund_reason",
+                    "name": "收集退款原因",
+                    "expected_user_info": ["refund_reason"],
+                    "allowed_actions": ["ask_user", "continue_flow"],
                 },
             ],
         },

@@ -52,9 +52,9 @@ class ResponseGenerator:
         try:
             text = LLMClient(model_config).generate_text(self._system_prompt(persona_prompt), payload)
             reply = text.strip() or step_result.reply or FALLBACK_REPLY
-            return self._visible_reply_or_fallback(reply, session, step_result, tool_result)
+            return self._visible_reply_or_fallback(reply, session, step_result, tool_result, skill)
         except LLMError:
-            return self._visible_reply_or_fallback(step_result.reply or "", session, step_result, tool_result)
+            return self._visible_reply_or_fallback(step_result.reply or "", session, step_result, tool_result, skill)
 
     def generate_stream(
         self,
@@ -79,7 +79,9 @@ class ResponseGenerator:
             stream = LLMClient(model_config).generate_text_stream(self._system_prompt(persona_prompt), payload)
             if tool_result is None:
                 chunks = [chunk for chunk in stream]
-                reply = self._visible_reply_or_fallback("".join(chunks).strip(), session, step_result, tool_result)
+                reply = self._visible_reply_or_fallback(
+                    "".join(chunks).strip(), session, step_result, tool_result, skill
+                )
                 yield from self.chunk_text(reply)
                 return
             for chunk in stream:
@@ -87,11 +89,11 @@ class ResponseGenerator:
                 yield chunk
             if not emitted:
                 yield from self.chunk_text(
-                    self._visible_reply_or_fallback(step_result.reply or "", session, step_result, tool_result)
+                    self._visible_reply_or_fallback(step_result.reply or "", session, step_result, tool_result, skill)
                 )
         except LLMError:
             yield from self.chunk_text(
-                self._visible_reply_or_fallback(step_result.reply or "", session, step_result, tool_result)
+                self._visible_reply_or_fallback(step_result.reply or "", session, step_result, tool_result, skill)
             )
 
     def chunk_text(self, text: str, chunk_size: int = 8) -> Iterator[str]:
@@ -140,6 +142,7 @@ class ResponseGenerator:
                 "last_agent_question": session.last_agent_question,
             },
             "active_skill": skill.content_json if skill else None,
+            "progress": self._progress_payload(session, skill, step_result, tool_result),
             "router_decision": router_decision.model_dump(),
             "step_result": step_result.model_dump(),
             "tool_result": tool_result.model_dump() if tool_result else None,
@@ -177,11 +180,15 @@ class ResponseGenerator:
         session: ChatSession,
         step_result: StepAgentResult,
         tool_result: ToolResult | None,
+        skill: Skill | None = None,
     ) -> str:
+        completion_ready = self._skill_completion_ready(session, skill, step_result, tool_result)
+        completion_fallback = self._completion_fallback() if completion_ready else ""
         candidates = (
             reply,
             step_result.reply or "",
-            session.last_agent_question or "",
+            completion_fallback,
+            "" if completion_ready else session.last_agent_question or "",
             self._fallback_for_session(session),
             FALLBACK_REPLY,
         )
@@ -193,8 +200,77 @@ class ResponseGenerator:
                 continue
             if self._is_unverified_pending_reply(stripped, tool_result):
                 continue
+            if completion_ready and self._is_stale_last_question(stripped, session):
+                continue
             return stripped
         return FALLBACK_REPLY
+
+    def _progress_payload(
+        self,
+        session: ChatSession,
+        skill: Skill | None,
+        step_result: StepAgentResult,
+        tool_result: ToolResult | None,
+    ) -> dict[str, object]:
+        if not skill:
+            return {
+                "missing_current_step_info": [],
+                "missing_required_info": [],
+                "skill_completion_ready": False,
+            }
+        return {
+            "missing_current_step_info": self._missing_current_step_info(session, skill),
+            "missing_required_info": self._missing_required_info(session, skill),
+            "skill_completion_ready": self._skill_completion_ready(session, skill, step_result, tool_result),
+            "step_completed": step_result.is_step_completed,
+        }
+
+    def _skill_completion_ready(
+        self,
+        session: ChatSession,
+        skill: Skill | None,
+        step_result: StepAgentResult,
+        tool_result: ToolResult | None,
+    ) -> bool:
+        if not skill or not step_result.is_step_completed:
+            return False
+        if tool_result and not tool_result.success:
+            return False
+        return not self._missing_current_step_info(session, skill) and not self._missing_required_info(session, skill)
+
+    def _missing_current_step_info(self, session: ChatSession, skill: Skill) -> list[str]:
+        step = self._current_step(session, skill)
+        if not step:
+            return []
+        return [
+            str(field)
+            for field in step.get("expected_user_info", [])
+            if not self._slot_has_value(session.slots_json or {}, str(field))
+        ]
+
+    def _missing_required_info(self, session: ChatSession, skill: Skill) -> list[str]:
+        return [
+            str(field)
+            for field in (skill.content_json or {}).get("required_info", [])
+            if not self._slot_has_value(session.slots_json or {}, str(field))
+        ]
+
+    def _current_step(self, session: ChatSession, skill: Skill) -> dict | None:
+        for step in (skill.content_json or {}).get("steps", []):
+            if isinstance(step, dict) and step.get("step_id") == session.active_step_id:
+                return step
+        return None
+
+    def _slot_has_value(self, slots: dict, field: str) -> bool:
+        value = slots.get(field)
+        return value is not None and value != ""
+
+    def _is_stale_last_question(self, text: str, session: ChatSession) -> bool:
+        last_question = (session.last_agent_question or "").strip()
+        return bool(last_question and text == last_question)
+
+    def _completion_fallback(self) -> str:
+        return "已记录完整信息。请问还有其他需要帮助的吗？"
 
     def _fallback_for_session(self, session: ChatSession) -> str:
         return "请您再补充一下具体诉求，我会继续帮您处理。"

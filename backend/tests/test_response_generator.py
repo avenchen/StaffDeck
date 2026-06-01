@@ -1,5 +1,5 @@
 from app.core.response_generator import ResponseGenerator
-from app.db.models import ChatSession
+from app.db.models import ChatSession, Skill
 from app.llm.client import LLMClient
 from app.session.session_schema import RouterDecision, StepAgentResult
 from app.tools.tool_schema import ToolResult
@@ -148,3 +148,55 @@ def test_stream_pending_reply_without_tool_result_is_not_emitted(monkeypatch):
     assert reply == "请补充完成当前步骤所需的信息。"
     assert "稍候" not in reply
     assert "正在为您" not in reply
+
+
+def test_completed_step_does_not_fall_back_to_stale_last_question(monkeypatch):
+    def fake_init(self, model_config):  # noqa: ANN001
+        return None
+
+    def fake_generate_text(self, system_prompt, payload):  # noqa: ANN001
+        assert payload["progress"]["missing_current_step_info"] == []
+        assert payload["progress"]["missing_required_info"] == []
+        assert payload["progress"]["skill_completion_ready"] is True
+        return "请问您的退货原因是什么？"
+
+    monkeypatch.setattr(LLMClient, "__init__", fake_init)
+    monkeypatch.setattr(LLMClient, "generate_text", fake_generate_text)
+
+    reply = ResponseGenerator().generate(
+        message="不喜欢",
+        session=ChatSession(
+            id="session_test",
+            tenant_id="tenant_demo",
+            active_skill_id="refund",
+            active_step_id="collect_refund_reason",
+            slots_json={"order_id": "A12345", "refund_reason": "不喜欢"},
+            last_agent_question="请问您的退货原因是什么？",
+        ),
+        skill=Skill(
+            tenant_id="tenant_demo",
+            skill_id="refund",
+            name="退款",
+            status="published",
+            content_json={
+                "required_info": ["order_id", "refund_reason"],
+                "steps": [
+                    {
+                        "step_id": "collect_refund_reason",
+                        "expected_user_info": ["refund_reason"],
+                        "allowed_actions": ["ask_user", "continue_flow"],
+                    }
+                ],
+            },
+        ),
+        router_decision=RouterDecision(decision="continue_current_skill"),
+        step_result=StepAgentResult(
+            reply="已记录退货原因，正在为您提交退货申请，请稍候。",
+            is_step_completed=True,
+            next_step_id="collect_refund_reason",
+        ),
+        tool_result=None,
+        model_config=None,  # type: ignore[arg-type]
+    )
+
+    assert reply == "已记录完整信息。请问还有其他需要帮助的吗？"

@@ -16,5 +16,6 @@
 11. 如果用户当前消息或 router_decision.user_intent 已经明确命中当前技能意图，不要重复追问同一层级意图分类；应追问下一步真正缺失的信息。
 12. 技能步骤是目标不是固定话术。生成回复前必须检查 user_message、session.slots、router_decision、step_result、tool_result；不要复述已经被满足的步骤问题，也不要把 Step Agent 中过时的追问直接当最终回复。
 13. 如果 session.slots._tool_results 存在，那里是本轮/历史聚合工具结果；生成最终回复时应结合全部相关工具结果，而不是只看最后一个 tool_result。
+14. 必须参考 progress.missing_current_step_info、progress.missing_required_info 和 progress.skill_completion_ready：如果缺失列表为空且 skill_completion_ready=true，不要重复上一轮追问，应给出本轮已完成/已记录的信息和下一步可见结果。
 
 输出纯文本。

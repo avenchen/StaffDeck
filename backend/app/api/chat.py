@@ -141,6 +141,7 @@ def list_chat_sessions(
         .where(ChatSession.tenant_id == tenant_id, ChatSession.user_id == current_user.id)
         .order_by(ChatSession.updated_at.desc())
     ).all()
+    _cleanup_stale_completed_sessions(db, tenant_id, rows)
     return [session_read(row) for row in rows]
 
 
@@ -207,6 +208,7 @@ def list_chat_messages(
     chat_session = db.get(ChatSession, session_id)
     if not chat_session or chat_session.tenant_id != tenant_id or chat_session.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Session not found")
+    _cleanup_stale_completed_sessions(db, tenant_id, [chat_session])
     rows = db.exec(
         select(Message)
         .where(Message.tenant_id == tenant_id, Message.session_id == session_id)
@@ -366,6 +368,42 @@ def _feedback_by_message(
         )
     ).all()
     return {row.message_id: row.rating for row in rows}
+
+
+def _cleanup_stale_completed_sessions(
+    db: Session,
+    tenant_id: str,
+    rows: list[ChatSession],
+) -> None:
+    candidates = [row for row in rows if row.active_skill_id]
+    if not candidates:
+        return
+    skills = list(
+        db.exec(
+            select(Skill).where(Skill.tenant_id == tenant_id, Skill.status == "published")
+        ).all()
+    )
+    if not skills:
+        return
+    loop = AgentLoop(db)
+    changed = False
+    for row in candidates:
+        before = (
+            row.active_skill_id,
+            row.active_step_id,
+            json.dumps(row.slots_json or {}, sort_keys=True, ensure_ascii=False),
+        )
+        loop._finish_stale_completed_skill(tenant_id, row, skills)
+        after = (
+            row.active_skill_id,
+            row.active_step_id,
+            json.dumps(row.slots_json or {}, sort_keys=True, ensure_ascii=False),
+        )
+        changed = changed or before != after
+    if changed:
+        db.commit()
+        for row in candidates:
+            db.refresh(row)
 
 
 def _upsert_skill_feedback_for_message(
