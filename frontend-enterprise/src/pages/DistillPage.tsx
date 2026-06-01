@@ -79,7 +79,7 @@ type TextDiffAnimation = {
   progress: number;
 };
 
-const DEFAULT_TARGET_PATHS = ['basic'];
+const DEFAULT_TARGET_PATHS: string[] = [];
 const DEFAULT_DISTILL_MESSAGES: ChatItem[] = [
   {
     id: 'welcome',
@@ -151,7 +151,7 @@ export default function DistillPage() {
       setLastSavedDraft(cached.lastSavedDraft);
       setMessages(cached.messages.length > 0 ? cached.messages : DEFAULT_DISTILL_MESSAGES);
       setInput(cached.input);
-      setSelectedPaths(cached.selectedPaths.length > 0 ? cached.selectedPaths : DEFAULT_TARGET_PATHS);
+      setSelectedPaths(normalizeInitialSelectedPaths(cached.selectedPaths));
       setHighlightedPaths(cached.highlightedPaths);
       setUpdatingPaths(cached.updatingPaths);
       setDirtyPaths(cached.dirtyPaths);
@@ -1745,7 +1745,9 @@ function readDistillCache(key: string): DistillCacheSnapshot | null {
       lastSavedDraft: parsed.lastSavedDraft || null,
       messages: Array.isArray(parsed.messages) ? parsed.messages : DEFAULT_DISTILL_MESSAGES,
       input: typeof parsed.input === 'string' ? parsed.input : '',
-      selectedPaths: Array.isArray(parsed.selectedPaths) ? parsed.selectedPaths.map(String) : DEFAULT_TARGET_PATHS,
+      selectedPaths: normalizeInitialSelectedPaths(
+        Array.isArray(parsed.selectedPaths) ? parsed.selectedPaths.map(String) : DEFAULT_TARGET_PATHS,
+      ),
       highlightedPaths: Array.isArray(parsed.highlightedPaths) ? parsed.highlightedPaths.map(String) : [],
       updatingPaths: Array.isArray(parsed.updatingPaths) ? parsed.updatingPaths.map(String) : [],
       dirtyPaths: Array.isArray(parsed.dirtyPaths) ? parsed.dirtyPaths.map(String) : [],
@@ -1775,6 +1777,11 @@ function writeDistillCache(key: string, snapshot: DistillCacheSnapshot): void {
   } catch {
     // Cache is best-effort. Large uploaded documents can exceed browser quota.
   }
+}
+
+function normalizeInitialSelectedPaths(paths: string[]): string[] {
+  if (paths.length === 1 && paths[0] === 'basic') return [];
+  return paths;
 }
 
 function allTargetPaths(skill: SkillCard): string[] {
