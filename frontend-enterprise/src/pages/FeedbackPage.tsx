@@ -3,10 +3,11 @@ import { Button, Card, Descriptions, Drawer, Empty, Space, Table, Tag, Typograph
 import type { ColumnsType } from 'antd/es/table';
 import { useEffect, useState } from 'react';
 import { api, TENANT_ID } from '../api/client';
-import type { FeedbackMessageRead, FeedbackSessionDetailRead, FeedbackSessionRead } from '../types';
+import type { FeedbackAnalysisRead, FeedbackMessageRead, FeedbackSessionDetailRead, FeedbackSessionRead, FeedbackSummaryRead } from '../types';
 
 export default function FeedbackPage() {
   const [rows, setRows] = useState<FeedbackSessionRead[]>([]);
+  const [summary, setSummary] = useState<FeedbackSummaryRead | null>(null);
   const [detail, setDetail] = useState<FeedbackSessionDetailRead | null>(null);
   const [loading, setLoading] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -17,7 +18,11 @@ export default function FeedbackPage() {
       const result = await api.get<FeedbackSessionRead[]>(
         `/api/enterprise/feedback/sessions?tenant_id=${TENANT_ID}&rating=down`,
       );
+      const summaryResult = await api.get<FeedbackSummaryRead>(
+        `/api/enterprise/feedback/summary?tenant_id=${TENANT_ID}`,
+      );
       setRows(result);
+      setSummary(summaryResult);
     } catch (error) {
       message.error(error instanceof Error ? error.message : '查询失败');
     } finally {
@@ -58,6 +63,11 @@ export default function FeedbackPage() {
     },
     { title: '点踩数', dataIndex: 'feedback_count', width: 90 },
     {
+      title: '主要归因',
+      width: 160,
+      render: (_, row) => <FeedbackBucketTag label={row.primary_bucket_label} bucket={row.primary_bucket} />,
+    },
+    {
       title: '最近点踩回复',
       dataIndex: 'latest_message',
       ellipsis: true,
@@ -91,6 +101,21 @@ export default function FeedbackPage() {
         title={<><DislikeOutlined /> 用户点踩汇总</>}
         extra={<Button icon={<ReloadOutlined />} onClick={load} loading={loading}>刷新</Button>}
       >
+        {summary && (
+          <div className="feedback-summary-panel">
+            <div className="feedback-summary-text">{summary.summary}</div>
+            <Space wrap>
+              <Tag>反馈 {summary.total_feedback}</Tag>
+              <Tag color="red">点踩 {summary.down_count}</Tag>
+              <Tag color="green">点赞 {summary.up_count}</Tag>
+              {summary.bucket_counts.map((item) => (
+                <Tag key={item.bucket} color={bucketColor(item.bucket)}>
+                  {item.label} {item.count}
+                </Tag>
+              ))}
+            </Space>
+          </div>
+        )}
         <Table
           rowKey="session_id"
           columns={columns}
@@ -117,6 +142,21 @@ export default function FeedbackPage() {
               <Descriptions.Item label="点踩数">
                 {detail.feedback.filter((item) => item.rating === 'down').length}
               </Descriptions.Item>
+              <Descriptions.Item label="归因">
+                <Space wrap>
+                  {detail.feedback
+                    .filter((item) => item.rating === 'down')
+                    .map((item) => item.analysis as FeedbackAnalysisRead | undefined)
+                    .filter(Boolean)
+                    .map((analysis, index) => (
+                      <FeedbackBucketTag
+                        key={`${analysis?.bucket || 'unknown'}_${index}`}
+                        label={analysis?.bucket_label}
+                        bucket={analysis?.bucket}
+                      />
+                    ))}
+                </Space>
+              </Descriptions.Item>
             </Descriptions>
             <div className="feedback-conversation">
               {detail.messages.map((item) => (
@@ -141,10 +181,23 @@ function FeedbackMessage({ item }: { item: FeedbackMessageRead }) {
           <span>{new Date(item.created_at).toLocaleString()}</span>
           {item.feedback_rating === 'down' && <Tag color="red">点踩</Tag>}
           {item.feedback_rating === 'up' && <Tag color="green">点赞</Tag>}
+          {item.feedback_analysis && <FeedbackBucketTag label={item.feedback_analysis.bucket_label} bucket={item.feedback_analysis.bucket} />}
         </div>
         <Typography.Paragraph className="feedback-message-content">
           {item.content}
         </Typography.Paragraph>
+        {item.feedback_analysis && item.feedback_rating === 'down' && (
+          <div className="feedback-analysis-box">
+            <div>
+              <strong>分析状态：</strong>{analysisStatusLabel(item.feedback_analysis.status)}
+              {typeof item.feedback_analysis.confidence === 'number' && (
+                <span> · 置信度 {(item.feedback_analysis.confidence * 100).toFixed(0)}%</span>
+              )}
+            </div>
+            {item.feedback_analysis.summary && <div><strong>总结：</strong>{item.feedback_analysis.summary}</div>}
+            {item.feedback_analysis.reason && <div><strong>原因：</strong>{item.feedback_analysis.reason}</div>}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -152,4 +205,26 @@ function FeedbackMessage({ item }: { item: FeedbackMessageRead }) {
 
 function displayUser(session: Record<string, unknown>): string {
   return String(session.display_name || session.username || session.user_id || '-');
+}
+
+function FeedbackBucketTag({ label, bucket }: { label?: string; bucket?: string }) {
+  if (!label && !bucket) return <Tag>待分析</Tag>;
+  return <Tag color={bucketColor(bucket)}>{label || bucket}</Tag>;
+}
+
+function bucketColor(bucket?: string): string {
+  if (bucket === 'model_issue') return 'volcano';
+  if (bucket === 'skill_issue') return 'orange';
+  if (bucket === 'tool_or_system_issue') return 'purple';
+  if (bucket === 'user_random_or_unclear') return 'default';
+  if (bucket === 'positive_or_resolved') return 'green';
+  if (bucket === 'needs_model_analysis') return 'blue';
+  return 'default';
+}
+
+function analysisStatusLabel(status?: string): string {
+  if (status === 'pending') return '等待分析';
+  if (status === 'analyzed') return '已分析';
+  if (status === 'needs_model') return '待配置模型';
+  return status || '未知';
 }

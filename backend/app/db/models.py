@@ -194,6 +194,13 @@ class MessageFeedback(SQLModel, table=True):
     message_id: str = Field(index=True)
     user_id: str = Field(index=True)
     rating: str = Field(index=True)
+    analysis_status: str = Field(default="pending", index=True)
+    analysis_bucket: Optional[str] = Field(default=None, index=True)
+    analysis_reason: Optional[str] = None
+    analysis_summary: Optional[str] = None
+    analysis_confidence: Optional[float] = None
+    analysis_json: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
+    analyzed_at: Optional[datetime] = None
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)
 

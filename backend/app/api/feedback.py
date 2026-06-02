@@ -6,9 +6,28 @@ from sqlmodel import Session, select
 from app.api.chat import message_read, session_read
 from app.db import get_session
 from app.db.models import ChatSession, Message, MessageFeedback, User
+from app.feedback import FEEDBACK_BUCKET_LABELS, feedback_analysis_read, feedback_summary
 from app.security.tenant import ensure_tenant
 
 router = APIRouter(prefix="/api/enterprise/feedback", tags=["enterprise:feedback"])
+
+
+@router.get("/summary")
+def get_feedback_summary(
+    tenant_id: str = Query(...),
+    limit: int = Query(default=1000, ge=1, le=5000),
+    db: Session = Depends(get_session),
+) -> dict:
+    ensure_tenant(db, tenant_id)
+    rows = list(
+        db.exec(
+            select(MessageFeedback)
+            .where(MessageFeedback.tenant_id == tenant_id)
+            .order_by(MessageFeedback.updated_at.desc())
+            .limit(limit)
+        ).all()
+    )
+    return feedback_summary(rows)
 
 
 @router.get("/sessions")
@@ -39,6 +58,12 @@ def list_feedback_sessions(
         latest = max(rows, key=lambda item: item.updated_at)
         latest_message = db.get(Message, latest.message_id)
         user = db.get(User, chat_session.user_id) if chat_session.user_id else None
+        down_rows = [item for item in rows if item.rating == "down"]
+        bucket_counts: dict[str, int] = {}
+        for item in down_rows:
+            bucket = item.analysis_bucket or "unknown"
+            bucket_counts[bucket] = bucket_counts.get(bucket, 0) + 1
+        primary_bucket = max(bucket_counts.items(), key=lambda item: item[1])[0] if bucket_counts else None
         results.append(
             {
                 "session_id": chat_session.id,
@@ -53,6 +78,13 @@ def list_feedback_sessions(
                 "latest_feedback_at": latest.updated_at.isoformat(),
                 "latest_message_id": latest.message_id,
                 "latest_message": latest_message.content if latest_message else "",
+                "analysis_status": latest.analysis_status,
+                "analysis_bucket": latest.analysis_bucket,
+                "analysis_bucket_label": FEEDBACK_BUCKET_LABELS.get(latest.analysis_bucket or "unknown", latest.analysis_bucket or "unknown"),
+                "analysis_summary": latest.analysis_summary,
+                "primary_bucket": primary_bucket,
+                "primary_bucket_label": FEEDBACK_BUCKET_LABELS.get(primary_bucket or "unknown", primary_bucket or "unknown"),
+                "bucket_counts": bucket_counts,
                 "updated_at": chat_session.updated_at.isoformat(),
             }
         )
@@ -99,6 +131,7 @@ def get_feedback_session_detail(
                 "message_id": row.message_id,
                 "user_id": row.user_id,
                 "rating": row.rating,
+                "analysis": feedback_analysis_read(row),
                 "created_at": row.created_at.isoformat(),
                 "updated_at": row.updated_at.isoformat(),
             }
@@ -111,4 +144,5 @@ def _message_with_feedback(message: Message, feedback: MessageFeedback | None) -
     payload = message_read(message, feedback.rating if feedback else None).model_dump()
     if feedback:
         payload["feedback_updated_at"] = feedback.updated_at.isoformat()
+        payload["feedback_analysis"] = feedback_analysis_read(feedback)
     return payload

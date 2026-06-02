@@ -4,6 +4,7 @@ import {
   CodeOutlined,
   CloseOutlined,
   DownOutlined,
+  EditOutlined,
   FileTextOutlined,
   LoadingOutlined,
   RightOutlined,
@@ -13,7 +14,7 @@ import {
   UploadOutlined,
   WarningOutlined,
 } from '@ant-design/icons';
-import { Button, Card, Empty, Input, Modal, Space, Tooltip, Typography, Upload, message } from 'antd';
+import { Button, Card, Empty, Input, Modal, Space, Tag, Tooltip, Typography, Upload, message } from 'antd';
 import {
   useEffect,
   useMemo,
@@ -34,12 +35,15 @@ type ChatItem = {
   id: string;
   role: 'user' | 'assistant';
   content: string;
+  outgoingText?: string;
   thinking?: 'running' | 'done';
   thinkingDetails?: string[];
   thinkingOpen?: boolean;
   warnings?: string[];
   toolSuggestions?: ToolSuggestionItem[];
   actionState?: 'pending' | 'confirmed' | 'rejected';
+  snapshotBefore?: DistillHistorySnapshot;
+  operations?: DistillHistoryOperation[];
 };
 
 type ToolSuggestionItem = ToolSuggestion & {
@@ -102,6 +106,33 @@ type DistillCacheSnapshot = {
   textDiffs: TextDiffAnimation[];
   pendingChange: PendingChange | null;
   viewMode: ViewMode;
+  attachments: UploadAttachment[];
+  streamStatus: string;
+};
+
+type DistillHistoryOperationKind = 'skill_change' | 'version_save' | 'tool_add';
+
+type DistillHistoryOperation = {
+  kind: DistillHistoryOperationKind;
+  label: string;
+  skillId?: string;
+  version?: string;
+  toolId?: string;
+  toolName?: string;
+};
+
+type DistillHistorySnapshot = {
+  draft: SkillCard | null;
+  loadedSkill: SkillRead | null;
+  lastSavedDraft: SkillCard | null;
+  selectedPaths: string[];
+  highlightedPaths: string[];
+  updatingPaths: string[];
+  dirtyPaths: string[];
+  textDiffs: TextDiffAnimation[];
+  pendingChange: PendingChange | null;
+  viewMode: ViewMode;
+  tools: ToolRead[];
   attachments: UploadAttachment[];
   streamStatus: string;
 };
@@ -314,11 +345,12 @@ export default function DistillPage() {
     const text = buildOutgoingText(input, readyAttachments);
     if (!text || loading || uploadingFile) return;
     const displayText = buildDisplayText(input, readyAttachments);
+    const snapshotBefore = createHistorySnapshot();
     const confirmedDraft = pendingChange?.nextDraft || draft;
     confirmPendingChange(false);
     setInput('');
     setAttachments([]);
-    pushMessage('user', displayText);
+    pushMessage('user', displayText, { outgoingText: text, snapshotBefore });
     if (!confirmedDraft) {
       await createDraftFromText(text);
       return;
@@ -382,7 +414,12 @@ export default function DistillPage() {
             updateMessage(
               assistantId,
               `已生成「${draftSkill.name}」草稿。你可以在右侧选择一个或多个区域继续改写。`,
-              { thinking: 'done', warnings: nextWarnings, toolSuggestions: nextToolSuggestions },
+              {
+                thinking: 'done',
+                warnings: nextWarnings,
+                toolSuggestions: nextToolSuggestions,
+                operations: [{ kind: 'skill_change', label: `生成技能草稿：${draftSkill.name}`, skillId: draftSkill.skill_id }],
+              },
             );
             setStreamStatus('生成完成');
           }
@@ -472,6 +509,9 @@ export default function DistillPage() {
                   warnings: nextWarnings,
                   toolSuggestions: nextToolSuggestions,
                   actionState: 'pending',
+                  operations: changedPaths.length
+                    ? [{ kind: 'skill_change', label: `改写：${changedLabel}`, skillId: nextDraft.skill_id }]
+                    : [],
                 },
               );
             } else {
@@ -480,6 +520,9 @@ export default function DistillPage() {
                 warnings: nextWarnings,
                 toolSuggestions: nextToolSuggestions,
                 actionState: 'pending',
+                operations: changedPaths.length
+                  ? [{ kind: 'skill_change', label: `改写：${changedLabel}`, skillId: nextDraft.skill_id }]
+                  : [],
               });
             }
           }
@@ -541,6 +584,12 @@ export default function DistillPage() {
       setHighlightedPaths([]);
       setDirtyPaths([]);
       setSaveReviewOpen(false);
+      appendOperationToLatestMessage({
+        kind: 'version_save',
+        label: `保存版本 ${savedSkill.version}`,
+        skillId: savedSkill.skill_id,
+        version: savedSkill.version,
+      });
       if (clearAfterSave) {
         setClearAfterSave(false);
         clearDistillWorkspace();
@@ -648,9 +697,11 @@ export default function DistillPage() {
     const activeDraft = pendingChange?.nextDraft || draft;
     try {
       let createdTool: ToolRead;
+      let createdNewTool = false;
       const payload = toolPayloadFromSuggestion(suggestion, activeDraft?.skill_id);
       try {
         createdTool = await api.post<ToolRead>('/api/enterprise/tools', payload);
+        createdNewTool = true;
         message.success('工具已新增');
       } catch (error) {
         if (!(error instanceof Error) || !error.message.includes('409')) throw error;
@@ -659,6 +710,14 @@ export default function DistillPage() {
       }
       setTools((current) => upsertToolRead(current, createdTool));
       setToolSuggestionStatus(messageId, suggestion.name, 'created');
+      if (createdNewTool) {
+        appendOperationToMessage(messageId, {
+          kind: 'tool_add',
+          label: `新增工具：${createdTool.display_name || createdTool.name}`,
+          toolId: createdTool.id,
+          toolName: createdTool.name,
+        });
+      }
       if (!activeDraft) return;
       confirmPendingChange(false);
       await rewriteSelectedTarget(
@@ -771,6 +830,25 @@ export default function DistillPage() {
     );
   }
 
+  function appendOperationToMessage(id: string, operation: DistillHistoryOperation) {
+    setMessages((current) =>
+      current.map((item) =>
+        item.id === id ? { ...item, operations: [...(item.operations || []), operation] } : item,
+      ),
+    );
+  }
+
+  function appendOperationToLatestMessage(operation: DistillHistoryOperation) {
+    setMessages((current) => {
+      const index = [...current].reverse().findIndex((item) => item.role === 'assistant' || item.role === 'user');
+      if (index < 0) return current;
+      const targetIndex = current.length - 1 - index;
+      return current.map((item, currentIndex) =>
+        currentIndex === targetIndex ? { ...item, operations: [...(item.operations || []), operation] } : item,
+      );
+    });
+  }
+
   function appendMessage(id: string, content: string) {
     setMessages((current) =>
       current.map((item) => (item.id === id ? { ...item, content: `${item.content}${content}` } : item)),
@@ -801,6 +879,59 @@ export default function DistillPage() {
     setLoading(false);
   }
 
+  function createHistorySnapshot(): DistillHistorySnapshot {
+    return {
+      draft: draft ? cloneSkill(draft) : null,
+      loadedSkill: loadedSkill ? cloneSkillRead(loadedSkill) : null,
+      lastSavedDraft: lastSavedDraft ? cloneSkill(lastSavedDraft) : null,
+      selectedPaths: [...selectedPaths],
+      highlightedPaths: [...highlightedPaths],
+      updatingPaths: [...updatingPaths],
+      dirtyPaths: [...dirtyPaths],
+      textDiffs: textDiffs.map((item) => ({ ...item })),
+      pendingChange: pendingChange
+        ? {
+            assistantId: pendingChange.assistantId,
+            previousDraft: cloneSkill(pendingChange.previousDraft),
+            nextDraft: cloneSkill(pendingChange.nextDraft),
+            changedPaths: [...pendingChange.changedPaths],
+          }
+        : null,
+      viewMode,
+      tools: tools.map((tool) => ({ ...tool })),
+      attachments: attachments.map((item) => ({ ...item })),
+      streamStatus,
+    };
+  }
+
+  function restoreHistorySnapshot(snapshot: DistillHistorySnapshot) {
+    clearAnimationTimers();
+    abortRef.current?.abort();
+    setDraft(snapshot.draft ? cloneSkill(snapshot.draft) : null);
+    setLoadedSkill(snapshot.loadedSkill ? cloneSkillRead(snapshot.loadedSkill) : null);
+    setLastSavedDraft(snapshot.lastSavedDraft ? cloneSkill(snapshot.lastSavedDraft) : null);
+    setSelectedPaths([...snapshot.selectedPaths]);
+    setHighlightedPaths([...snapshot.highlightedPaths]);
+    setUpdatingPaths([...snapshot.updatingPaths]);
+    setDirtyPaths([...snapshot.dirtyPaths]);
+    setTextDiffs(snapshot.textDiffs.map((item) => ({ ...item })));
+    setPendingChange(
+      snapshot.pendingChange
+        ? {
+            assistantId: snapshot.pendingChange.assistantId,
+            previousDraft: cloneSkill(snapshot.pendingChange.previousDraft),
+            nextDraft: cloneSkill(snapshot.pendingChange.nextDraft),
+            changedPaths: [...snapshot.pendingChange.changedPaths],
+          }
+        : null,
+    );
+    setViewMode(snapshot.viewMode);
+    setTools(snapshot.tools.map((tool) => ({ ...tool })));
+    setAttachments(snapshot.attachments.filter((item) => item.status !== 'uploading').map((item) => ({ ...item })));
+    setStreamStatus(snapshot.streamStatus);
+    setLoading(false);
+  }
+
   function confirmPendingChange(showToast = true) {
     if (!pendingChange) return;
     clearAnimationTimers();
@@ -822,6 +953,96 @@ export default function DistillPage() {
     updateMessage(pendingChange.assistantId, undefined, { actionState: 'rejected' });
     setPendingChange(null);
     message.info('已拒绝改写并还原');
+  }
+
+  function requestEditHistoryMessage(item: ChatItem, index: number) {
+    if (loading || item.role !== 'user') return;
+    const snapshot = item.snapshotBefore;
+    if (!snapshot) {
+      setInput(item.outgoingText || item.content);
+      return;
+    }
+    const rollbackOperations = collectRollbackOperations(messages.slice(index + 1));
+    if (rollbackOperations.length === 0) {
+      void rollbackAndEditMessage(item, index, snapshot, rollbackOperations);
+      return;
+    }
+    Modal.confirm({
+      title: '重新编辑这条消息？',
+      content: (
+        <div>
+          <Typography.Paragraph>
+            重新编辑会回到这条消息发送前的技能草稿，并截断之后的推理记录。
+          </Typography.Paragraph>
+          <div className="rollback-operation-list">
+            {rollbackOperations.map((operation, operationIndex) => (
+              <Tag key={`${operation.kind}_${operationIndex}`}>{operation.label}</Tag>
+            ))}
+          </div>
+        </div>
+      ),
+      okText: '确认回退',
+      cancelText: '取消',
+      onOk: () => rollbackAndEditMessage(item, index, snapshot, rollbackOperations),
+    });
+  }
+
+  async function rollbackAndEditMessage(
+    item: ChatItem,
+    index: number,
+    snapshot: DistillHistorySnapshot,
+    operations: DistillHistoryOperation[],
+  ) {
+    try {
+      await rollbackPersistedOperations(snapshot, operations);
+      restoreHistorySnapshot(snapshot);
+      setMessages((current) => current.slice(0, index));
+      setInput(item.outgoingText || item.content);
+      message.info('已回退到该消息发送前，可以重新编辑并发送');
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : '回退失败');
+    }
+  }
+
+  async function rollbackPersistedOperations(
+    snapshot: DistillHistorySnapshot,
+    operations: DistillHistoryOperation[],
+  ) {
+    const toolOps = operations.filter((operation) => operation.kind === 'tool_add' && operation.toolId);
+    for (const operation of toolOps) {
+      try {
+        await api.delete(`/api/enterprise/tools/${encodeURIComponent(String(operation.toolId))}?tenant_id=${TENANT_ID}`);
+      } catch {
+        // Tool may already have been removed. Local state is restored from the snapshot below.
+      }
+    }
+
+    const versionOps = operations.filter((operation) => operation.kind === 'version_save' && operation.skillId);
+    for (const operation of versionOps) {
+      const skillId = String(operation.skillId);
+      if (snapshot.loadedSkill) {
+        await api.put<SkillRead>(`/api/enterprise/skills/${encodeURIComponent(snapshot.loadedSkill.skill_id)}`, {
+          tenant_id: TENANT_ID,
+          content: snapshot.loadedSkill.content,
+          status: snapshot.loadedSkill.status,
+        });
+        if (operation.version && operation.version !== snapshot.loadedSkill.version) {
+          try {
+            await api.delete(
+              `/api/enterprise/skills/${encodeURIComponent(skillId)}/versions/${encodeURIComponent(operation.version)}?tenant_id=${TENANT_ID}`,
+            );
+          } catch {
+            // A saved version may be shared with current state or already removed. The active draft has been restored.
+          }
+        }
+      } else {
+        try {
+          await api.delete(`/api/enterprise/skills/${encodeURIComponent(skillId)}?tenant_id=${TENANT_ID}`);
+        } catch {
+          // If the skill was not persisted, there is nothing else to roll back.
+        }
+      }
+    }
   }
 
   function animateDraftChange(
@@ -891,9 +1112,19 @@ export default function DistillPage() {
           <div className="skill-chat-panel">
             {dragActive && <div className="skill-upload-drop-hint">松开上传文档</div>}
             <div className="skill-chat-messages" ref={chatMessagesRef}>
-              {messages.map((item) => (
+              {messages.map((item, index) => (
                 <div key={item.id} className={`skill-chat-row ${item.role}`}>
                   <div className="skill-chat-bubble">
+                    {item.role === 'user' && (
+                      <button
+                        type="button"
+                        className="skill-chat-edit-button"
+                        title="重新编辑并回退后续推理"
+                        onClick={() => requestEditHistoryMessage(item, index)}
+                      >
+                        <EditOutlined />
+                      </button>
+                    )}
                     {item.role === 'assistant' && item.thinking && (
                       <div className={`skill-chat-thinking-block ${item.thinking}`}>
                         <button
@@ -2179,6 +2410,24 @@ function mergePaths(current: string[], next: string[]): string[] {
 
 function cloneSkill(skill: SkillCard): SkillCard {
   return JSON.parse(JSON.stringify(skill)) as SkillCard;
+}
+
+function cloneSkillRead(skill: SkillRead): SkillRead {
+  return JSON.parse(JSON.stringify(skill)) as SkillRead;
+}
+
+function collectRollbackOperations(messages: ChatItem[]): DistillHistoryOperation[] {
+  const operations = messages.flatMap((item) => item.operations || []);
+  const relevant = operations.filter((operation) =>
+    ['skill_change', 'version_save', 'tool_add'].includes(operation.kind),
+  );
+  const seen = new Set<string>();
+  return relevant.filter((operation) => {
+    const key = `${operation.kind}:${operation.skillId || ''}:${operation.version || ''}:${operation.toolId || operation.toolName || ''}:${operation.label}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 function blankSkillForAnimation(skill: SkillCard): SkillCard {

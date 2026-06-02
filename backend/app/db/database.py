@@ -88,6 +88,23 @@ def _migrate_sqlite_skill_schema() -> None:
             if "step_id" not in feedback_columns:
                 conn.execute(text("ALTER TABLE skill_feedback ADD COLUMN step_id VARCHAR"))
 
+        if "message_feedback" in tables:
+            message_feedback_columns = {column["name"] for column in inspector.get_columns("message_feedback")}
+            feedback_column_sql = {
+                "analysis_status": "ALTER TABLE message_feedback ADD COLUMN analysis_status VARCHAR NOT NULL DEFAULT 'pending'",
+                "analysis_bucket": "ALTER TABLE message_feedback ADD COLUMN analysis_bucket VARCHAR",
+                "analysis_reason": "ALTER TABLE message_feedback ADD COLUMN analysis_reason VARCHAR",
+                "analysis_summary": "ALTER TABLE message_feedback ADD COLUMN analysis_summary VARCHAR",
+                "analysis_confidence": "ALTER TABLE message_feedback ADD COLUMN analysis_confidence FLOAT",
+                "analysis_json": "ALTER TABLE message_feedback ADD COLUMN analysis_json JSON",
+                "analyzed_at": "ALTER TABLE message_feedback ADD COLUMN analyzed_at DATETIME",
+            }
+            for column_name, ddl in feedback_column_sql.items():
+                if column_name not in message_feedback_columns:
+                    conn.execute(text(ddl))
+            if "analysis_json" not in message_feedback_columns:
+                conn.execute(text("UPDATE message_feedback SET analysis_json = '{}' WHERE analysis_json IS NULL"))
+
         if legacy_table in tables and "skills" in tables:
             rows = conn.execute(text(f"SELECT * FROM {legacy_table}")).mappings().all()
             for row in rows:

@@ -672,6 +672,7 @@ body.skill-distill-fixed .content {
 }
 
 .skill-chat-bubble {
+  position: relative;
   max-width: 84%;
   padding: 10px 12px;
   color: var(--foreground);
@@ -689,6 +690,33 @@ body.skill-distill-fixed .content {
 
 .skill-chat-row.user .skill-chat-bubble {
   background: var(--surface-muted);
+}
+
+.skill-chat-edit-button {
+  position: absolute;
+  top: 6px;
+  left: -30px;
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.16s ease, color 0.16s ease;
+}
+
+.skill-chat-row.user .skill-chat-bubble:hover .skill-chat-edit-button,
+.skill-chat-edit-button:focus-visible {
+  opacity: 1;
+}
+
+.skill-chat-edit-button:hover {
+  color: var(--foreground);
 }
 
 .skill-chat-thinking-block {
@@ -794,6 +822,12 @@ body.skill-distill-fixed .content {
   margin-top: 10px;
   color: var(--muted);
   font-size: 12px;
+}
+
+.rollback-operation-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .skill-chat-composer {
@@ -1459,6 +1493,34 @@ pre {
 
 code {
   font-family: var(--font-mono);
+}
+
+.feedback-summary-panel {
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  display: grid;
+  gap: 10px;
+  background: var(--surface-subtle);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.feedback-summary-text {
+  color: var(--foreground);
+  font-weight: 720;
+}
+
+.feedback-analysis-box {
+  margin-top: 10px;
+  padding: 10px 12px;
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  background: var(--surface-subtle);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 12px;
+  line-height: 1.55;
 }
 
 @media (max-width: 760px) {

@@ -20,6 +20,7 @@ from app.db.models import (
     new_id,
     utc_now,
 )
+from app.feedback import enqueue_feedback_analysis
 from app.security.auth import get_current_user
 from app.security.tenant import ensure_tenant
 from app.session.session_schema import (
@@ -237,6 +238,13 @@ def upsert_message_feedback(
     now = utc_now()
     if existing:
         existing.rating = request.rating
+        existing.analysis_status = "pending"
+        existing.analysis_bucket = None
+        existing.analysis_reason = None
+        existing.analysis_summary = None
+        existing.analysis_confidence = None
+        existing.analysis_json = {}
+        existing.analyzed_at = None
         existing.updated_at = now
         row = existing
     else:
@@ -246,6 +254,8 @@ def upsert_message_feedback(
             message_id=message_row.id,
             user_id=current_user.id,
             rating=request.rating,
+            analysis_status="pending",
+            analysis_json={},
             created_at=now,
             updated_at=now,
         )
@@ -261,12 +271,14 @@ def upsert_message_feedback(
     )
     db.commit()
     db.refresh(row)
+    enqueue_feedback_analysis(row.tenant_id, row.id, row.session_id)
     return {
         "id": row.id,
         "tenant_id": row.tenant_id,
         "session_id": row.session_id,
         "message_id": row.message_id,
         "rating": row.rating,
+        "analysis_status": row.analysis_status,
         "updated_at": row.updated_at.isoformat(),
     }
 

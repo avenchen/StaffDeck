@@ -155,7 +155,25 @@ export type FeedbackSessionRead = {
   latest_feedback_at: string;
   latest_message_id: string;
   latest_message: string;
+  analysis_status?: string;
+  analysis_bucket?: string;
+  analysis_bucket_label?: string;
+  analysis_summary?: string;
+  primary_bucket?: string;
+  primary_bucket_label?: string;
+  bucket_counts?: Record<string, number>;
   updated_at: string;
+};
+
+export type FeedbackAnalysisRead = {
+  status?: string;
+  bucket?: string;
+  bucket_label?: string;
+  reason?: string;
+  summary?: string;
+  confidence?: number;
+  metadata?: Record<string, unknown>;
+  analyzed_at?: string | null;
 };
 
 export type FeedbackMessageRead = {
@@ -167,10 +185,21 @@ export type FeedbackMessageRead = {
   created_at: string;
   feedback_rating?: 'up' | 'down' | null;
   feedback_updated_at?: string;
+  feedback_analysis?: FeedbackAnalysisRead;
 };
 
 export type FeedbackSessionDetailRead = {
   session: Record<string, unknown>;
   messages: FeedbackMessageRead[];
   feedback: Array<Record<string, unknown>>;
+};
+
+export type FeedbackSummaryRead = {
+  total_feedback: number;
+  down_count: number;
+  up_count: number;
+  bucket_counts: Array<{ bucket: string; label: string; count: number }>;
+  status_counts: Record<string, number>;
+  summary: string;
+  top_summaries: Array<Record<string, unknown>>;
 };

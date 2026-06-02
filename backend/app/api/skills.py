@@ -256,6 +256,22 @@ def get_skill_version(
     return skill_version_read(row, _skill_stats(db, tenant_id))
 
 
+@router.delete("/{skill_id}/versions/{version}")
+def delete_skill_version(
+    skill_id: str,
+    version: str,
+    tenant_id: str = Query(...),
+    db: Session = Depends(get_session),
+) -> dict[str, str]:
+    skill = _get_skill(db, tenant_id, skill_id)
+    if skill.version == version:
+        raise HTTPException(status_code=409, detail="Cannot delete the active skill version")
+    row = _get_skill_version(db, tenant_id, skill_id, version)
+    db.delete(row)
+    db.commit()
+    return {"status": "deleted"}
+
+
 @router.post("/{skill_id}/versions/{version}/rollback", response_model=SkillRead)
 def rollback_skill_version(
     skill_id: str,
