@@ -31,6 +31,7 @@ class StepAgent:
             "slots": session.slots_json or {},
             "last_agent_question": session.last_agent_question,
             "skill_stack": session.skill_stack_json or [],
+            "pending_tasks": session.pending_tasks_json or [],
             "repair_context": repair_context,
             "available_tools": [
                 {

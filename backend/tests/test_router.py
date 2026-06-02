@@ -51,6 +51,58 @@ def test_router_payload_exposes_step_details_and_allows_compound_interrupt(monke
     assert captured["payload"]["current_session"]["active_skill_id"] == "purchase"
 
 
+def test_router_accepts_ordered_pending_tasks(monkeypatch):
+    def fake_init(self, model_config):  # noqa: ANN001
+        return None
+
+    def fake_generate_json(self, system_prompt, payload):  # noqa: ANN001
+        assert "pending_tasks" in system_prompt
+        assert payload["current_session"]["active_skill_id"] == "refund"
+        return {
+            "decision": "continue_current_skill",
+            "target_skill_id": "refund",
+            "target_step_id": "confirm_refund_order",
+            "confidence": 0.93,
+            "user_intent": "确认当前退货，并在完成后购买 A3",
+            "reason": "用户先确认当前退货，再提出后续购买任务。",
+            "should_resume_after_answer": False,
+            "clarification_question": "",
+            "pending_tasks": [
+                {
+                    "decision": "start_skill",
+                    "target_skill_id": "purchase",
+                    "target_step_id": "",
+                    "confidence": 0.9,
+                    "user_intent": "购买 A3",
+                    "reason": "用户说退完后想买一个 A3。",
+                    "source_message": "退了吧，退完我想买一个a3",
+                    "slot_hints": {"product_id": "A3", "quantity": 1},
+                }
+            ],
+        }
+
+    monkeypatch.setattr(LLMClient, "__init__", fake_init)
+    monkeypatch.setattr(LLMClient, "generate_json", fake_generate_json)
+
+    decision = Router().decide(
+        "退了吧，退完我想买一个a3",
+        ChatSession(
+            id="session_test",
+            tenant_id="tenant_demo",
+            active_skill_id="refund",
+            active_step_id="confirm_refund_order",
+            slots_json={"order_id": "O1", "refund_type": "退货"},
+        ),
+        [_refund_skill(), _purchase_skill()],
+        model_config=None,  # type: ignore[arg-type]
+    )
+
+    assert decision.decision == "continue_current_skill"
+    assert decision.target_skill_id == "refund"
+    assert decision.pending_tasks[0].target_skill_id == "purchase"
+    assert decision.pending_tasks[0].target_step_id == "collect_user_name"
+
+
 def _purchase_skill() -> Skill:
     return Skill(
         tenant_id="tenant_demo",
@@ -92,6 +144,30 @@ def _price_compare_skill() -> Skill:
                     "name": "收集待比价商品",
                     "instruction": "收集两个商品名。",
                     "expected_user_info": ["product_name_1", "product_name_2"],
+                    "allowed_actions": ["ask_user", "continue_flow"],
+                }
+            ],
+        },
+    )
+
+
+def _refund_skill() -> Skill:
+    return Skill(
+        tenant_id="tenant_demo",
+        skill_id="refund",
+        name="售后退款流程",
+        description="处理退货退款。",
+        status="published",
+        content_json={
+            "business_domain": "after_sales",
+            "trigger_intents": ["退货", "退款"],
+            "required_info": ["order_id"],
+            "steps": [
+                {
+                    "step_id": "confirm_refund_order",
+                    "name": "确认售后订单",
+                    "instruction": "确认订单后继续。",
+                    "expected_user_info": ["order_confirmed"],
                     "allowed_actions": ["ask_user", "continue_flow"],
                 }
             ],

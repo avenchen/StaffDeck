@@ -164,6 +164,7 @@ class ChatSession(SQLModel, table=True):
     active_step_id: Optional[str] = None
     slots_json: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
     skill_stack_json: list[dict[str, Any]] = Field(default_factory=list, sa_column=Column(JSON))
+    pending_tasks_json: list[dict[str, Any]] = Field(default_factory=list, sa_column=Column(JSON))
     resume_after_answer_json: Optional[dict[str, Any]] = Field(default=None, sa_column=Column(JSON))
     summary: Optional[str] = None
     last_agent_question: Optional[str] = None

@@ -63,6 +63,7 @@ def reset_session(
     row.active_step_id = None
     row.slots_json = {}
     row.skill_stack_json = []
+    row.pending_tasks_json = []
     row.resume_after_answer_json = None
     row.summary = None
     row.last_agent_question = None
@@ -80,4 +81,3 @@ def _get_chat_session(db: Session, tenant_id: str, session_id: str) -> ChatSessi
     if not row or row.tenant_id != tenant_id:
         raise HTTPException(status_code=404, detail="Session not found")
     return row
-

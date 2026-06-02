@@ -71,4 +71,15 @@ class Router:
             steps: list[dict[str, Any]] = target_skill.content_json.get("steps", []) if target_skill else []
             if steps:
                 decision.target_step_id = steps[0].get("step_id")
+        normalized_tasks = []
+        for task in decision.pending_tasks:
+            if not task.target_skill_id or task.target_skill_id not in skills:
+                continue
+            if not task.target_step_id:
+                target_skill = skills.get(task.target_skill_id)
+                steps = target_skill.content_json.get("steps", []) if target_skill else []
+                if steps:
+                    task.target_step_id = steps[0].get("step_id")
+            normalized_tasks.append(task)
+        decision.pending_tasks = normalized_tasks
         return decision

@@ -57,6 +57,9 @@ def _migrate_sqlite_skill_schema() -> None:
                     conn.execute(text(f"UPDATE sessions SET skill_stack_json = {legacy_stack_column}"))
                 else:
                     conn.execute(text("UPDATE sessions SET skill_stack_json = '[]'"))
+            if "pending_tasks_json" not in session_columns:
+                conn.execute(text("ALTER TABLE sessions ADD COLUMN pending_tasks_json JSON"))
+                conn.execute(text("UPDATE sessions SET pending_tasks_json = '[]'"))
 
         if "tools" in tables:
             tool_columns = {column["name"] for column in inspector.get_columns("tools")}

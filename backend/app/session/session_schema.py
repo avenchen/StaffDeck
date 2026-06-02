@@ -21,6 +21,17 @@ RouterDecisionValue = Literal[
 MessageFeedbackValue = Literal["up", "down"]
 
 
+class PendingTask(BaseModel):
+    decision: RouterDecisionValue = "start_skill"
+    target_skill_id: Optional[str] = None
+    target_step_id: Optional[str] = None
+    confidence: float = 0.0
+    user_intent: Optional[str] = None
+    reason: Optional[str] = None
+    source_message: Optional[str] = None
+    slot_hints: dict[str, Any] = Field(default_factory=dict)
+
+
 class RouterDecision(BaseModel):
     decision: RouterDecisionValue
     target_skill_id: Optional[str] = None
@@ -28,8 +39,11 @@ class RouterDecision(BaseModel):
     confidence: float = 0.0
     user_intent: Optional[str] = None
     reason: Optional[str] = None
+    source_message: Optional[str] = None
     should_resume_after_answer: bool = False
     clarification_question: Optional[str] = None
+    slot_hints: dict[str, Any] = Field(default_factory=dict)
+    pending_tasks: list[PendingTask] = Field(default_factory=list)
 
 
 class StepAgentResult(BaseModel):
@@ -50,6 +64,7 @@ class SessionPublic(BaseModel):
     active_step_id: Optional[str] = None
     slots: dict[str, Any] = Field(default_factory=dict)
     skill_stack: list[dict[str, Any]] = Field(default_factory=list)
+    pending_tasks: list[dict[str, Any]] = Field(default_factory=list)
     resume_after_answer: Optional[dict[str, Any]] = None
     summary: Optional[str] = None
     last_agent_question: Optional[str] = None

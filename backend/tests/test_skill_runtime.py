@@ -185,3 +185,50 @@ def test_related_question_to_another_skill_suspends_and_restores_original_contex
     assert session.slots_json == {"product_id": "A1"}
     assert session.skill_stack_json == []
     assert session.resume_after_answer_json is None
+
+
+def test_pending_tasks_are_queued_and_popped_without_using_skill_stack():
+    session = ChatSession(
+        id="session_test",
+        tenant_id="tenant_demo",
+        active_skill_id="refund",
+        active_step_id="confirm_refund_order",
+    )
+    runtime = SkillRuntime()
+
+    runtime.apply_decision(
+        session,
+        RouterDecision(
+            decision="continue_current_skill",
+            target_skill_id="refund",
+            target_step_id="confirm_refund_order",
+            pending_tasks=[
+                {
+                    "decision": "start_skill",
+                    "target_skill_id": "purchase",
+                    "target_step_id": "collect_user_name",
+                    "user_intent": "退款完成后购买 A3",
+                    "source_message": "退了吧，退完我想买一个a3",
+                    "slot_hints": {"product_id": "A3"},
+                }
+            ],
+        ),
+    )
+
+    assert session.active_skill_id == "refund"
+    assert session.skill_stack_json == []
+    assert session.pending_tasks_json[0]["target_skill_id"] == "purchase"
+
+    next_decision = runtime.pop_next_pending_task(session)
+
+    assert next_decision is not None
+    assert next_decision.decision == "start_skill"
+    assert next_decision.target_skill_id == "purchase"
+    assert next_decision.target_step_id == "collect_user_name"
+    assert next_decision.slot_hints == {"product_id": "A3"}
+    assert session.pending_tasks_json == []
+
+    runtime.apply_decision(session, next_decision)
+
+    assert session.active_skill_id == "purchase"
+    assert session.slots_json == {"product_id": "A3"}

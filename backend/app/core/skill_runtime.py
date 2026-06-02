@@ -6,6 +6,7 @@ from app.session.session_schema import RouterDecision
 
 class SkillRuntime:
     def apply_decision(self, session: ChatSession, decision: RouterDecision) -> ChatSession:
+        self._append_pending_tasks(session, decision)
         current_frame = {
             "skill_id": session.active_skill_id,
             "step_id": session.active_step_id,
@@ -18,7 +19,7 @@ class SkillRuntime:
             session.skill_stack_json = _without_skill(session.skill_stack_json, decision.target_skill_id)
             session.active_skill_id = decision.target_skill_id
             session.active_step_id = decision.target_step_id
-            session.slots_json = {}
+            session.slots_json = dict(decision.slot_hints or {})
             session.resume_after_answer_json = None
 
         elif decision.decision in {"continue_current_skill", "jump_within_current_skill"}:
@@ -52,7 +53,7 @@ class SkillRuntime:
                 else:
                     session.active_skill_id = decision.target_skill_id
                     session.active_step_id = decision.target_step_id
-                    session.slots_json = {}
+                    session.slots_json = dict(decision.slot_hints or {})
             else:
                 if decision.target_skill_id:
                     session.active_skill_id = decision.target_skill_id
@@ -77,7 +78,7 @@ class SkillRuntime:
             else:
                 session.active_skill_id = decision.target_skill_id
                 session.active_step_id = decision.target_step_id
-                session.slots_json = {}
+                session.slots_json = dict(decision.slot_hints or {})
             session.resume_after_answer_json = None
 
         elif decision.decision == "exit_current_skill":
@@ -90,8 +91,62 @@ class SkillRuntime:
         elif decision.decision == "handoff_human":
             session.status = "handoff"
 
+        if decision.slot_hints and decision.decision != "exit_current_skill":
+            session.slots_json = {**(session.slots_json or {}), **dict(decision.slot_hints)}
+
         session.updated_at = utc_now()
         return session
+
+    def pop_next_pending_task(self, session: ChatSession) -> RouterDecision | None:
+        tasks = list(session.pending_tasks_json or [])
+        while tasks:
+            task = tasks.pop(0)
+            target_skill_id = task.get("target_skill_id") if isinstance(task, dict) else None
+            if not target_skill_id:
+                continue
+            session.pending_tasks_json = tasks
+            return RouterDecision(
+                decision=task.get("decision") or "start_skill",
+                target_skill_id=target_skill_id,
+                target_step_id=task.get("target_step_id"),
+                confidence=float(task.get("confidence") or 0.0),
+                user_intent=task.get("user_intent"),
+                reason=task.get("reason"),
+                source_message=task.get("source_message"),
+                should_resume_after_answer=False,
+                clarification_question="",
+                slot_hints=task.get("slot_hints") if isinstance(task.get("slot_hints"), dict) else {},
+            )
+        session.pending_tasks_json = []
+        return None
+
+    def _append_pending_tasks(self, session: ChatSession, decision: RouterDecision) -> None:
+        if not decision.pending_tasks:
+            return
+        tasks = list(session.pending_tasks_json or [])
+        existing = {
+            (
+                str(task.get("target_skill_id") or ""),
+                str(task.get("target_step_id") or ""),
+                str(task.get("source_message") or ""),
+                str(task.get("user_intent") or ""),
+            )
+            for task in tasks
+            if isinstance(task, dict)
+        }
+        for task in decision.pending_tasks:
+            task_json = task.model_dump(mode="json")
+            key = (
+                str(task_json.get("target_skill_id") or ""),
+                str(task_json.get("target_step_id") or ""),
+                str(task_json.get("source_message") or ""),
+                str(task_json.get("user_intent") or ""),
+            )
+            if not key[0] or key in existing:
+                continue
+            tasks.append(task_json)
+            existing.add(key)
+        session.pending_tasks_json = tasks
 
     def complete_current_skill(self, session: ChatSession) -> ChatSession:
         session.skill_stack_json = _without_skill(session.skill_stack_json, session.active_skill_id)

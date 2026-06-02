@@ -140,6 +140,7 @@ class ResponseGenerator:
                 "active_step_id": session.active_step_id,
                 "slots": session.slots_json or {},
                 "last_agent_question": session.last_agent_question,
+                "pending_tasks": session.pending_tasks_json or [],
             },
             "active_skill": skill.content_json if skill else None,
             "progress": self._progress_payload(session, skill, step_result, tool_result),

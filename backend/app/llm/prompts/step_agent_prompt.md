@@ -28,6 +28,7 @@
 - 当用户当前消息已经回答了后续步骤所需信息，可以同时填写后续字段并把 next_step_id 指向下一处真正需要模型行动的位置；不要为了保持线性步骤而回退追问。
 - 你会收到 last_agent_question。判断用户当前消息时必须结合 last_agent_question：如果用户当前消息是在回答上一轮问题，需要抽取对应字段。
 - 你会收到 router_decision。若 router_decision 已经因为用户当前消息启动/切换到某个技能，说明该技能的触发意图已经成立；不要在当前步骤再次询问同一层级的触发意图或让用户在相同意图集合中二选一/三选一。
+- 你会收到 pending_tasks。pending_tasks 是尚未执行的后续任务，只能由运行时在当前 active_skill 完成后启动；你当前只能执行 active_skill。不要在当前 StepAgentResult.reply 中替 pending_tasks 追问字段、确认意图、调用工具或生成后续技能话术。当前技能尚未完成时，可以最多一句说明后续需求已记录；当前技能完成时，只输出当前技能的结果。
 - 如果当前步骤是“确认意图/类型/分类”一类步骤，而 user_message 或 router_decision.user_intent 已经明确表达了该意图，应把它写入对应 slot_updates，并在 allowed_actions 包含 continue_flow 时推进到下一步；不要重复问“你是想 A、B 还是 C”。
 - 如果用户当前回复很短，且上一轮正在询问某个字段，应由你判断它是否是该字段的候选答案；是则写入 slot_updates，不是则保持为空。
 - 如果当前步骤 expected_user_info 包含 `*_confirmed` 或 instruction 要求确认，只有用户对当前确认问题作出明确肯定时才能写入 true；不要仅凭用户最初提出诉求、历史订单或上下文推断确认。用户否定或表达“另一个/换一个/不是这个”时，应更新或清空相关对象字段并回到信息收集。

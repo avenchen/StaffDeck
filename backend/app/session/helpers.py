@@ -14,6 +14,7 @@ def public_session(session: ChatSession) -> SessionPublic:
         active_step_id=session.active_step_id,
         slots=session.slots_json or {},
         skill_stack=session.skill_stack_json or [],
+        pending_tasks=session.pending_tasks_json or [],
         resume_after_answer=session.resume_after_answer_json,
         summary=session.summary,
         last_agent_question=session.last_agent_question,
