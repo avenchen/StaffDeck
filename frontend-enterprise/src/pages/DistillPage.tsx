@@ -173,6 +173,7 @@ export default function DistillPage() {
   const [tools, setTools] = useState<ToolRead[]>([]);
   const [streamStatus, setStreamStatus] = useState('');
   const [editingMessage, setEditingMessage] = useState<EditingMessage | null>(null);
+  const [sourceAutoScroll, setSourceAutoScroll] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const uploadControllersRef = useRef<Record<string, AbortController>>({});
   const dragDepthRef = useRef(0);
@@ -321,9 +322,9 @@ export default function DistillPage() {
   }, [attachments, loading, messages]);
 
   useEffect(() => {
-    if (!loading || !sourceScrollRef.current) return;
+    if (!loading || !sourceAutoScroll || !sourceScrollRef.current) return;
     sourceScrollRef.current.scrollTop = sourceScrollRef.current.scrollHeight;
-  }, [draft, loading, textDiffs, viewMode]);
+  }, [draft, loading, sourceAutoScroll, textDiffs, viewMode]);
 
   const allPaths = useMemo(() => (draft ? allTargetPaths(draft) : DEFAULT_TARGET_PATHS), [draft]);
   const uploadingFile = attachments.some((item) => item.status === 'uploading');
@@ -367,6 +368,7 @@ export default function DistillPage() {
   async function createDraftFromText(text: string) {
     const payload = parseInitialSkillPrompt(text);
     setLoading(true);
+    setSourceAutoScroll(true);
     setStreamStatus('正在生成技能草稿');
     let streamBuffer = '';
     let latestPreview = createStreamingDraftSeed(payload);
@@ -453,6 +455,7 @@ export default function DistillPage() {
     conversationOverride?: ChatItem[],
   ) {
     if (!currentDraft) return;
+    setSourceAutoScroll(false);
     const previousDraft = cloneSkill(currentDraft);
     const targets = targetPathsOverride?.length
       ? targetPathsOverride
@@ -1018,7 +1021,9 @@ export default function DistillPage() {
       ),
       okText: '确认回退',
       cancelText: '取消',
-      onOk: () => rerunEditedMessage(index, snapshot, rollbackOperations, text),
+      onOk: () => {
+        void rerunEditedMessage(index, snapshot, rollbackOperations, text);
+      },
     });
   }
 
