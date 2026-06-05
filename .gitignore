@@ -11,6 +11,7 @@ __pycache__/
 venv/
 .dev/
 edgeclaw-opc/
+exports/
 dist/
 build/
 node_modules/

@@ -1004,6 +1004,8 @@ body.skill-distill-fixed .content {
 .skill-chat-warning-item {
   padding-left: 18px;
   position: relative;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .skill-chat-warning-item::before {
@@ -1107,6 +1109,7 @@ body.skill-distill-fixed .content {
   padding: 11px 11px 10px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) max-content;
+  grid-template-rows: auto 1fr auto;
   align-items: center;
   gap: 12px;
   background: #fffdf9;
@@ -1116,6 +1119,7 @@ body.skill-distill-fixed .content {
 }
 
 .skill-tool-suggestion-main {
+  grid-row: 1 / span 3;
   min-width: 0;
 }
 
@@ -1210,7 +1214,17 @@ body.skill-distill-fixed .content {
   white-space: nowrap;
 }
 
+.skill-tool-suggestion-detail-action {
+  align-self: start;
+  justify-self: end;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
 .skill-tool-suggestion-actions {
+  align-self: end;
+  justify-self: end;
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
@@ -1245,6 +1259,11 @@ body.skill-distill-fixed .content {
 .tool-suggestion-detail {
   display: grid;
   gap: 10px;
+}
+
+.tool-suggestion-detail-footer {
+  width: 100%;
+  justify-content: flex-end;
 }
 
 .tool-suggestion-detail pre {

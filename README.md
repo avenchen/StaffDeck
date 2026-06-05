@@ -49,6 +49,19 @@ PUBLIC_CHAT_ORIGIN="http://<public-host>:<chat-port>" \
 scripts/dev_up.sh
 ```
 
+For one-port tunnel testing, build both frontends and let the backend serve
+the static bundles and API on the same origin:
+
+```bash
+npm run build --prefix frontend-enterprise
+npm run build --prefix frontend-chat
+cd backend
+uvicorn single_port_app:app --host 0.0.0.0 --port 8888
+```
+
+Then open `/enterprise/dashboard` or `/chat` on that single public origin. This
+avoids browsers rewriting frontend requests to `127.0.0.1` on external clients.
+
 Set `DEMO_MODEL_API_KEY` in `backend/.env` before first startup if you want to seed the demo OpenAI-compatible model config. The key is encrypted before it is stored in the database and is never committed.
 
 ## Manual Starts
