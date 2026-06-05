@@ -188,9 +188,10 @@ def test_clarify_greeting_does_not_trigger_reflection() -> None:
     assert returned == (None, decision, step_result, None)
 
 
-def test_successful_expected_tool_result_does_not_trigger_reflection() -> None:
+def test_successful_expected_tool_result_can_pass_reflection() -> None:
     loop = object.__new__(AgentLoop)
-    loop.reflection_agent = _RaisingReflectionAgent()
+    loop.reflection_agent = _PassingReflectionAgent()
+    loop.events = _FakeEvents()
     session = ChatSession(id="session_test", tenant_id="tenant_demo")
     decision = RouterDecision(decision="continue_current_skill", user_intent="查询订单")
     step_result = StepAgentResult(is_step_completed=True)
@@ -240,6 +241,11 @@ class _FakeToolExecutor:
 class _RaisingReflectionAgent:
     def review(self, *args: object, **kwargs: object) -> ReflectionDecision:
         raise AssertionError("reflection agent should not be called")
+
+
+class _PassingReflectionAgent:
+    def review(self, *args: object, **kwargs: object) -> ReflectionDecision:
+        return ReflectionDecision(action="pass", needs_retry=False)
 
 
 def _skill(skill_id: str) -> Skill:

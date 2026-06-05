@@ -27,10 +27,6 @@ class ResponseGenerator:
         memory_context: list[dict[str, object]] | None = None,
         conversation_context: dict[str, object] | None = None,
     ) -> str:
-        static_reply = self._static_reply(message, session, router_decision, step_result, tool_result)
-        if static_reply:
-            return static_reply
-
         payload = self._payload(
             message,
             session,
@@ -43,10 +39,16 @@ class ResponseGenerator:
         )
         try:
             text = LLMClient(model_config).generate_text(self._system_prompt(persona_prompt), payload)
-            reply = text.strip() or step_result.reply or FALLBACK_REPLY
+            reply = text.strip() or step_result.reply or self._minimal_fallback(router_decision)
             return self._visible_reply_or_fallback(reply, session, step_result, tool_result, skill)
-        except LLMError:
-            return self._visible_reply_or_fallback(step_result.reply or "", session, step_result, tool_result, skill)
+        except Exception:
+            return self._visible_reply_or_fallback(
+                step_result.reply or self._minimal_fallback(router_decision),
+                session,
+                step_result,
+                tool_result,
+                skill,
+            )
 
     def generate_stream(
         self,
@@ -61,11 +63,6 @@ class ResponseGenerator:
         memory_context: list[dict[str, object]] | None = None,
         conversation_context: dict[str, object] | None = None,
     ) -> Iterator[str]:
-        static_reply = self._static_reply(message, session, router_decision, step_result, tool_result)
-        if static_reply:
-            yield from self.chunk_text(static_reply)
-            return
-
         payload = self._payload(
             message,
             session,
@@ -79,12 +76,24 @@ class ResponseGenerator:
         try:
             stream = LLMClient(model_config).generate_text_stream(self._system_prompt(persona_prompt), payload)
             chunks = [chunk for chunk in stream]
-            reply = self._visible_reply_or_fallback("".join(chunks).strip(), session, step_result, tool_result, skill)
+            reply = self._visible_reply_or_fallback(
+                "".join(chunks).strip() or step_result.reply or self._minimal_fallback(router_decision),
+                session,
+                step_result,
+                tool_result,
+                skill,
+            )
             yield from self.chunk_text(reply)
             return
-        except LLMError:
+        except Exception:
             yield from self.chunk_text(
-                self._visible_reply_or_fallback(step_result.reply or "", session, step_result, tool_result, skill)
+                self._visible_reply_or_fallback(
+                    step_result.reply or self._minimal_fallback(router_decision),
+                    session,
+                    step_result,
+                    tool_result,
+                    skill,
+                )
             )
 
     def chunk_text(self, text: str, chunk_size: int = 8) -> Iterator[str]:
@@ -93,26 +102,6 @@ class ResponseGenerator:
             return
         for index in range(0, len(stripped), chunk_size):
             yield stripped[index : index + chunk_size]
-
-    def _static_reply(
-        self,
-        message: str,
-        session: ChatSession,
-        router_decision: RouterDecision,
-        step_result: StepAgentResult,
-        tool_result: ToolResult | None,
-    ) -> str | None:
-        if router_decision.decision == "handoff_human":
-            return "好的，我会为您转接人工客服，请稍等。"
-        if router_decision.decision == "clarify" and router_decision.clarification_question:
-            if self._is_user_safe(router_decision.clarification_question):
-                return router_decision.clarification_question
-            if step_result.reply and self._is_user_safe(step_result.reply):
-                return step_result.reply
-            return self._fallback_for_session(session)
-        if tool_result and not tool_result.success:
-            return "抱歉，我现在暂时无法查询到相关信息。您可以稍后再试，或我帮您转人工处理。"
-        return None
 
     def _payload(
         self,
@@ -132,7 +121,7 @@ class ResponseGenerator:
                 "active_skill_id": session.active_skill_id,
                 "active_step_id": session.active_step_id,
                 "slots": session.slots_json or {},
-                "last_agent_question": session.last_agent_question,
+                "awaiting_input": session.awaiting_input_json,
                 "pending_tasks": session.pending_tasks_json or [],
             },
             "active_skill": skill.content_json if skill else None,
@@ -176,7 +165,7 @@ class ResponseGenerator:
             reply,
             step_result.reply or "",
             completion_fallback,
-            self._fallback_for_session(session),
+            self._minimal_fallback_for_session(session),
             tool_result,
             completion_ready,
         )
@@ -185,8 +174,6 @@ class ResponseGenerator:
             if not stripped:
                 continue
             if not self._is_user_safe(stripped):
-                continue
-            if self._is_stale_last_question(stripped, session):
                 continue
             return stripped
         return FALLBACK_REPLY
@@ -201,14 +188,6 @@ class ResponseGenerator:
         completion_ready: bool,
     ) -> tuple[str, ...]:
         if completion_ready:
-            if tool_result is None:
-                return (
-                    completion_fallback,
-                    step_reply,
-                    model_reply,
-                    session_fallback,
-                    FALLBACK_REPLY,
-                )
             return (
                 model_reply,
                 completion_fallback,
@@ -225,8 +204,8 @@ class ResponseGenerator:
                 FALLBACK_REPLY,
             )
         return (
-            step_reply,
             model_reply,
+            step_reply,
             completion_fallback,
             session_fallback,
             FALLBACK_REPLY,
@@ -292,15 +271,16 @@ class ResponseGenerator:
         value = slots.get(field)
         return value is not None and value != ""
 
-    def _is_stale_last_question(self, text: str, session: ChatSession) -> bool:
-        last_question = (session.last_agent_question or "").strip()
-        return bool(last_question and text == last_question)
-
     def _completion_fallback(self) -> str:
         return "已记录完整信息。请问还有其他需要帮助的吗？"
 
-    def _fallback_for_session(self, session: ChatSession) -> str:
+    def _minimal_fallback_for_session(self, session: ChatSession) -> str:
         return "请您再补充一下具体诉求，我会继续帮您处理。"
+
+    def _minimal_fallback(self, router_decision: RouterDecision) -> str:
+        if router_decision.decision == "clarify" and router_decision.clarification_question:
+            return router_decision.clarification_question
+        return FALLBACK_REPLY
 
     def _system_prompt(self, persona_prompt: str | None) -> str:
         base_prompt = PROMPT_PATH.read_text(encoding="utf-8")

@@ -1,234 +1,347 @@
 from __future__ import annotations
 
-from app.db.models import ChatSession, utc_now
-from app.session.session_schema import RouterDecision
+from typing import Any
+
+from app.db.models import ChatSession, new_id, utc_now
+from app.session.session_schema import PendingTask, RouterDecision, TaskUpdate
 
 
 class SkillRuntime:
     def apply_decision(self, session: ChatSession, decision: RouterDecision) -> ChatSession:
-        claimed_pending_task = self._claim_pending_task(session, decision)
-        self._append_pending_tasks(session, decision)
-        current_frame = {
-            "skill_id": session.active_skill_id,
-            "step_id": session.active_step_id,
-            "slots": session.slots_json or {},
-            "summary": session.summary,
-            "last_agent_question": session.last_agent_question,
-        }
-        current_frame_with_hints = _frame_with_slot_hints(current_frame, decision.slot_hints)
+        self._apply_task_updates(session, decision.task_updates)
+        self._append_pending_tasks(session, [*decision.pending_tasks, *decision.created_tasks])
+        session.resume_after_answer_json = None
 
-        if decision.decision == "start_skill":
-            session.skill_stack_json = _without_skill(session.skill_stack_json, decision.target_skill_id)
-            session.active_skill_id = decision.target_skill_id
-            session.active_step_id = decision.target_step_id
-            session.slots_json = dict(decision.slot_hints or {})
-            session.resume_after_answer_json = None
+        selected_frame = self._take_task_frame(session, decision.selected_task_id)
+        selected_frame = _frame_with_slot_hints(selected_frame, decision.slot_hints)
 
-        elif decision.decision in {"continue_current_skill", "jump_within_current_skill"}:
-            if not session.active_skill_id and decision.target_skill_id:
-                session.active_skill_id = decision.target_skill_id
-            if decision.target_step_id:
-                session.active_step_id = decision.target_step_id
-
-        elif decision.decision in {
-            "answer_related_question_then_resume",
-            "answer_chitchat_then_resume",
-        }:
-            if session.active_skill_id and session.active_step_id:
-                session.resume_after_answer_json = current_frame_with_hints
-            current_skill_id = current_frame["skill_id"]
-            if (
-                decision.target_skill_id
-                and current_skill_id
-                and decision.target_skill_id != current_skill_id
-            ):
-                target_frame, stack = _pop_last_skill_frame(
-                    session.skill_stack_json, decision.target_skill_id
-                )
-                stack = _without_skill(stack, str(current_skill_id))
-                stack.append(current_frame_with_hints)
-                session.skill_stack_json = stack
-                if target_frame:
-                    session.active_skill_id = target_frame.get("skill_id")
-                    session.active_step_id = target_frame.get("step_id") or decision.target_step_id
-                    session.slots_json = target_frame.get("slots") or {}
-                    session.summary = target_frame.get("summary")
-                    session.last_agent_question = target_frame.get("last_agent_question")
-                else:
-                    session.active_skill_id = decision.target_skill_id
-                    session.active_step_id = decision.target_step_id
-                    session.slots_json = dict(decision.slot_hints or {})
-            else:
-                if decision.target_skill_id:
-                    session.active_skill_id = decision.target_skill_id
-                if decision.target_step_id:
-                    session.active_step_id = decision.target_step_id
-
-        elif decision.decision == "suspend_current_and_start_new_skill":
-            target_frame, stack = _pop_last_skill_frame(
-                session.skill_stack_json, decision.target_skill_id
-            )
-            current_skill_id = current_frame["skill_id"]
-            if current_skill_id and current_skill_id != decision.target_skill_id and not claimed_pending_task:
-                stack = _without_skill(stack, str(current_skill_id))
-                stack.append(current_frame)
-            session.skill_stack_json = stack
-            if target_frame:
-                session.active_skill_id = target_frame.get("skill_id")
-                session.active_step_id = target_frame.get("step_id") or decision.target_step_id
-                session.slots_json = target_frame.get("slots") or {}
-                session.summary = target_frame.get("summary")
-                session.last_agent_question = target_frame.get("last_agent_question")
-            else:
-                session.active_skill_id = decision.target_skill_id
-                session.active_step_id = decision.target_step_id
-                session.slots_json = dict(decision.slot_hints or {})
-            session.resume_after_answer_json = None
-
-        elif decision.decision == "exit_current_skill":
-            session.skill_stack_json = _without_skill(session.skill_stack_json, session.active_skill_id)
-            session.active_skill_id = None
-            session.active_step_id = None
-            session.slots_json = {}
-            session.resume_after_answer_json = None
-
-        elif decision.decision == "handoff_human":
+        decision_name = _decision_alias(decision.decision)
+        if decision_name in {"create_pending", "update_pending", "answer_only", "clarify"}:
+            pass
+        elif decision_name in {"handoff", "handoff_human"}:
             session.status = "handoff"
+        elif decision_name in {"start_skill", "continue_current_skill", "jump_within_current_skill", "switch_to_pending"}:
+            self._activate_decision_target(session, decision, selected_frame)
+        elif decision_name == "suspend_current_and_start_new_skill":
+            self._pause_current_and_activate_target(session, decision, selected_frame)
+        elif decision_name in {"answer_related_question_then_resume", "answer_chitchat_then_resume"}:
+            self._pause_current_and_activate_target(
+                session,
+                decision,
+                selected_frame,
+                resume_policy="after_temporary_answer",
+            )
+        elif decision_name in {"exit_current_skill", "complete_task"}:
+            if decision.selected_task_id:
+                self._remove_task_frame(session, decision.selected_task_id)
+            else:
+                self.complete_current_skill(session)
 
-        if decision.slot_hints and decision.decision != "exit_current_skill":
+        if decision.awaiting_input:
+            awaiting_input = decision.awaiting_input.model_dump(mode="json")
+            active_task_id = _active_task_id(session)
+            if active_task_id and not awaiting_input.get("task_id"):
+                awaiting_input["task_id"] = active_task_id
+            session.awaiting_input_json = awaiting_input
+        if decision.slot_hints and decision_name != "exit_current_skill":
             session.slots_json = {**(session.slots_json or {}), **dict(decision.slot_hints)}
 
         session.updated_at = utc_now()
         return session
 
     def pop_next_pending_task(self, session: ChatSession) -> RouterDecision | None:
+        """Compatibility helper; agent loop no longer calls this automatically."""
         tasks = list(session.pending_tasks_json or [])
         while tasks:
             task = tasks.pop(0)
-            target_skill_id = task.get("target_skill_id") if isinstance(task, dict) else None
-            if not target_skill_id:
+            if not isinstance(task, dict):
+                continue
+            skill_id = task.get("skill_id") or task.get("target_skill_id")
+            if not skill_id:
                 continue
             session.pending_tasks_json = tasks
             return RouterDecision(
-                decision=task.get("decision") or "start_skill",
-                target_skill_id=target_skill_id,
-                target_step_id=task.get("target_step_id"),
+                decision="switch_to_pending",
+                selected_task_id=task.get("task_id"),
+                target_skill_id=str(skill_id),
+                target_step_id=task.get("step_id") or task.get("target_step_id"),
                 confidence=float(task.get("confidence") or 0.0),
-                user_intent=task.get("user_intent"),
+                user_intent=task.get("intent_summary") or task.get("user_intent"),
                 reason=task.get("reason"),
                 source_message=task.get("source_message"),
-                should_resume_after_answer=False,
-                clarification_question="",
-                slot_hints=task.get("slot_hints") if isinstance(task.get("slot_hints"), dict) else {},
+                slot_hints=(
+                    task.get("slots")
+                    if isinstance(task.get("slots"), dict)
+                    else task.get("slot_hints")
+                    if isinstance(task.get("slot_hints"), dict)
+                    else {}
+                ),
             )
         session.pending_tasks_json = []
         return None
 
-    def _claim_pending_task(self, session: ChatSession, decision: RouterDecision) -> bool:
-        if decision.decision not in {
-            "start_skill",
-            "continue_current_skill",
-            "jump_within_current_skill",
-            "suspend_current_and_start_new_skill",
-        }:
-            return False
-        if not decision.target_skill_id:
-            return False
-        tasks = list(session.pending_tasks_json or [])
-        candidates: list[tuple[int, dict]] = [
-            (index, task)
-            for index, task in enumerate(tasks)
-            if isinstance(task, dict) and task.get("target_skill_id") == decision.target_skill_id
-        ]
-        if not candidates:
-            return False
-
-        claimed_index: int | None = None
-        claimed_task: dict | None = None
-        if len(candidates) == 1:
-            claimed_index, claimed_task = candidates[0]
-        else:
-            compatible = [
-                (index, task)
-                for index, task in candidates
-                if _slot_hints_compatible(
-                    task.get("slot_hints") if isinstance(task.get("slot_hints"), dict) else {},
-                    decision.slot_hints or {},
-                )
-            ]
-            if len(compatible) == 1:
-                claimed_index, claimed_task = compatible[0]
-        if claimed_index is None or claimed_task is None:
-            return False
-
-        kept: list[dict] = []
-        for index, task in enumerate(tasks):
-            if index == claimed_index:
-                continue
-            if isinstance(task, dict):
-                kept.append(task)
-        task_slot_hints = (
-            claimed_task.get("slot_hints") if isinstance(claimed_task.get("slot_hints"), dict) else {}
-        )
-        if task_slot_hints:
-            merged_hints = {**dict(task_slot_hints), **dict(decision.slot_hints or {})}
-            decision.slot_hints = merged_hints
-        if not decision.source_message:
-            decision.source_message = claimed_task.get("source_message")
-        if not decision.user_intent:
-            decision.user_intent = claimed_task.get("user_intent")
-        session.pending_tasks_json = kept
-        return True
-
-    def _append_pending_tasks(self, session: ChatSession, decision: RouterDecision) -> None:
-        if not decision.pending_tasks:
-            return
-        tasks = list(session.pending_tasks_json or [])
-        existing = {
-            (
-                str(task.get("target_skill_id") or ""),
-                str(task.get("target_step_id") or ""),
-                str(task.get("source_message") or ""),
-                str(task.get("user_intent") or ""),
-            )
-            for task in tasks
-            if isinstance(task, dict)
-        }
-        for task in decision.pending_tasks:
-            task_json = task.model_dump(mode="json")
-            key = (
-                str(task_json.get("target_skill_id") or ""),
-                str(task_json.get("target_step_id") or ""),
-                str(task_json.get("source_message") or ""),
-                str(task_json.get("user_intent") or ""),
-            )
-            if not key[0] or key in existing:
-                continue
-            tasks.append(task_json)
-            existing.add(key)
-        session.pending_tasks_json = tasks
-
     def complete_current_skill(self, session: ChatSession) -> ChatSession:
-        session.skill_stack_json = _without_skill(session.skill_stack_json, session.active_skill_id)
+        active_task_id = _active_task_id(session)
+        if active_task_id:
+            self._remove_task_frame(session, active_task_id)
+        session.skill_stack_json = _without_task_or_skill(
+            session.skill_stack_json,
+            task_id=active_task_id,
+        )
         session.active_skill_id = None
         session.active_step_id = None
         session.slots_json = {}
+        session.awaiting_input_json = None
         session.resume_after_answer_json = None
         session.updated_at = utc_now()
         return session
 
     def finish_interrupt_response(self, session: ChatSession) -> ChatSession:
-        resume = session.resume_after_answer_json
-        if resume:
-            session.active_skill_id = resume.get("skill_id")
-            session.active_step_id = resume.get("step_id")
-            session.slots_json = resume.get("slots") or {}
-            session.summary = resume.get("summary")
-            session.last_agent_question = resume.get("last_agent_question")
-            session.skill_stack_json = _without_skill(session.skill_stack_json, session.active_skill_id)
-            session.resume_after_answer_json = None
-            session.updated_at = utc_now()
+        """Deprecated compatibility hook.
+
+        Interrupt/resume state is now represented as task frames. There is no implicit
+        restore after a response has been generated.
+        """
+        session.resume_after_answer_json = None
+        session.updated_at = utc_now()
         return session
+
+    def _activate_decision_target(
+        self,
+        session: ChatSession,
+        decision: RouterDecision,
+        selected_frame: dict[str, Any] | None,
+    ) -> None:
+        if selected_frame:
+            _activate_frame(session, selected_frame)
+            return
+        if not decision.target_skill_id:
+            return
+        if decision.decision == "switch_to_pending":
+            session.active_skill_id = decision.target_skill_id
+            session.active_step_id = decision.target_step_id
+            session.slots_json = dict(decision.slot_hints or {})
+            _set_active_task_id(session, None)
+            return
+        if not session.active_skill_id and decision.target_skill_id:
+            session.active_skill_id = decision.target_skill_id
+            session.slots_json = dict(decision.slot_hints or {})
+            _set_active_task_id(session, None)
+        if decision.target_skill_id and decision.decision in {"start_skill", "start_new_task"}:
+            session.active_skill_id = decision.target_skill_id
+            session.slots_json = dict(decision.slot_hints or {})
+            _set_active_task_id(session, None)
+        if decision.target_step_id:
+            session.active_step_id = decision.target_step_id
+
+    def _pause_current_and_activate_target(
+        self,
+        session: ChatSession,
+        decision: RouterDecision,
+        selected_frame: dict[str, Any] | None,
+        resume_policy: str | None = None,
+    ) -> None:
+        if not selected_frame and not decision.target_skill_id:
+            return
+        current_frame = _current_frame(session, status="paused", resume_policy=resume_policy)
+        if current_frame and (
+            not selected_frame
+            or current_frame.get("skill_id") != selected_frame.get("skill_id")
+            or current_frame.get("task_id") != selected_frame.get("task_id")
+        ):
+            session.skill_stack_json = _upsert_frame(session.skill_stack_json, current_frame)
+
+        if selected_frame:
+            _activate_frame(session, selected_frame)
+            return
+
+        if current_frame and (
+            decision.target_skill_id == current_frame.get("skill_id")
+            or decision.target_skill_id == current_frame.get("target_skill_id")
+        ):
+            session.active_skill_id = decision.target_skill_id
+            session.active_step_id = decision.target_step_id
+            session.slots_json = {**(session.slots_json or {}), **dict(decision.slot_hints or {})}
+            _set_active_task_id(session, None)
+            return
+
+        target_frame, stack = _pop_last_skill_frame(session.skill_stack_json, decision.target_skill_id)
+        session.skill_stack_json = stack
+        if target_frame:
+            _activate_frame(session, _frame_with_slot_hints(target_frame, decision.slot_hints))
+            if decision.target_step_id:
+                session.active_step_id = decision.target_step_id
+            return
+
+        session.active_skill_id = decision.target_skill_id
+        session.active_step_id = decision.target_step_id
+        session.slots_json = dict(decision.slot_hints or {})
+        _set_active_task_id(session, None)
+
+    def _append_pending_tasks(self, session: ChatSession, tasks: list[PendingTask]) -> None:
+        if not tasks:
+            return
+        frames = list(session.pending_tasks_json or [])
+        existing_ids = {
+            str(frame.get("task_id"))
+            for frame in frames
+            if isinstance(frame, dict) and frame.get("task_id")
+        }
+        for task in tasks:
+            frame = _task_frame_from_pending(task)
+            task_id = str(frame.get("task_id") or "")
+            if not task_id or task_id in existing_ids:
+                continue
+            frames.append(frame)
+            existing_ids.add(task_id)
+        session.pending_tasks_json = frames
+
+    def _apply_task_updates(self, session: ChatSession, updates: list[TaskUpdate]) -> None:
+        if not updates:
+            return
+        pending = list(session.pending_tasks_json or [])
+        stack = list(session.skill_stack_json or [])
+        for update in updates:
+            if update.remove or update.status in {"removed", "completed", "cancelled"}:
+                pending = _without_task_or_skill(pending, task_id=update.task_id)
+                stack = _without_task_or_skill(stack, task_id=update.task_id)
+                continue
+            patch = {
+                key: value
+                for key, value in {
+                    "status": update.status,
+                    "skill_id": update.target_skill_id,
+                    "target_skill_id": update.target_skill_id,
+                    "step_id": update.target_step_id,
+                    "target_step_id": update.target_step_id,
+                    "intent_summary": update.user_intent,
+                    "user_intent": update.user_intent,
+                    "reason": update.reason,
+                    "source_message": update.source_message,
+                    "updated_at": utc_now().isoformat(),
+                }.items()
+                if value is not None
+            }
+            if update.slot_hints:
+                patch["slots"] = update.slot_hints
+                patch["slot_hints"] = update.slot_hints
+            pending = _patch_task_frame(pending, update.task_id, patch)
+            stack = _patch_task_frame(stack, update.task_id, patch)
+        session.pending_tasks_json = pending
+        session.skill_stack_json = stack
+
+    def _take_task_frame(self, session: ChatSession, task_id: str | None) -> dict[str, Any] | None:
+        if not task_id:
+            return None
+        frame, pending = _pop_task_frame(session.pending_tasks_json, task_id)
+        if frame:
+            session.pending_tasks_json = pending
+            return frame
+        frame, stack = _pop_task_frame(session.skill_stack_json, task_id)
+        if frame:
+            session.skill_stack_json = stack
+            return frame
+        return None
+
+    def _remove_task_frame(self, session: ChatSession, task_id: str | None) -> None:
+        if not task_id:
+            return
+        session.pending_tasks_json = _without_task_or_skill(session.pending_tasks_json, task_id=task_id)
+        session.skill_stack_json = _without_task_or_skill(session.skill_stack_json, task_id=task_id)
+
+
+def _decision_alias(decision: str) -> str:
+    aliases = {
+        "continue_active": "continue_current_skill",
+        "start_new_task": "start_skill",
+    }
+    return aliases.get(decision, decision)
+
+
+def _task_frame_from_pending(task: PendingTask) -> dict[str, Any]:
+    now = utc_now().isoformat()
+    task_id = task.task_id or new_id("task")
+    skill_id = task.target_skill_id
+    step_id = task.target_step_id
+    slots = dict(task.slot_hints or {})
+    return {
+        "task_id": task_id,
+        "status": task.status or "pending",
+        "skill_id": skill_id,
+        "target_skill_id": skill_id,
+        "step_id": step_id,
+        "target_step_id": step_id,
+        "slots": slots,
+        "slot_hints": slots,
+        "intent_summary": task.user_intent,
+        "user_intent": task.user_intent,
+        "source_turn_id": None,
+        "source_message": task.source_message,
+        "parent_task_id": None,
+        "resume_policy": None,
+        "reason": task.reason,
+        "confidence": task.confidence,
+        "created_at": now,
+        "updated_at": now,
+    }
+
+
+def _current_frame(
+    session: ChatSession,
+    status: str,
+    resume_policy: str | None = None,
+) -> dict[str, Any] | None:
+    if not session.active_skill_id:
+        return None
+    now = utc_now().isoformat()
+    task_id = _active_task_id(session) or new_id("task")
+    return {
+        "task_id": task_id,
+        "status": status,
+        "skill_id": session.active_skill_id,
+        "target_skill_id": session.active_skill_id,
+        "step_id": session.active_step_id,
+        "target_step_id": session.active_step_id,
+        "slots": session.slots_json or {},
+        "slot_hints": session.slots_json or {},
+        "intent_summary": None,
+        "source_turn_id": None,
+        "source_message": None,
+        "parent_task_id": None,
+        "resume_policy": resume_policy,
+        "summary": session.summary,
+        "last_agent_question": session.last_agent_question,
+        "created_at": now,
+        "updated_at": now,
+    }
+
+
+def _active_task_id(session: ChatSession) -> str | None:
+    metadata = session.awaiting_input_json if isinstance(session.awaiting_input_json, dict) else {}
+    task_id = metadata.get("task_id") if isinstance(metadata, dict) else None
+    return str(task_id) if task_id else None
+
+
+def _set_active_task_id(session: ChatSession, task_id: str | None) -> None:
+    if not task_id:
+        if isinstance(session.awaiting_input_json, dict) and "task_id" in session.awaiting_input_json:
+            data = dict(session.awaiting_input_json)
+            data.pop("task_id", None)
+            session.awaiting_input_json = data or None
+        return
+    data = dict(session.awaiting_input_json or {})
+    data["task_id"] = task_id
+    session.awaiting_input_json = data
+
+
+def _activate_frame(session: ChatSession, frame: dict[str, Any]) -> None:
+    session.active_skill_id = frame.get("skill_id") or frame.get("target_skill_id")
+    session.active_step_id = frame.get("step_id") or frame.get("target_step_id")
+    slots = frame.get("slots") if isinstance(frame.get("slots"), dict) else frame.get("slot_hints")
+    session.slots_json = slots if isinstance(slots, dict) else {}
+    session.summary = frame.get("summary")
+    session.last_agent_question = frame.get("last_agent_question")
+    _set_active_task_id(session, str(frame.get("task_id") or ""))
 
 
 def _pop_last_skill_frame(
@@ -239,28 +352,68 @@ def _pop_last_skill_frame(
     if not skill_id:
         return None, stack
     for index in range(len(stack) - 1, -1, -1):
-        if stack[index].get("skill_id") == skill_id:
+        if stack[index].get("skill_id") == skill_id or stack[index].get("target_skill_id") == skill_id:
             frame = stack.pop(index)
-            return frame, _without_skill(stack, skill_id)
+            return frame, stack
     return None, stack
 
 
-def _without_skill(stack_json: list[dict] | None, skill_id: str | None) -> list[dict]:
-    if not skill_id:
-        return list(stack_json or [])
-    return [frame for frame in list(stack_json or []) if frame.get("skill_id") != skill_id]
+def _pop_task_frame(frames_json: list[dict] | None, task_id: str) -> tuple[dict | None, list[dict]]:
+    frames = list(frames_json or [])
+    for index, frame in enumerate(frames):
+        if isinstance(frame, dict) and str(frame.get("task_id") or "") == task_id:
+            return frame, frames[:index] + frames[index + 1 :]
+    return None, frames
 
 
-def _frame_with_slot_hints(frame: dict, slot_hints: dict | None) -> dict:
-    if not slot_hints:
+def _without_task_or_skill(
+    frames_json: list[dict] | None,
+    task_id: str | None = None,
+    skill_id: str | None = None,
+) -> list[dict]:
+    frames = []
+    for frame in list(frames_json or []):
+        if task_id and str(frame.get("task_id") or "") == task_id:
+            continue
+        if skill_id and (frame.get("skill_id") == skill_id or frame.get("target_skill_id") == skill_id):
+            continue
+        frames.append(frame)
+    return frames
+
+
+def _patch_task_frame(frames_json: list[dict] | None, task_id: str, patch: dict[str, Any]) -> list[dict]:
+    frames = []
+    for frame in list(frames_json or []):
+        if isinstance(frame, dict) and str(frame.get("task_id") or "") == task_id:
+            frames.append({**frame, **patch})
+        else:
+            frames.append(frame)
+    return frames
+
+
+def _upsert_frame(frames_json: list[dict] | None, frame: dict[str, Any]) -> list[dict]:
+    task_id = str(frame.get("task_id") or "")
+    frames = []
+    replaced = False
+    for current in list(frames_json or []):
+        current_task_id = str(current.get("task_id") or "")
+        if task_id and current_task_id == task_id:
+            frames.append(frame)
+            replaced = True
+        else:
+            frames.append(current)
+    if not replaced:
+        frames.append(frame)
+    return frames
+
+
+def _frame_with_slot_hints(frame: dict[str, Any] | None, slot_hints: dict | None) -> dict[str, Any] | None:
+    if not frame or not slot_hints:
         return frame
     next_frame = dict(frame)
-    next_frame["slots"] = {**(next_frame.get("slots") or {}), **dict(slot_hints)}
+    current_slots = next_frame.get("slots") if isinstance(next_frame.get("slots"), dict) else {}
+    current_hints = next_frame.get("slot_hints") if isinstance(next_frame.get("slot_hints"), dict) else {}
+    next_frame["slots"] = {**current_hints, **current_slots, **dict(slot_hints)}
+    next_frame["slot_hints"] = {**current_hints, **current_slots, **dict(slot_hints)}
+    next_frame["updated_at"] = utc_now().isoformat()
     return next_frame
-
-
-def _slot_hints_compatible(left: dict, right: dict) -> bool:
-    for key, value in left.items():
-        if key in right and right[key] != value:
-            return False
-    return True

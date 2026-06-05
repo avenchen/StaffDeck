@@ -60,6 +60,8 @@ def _migrate_sqlite_skill_schema() -> None:
             if "pending_tasks_json" not in session_columns:
                 conn.execute(text("ALTER TABLE sessions ADD COLUMN pending_tasks_json JSON"))
                 conn.execute(text("UPDATE sessions SET pending_tasks_json = '[]'"))
+            if "awaiting_input_json" not in session_columns:
+                conn.execute(text("ALTER TABLE sessions ADD COLUMN awaiting_input_json JSON"))
 
         if "tools" in tables:
             tool_columns = {column["name"] for column in inspector.get_columns("tools")}

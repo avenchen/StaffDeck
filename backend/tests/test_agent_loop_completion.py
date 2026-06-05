@@ -99,7 +99,7 @@ def test_finalize_turn_clears_stale_last_question_for_non_question_reply() -> No
 
     loop._finalize_turn(session, "tenant_demo", reply)
 
-    assert session.last_agent_question is None
+    assert session.last_agent_question == "旧的比价回复。请问您是否决定购买 A1？"
     assert session.summary == f"最近回复：{reply[:120]}"
     assert loop.events.records[0][2] == "assistant_message_created"
 
@@ -113,7 +113,7 @@ def test_finalize_turn_keeps_current_question_reply() -> None:
 
     loop._finalize_turn(session, "tenant_demo", reply)
 
-    assert session.last_agent_question == reply
+    assert session.last_agent_question is None
     assert session.summary == f"最近回复：{reply[:120]}"
 
 
@@ -353,7 +353,7 @@ def test_answer_step_can_complete_even_if_distilled_order_has_later_satisfied_co
     )
 
 
-def test_context_repair_skips_satisfied_collect_step_and_uses_schema_tool() -> None:
+def test_context_repair_skips_satisfied_collect_step_and_uses_model_tool_call() -> None:
     loop = object.__new__(AgentLoop)
     loop.events = FakeEvents()
     loop.step_agent = _FakeStepAgent(
@@ -363,7 +363,10 @@ def test_context_repair_skips_satisfied_collect_step_and_uses_schema_tool() -> N
                 slot_updates={"user_name": "hm"},
                 next_step_id="collect_user_name",
             ),
-            StepAgentResult(reply="正在为您创建订单，请稍候。"),
+            StepAgentResult(
+                reply="正在为您创建订单，请稍候。",
+                tool_call=ToolCall(name="product.purchase", arguments={"product_id": "A3", "quantity": 1}),
+            ),
         ]
     )
     session = ChatSession(
@@ -394,7 +397,7 @@ def test_context_repair_skips_satisfied_collect_step_and_uses_schema_tool() -> N
         and payload.get("reason") == "expected_info_satisfied"
         for _, _, event_type, payload in loop.events.records
     )
-    assert any(
+    assert not any(
         event_type == "step_agent_result_repaired"
         and payload.get("mode") == "schema_tool_call"
         for _, _, event_type, payload in loop.events.records
@@ -447,7 +450,10 @@ def test_model_slot_validation_retry_can_complete_missed_quantity() -> None:
                 slot_updates={"quantity": 1},
                 next_step_id="collect_user_name",
             ),
-            StepAgentResult(reply="正在为您创建订单，请稍候。"),
+            StepAgentResult(
+                reply="正在为您创建订单，请稍候。",
+                tool_call=ToolCall(name="product.purchase", arguments={"product_id": "A1", "quantity": 1}),
+            ),
         ]
     )
     session = ChatSession(

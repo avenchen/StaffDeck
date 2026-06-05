@@ -33,7 +33,7 @@ class StepAgent:
             "active_step": _active_step(skill, session.active_step_id),
             "router_decision": router_decision.model_dump() if router_decision else None,
             "slots": session.slots_json or {},
-            "last_agent_question": session.last_agent_question,
+            "awaiting_input": session.awaiting_input_json,
             "skill_stack": session.skill_stack_json or [],
             "pending_tasks": session.pending_tasks_json or [],
             "repair_context": repair_context,

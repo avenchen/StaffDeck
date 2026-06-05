@@ -61,10 +61,20 @@ class Router:
         self, decision: RouterDecision, session: ChatSession, available_skills: list[Skill]
     ) -> RouterDecision:
         skills = {skill.skill_id: skill for skill in available_skills}
-        if decision.decision in {"start_skill", "suspend_current_and_start_new_skill"}:
+        if decision.decision in {"start_skill", "start_new_task", "suspend_current_and_start_new_skill"}:
             if not decision.target_skill_id or decision.target_skill_id not in skills:
                 decision.decision = "clarify"
                 decision.clarification_question = "请问您想办理哪类业务？"
+                return decision
+        if decision.decision == "switch_to_pending":
+            pending_ids = {
+                str(task.get("task_id"))
+                for task in [*(session.pending_tasks_json or []), *(session.skill_stack_json or [])]
+                if isinstance(task, dict) and task.get("task_id")
+            }
+            if not decision.selected_task_id or decision.selected_task_id not in pending_ids:
+                decision.decision = "clarify"
+                decision.clarification_question = "请问您想继续哪一项待处理任务？"
                 return decision
         if not decision.target_skill_id and session.active_skill_id:
             decision.target_skill_id = session.active_skill_id
@@ -73,8 +83,14 @@ class Router:
             steps: list[dict[str, Any]] = target_skill.content_json.get("steps", []) if target_skill else []
             if steps:
                 decision.target_step_id = steps[0].get("step_id")
+        normalized_tasks = self._normalize_tasks(decision.pending_tasks, skills)
+        decision.pending_tasks = normalized_tasks
+        decision.created_tasks = self._normalize_tasks(decision.created_tasks, skills)
+        return decision
+
+    def _normalize_tasks(self, tasks, skills: dict[str, Skill]):
         normalized_tasks = []
-        for task in decision.pending_tasks:
+        for task in tasks:
             if not task.target_skill_id or task.target_skill_id not in skills:
                 continue
             if not task.target_step_id:
@@ -83,5 +99,4 @@ class Router:
                 if steps:
                     task.target_step_id = steps[0].get("step_id")
             normalized_tasks.append(task)
-        decision.pending_tasks = normalized_tasks
-        return decision
+        return normalized_tasks

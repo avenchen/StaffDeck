@@ -15,6 +15,7 @@ PROMPT_PATH = Path(__file__).resolve().parents[1] / "llm" / "prompts" / "reflect
 
 
 class ReflectionDecision(BaseModel):
+    action: str = "pass"
     needs_retry: bool = False
     reason: str | None = None
     target_skill_id: str | None = None
@@ -36,7 +37,7 @@ class ReflectionAgent:
         model_config: ModelConfig,
         conversation_context: dict[str, object] | None = None,
     ) -> ReflectionDecision:
-        if not _should_reflect(router_decision, step_result, tool_result):
+        if not action_needs_reflection(router_decision, step_result, tool_result):
             return ReflectionDecision()
 
         payload = {
@@ -87,20 +88,27 @@ class ReflectionAgent:
             raise LLMError(f"Reflection agent returned invalid JSON schema: {exc}") from exc
 
 
-def _should_reflect(
+def action_needs_reflection(
     router_decision: RouterDecision,
     step_result: StepAgentResult,
     tool_result: ToolResult | None,
 ) -> bool:
-    return tool_result_needs_reflection(tool_result)
+    if router_decision.decision in {"clarify", "answer_only", "answer_chitchat_then_resume"}:
+        return bool(tool_result or step_result.tool_call)
+    return bool(
+        tool_result
+        or step_result.tool_call
+        or step_result.slot_updates
+        or step_result.next_step_id
+        or step_result.is_step_completed
+        or step_result.handoff
+    )
 
 
 def tool_result_needs_reflection(tool_result: ToolResult | None) -> bool:
     if tool_result is None:
         return False
-    if not tool_result.success:
-        return True
-    return _data_indicates_unexpected_result(tool_result.data)
+    return not tool_result.success
 
 
 def _data_indicates_unexpected_result(value: object) -> bool:

@@ -14,7 +14,7 @@
 你需要遵守技能的 response_rules。
 
 通用槽位规则：
-- 每个 instruction 都要按“目标”理解：先判断用户消息、slots、last_agent_question、router_decision 是否已经满足该目标，再决定是否追问。
+- 每个 instruction 都要按“目标”理解：先判断用户消息、slots、awaiting_input、router_decision 是否已经满足该目标，再决定是否追问。
 - 你会收到 conversation_context、recent_messages 和 memory_context。conversation_context.messages 是按时间顺序投影的 user/assistant 历史消息；未超过上下文预算时是完整会话，超过预算时会包含 compacted_summary 和最新消息。每轮都要结合当前用户消息、conversation_context、recent_messages、memory_context、last_agent_question 和已有 slots，同时抽取所有能识别的信息，不限于当前步骤的 expected_user_info。
 - memory_context 是该用户的长期记忆，可以作为稳定用户信息的证据。若 profile/preference/fact 记忆与当前技能字段语义匹配，且与当前用户消息不冲突，应在 slot_updates 中写入对应字段；如果当前用户消息给出了不同信息，以当前用户消息为准。
 - 如果上一轮或更早的用户消息已经提供了当前缺失字段，但之前 slots 中没有保存，本轮应从 recent_messages 补抽并写入 slot_updates；不要因为信息不是当前这句话提供的就重复追问。
@@ -27,13 +27,13 @@
 - 如果当前步骤或技能允许调用某个工具，且工具 input_schema 所需参数已经能从 slots + slot_updates 得到，应直接生成 tool_call，不要再向用户确认一次；但如果 active_skill 的任一步骤要求 `*_confirmed` 字段，或当前/前置 instruction 明确要求调用工具前确认，则必须先看到该确认字段已由用户对确认问题明确肯定后写入 true，未满足时不得调用工具。
 - 同一轮允许同时输出 slot_updates 和 tool_call；当用户一次性提供了足够信息时，不要为了遵循步骤顺序而拆成多轮。
 - 当用户当前消息已经回答了后续步骤所需信息，可以同时填写后续字段并把 next_step_id 指向下一处真正需要模型行动的位置；不要为了保持线性步骤而回退追问。
-- 你会收到 last_agent_question。判断用户当前消息时必须结合 last_agent_question：如果用户当前消息是在回答上一轮问题，需要抽取对应字段。
+- 你会收到 awaiting_input。判断用户当前消息时必须结合 awaiting_input、recent_messages 和 conversation_context：如果用户当前消息是在回答上一轮问题，需要抽取对应字段。
 - 你会收到 router_decision。若 router_decision 已经因为用户当前消息启动/切换到某个技能，说明该技能的触发意图已经成立；不要在当前步骤再次询问同一层级的触发意图或让用户在相同意图集合中二选一/三选一。
-- 你会收到 pending_tasks。pending_tasks 是尚未执行的后续任务，只能由运行时在当前 active_skill 完成后启动；你当前只能执行 active_skill。不要在当前 StepAgentResult.reply 中替 pending_tasks 追问字段、确认意图、调用工具或生成后续技能话术。当前技能尚未完成时，可以最多一句说明后续需求已记录；当前技能完成时，只输出当前技能的结果。
+- 你会收到 pending_tasks。pending_tasks 是尚未执行的后续任务，只能由 Router 明确选择 selected_task_id 后才会成为 active task；你当前只能执行 active_skill。不要在当前 StepAgentResult.reply 中替 pending_tasks 追问字段、确认意图、调用工具或生成后续技能话术。
 - 如果当前步骤是“确认意图/类型/分类”一类步骤，而 user_message 或 router_decision.user_intent 已经明确表达了该意图，应把它写入对应 slot_updates，并在 allowed_actions 包含 continue_flow 时推进到下一步；不要重复问“你是想 A、B 还是 C”。
 - 如果用户当前回复很短，且上一轮正在询问某个字段，应由你判断它是否是该字段的候选答案；是则写入 slot_updates，不是则保持为空。
 - 如果当前步骤 expected_user_info 包含 `*_confirmed` 或 instruction 要求确认，只有用户对当前确认问题作出明确肯定时才能写入 true；不要仅凭用户最初提出诉求、历史订单或上下文推断确认。用户否定或表达“另一个/换一个/不是这个”时，应更新或清空相关对象字段并回到信息收集。
-- 如果 repair_context.reason 是 slot_validation，说明上一次输出可能漏掉了槽位。你必须重新检查 user_message、last_agent_question、repair_context.missing_expected_user_info 和 repair_context.previous_step_result，由你判断是否应补充 slot_updates 或 tool_call；不要为了补槽而编造用户没提供的信息。
+- 如果 repair_context.reason 是 slot_validation，说明上一次输出可能漏掉了槽位。你必须重新检查 user_message、awaiting_input、recent_messages、repair_context.missing_expected_user_info 和 repair_context.previous_step_result，由你判断是否应补充 slot_updates 或 tool_call；不要为了补槽而编造用户没提供的信息。
 - 如果 repair_context.reason 是 tool_continuation，说明上一轮工具调用已经返回结果。你必须基于 previous_tool_result、accumulated_tool_results、tool_call_history、slots、当前步骤和用户目标判断任务是否完成：
   - 如果仍缺少必要工具结果，由你输出下一次 tool_call，tool_call.name 必须来自 available_tools，arguments 必须符合 input_schema。
   - 不要重复调用 tool_call_history 中已经出现过的相同工具和相同参数。

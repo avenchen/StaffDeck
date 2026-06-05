@@ -66,7 +66,7 @@ def test_exit_current_skill_does_not_auto_resume_suspended_skill():
     assert session.skill_stack_json[0]["skill_id"] == "visitor_badge"
 
 
-def test_start_skill_removes_stale_same_skill_stack_frames():
+def test_start_skill_preserves_same_skill_task_frames():
     session = ChatSession(
         id="session_test",
         tenant_id="tenant_demo",
@@ -99,16 +99,10 @@ def test_start_skill_removes_stale_same_skill_stack_frames():
     assert session.active_skill_id == "repair_ticket"
     assert session.active_step_id == "collect_repair_info"
     assert session.slots_json == {}
-    assert session.skill_stack_json == [
-        {
-            "skill_id": "visitor_badge",
-            "step_id": "collect_visit_info",
-            "slots": {"visitor_name": "hm"},
-        }
-    ]
+    assert [frame["skill_id"] for frame in session.skill_stack_json] == ["visitor_badge", "repair_ticket"]
 
 
-def test_related_question_restores_after_answer():
+def test_related_question_creates_paused_frame_without_implicit_restore():
     session = ChatSession(
         id="session_test",
         tenant_id="tenant_demo",
@@ -127,21 +121,18 @@ def test_related_question_restores_after_answer():
         ),
     )
     assert session.active_step_id == "answer_warranty_policy"
-    assert session.resume_after_answer_json == {
-        "skill_id": "repair_ticket",
-        "step_id": "collect_repair_info",
-        "slots": {},
-        "summary": None,
-        "last_agent_question": None,
-    }
+    assert session.resume_after_answer_json is None
+    assert session.skill_stack_json[0]["skill_id"] == "repair_ticket"
+    assert session.skill_stack_json[0]["status"] == "paused"
+    assert session.skill_stack_json[0]["resume_policy"] == "after_temporary_answer"
 
     runtime.finish_interrupt_response(session)
 
-    assert session.active_step_id == "collect_repair_info"
+    assert session.active_step_id == "answer_warranty_policy"
     assert session.resume_after_answer_json is None
 
 
-def test_related_question_to_another_skill_suspends_and_restores_original_context():
+def test_related_question_to_another_skill_suspends_original_context_as_task_frame():
     session = ChatSession(
         id="session_test",
         tenant_id="tenant_demo",
@@ -167,34 +158,21 @@ def test_related_question_to_another_skill_suspends_and_restores_original_contex
     assert session.active_skill_id == "price_compare"
     assert session.active_step_id == "collect_products"
     assert session.slots_json == {"user_name": "hm", "product_name_1": "A1", "product_name_2": "A3"}
-    assert session.skill_stack_json == [
-        {
-            "skill_id": "purchase",
-            "step_id": "collect_user_name",
-            "slots": {
-                "product_id": "A1",
-                "user_name": "hm",
-                "product_name_1": "A1",
-                "product_name_2": "A3",
-            },
-            "summary": "最近回复：请问姓名和数量",
-            "last_agent_question": "请问姓名和数量？",
-        }
-    ]
-    assert session.resume_after_answer_json == session.skill_stack_json[0]
+    paused = session.skill_stack_json[0]
+    assert paused["skill_id"] == "purchase"
+    assert paused["step_id"] == "collect_user_name"
+    assert paused["slots"] == {"product_id": "A1"}
+    assert paused["summary"] == "最近回复：请问姓名和数量"
+    assert paused["last_agent_question"] == "请问姓名和数量？"
+    assert paused["resume_policy"] == "after_temporary_answer"
+    assert session.resume_after_answer_json is None
 
     session.slots_json = {"product_name_1": "A1", "product_name_2": "A3"}
     runtime.finish_interrupt_response(session)
 
-    assert session.active_skill_id == "purchase"
-    assert session.active_step_id == "collect_user_name"
-    assert session.slots_json == {
-        "product_id": "A1",
-        "user_name": "hm",
-        "product_name_1": "A1",
-        "product_name_2": "A3",
-    }
-    assert session.skill_stack_json == []
+    assert session.active_skill_id == "price_compare"
+    assert session.active_step_id == "collect_products"
+    assert session.skill_stack_json[0]["skill_id"] == "purchase"
     assert session.resume_after_answer_json is None
 
 
@@ -233,7 +211,7 @@ def test_pending_tasks_are_queued_and_popped_without_using_skill_stack():
     next_decision = runtime.pop_next_pending_task(session)
 
     assert next_decision is not None
-    assert next_decision.decision == "start_skill"
+    assert next_decision.decision == "switch_to_pending"
     assert next_decision.target_skill_id == "purchase"
     assert next_decision.target_step_id == "collect_user_name"
     assert next_decision.slot_hints == {"product_id": "A3"}
@@ -245,7 +223,7 @@ def test_pending_tasks_are_queued_and_popped_without_using_skill_stack():
     assert session.slots_json == {"product_id": "A3"}
 
 
-def test_pending_task_is_claimed_when_router_continues_same_skill():
+def test_pending_task_is_not_claimed_without_selected_task_id():
     session = ChatSession(
         id="session_test",
         tenant_id="tenant_demo",
@@ -275,16 +253,15 @@ def test_pending_task_is_claimed_when_router_continues_same_skill():
         ),
     )
 
-    assert session.pending_tasks_json == []
+    assert len(session.pending_tasks_json) == 1
     assert session.slots_json == {
         "product_id": "A1",
         "quantity": 1,
-        "user_name": "hm",
         "purchase_confirmed": True,
     }
 
 
-def test_claimed_pending_task_switch_does_not_suspend_completed_current_skill():
+def test_selected_pending_task_switch_does_not_suspend_completed_current_skill():
     session = ChatSession(
         id="session_test",
         tenant_id="tenant_demo",
@@ -293,6 +270,7 @@ def test_claimed_pending_task_switch_does_not_suspend_completed_current_skill():
         slots_json={"order_id": "ORDER-1", "refund_reason": "买贵了"},
         pending_tasks_json=[
             {
+                "task_id": "task_purchase_a1",
                 "decision": "start_skill",
                 "target_skill_id": "purchase",
                 "target_step_id": "collect_user_name",
@@ -307,7 +285,8 @@ def test_claimed_pending_task_switch_does_not_suspend_completed_current_skill():
     runtime.apply_decision(
         session,
         RouterDecision(
-            decision="suspend_current_and_start_new_skill",
+            decision="switch_to_pending",
+            selected_task_id="task_purchase_a1",
             target_skill_id="purchase",
             target_step_id="collect_user_name",
             slot_hints={"quantity": 1},

@@ -3,7 +3,7 @@ const resolveApiBase = () => {
     return import.meta.env.VITE_API_BASE_URL;
   }
 
-  return 'http://127.0.0.1:8000';
+  return '';
 };
 
 const API_BASE = resolveApiBase();
@@ -52,6 +52,41 @@ export async function streamPost(
     body: JSON.stringify(body),
     signal,
   });
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(text || response.statusText);
+  }
+  if (!response.body) {
+    throw new Error('当前浏览器不支持流式响应');
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder('utf-8');
+  let buffer = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const blocks = buffer.split('\n\n');
+    buffer = blocks.pop() || '';
+    blocks.forEach((block) => {
+      const parsed = parseSseBlock(block);
+      if (parsed) onEvent(parsed);
+    });
+  }
+
+  buffer += decoder.decode();
+  const parsed = parseSseBlock(buffer);
+  if (parsed) onEvent(parsed);
+}
+
+export async function streamGet(
+  path: string,
+  onEvent: (item: StreamEvent) => void,
+  signal?: AbortSignal,
+): Promise<void> {
+  const response = await fetch(`${API_BASE}${path}`, { signal });
   if (!response.ok) {
     const text = await response.text();
     throw new Error(text || response.statusText);

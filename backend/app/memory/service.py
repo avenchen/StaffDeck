@@ -14,6 +14,7 @@ from app.tools.tool_schema import ToolResult
 
 
 PROMPT_PATH = Path(__file__).resolve().parents[1] / "llm" / "prompts" / "memory_extractor_prompt.md"
+RERANK_PROMPT_PATH = Path(__file__).resolve().parents[1] / "llm" / "prompts" / "memory_reranker_prompt.md"
 MEMORY_SOURCE = "model_memory_extractor"
 PROFILE_NAME_KEY = "preferred_name"
 ALLOWED_MEMORY_KINDS = {"profile", "preference", "fact"}
@@ -23,23 +24,77 @@ class MemoryService:
     def __init__(self, db: Session):
         self.db = db
 
-    def recall(self, tenant_id: str, user_id: str, query: str, limit: int = 5) -> list[MemoryRecord]:
+    def recall(
+        self,
+        tenant_id: str,
+        user_id: str,
+        query: str,
+        limit: int = 5,
+        model_config: ModelConfig | None = None,
+    ) -> list[MemoryRecord]:
         rows = [
             row
             for row in self._list_user_memories(tenant_id, user_id, limit=80)
             if row.kind in ALLOWED_MEMORY_KINDS
         ]
+        profile_rows = [row for row in rows if row.kind == "profile"][:2]
+        other_rows = [row for row in rows if row.kind != "profile"]
+        if model_config and other_rows:
+            ranked = self._llm_rerank_memories(query, other_rows, model_config, limit=max(0, limit - len(profile_rows)))
+            recalled = [*profile_rows, *ranked]
+            return recalled[:limit]
+        query_terms = _terms(query)
+        scored = sorted(
+            other_rows,
+            key=lambda row: (_score(row.content, query_terms), row.importance, row.updated_at),
+            reverse=True,
+        )
+        ranked_other = [row for row in scored if _score(row.content, query_terms) > 0]
+        recalled = [*profile_rows, *ranked_other]
+        return recalled[:limit] or rows[: min(limit, len(rows))]
+
+    def _llm_rerank_memories(
+        self,
+        query: str,
+        rows: list[MemoryRecord],
+        model_config: ModelConfig,
+        limit: int,
+    ) -> list[MemoryRecord]:
+        if limit <= 0:
+            return []
+        candidates = rows[:30]
+        by_id = {row.id: row for row in candidates}
+        try:
+            raw = LLMClient(model_config).generate_json(
+                RERANK_PROMPT_PATH.read_text(encoding="utf-8"),
+                {
+                    "user_message": query,
+                    "candidate_memories": [memory_read(row) for row in candidates],
+                    "limit": limit,
+                },
+            )
+        except Exception:
+            return self._lexical_recall(query, rows, limit)
+        ids = raw.get("memory_ids") if isinstance(raw, dict) else []
+        ranked: list[MemoryRecord] = []
+        for memory_id in ids if isinstance(ids, list) else []:
+            row = by_id.get(str(memory_id))
+            if row and row not in ranked:
+                ranked.append(row)
+            if len(ranked) >= limit:
+                break
+        if ranked:
+            return ranked
+        return self._lexical_recall(query, rows, limit)
+
+    def _lexical_recall(self, query: str, rows: list[MemoryRecord], limit: int) -> list[MemoryRecord]:
         query_terms = _terms(query)
         scored = sorted(
             rows,
             key=lambda row: (_score(row.content, query_terms), row.importance, row.updated_at),
             reverse=True,
         )
-        stable_profile = [
-            row for row in rows if row.kind == "profile" and row not in scored[:limit]
-        ][:2]
-        recalled = [row for row in scored if _score(row.content, query_terms) > 0][:limit]
-        return recalled or [*stable_profile, *rows[: min(3, len(rows))]][:limit]
+        return [row for row in scored if _score(row.content, query_terms) > 0][:limit] or scored[:limit]
 
     def capture_turn(
         self,

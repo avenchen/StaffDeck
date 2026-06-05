@@ -61,7 +61,7 @@ def test_tool_result_reply_is_model_driven(monkeypatch):
     assert reply == "已创建报修工单 T-100，工程师会尽快联系您。"
 
 
-def test_pending_reply_without_tool_result_falls_back_to_step_reply(monkeypatch):
+def test_pending_reply_without_tool_result_uses_model_reply(monkeypatch):
     def fake_init(self, model_config):  # noqa: ANN001
         return None
 
@@ -85,9 +85,7 @@ def test_pending_reply_without_tool_result_falls_back_to_step_reply(monkeypatch)
         model_config=None,  # type: ignore[arg-type]
     )
 
-    assert reply == "请补充完成当前步骤所需的信息。"
-    assert "稍候" not in reply
-    assert "正在为您" not in reply
+    assert reply == "好的，正在为您创建订单，请稍候..."
 
 
 def test_pending_step_reply_without_tool_result_does_not_fall_back_to_last_question(monkeypatch):
@@ -114,7 +112,7 @@ def test_pending_step_reply_without_tool_result_does_not_fall_back_to_last_quest
         model_config=None,  # type: ignore[arg-type]
     )
 
-    assert reply == "正在为您提交，请稍候。"
+    assert reply == "正在处理，请稍等。"
     assert reply != "请提供您的订单号。"
 
 
@@ -129,7 +127,7 @@ def test_pending_phrase_in_confirmation_question_is_not_rejected(monkeypatch):
         return None
 
     def fake_generate_text(self, system_prompt, payload):  # noqa: ANN001
-        return "请您再补充一下具体诉求，我会继续帮您处理。"
+        return step_reply
 
     monkeypatch.setattr(LLMClient, "__init__", fake_init)
     monkeypatch.setattr(LLMClient, "generate_text", fake_generate_text)
@@ -162,7 +160,7 @@ def test_pending_phrase_in_confirmation_question_is_not_rejected(monkeypatch):
     assert "具体诉求" not in reply
 
 
-def test_stale_model_reply_does_not_override_current_step_reply(monkeypatch):
+def test_response_payload_does_not_include_stale_last_question(monkeypatch):
     stale_price_reply = (
         "您好，已为您查询到 A1 和 A3 的价格信息：\n\n"
         "1. **A1 标准商品**：价格 **129.0 元**\n"
@@ -175,7 +173,7 @@ def test_stale_model_reply_does_not_override_current_step_reply(monkeypatch):
         return None
 
     def fake_generate_text(self, system_prompt, payload):  # noqa: ANN001
-        assert payload["session"]["last_agent_question"] == stale_price_reply
+        assert "last_agent_question" not in payload["session"]
         assert payload["step_result"]["reply"] == refund_reply
         return stale_price_reply
 
@@ -198,11 +196,10 @@ def test_stale_model_reply_does_not_override_current_step_reply(monkeypatch):
         model_config=None,  # type: ignore[arg-type]
     )
 
-    assert reply == refund_reply
-    assert "比价" not in reply
+    assert reply == stale_price_reply
 
 
-def test_stale_stream_reply_does_not_override_current_step_reply(monkeypatch):
+def test_stream_payload_does_not_include_stale_last_question(monkeypatch):
     stale_price_reply = "A1 和 A3 的比价结果如下。请问您是否决定购买 A1？"
     refund_reply = "好的，已为您记录退款申请。为了继续处理，请提供您的订单号。"
 
@@ -210,7 +207,7 @@ def test_stale_stream_reply_does_not_override_current_step_reply(monkeypatch):
         return None
 
     def fake_generate_text_stream(self, system_prompt, payload):  # noqa: ANN001
-        assert payload["session"]["last_agent_question"] == stale_price_reply
+        assert "last_agent_question" not in payload["session"]
         yield stale_price_reply[:12]
         yield stale_price_reply[12:]
 
@@ -236,11 +233,10 @@ def test_stale_stream_reply_does_not_override_current_step_reply(monkeypatch):
     )
 
     reply = "".join(chunks)
-    assert reply == refund_reply
-    assert "比价" not in reply
+    assert reply == stale_price_reply
 
 
-def test_stale_stream_reply_with_tool_result_does_not_emit_directly(monkeypatch):
+def test_stream_reply_with_tool_result_is_model_driven(monkeypatch):
     stale_price_reply = "A1 和 A3 的比价结果如下。请问您是否决定购买 A1？"
     refund_reply = "订单 MOCKD57272DB0E 的退款申请已提交，当前状态为处理中。"
 
@@ -278,11 +274,10 @@ def test_stale_stream_reply_with_tool_result_does_not_emit_directly(monkeypatch)
     )
 
     reply = "".join(chunks)
-    assert reply == refund_reply
-    assert "比价" not in reply
+    assert reply == stale_price_reply
 
 
-def test_stream_pending_reply_without_tool_result_is_not_emitted(monkeypatch):
+def test_stream_pending_reply_without_tool_result_is_model_driven(monkeypatch):
     def fake_init(self, model_config):  # noqa: ANN001
         return None
 
@@ -310,12 +305,10 @@ def test_stream_pending_reply_without_tool_result_is_not_emitted(monkeypatch):
     )
 
     reply = "".join(chunks)
-    assert reply == "请补充完成当前步骤所需的信息。"
-    assert "稍候" not in reply
-    assert "正在为您" not in reply
+    assert reply == "好的，正在为您创建订单，请稍候..."
 
 
-def test_completed_step_does_not_fall_back_to_stale_last_question(monkeypatch):
+def test_completed_step_reply_is_model_driven(monkeypatch):
     def fake_init(self, model_config):  # noqa: ANN001
         return None
 
@@ -364,4 +357,4 @@ def test_completed_step_does_not_fall_back_to_stale_last_question(monkeypatch):
         model_config=None,  # type: ignore[arg-type]
     )
 
-    assert reply == "已记录完整信息。请问还有其他需要帮助的吗？"
+    assert reply == "请问您的退货原因是什么？"

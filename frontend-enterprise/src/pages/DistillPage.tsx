@@ -31,7 +31,7 @@ import {
   type RefObject,
 } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { api, streamPost, TENANT_ID } from '../api/client';
+import { api, streamGet, streamPost, TENANT_ID } from '../api/client';
 import type { SkillCard, SkillRead, ToolProbeResponse, ToolRead, ToolSuggestion } from '../types';
 
 type ChatItem = {
@@ -58,7 +58,7 @@ type ChatAttachment = {
 };
 
 type ToolSuggestionItem = ToolSuggestion & {
-  status?: 'pending' | 'created' | 'rejected';
+  status?: 'pending' | 'accepted' | 'created' | 'rejected';
   probeStatus?: 'idle' | 'probing' | 'success' | 'error';
 };
 
@@ -102,6 +102,17 @@ type TextDiffAnimation = {
   progress: number;
 };
 
+type ActiveDistillJob = {
+  jobId: string;
+  kind: 'distill' | 'rewrite';
+  assistantId: string;
+  lastSeq: number;
+  status?: string;
+  createPayload?: { title: string; raw_content: string };
+  previousDraft?: SkillCard;
+  targets?: string[];
+};
+
 const DEFAULT_TARGET_PATHS: string[] = [];
 const DEFAULT_DISTILL_MESSAGES: ChatItem[] = [
   {
@@ -126,6 +137,7 @@ type DistillCacheSnapshot = {
   viewMode: ViewMode;
   attachments: UploadAttachment[];
   streamStatus: string;
+  activeJob: ActiveDistillJob | null;
 };
 
 type DistillHistoryOperationKind = 'skill_change' | 'version_save' | 'tool_add';
@@ -198,9 +210,11 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
   const [probeArgsText, setProbeArgsText] = useState('');
   const [tools, setTools] = useState<ToolRead[]>([]);
   const [streamStatus, setStreamStatus] = useState('');
+  const [activeJob, setActiveJob] = useState<ActiveDistillJob | null>(null);
   const [editingMessage, setEditingMessage] = useState<EditingMessage | null>(null);
   const [sourceAutoScroll, setSourceAutoScroll] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
+  const manualStopRef = useRef(false);
   const uploadControllersRef = useRef<Record<string, AbortController>>({});
   const dragDepthRef = useRef(0);
   const animationTimersRef = useRef<number[]>([]);
@@ -228,6 +242,10 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
       setViewMode(cached.viewMode || 'source');
       setAttachments(cached.attachments.filter((item) => item.status !== 'uploading'));
       setStreamStatus(cached.streamStatus);
+      setActiveJob(cached.activeJob || null);
+      if (cached.activeJob && cached.activeJob.status !== 'succeeded' && cached.activeJob.status !== 'failed') {
+        setLoading(true);
+      }
       setSaveDraftSnapshot(null);
       setHydratedCacheKey(cacheKey);
       setCacheReady(true);
@@ -302,7 +320,8 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
       pendingChange,
       viewMode,
       attachments: attachments.filter((item) => item.status !== 'uploading'),
-      streamStatus: loading ? '已中断' : streamStatus,
+      streamStatus,
+      activeJob,
     });
   }, [
     attachments,
@@ -320,6 +339,7 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
     pendingChange,
     selectedPaths,
     streamStatus,
+    activeJob,
     textDiffs,
     updatingPaths,
     viewMode,
@@ -332,6 +352,27 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
       clearAnimationTimers();
     };
   }, []);
+
+  useEffect(() => {
+    if (!cacheReady || hydratedCacheKey !== cacheKey || !activeJob) return;
+    if (activeJob.status === 'succeeded' || activeJob.status === 'failed') return;
+    if (abortRef.current) return;
+    const controller = new AbortController();
+    manualStopRef.current = false;
+    abortRef.current = controller;
+    setLoading(true);
+    void streamGet(
+      `/api/enterprise/skills/jobs/${encodeURIComponent(activeJob.jobId)}/stream?after_seq=${activeJob.lastSeq || 0}`,
+      (item) => handleResumedJobEvent(activeJob, item),
+      controller.signal,
+    )
+      .catch((error) => {
+        if (controller.signal.aborted) return;
+        updateMessage(activeJob.assistantId, '生成连接已断开，后端任务仍可继续。', { thinking: 'done' });
+        message.error(error instanceof Error ? error.message : '恢复生成失败');
+      })
+      .finally(() => finishStream(controller));
+  }, [activeJob, cacheKey, cacheReady, hydratedCacheKey]);
 
   useEffect(() => {
     if (!active) {
@@ -419,6 +460,14 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
       thinkingDetails: ['正在理解技能目标与输入信息'],
       thinkingOpen: false,
     });
+    const baseJob: ActiveDistillJob = {
+      jobId: '',
+      kind: 'distill',
+      assistantId,
+      lastSeq: 0,
+      status: 'queued',
+      createPayload: payload,
+    };
     const controller = new AbortController();
     abortRef.current = controller;
     try {
@@ -426,6 +475,7 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
         '/api/enterprise/skills/distill/stream',
         { tenant_id: TENANT_ID, ...payload },
         (item) => {
+          trackActiveJobEvent(item, baseJob);
           if (item.event === 'status') {
             appendThinkingDetail(assistantId, String(item.data.text || '正在处理'));
             return;
@@ -476,11 +526,18 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
             if (nextToolSuggestions.length > 0) {
               void autoProbeToolSuggestions(assistantId, nextToolSuggestions);
             }
+            setActiveJob(null);
+            return;
+          }
+          if (item.event === 'error') {
+            updateMessage(assistantId, String(item.data.message || '生成失败，当前草稿未变更。'), { thinking: 'done' });
+            setActiveJob(null);
           }
         },
         controller.signal,
       );
     } catch (error) {
+      if (controller.signal.aborted && !manualStopRef.current) return;
       appendThinkingDetail(assistantId, '生成失败，已保留当前草稿');
       updateMessage(assistantId, '生成失败，当前草稿未变更。', { thinking: 'done' });
       if (controller.signal.aborted) {
@@ -516,8 +573,18 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
       thinkingDetails: initialThinkingDetails || [`改写范围：${scopeLabel}`],
       thinkingOpen: false,
     });
+    const baseJob: ActiveDistillJob = {
+      jobId: '',
+      kind: 'rewrite',
+      assistantId,
+      lastSeq: 0,
+      status: 'queued',
+      previousDraft,
+      targets,
+    };
     const controller = new AbortController();
     let receivedMessageChunk = false;
+    manualStopRef.current = false;
     abortRef.current = controller;
     try {
       await streamPost(
@@ -532,6 +599,7 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
           conversation: (conversationOverride || messages).map((item) => ({ role: item.role, content: item.content })),
         },
         (item) => {
+          trackActiveJobEvent(item, baseJob);
           if (item.event === 'status') {
             appendThinkingDetail(assistantId, String(item.data.text || '正在处理'));
             return;
@@ -584,11 +652,18 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
             if (nextToolSuggestions.length > 0) {
               void autoProbeToolSuggestions(assistantId, nextToolSuggestions);
             }
+            setActiveJob(null);
+            return;
+          }
+          if (item.event === 'error') {
+            updateMessage(assistantId, String(item.data.message || '改写失败，当前草稿未变更。'), { thinking: 'done' });
+            setActiveJob(null);
           }
         },
         controller.signal,
       );
     } catch (error) {
+      if (controller.signal.aborted && !manualStopRef.current) return;
       appendThinkingDetail(assistantId, '改写失败，已保留当前草稿');
       updateMessage(assistantId, '改写失败，当前草稿未变更。', { thinking: 'done' });
       if (controller.signal.aborted) {
@@ -662,10 +737,127 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
   }
 
   function stopStream() {
+    const jobId = activeJob?.jobId;
+    manualStopRef.current = true;
+    if (jobId) {
+      void api.post(`/api/enterprise/skills/jobs/${encodeURIComponent(jobId)}/cancel`);
+    }
     abortRef.current?.abort();
     abortRef.current = null;
     setLoading(false);
+    setActiveJob(null);
     setStreamStatus('已停止');
+  }
+
+  function trackActiveJobEvent(item: { event: string; data: Record<string, unknown> }, baseJob: ActiveDistillJob) {
+    const jobId = typeof item.data.job_id === 'string' ? item.data.job_id : baseJob.jobId;
+    if (!jobId) return;
+    const seq = typeof item.data.seq === 'number' ? item.data.seq : baseJob.lastSeq;
+    const status = typeof item.data.status === 'string' ? item.data.status : baseJob.status;
+    setActiveJob((current) => ({
+      ...baseJob,
+      ...(current?.jobId === jobId ? current : {}),
+      jobId,
+      lastSeq: Math.max(current?.jobId === jobId ? current.lastSeq : 0, seq || 0),
+      status,
+    }));
+  }
+
+  function handleResumedJobEvent(job: ActiveDistillJob, item: { event: string; data: Record<string, unknown> }) {
+    trackActiveJobEvent(item, job);
+    if (item.event === 'status') {
+      appendThinkingDetail(job.assistantId, String(item.data.text || '正在处理'));
+      return;
+    }
+    if (item.event === 'message_chunk') {
+      const content = typeof item.data.content === 'string' ? item.data.content : '';
+      if (content) appendMessage(job.assistantId, content);
+      return;
+    }
+    if (item.event === 'complete') {
+      if (job.kind === 'distill') {
+        completeResumedDistillJob(job, item.data);
+      } else {
+        completeResumedRewriteJob(job, item.data);
+      }
+      setActiveJob(null);
+      return;
+    }
+    if (item.event === 'error') {
+      updateMessage(job.assistantId, String(item.data.message || '生成失败'), { thinking: 'done' });
+      setActiveJob(null);
+      setLoading(false);
+      return;
+    }
+    if (item.event === 'job_complete') {
+      const status = String(item.data.status || '');
+      if (status === 'failed') {
+        updateMessage(job.assistantId, String(item.data.error || '生成失败'), { thinking: 'done' });
+        setActiveJob(null);
+      }
+    }
+  }
+
+  function completeResumedDistillJob(job: ActiveDistillJob, data: Record<string, unknown>) {
+    const draftSkill = data.draft_skill as SkillCard | undefined;
+    if (!draftSkill) return;
+    const nextWarnings = Array.isArray(data.warnings) ? data.warnings.map(String) : [];
+    const nextToolSuggestions = normalizeToolSuggestions(data.tool_suggestions);
+    clearAnimationTimers();
+    setDraft(draftSkill);
+    setHighlightedPaths([]);
+    setUpdatingPaths([]);
+    setTextDiffs([]);
+    setSelectedPaths(DEFAULT_TARGET_PATHS);
+    appendThinkingDetail(job.assistantId, `已生成技能草稿：${draftSkill.name}`);
+    updateMessage(
+      job.assistantId,
+      `已生成「${draftSkill.name}」草稿。你可以在右侧选择一个或多个区域继续改写。`,
+      {
+        thinking: 'done',
+        warnings: nextWarnings,
+        toolSuggestions: nextToolSuggestions,
+        operations: [{ kind: 'skill_change', label: `生成技能草稿：${draftSkill.name}`, skillId: draftSkill.skill_id }],
+      },
+    );
+    setStreamStatus('生成完成');
+    if (nextToolSuggestions.length > 0) {
+      void autoProbeToolSuggestions(job.assistantId, nextToolSuggestions);
+    }
+  }
+
+  function completeResumedRewriteJob(job: ActiveDistillJob, data: Record<string, unknown>) {
+    const nextDraft = data.draft_skill as SkillCard | undefined;
+    if (!nextDraft) return;
+    const previousDraft = job.previousDraft || draft;
+    if (!previousDraft) {
+      setDraft(nextDraft);
+      updateMessage(job.assistantId, String(data.assistant_message || '已完成改写。'), { thinking: 'done' });
+      return;
+    }
+    const targets = job.targets?.length ? job.targets : allTargetPaths(previousDraft);
+    const nextWarnings = Array.isArray(data.warnings) ? data.warnings.map(String) : [];
+    const nextToolSuggestions = normalizeToolSuggestions(data.tool_suggestions);
+    const changedPaths = diffTargetPaths(previousDraft, nextDraft, targets);
+    const changedLabel = changedPaths.length > 0 ? targetLabel(changedPaths, nextDraft) : '未检测到结构变化';
+    appendThinkingDetail(job.assistantId, `模型返回改写结果：${changedLabel}`);
+    appendThinkingDetail(job.assistantId, '右侧已更新预览，等待确认或拒绝');
+    animateDraftChange(previousDraft, nextDraft, changedPaths);
+    setPendingChange({ assistantId: job.assistantId, previousDraft, nextDraft, changedPaths });
+    setSelectedPaths((current) => reconcileSelectedPaths(current, nextDraft));
+    setStreamStatus('改写完成');
+    updateMessage(job.assistantId, String(data.assistant_message || '已完成局部改写。'), {
+      thinking: 'done',
+      warnings: nextWarnings,
+      toolSuggestions: nextToolSuggestions,
+      actionState: 'pending',
+      operations: changedPaths.length
+        ? [{ kind: 'skill_change', label: `改写：${changedLabel}`, skillId: nextDraft.skill_id }]
+        : [],
+    });
+    if (nextToolSuggestions.length > 0) {
+      void autoProbeToolSuggestions(job.assistantId, nextToolSuggestions);
+    }
   }
 
   async function stageFileUpload(file: File) {
@@ -889,39 +1081,65 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
       message.warning('请先测试接口成功后再新增工具');
       return;
     }
+    const nextSuggestions = nextToolSuggestionsWithPatch(messageId, suggestion.name, { status: 'accepted' });
+    setToolSuggestionStatus(messageId, suggestion.name, 'accepted');
+    const shouldCommit = toolSuggestionSelectionsComplete(nextSuggestions);
+    if (!shouldCommit) {
+      message.success('已确认，等待其他工具建议处理完成后统一更新技能');
+      return;
+    }
+    await commitToolSuggestionSelections(messageId, nextSuggestions);
+  }
+
+  async function commitToolSuggestionSelections(messageId: string, suggestions: ToolSuggestionItem[]) {
     const activeDraft = pendingChange?.nextDraft || draft;
+    const acceptedSuggestions = suggestions.filter(
+      (item) => toolSuggestionResolution(item) === 'new_candidate' && item.status === 'accepted',
+    );
+    if (acceptedSuggestions.length === 0) {
+      message.info('所有工具建议已拒绝，技能草稿未变更');
+      return;
+    }
     try {
-      let createdTool: ToolRead;
-      let createdNewTool = false;
-      const payload = toolPayloadFromSuggestion(suggestion, activeDraft?.skill_id);
-      try {
-        createdTool = await api.post<ToolRead>('/api/enterprise/tools', payload);
-        createdNewTool = true;
-        message.success('工具已新增');
-      } catch (error) {
-        if (!(error instanceof Error) || !error.message.includes('409')) throw error;
-        createdTool = toolReadFromSuggestion(suggestion, activeDraft?.skill_id);
-        message.info('工具已存在，继续更新技能草稿');
+      const createdTools: ToolRead[] = [];
+      const createdNewTools: ToolRead[] = [];
+      for (const suggestion of acceptedSuggestions) {
+        if (!suggestion.probe_result?.success) {
+          throw new Error(`工具「${suggestion.display_name || suggestion.name}」尚未测试通过`);
+        }
+        const payload = toolPayloadFromSuggestion(suggestion, activeDraft?.skill_id);
+        let createdTool: ToolRead;
+        let createdNewTool = false;
+        try {
+          createdTool = await api.post<ToolRead>('/api/enterprise/tools', payload);
+          createdNewTool = true;
+        } catch (error) {
+          if (!(error instanceof Error) || !error.message.includes('409')) throw error;
+          createdTool = toolReadFromSuggestion(suggestion, activeDraft?.skill_id);
+        }
+        createdTools.push(createdTool);
+        if (createdNewTool) createdNewTools.push(createdTool);
+        setToolSuggestionStatus(messageId, suggestion.name, 'created');
       }
-      setTools((current) => upsertToolRead(current, createdTool));
-      setToolSuggestionStatus(messageId, suggestion.name, 'created');
-      if (createdNewTool) {
+      setTools((current) => createdTools.reduce((nextTools, tool) => upsertToolRead(nextTools, tool), current));
+      createdNewTools.forEach((createdTool) => {
         appendOperationToMessage(messageId, {
           kind: 'tool_add',
           label: `新增工具：${createdTool.display_name || createdTool.name}`,
           toolId: createdTool.id,
           toolName: createdTool.name,
         });
-      }
+      });
       if (!activeDraft) return;
+      message.success(`已确认 ${acceptedSuggestions.length} 个工具，正在统一更新技能`);
       confirmPendingChange(false);
       await rewriteSelectedTarget(
-        buildToolIntegrationInstruction(suggestion),
+        buildToolIntegrationInstruction(acceptedSuggestions),
         activeDraft,
         allTargetPaths(activeDraft),
         [
-          `已新增工具：${suggestion.display_name || suggestion.name}`,
-          '正在判断该工具应接入哪些步骤',
+          `已新增工具：${acceptedSuggestions.map((item) => item.display_name || item.name).join('、')}`,
+          '正在统一判断这些工具应接入哪些步骤',
         ],
       );
     } catch (error) {
@@ -930,11 +1148,26 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
   }
 
   function rejectToolSuggestion(messageId: string, toolName: string) {
+    const nextSuggestions = nextToolSuggestionsWithPatch(messageId, toolName, { status: 'rejected' });
     setToolSuggestionStatus(messageId, toolName, 'rejected');
+    if (toolSuggestionSelectionsComplete(nextSuggestions)) {
+      void commitToolSuggestionSelections(messageId, nextSuggestions);
+    }
   }
 
   function setToolSuggestionStatus(messageId: string, toolName: string, status: ToolSuggestionItem['status']) {
     setToolSuggestionPatch(messageId, toolName, { status });
+  }
+
+  function nextToolSuggestionsWithPatch(
+    messageId: string,
+    toolName: string,
+    patch: Partial<ToolSuggestionItem>,
+  ): ToolSuggestionItem[] {
+    const targetMessage = messages.find((item) => item.id === messageId);
+    return (targetMessage?.toolSuggestions || []).map((suggestion) =>
+      suggestion.name === toolName ? { ...suggestion, ...patch } : suggestion,
+    );
   }
 
   function setToolSuggestionPatch(messageId: string, toolName: string, patch: Partial<ToolSuggestionItem>) {
@@ -1003,6 +1236,7 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
     setClearAfterSave(false);
     setAttachments([]);
     setStreamStatus('');
+    setActiveJob(null);
   }
 
   function toggleTarget(target: TargetSelection) {
@@ -1129,6 +1363,7 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
     setTools(snapshot.tools.map((tool) => ({ ...tool })));
     setAttachments(snapshot.attachments.filter((item) => item.status !== 'uploading').map((item) => ({ ...item })));
     setStreamStatus(snapshot.streamStatus);
+    setActiveJob(null);
     setLoading(false);
   }
 
@@ -1489,7 +1724,7 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
                                 <span>{suggestion.url || '-'}</span>
                               </div>
                             </div>
-                            <div className="skill-tool-suggestion-actions">
+                            <div className="skill-tool-suggestion-detail-action">
                               <Tooltip title="查看详情">
                                 <Button
                                   className="skill-tool-action"
@@ -1500,20 +1735,9 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
                                   onClick={() => openToolDetail(item.id, suggestion)}
                                 />
                               </Tooltip>
-                              {toolSuggestionResolution(suggestion) === 'new_candidate' && (
-                                <Tooltip title={suggestion.probe_result ? '再次测试' : '测试接口'}>
-                                  <Button
-                                    className="skill-tool-action"
-                                    size="small"
-                                    shape="circle"
-                                    type="text"
-                                    loading={suggestion.probeStatus === 'probing'}
-                                    icon={<ApiOutlined />}
-                                    onClick={() => void probeToolSuggestion(item.id, suggestion)}
-                                  />
-                                </Tooltip>
-                              )}
-                              {toolSuggestionResolution(suggestion) === 'new_candidate' && suggestion.status !== 'created' && suggestion.status !== 'rejected' && (
+                            </div>
+                            <div className="skill-tool-suggestion-actions">
+                              {toolSuggestionResolution(suggestion) === 'new_candidate' && suggestion.status !== 'accepted' && suggestion.status !== 'created' && suggestion.status !== 'rejected' && (
                                 <>
                                   <Tooltip title="确认新增">
                                     <Button
@@ -1764,19 +1988,24 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
         open={Boolean(toolDetail)}
         title="工具详情"
         footer={
-          <Space>
+          <Space className="tool-suggestion-detail-footer">
             <Button onClick={() => setToolDetail(null)}>关闭</Button>
             {toolDetail && toolSuggestionResolution(toolDetail) === 'new_candidate' && (
               <>
                 <Button onClick={applyProbeArgumentsFromDetail}>应用样例参数</Button>
-                <Button type="primary" loading={toolDetail?.probeStatus === 'probing'} onClick={probeToolDetail}>
+                <Button
+                  type="primary"
+                  icon={<ApiOutlined />}
+                  loading={toolDetail?.probeStatus === 'probing'}
+                  onClick={probeToolDetail}
+                >
                   {toolDetail?.probe_result ? '再次测试' : '测试接口'}
                 </Button>
               </>
             )}
           </Space>
         }
-        width={760}
+        width={1040}
         onCancel={() => setToolDetail(null)}
       >
         {toolDetail && (
@@ -2725,6 +2954,7 @@ function toolSuggestionResolutionLabel(suggestion: ToolSuggestionItem): string {
 }
 
 function toolSuggestionStatusText(suggestion: ToolSuggestionItem): string {
+  if (suggestion.status === 'accepted') return '已确认';
   if (suggestion.status === 'created') return '已新增';
   if (suggestion.status === 'rejected') return '已拒绝';
   if (suggestion.probeStatus === 'probing') return '测试中';
@@ -2736,7 +2966,7 @@ function toolSuggestionStatusText(suggestion: ToolSuggestionItem): string {
 }
 
 function toolSuggestionStatusClass(suggestion: ToolSuggestionItem): string {
-  if (suggestion.status === 'created' || suggestion.probe_result?.success || toolSuggestionResolution(suggestion) === 'existing') {
+  if (suggestion.status === 'accepted' || suggestion.status === 'created' || suggestion.probe_result?.success || toolSuggestionResolution(suggestion) === 'existing') {
     return 'success';
   }
   if (suggestion.status === 'rejected' || (suggestion.probe_result && !suggestion.probe_result.success)) {
@@ -2745,6 +2975,13 @@ function toolSuggestionStatusClass(suggestion: ToolSuggestionItem): string {
   if (suggestion.probeStatus === 'probing') return 'running';
   if (toolSuggestionResolution(suggestion) === 'incomplete') return 'muted';
   return 'pending';
+}
+
+function toolSuggestionSelectionsComplete(suggestions: ToolSuggestionItem[]): boolean {
+  const candidates = suggestions.filter((suggestion) => toolSuggestionResolution(suggestion) === 'new_candidate');
+  return candidates.length > 0 && candidates.every((suggestion) =>
+    suggestion.status === 'accepted' || suggestion.status === 'created' || suggestion.status === 'rejected',
+  );
 }
 
 function compactWarning(warning: string): string {
@@ -2770,7 +3007,7 @@ function compactWarning(warning: string): string {
   ];
   const matched = replacements.find(([source]) => source === text);
   if (matched) return matched[1];
-  return text.length > 82 ? `${text.slice(0, 82)}...` : text;
+  return text;
 }
 
 function compactWarningItems(
@@ -2844,6 +3081,27 @@ function readDistillCache(key: string): DistillCacheSnapshot | null {
           }))
         : [],
       streamStatus: typeof parsed.streamStatus === 'string' ? parsed.streamStatus : '',
+      activeJob: isRecord(parsed.activeJob)
+        ? {
+            jobId: String(parsed.activeJob.jobId || ''),
+            kind: parsed.activeJob.kind === 'rewrite' ? 'rewrite' : 'distill',
+            assistantId: String(parsed.activeJob.assistantId || ''),
+            lastSeq: Number(parsed.activeJob.lastSeq || 0),
+            status: typeof parsed.activeJob.status === 'string' ? parsed.activeJob.status : undefined,
+            createPayload: isRecord(parsed.activeJob.createPayload)
+              ? {
+                  title: String(parsed.activeJob.createPayload.title || ''),
+                  raw_content: String(parsed.activeJob.createPayload.raw_content || ''),
+                }
+              : undefined,
+            previousDraft: isRecord(parsed.activeJob.previousDraft)
+              ? (parsed.activeJob.previousDraft as SkillCard)
+              : undefined,
+            targets: Array.isArray(parsed.activeJob.targets)
+              ? parsed.activeJob.targets.map(String)
+              : undefined,
+          }
+        : null,
     };
   } catch {
     window.sessionStorage.removeItem(key);
@@ -3144,25 +3402,28 @@ function upsertToolRead(current: ToolRead[], nextTool: ToolRead): ToolRead[] {
     : [...current, nextTool];
 }
 
-function buildToolIntegrationInstruction(suggestion: ToolSuggestionItem): string {
-  const displayName = suggestion.display_name || suggestion.name;
-  const toolDetail = {
-    name: suggestion.name,
-    display_name: displayName,
-    description: suggestion.description || '',
-    method: suggestion.method || 'POST',
-    url: suggestion.url || '',
-    input_schema: suggestion.input_schema || {},
-    output_schema: suggestion.probe_result?.success && suggestion.probe_result.inferred_output_schema
-      ? suggestion.probe_result.inferred_output_schema
-      : suggestion.output_schema || {},
-    sample_arguments: suggestion.sample_arguments || {},
-  };
+function buildToolIntegrationInstruction(suggestions: ToolSuggestionItem | ToolSuggestionItem[]): string {
+  const items = Array.isArray(suggestions) ? suggestions : [suggestions];
+  const toolDetails = items.map((suggestion) => {
+    const displayName = suggestion.display_name || suggestion.name;
+    return {
+      name: suggestion.name,
+      display_name: displayName,
+      description: suggestion.description || '',
+      method: suggestion.method || 'POST',
+      url: suggestion.url || '',
+      input_schema: suggestion.input_schema || {},
+      output_schema: suggestion.probe_result?.success && suggestion.probe_result.inferred_output_schema
+        ? suggestion.probe_result.inferred_output_schema
+        : suggestion.output_schema || {},
+      sample_arguments: suggestion.sample_arguments || {},
+    };
+  });
   return [
-    `工具「${displayName}」（${suggestion.name}）已经新增到工具配置。`,
-    `请更新当前技能：判断该工具应接入哪些步骤，并只在确实需要调用该工具的步骤中加入 allowed_actions: call_tool:${suggestion.name}。`,
-    '同步改写对应步骤说明，使模型在参数满足时调用该工具，并根据工具结果继续推进或给出最终回复；不要修改无关字段。',
-    `工具详情：${JSON.stringify(toolDetail, null, 2)}`,
+    '以下工具已经新增到工具配置。',
+    '请更新当前技能：统一判断这些工具分别应接入哪些步骤，并只在确实需要调用工具的步骤中加入对应 allowed_actions。',
+    '同步改写对应步骤说明，使模型在参数满足时调用工具，并根据工具结果继续推进或给出最终回复；不要修改无关字段。',
+    `工具详情：${JSON.stringify(toolDetails, null, 2)}`,
   ].join('\n');
 }
 

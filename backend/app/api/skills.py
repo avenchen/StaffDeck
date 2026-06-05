@@ -6,12 +6,14 @@ import re
 import zipfile
 from collections.abc import Iterator
 from io import BytesIO
+from time import sleep
 from xml.etree import ElementTree
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from sqlmodel import Session, select
 
+from app.async_jobs import enqueue_async_job
 from app.db import get_session
 from app.db.models import AgentEvent, ModelConfig, Skill, SkillFeedback, SkillVersion, Tool, utc_now
 from app.llm import LLMError
@@ -30,6 +32,7 @@ from app.skills.skill_schema import (
     SkillVersionRead,
     SkillUpdateRequest,
 )
+from app.skills.stream_jobs import SkillStreamEvent, stream_jobs
 from app.skills.step_ids import skill_card_with_unique_step_ids
 
 router = APIRouter(prefix="/api/enterprise/skills", tags=["enterprise:skills"])
@@ -332,33 +335,60 @@ def distill_skill(request: SkillDistillRequest, db: Session = Depends(get_sessio
 
 @router.post("/distill/stream")
 def distill_skill_stream(request: SkillDistillRequest) -> StreamingResponse:
-    def stream_events() -> Iterator[str]:
-        with Session(get_session_engine()) as db:
-            ensure_tenant(db, request.tenant_id)
-            model_config = _get_default_model(db, request.tenant_id)
-            enriched_request = _with_available_tools(db, request)
-            yield _sse("status", {"text": "正在调用模型生成新技能"})
-            for item in SkillDistiller().stream_text(enriched_request, model_config):
-                yield _sse(item["event"], item["data"])
-
-    return StreamingResponse(stream_events(), media_type="text/event-stream")
+    job_id = _start_distill_stream_job(request)
+    return StreamingResponse(_stream_skill_job(job_id), media_type="text/event-stream")
 
 
 @router.post("/{skill_id}/rewrite/stream")
 def rewrite_skill_stream(skill_id: str, request: SkillRewriteRequest) -> StreamingResponse:
     if request.current_skill.skill_id != skill_id:
         raise HTTPException(status_code=400, detail="Path skill_id must match current_skill.skill_id")
+    job_id = _start_rewrite_stream_job(skill_id, request)
+    return StreamingResponse(_stream_skill_job(job_id), media_type="text/event-stream")
 
-    def stream_events() -> Iterator[str]:
-        with Session(get_session_engine()) as db:
-            ensure_tenant(db, request.tenant_id)
-            model_config = _get_default_model(db, request.tenant_id)
-            enriched_request = _with_available_tools_for_rewrite(db, request)
-            yield _sse("status", {"text": "正在调用模型分析改写要求"})
-            for item in SkillEditor().stream_text(enriched_request, model_config):
-                yield _sse(item["event"], item["data"])
 
-    return StreamingResponse(stream_events(), media_type="text/event-stream")
+@router.post("/distill/jobs")
+def create_distill_job(request: SkillDistillRequest) -> dict[str, str]:
+    return {"job_id": _start_distill_stream_job(request)}
+
+
+@router.post("/{skill_id}/rewrite/jobs")
+def create_rewrite_job(skill_id: str, request: SkillRewriteRequest) -> dict[str, str]:
+    if request.current_skill.skill_id != skill_id:
+        raise HTTPException(status_code=400, detail="Path skill_id must match current_skill.skill_id")
+    return {"job_id": _start_rewrite_stream_job(skill_id, request)}
+
+
+@router.get("/jobs/{job_id}")
+def get_skill_stream_job(job_id: str) -> dict[str, object]:
+    job = stream_jobs.get(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return {
+        "job_id": job.id,
+        "name": job.name,
+        "status": job.status,
+        "error": job.error,
+        "created_at": job.created_at,
+        "updated_at": job.updated_at,
+        "last_seq": job.events[-1].seq if job.events else 0,
+    }
+
+
+@router.get("/jobs/{job_id}/stream")
+def stream_existing_skill_job(job_id: str, after_seq: int = Query(0)) -> StreamingResponse:
+    if not stream_jobs.get(job_id):
+        raise HTTPException(status_code=404, detail="Job not found")
+    return StreamingResponse(_stream_skill_job(job_id, after_seq), media_type="text/event-stream")
+
+
+@router.post("/jobs/{job_id}/cancel")
+def cancel_skill_stream_job(job_id: str) -> dict[str, str]:
+    if not stream_jobs.get(job_id):
+        raise HTTPException(status_code=404, detail="Job not found")
+    stream_jobs.cancel(job_id)
+    stream_jobs.append(job_id, "status", {"text": "已请求停止生成"})
+    return {"status": "cancel_requested", "job_id": job_id}
 
 
 @router.post("/{skill_id}/rewrite", response_model=SkillRewriteResponse)
@@ -376,6 +406,97 @@ def rewrite_skill(
         return SkillEditor().rewrite(request, model_config)
     except LLMError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+def _start_distill_stream_job(request: SkillDistillRequest) -> str:
+    job = stream_jobs.create("skill.distill")
+    stream_jobs.append(job.id, "job_started", {"job_id": job.id, "name": job.name})
+    enqueue_async_job(
+        "skill.distill_stream",
+        _run_distill_stream_job,
+        job.id,
+        request.model_dump(mode="json"),
+        metadata={"tenant_id": request.tenant_id, "job_id": job.id},
+    )
+    return job.id
+
+
+def _start_rewrite_stream_job(skill_id: str, request: SkillRewriteRequest) -> str:
+    job = stream_jobs.create("skill.rewrite")
+    stream_jobs.append(job.id, "job_started", {"job_id": job.id, "name": job.name, "skill_id": skill_id})
+    enqueue_async_job(
+        "skill.rewrite_stream",
+        _run_rewrite_stream_job,
+        job.id,
+        skill_id,
+        request.model_dump(mode="json"),
+        metadata={"tenant_id": request.tenant_id, "job_id": job.id, "skill_id": skill_id},
+    )
+    return job.id
+
+
+def _run_distill_stream_job(job_id: str, request_data: dict[str, object]) -> None:
+    stream_jobs.start(job_id)
+    try:
+        request = SkillDistillRequest.model_validate(request_data)
+        with Session(get_session_engine()) as db:
+            ensure_tenant(db, request.tenant_id)
+            model_config = _get_default_model(db, request.tenant_id)
+            enriched_request = _with_available_tools(db, request)
+            stream_jobs.append(job_id, "status", {"text": "正在调用模型生成新技能"})
+            for item in SkillDistiller().stream_text(enriched_request, model_config):
+                if stream_jobs.is_cancelled(job_id):
+                    stream_jobs.append(job_id, "status", {"text": "已停止生成"})
+                    stream_jobs.complete(job_id)
+                    return
+                stream_jobs.append(job_id, str(item["event"]), dict(item["data"]))
+        stream_jobs.complete(job_id)
+    except Exception as exc:  # noqa: BLE001 - expose stable job failure to UI.
+        stream_jobs.fail(job_id, str(exc))
+
+
+def _run_rewrite_stream_job(job_id: str, skill_id: str, request_data: dict[str, object]) -> None:
+    stream_jobs.start(job_id)
+    try:
+        request = SkillRewriteRequest.model_validate(request_data)
+        if request.current_skill.skill_id != skill_id:
+            raise ValueError("Path skill_id must match current_skill.skill_id")
+        with Session(get_session_engine()) as db:
+            ensure_tenant(db, request.tenant_id)
+            model_config = _get_default_model(db, request.tenant_id)
+            enriched_request = _with_available_tools_for_rewrite(db, request)
+            stream_jobs.append(job_id, "status", {"text": "正在调用模型分析改写要求"})
+            for item in SkillEditor().stream_text(enriched_request, model_config):
+                if stream_jobs.is_cancelled(job_id):
+                    stream_jobs.append(job_id, "status", {"text": "已停止改写"})
+                    stream_jobs.complete(job_id)
+                    return
+                stream_jobs.append(job_id, str(item["event"]), dict(item["data"]))
+        stream_jobs.complete(job_id)
+    except Exception as exc:  # noqa: BLE001 - expose stable job failure to UI.
+        stream_jobs.fail(job_id, str(exc))
+
+
+def _stream_skill_job(job_id: str, after_seq: int = 0) -> Iterator[str]:
+    last_seq = max(0, after_seq)
+    yield _sse("job_attached", {"job_id": job_id, "after_seq": after_seq})
+    while True:
+        job, events = stream_jobs.snapshot(job_id, last_seq)
+        if not job:
+            yield _sse("error", {"message": "Job not found"})
+            return
+        for event in events:
+            last_seq = event.seq
+            yield _sse_event(event, job_id)
+        if job.status in {"succeeded", "failed"} and not events:
+            yield _sse("job_complete", {"job_id": job_id, "status": job.status, "error": job.error})
+            return
+        sleep(0.15)
+
+
+def _sse_event(event: SkillStreamEvent, job_id: str) -> str:
+    data = {"job_id": job_id, "seq": event.seq, **event.data}
+    return _sse(event.event, data)
 
 
 def get_session_engine():

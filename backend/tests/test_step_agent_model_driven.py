@@ -39,7 +39,12 @@ def test_step_agent_uses_model_json_for_slots_and_tool(monkeypatch):
             tenant_id="tenant_demo",
             active_skill_id="repair_ticket",
             active_step_id="collect_issue",
-            last_agent_question="请描述设备问题。",
+            awaiting_input_json={
+                "skill_id": "repair_ticket",
+                "step_id": "collect_issue",
+                "expected_fields": ["issue"],
+                "question_summary": "请描述设备问题。",
+            },
         ),
         _repair_skill(),
         [_ticket_tool()],
@@ -67,7 +72,7 @@ def test_step_agent_uses_model_json_for_slots_and_tool(monkeypatch):
     assert captured["payload"]["router_decision"]["user_intent"] == "设备报修"
     assert captured["payload"]["recent_messages"][0]["content"] == "我是张三，设备 EQ-9 无法启动"
     assert captured["payload"]["memory_context"][0]["metadata"]["key"] == "preferred_name"
-    assert captured["payload"]["last_agent_question"] == "请描述设备问题。"
+    assert captured["payload"]["awaiting_input"]["question_summary"] == "请描述设备问题。"
     assert "repair_context" in captured["payload"]
     assert result.slot_updates["asset_id"] == "EQ-9"
     assert result.tool_call is not None
