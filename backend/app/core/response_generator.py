@@ -11,24 +11,6 @@ from app.tools.tool_schema import ToolResult
 
 PROMPT_PATH = Path(__file__).resolve().parents[1] / "llm" / "prompts" / "response_generator_prompt.md"
 FALLBACK_REPLY = "抱歉，我暂时无法处理这个问题。您可以换个说法，或者我可以帮您转人工。"
-PENDING_ACTION_TERMS = (
-    "请稍候",
-    "请稍等",
-    "稍候",
-    "稍等",
-    "稍后",
-    "正在为您",
-    "正在帮您",
-    "正在处理",
-    "正在创建",
-    "正在查询",
-    "正在核实",
-    "处理中",
-    "创建中",
-    "查询中",
-    "核实中",
-    "稍后反馈",
-)
 
 
 class ResponseGenerator:
@@ -180,12 +162,6 @@ class ResponseGenerator:
         )
         return not any(term in text for term in internal_terms)
 
-    def _is_unverified_pending_reply(self, text: str, tool_result: ToolResult | None) -> bool:
-        if tool_result is not None:
-            return False
-        normalized = text.replace(" ", "")
-        return any(term in normalized for term in PENDING_ACTION_TERMS)
-
     def _visible_reply_or_fallback(
         self,
         reply: str,
@@ -204,13 +180,11 @@ class ResponseGenerator:
             tool_result,
             completion_ready,
         )
-        for candidate, reject_pending in candidates:
+        for candidate in candidates:
             stripped = candidate.strip()
             if not stripped:
                 continue
             if not self._is_user_safe(stripped):
-                continue
-            if reject_pending and self._is_unverified_pending_reply(stripped, tool_result):
                 continue
             if self._is_stale_last_question(stripped, session):
                 continue
@@ -225,29 +199,37 @@ class ResponseGenerator:
         session_fallback: str,
         tool_result: ToolResult | None,
         completion_ready: bool,
-    ) -> tuple[tuple[str, bool], ...]:
+    ) -> tuple[str, ...]:
         if completion_ready:
+            if tool_result is None:
+                return (
+                    completion_fallback,
+                    step_reply,
+                    model_reply,
+                    session_fallback,
+                    FALLBACK_REPLY,
+                )
             return (
-                (model_reply, True),
-                (completion_fallback, False),
-                (step_reply, tool_result is None),
-                (session_fallback, False),
-                (FALLBACK_REPLY, False),
+                model_reply,
+                completion_fallback,
+                step_reply,
+                session_fallback,
+                FALLBACK_REPLY,
             )
         if tool_result is not None:
             return (
-                (model_reply, True),
-                (step_reply, False),
-                (completion_fallback, False),
-                (session_fallback, False),
-                (FALLBACK_REPLY, False),
+                model_reply,
+                step_reply,
+                completion_fallback,
+                session_fallback,
+                FALLBACK_REPLY,
             )
         return (
-            (model_reply, True),
-            (step_reply, False),
-            (completion_fallback, False),
-            (session_fallback, False),
-            (FALLBACK_REPLY, False),
+            step_reply,
+            model_reply,
+            completion_fallback,
+            session_fallback,
+            FALLBACK_REPLY,
         )
 
     def _progress_payload(

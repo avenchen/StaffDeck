@@ -118,6 +118,50 @@ def test_pending_step_reply_without_tool_result_does_not_fall_back_to_last_quest
     assert reply != "请提供您的订单号。"
 
 
+def test_pending_phrase_in_confirmation_question_is_not_rejected(monkeypatch):
+    step_reply = (
+        "好的，已为您记录购买 1 个 A1 的意向。"
+        "稍后我会为您处理 iPhone 15 的购买需求。"
+        "请问确认为您创建 1 个 A1 的订单吗？"
+    )
+
+    def fake_init(self, model_config):  # noqa: ANN001
+        return None
+
+    def fake_generate_text(self, system_prompt, payload):  # noqa: ANN001
+        return "请您再补充一下具体诉求，我会继续帮您处理。"
+
+    monkeypatch.setattr(LLMClient, "__init__", fake_init)
+    monkeypatch.setattr(LLMClient, "generate_text", fake_generate_text)
+
+    reply = ResponseGenerator().generate(
+        message="嗯，我买一个A1吧，然后我还想再买一个iphone15",
+        session=ChatSession(
+            id="session_test",
+            tenant_id="tenant_demo",
+            active_skill_id="skill_purchase_001",
+            active_step_id="confirm_purchase",
+            slots_json={"user_name": "哈", "product_id": "A1", "quantity": 1},
+            pending_tasks_json=[
+                {
+                    "decision": "start_skill",
+                    "target_skill_id": "skill_purchase_001",
+                    "target_step_id": "collect_user_name",
+                    "slot_hints": {"product_id": "iphone15", "quantity": 1},
+                }
+            ],
+        ),
+        skill=None,
+        router_decision=RouterDecision(decision="continue_current_skill"),
+        step_result=StepAgentResult(reply=step_reply, next_step_id="confirm_purchase"),
+        tool_result=None,
+        model_config=None,  # type: ignore[arg-type]
+    )
+
+    assert reply == step_reply
+    assert "具体诉求" not in reply
+
+
 def test_stale_model_reply_does_not_override_current_step_reply(monkeypatch):
     stale_price_reply = (
         "您好，已为您查询到 A1 和 A3 的价格信息：\n\n"
