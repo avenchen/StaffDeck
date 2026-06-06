@@ -1749,17 +1749,19 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
                                 </div>
                               </div>
                               <div className="skill-tool-suggestion-actions top">
-                                <Tooltip title="查看详情">
-                                  <Button
-                                    className="skill-tool-action"
-                                    size="small"
-                                    type="text"
-                                    icon={<InfoCircleOutlined />}
-                                    onClick={() => openToolDetail(item.id, suggestion)}
-                                  />
-                                </Tooltip>
+                                <span className="skill-tool-action-group detail">
+                                  <Tooltip title="查看详情">
+                                    <Button
+                                      className="skill-tool-action"
+                                      size="small"
+                                      type="text"
+                                      icon={<InfoCircleOutlined />}
+                                      onClick={() => openToolDetail(item.id, suggestion)}
+                                    />
+                                  </Tooltip>
+                                </span>
                                 {canResolveSuggestion && (
-                                  <>
+                                  <span className="skill-tool-action-group decision">
                                     <Tooltip title="确认新增">
                                       <Button
                                         className="skill-tool-action confirm"
@@ -1779,7 +1781,7 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
                                         onClick={() => rejectToolSuggestion(item.id, suggestion.name)}
                                       />
                                     </Tooltip>
-                                  </>
+                                  </span>
                                 )}
                               </div>
                             </div>
