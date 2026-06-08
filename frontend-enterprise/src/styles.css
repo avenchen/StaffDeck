@@ -548,6 +548,54 @@ body.skill-distill-fixed .content {
   line-height: 1.6;
 }
 
+.general-trace-code {
+  margin-top: 10px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.general-trace-code > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 9px 12px;
+  color: var(--foreground);
+  font-size: 12px;
+  font-weight: 760;
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+}
+
+.general-trace-code > summary::-webkit-details-marker {
+  display: none;
+}
+
+.general-trace-code > summary::after {
+  content: '展开';
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 620;
+}
+
+.general-trace-code[open] > summary {
+  border-bottom: 1px solid var(--line);
+}
+
+.general-trace-code[open] > summary::after {
+  content: '收起';
+}
+
+.general-trace-code .general-code-block {
+  border: 0;
+  border-radius: 0;
+  background: #fbfaf7;
+}
+
 .general-code-block {
   max-height: 520px;
   margin: 0;

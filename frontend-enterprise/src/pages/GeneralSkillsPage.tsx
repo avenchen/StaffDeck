@@ -58,22 +58,21 @@ function formatJson(value: unknown): string {
   return JSON.stringify(value, null, 2);
 }
 
-function traceCode(trace: Array<Record<string, unknown>> = []): string {
-  const item = trace.find((entry) => typeof entry.code === 'string' && entry.code.trim());
-  return typeof item?.code === 'string' ? item.code : '';
-}
-
 function traceDetail(item: Record<string, unknown>): string {
   return [
     item.rationale,
     item.expected_output,
-    item.stdout_preview,
-    item.stderr_preview,
+    item.phase === 'code_finished' ? item.stdout_preview : undefined,
+    item.phase === 'code_finished' || item.phase === 'code_timeout' ? item.stderr_preview : undefined,
     item.run_id,
   ]
     .filter((value) => typeof value === 'string' && value.trim())
     .map(String)
     .join('\n');
+}
+
+function traceItemCode(item: Record<string, unknown>): string {
+  return typeof item.code === 'string' && item.code.trim() ? item.code : '';
 }
 
 function resultSucceeded(result: Partial<GeneralSkillRunResponse> | null): boolean {
@@ -265,7 +264,6 @@ export default function GeneralSkillsPage({ embedded = false }: { embedded?: boo
     return false;
   }
 
-  const generatedCode = activeResult?.generated_code || traceCode(activeResult?.execution_trace);
   const isLiveRunning = loading && !runResult;
 
   return (
@@ -359,6 +357,14 @@ export default function GeneralSkillsPage({ embedded = false }: { embedded?: boo
           >
             {activeResult ? (
               <div className="general-result-layout">
+                {(() => {
+                  const traceItems = activeResult.execution_trace || [];
+                  const latestCodeIndex = traceItems.reduce(
+                    (latest, traceItem, traceIndex) => (traceItemCode(traceItem) ? traceIndex : latest),
+                    -1,
+                  );
+                  return (
+                    <>
                 <section className="general-reply-panel">
                   <div className="general-section-label">最终回复</div>
                   <Typography.Paragraph className="result-reply">
@@ -369,9 +375,13 @@ export default function GeneralSkillsPage({ embedded = false }: { embedded?: boo
                 <section>
                   <div className="general-section-label">执行流程</div>
                   <div className="general-trace-list">
-                    {(activeResult.execution_trace || []).map((item, index) => {
+                    {traceItems.map((item, index) => {
                       const phase = typeof item.phase === 'string' ? item.phase : '';
                       const detail = traceDetail(item);
+                      const code = traceItemCode(item);
+                      const codeTitle = typeof item.attempt === 'number'
+                        ? `第 ${item.attempt} 次 Python runner`
+                        : 'Python runner';
                       return (
                         <div className="general-trace-item" key={`${phase || 'phase'}-${index}`}>
                           <div className="general-trace-dot" />
@@ -379,20 +389,20 @@ export default function GeneralSkillsPage({ embedded = false }: { embedded?: boo
                             <div className="general-trace-title">{PHASE_LABELS[phase] || String(item.message || phase || '执行')}</div>
                             <div className="general-trace-message">{String(item.message || '')}</div>
                             {detail && <pre className="general-trace-detail">{detail}</pre>}
+                            {code && (
+                              <details className="general-trace-code" open={index === latestCodeIndex}>
+                                <summary>
+                                  <CodeOutlined />
+                                  <span>{codeTitle}</span>
+                                </summary>
+                                <pre className="general-code-block"><code>{code}</code></pre>
+                              </details>
+                            )}
                           </div>
                         </div>
                       );
                     })}
                   </div>
-                </section>
-
-                <section>
-                  <div className="general-section-label">模型生成代码</div>
-                  {generatedCode ? (
-                    <pre className="general-code-block"><code>{generatedCode}</code></pre>
-                  ) : (
-                    <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="本次没有返回代码" />
-                  )}
                 </section>
 
                 <section>
@@ -418,6 +428,9 @@ export default function GeneralSkillsPage({ embedded = false }: { embedded?: boo
                     ]}
                   />
                 </section>
+                    </>
+                  );
+                })()}
               </div>
             ) : (
               <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="运行后将在这里显示回复、执行流程、代码和输出" />
