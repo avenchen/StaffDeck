@@ -1247,7 +1247,7 @@ export default function ChatWindowPage() {
                                   ) : (
                                     <CloudSyncOutlined />
                                   )}
-                                    <span>
+                                    <span className="turn-trace-content">
                                       <span className="trace-primary-text" data-text={line.text}>{line.text}</span>
                                       {line.detail && <span className="turn-trace-detail">{line.detail}</span>}
                                       {line.code && (

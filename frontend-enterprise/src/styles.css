@@ -506,6 +506,11 @@ body.skill-distill-fixed .content {
   min-width: 0;
 }
 
+.general-trace-item > div {
+  min-width: 0;
+  max-width: 100%;
+}
+
 .general-trace-dot {
   width: 7px;
   height: 7px;
@@ -525,6 +530,8 @@ body.skill-distill-fixed .content {
   color: var(--muted);
   font-size: 12px;
   line-height: 1.55;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .general-trace-detail,
@@ -549,6 +556,10 @@ body.skill-distill-fixed .content {
 }
 
 .general-trace-code {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   margin-top: 10px;
   border: 1px solid var(--border);
   border-radius: 12px;
