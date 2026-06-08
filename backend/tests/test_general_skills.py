@@ -180,6 +180,68 @@ def test_general_skill_runner_repairs_failed_code(monkeypatch) -> None:
     assert any(item["phase"] == "stdout_chunk" and "first_fail" in item["text"] for item in events)
 
 
+def test_general_skill_runner_stops_on_non_retryable_failure(monkeypatch) -> None:
+    calls: list[str] = []
+
+    def fake_init(self, model_config):  # noqa: ANN001
+        return None
+
+    def fake_generate_json(self, system_prompt, payload):  # noqa: ANN001
+        prompt_text = str(system_prompt)
+        if "通用技能执行器" in prompt_text:
+            calls.append("runner")
+            return {
+                "code": (
+                    "import json\n"
+                    "print(json.dumps({"
+                    "'success': False, "
+                    "'error': 'source_unavailable', "
+                    "'message': '天气源不可用', "
+                    "'attempted_urls': ['https://example.invalid/weather'], "
+                    "'exception_type': 'TimeoutError', "
+                    "'exception_message': 'timed out', "
+                    "'retryable': False"
+                    "}, ensure_ascii=False))\n"
+                ),
+                "rationale": "返回不可自动修复的失败",
+            }
+        if "代码修复器" in prompt_text:
+            calls.append("repair")
+            raise AssertionError("non-retryable failure should not call repair")
+        if "通用技能结果回复器" in prompt_text:
+            calls.append("reply")
+            assert payload["structured_result"]["retryable"] is False
+            return {"reply": "当前天气源不可用，建议稍后再试。"}
+        raise AssertionError("unexpected prompt")
+
+    monkeypatch.setattr(LLMClient, "__init__", fake_init)
+    monkeypatch.setattr(LLMClient, "generate_json", fake_generate_json)
+
+    skill = GeneralSkill(
+        tenant_id="tenant_demo",
+        slug="weather-zh",
+        name="中国城市天气",
+        description="中国城市天气查询工具",
+        homepage="https://www.weather.com.cn/",
+        skill_markdown=WEATHER_SKILL_MD,
+        status="published",
+    )
+    model_config = ModelConfig(
+        tenant_id="tenant_demo",
+        name="Fake model",
+        api_key_encrypted=encrypt_secret("test-key"),
+        model="fake",
+        is_default=True,
+        enabled=True,
+    )
+
+    response = GeneralSkillRunner().run(skill, "北京今天天气怎么样", model_config, max_attempts=10)
+
+    assert response.reply == "当前天气源不可用，建议稍后再试。"
+    assert calls == ["runner", "reply"]
+    assert any(item["phase"] == "reflection_stopped" for item in response.execution_trace)
+
+
 def _seed_minimal_tenant(db: Session) -> None:
     db.add(Tenant(id="tenant_demo", name="Demo"))
     db.add(

@@ -118,6 +118,7 @@ class GeneralSkillRunner:
                 event_sink,
                 attempt,
             )
+            _normalize_failure_diagnostics(structured_result)
             attempts.append(
                 {
                     "attempt": attempt,
@@ -127,12 +128,25 @@ class GeneralSkillRunner:
                     "structured_result": structured_result,
                 }
             )
-            if not _execution_needs_retry(stdout, stderr, structured_result):
-                _emit(
-                    trace,
-                    {"phase": "reflection_passed", "message": f"第 {attempt} 次运行结果可用", "attempt": attempt},
-                    event_sink,
-                )
+            needs_retry = _execution_needs_retry(stdout, stderr, structured_result)
+            if not needs_retry:
+                if structured_result.get("success") is False:
+                    _emit(
+                        trace,
+                        {
+                            "phase": "reflection_stopped",
+                            "message": f"第 {attempt} 次运行失败，但模型判断不可继续自动修复",
+                            "attempt": attempt,
+                            "structured_result": structured_result,
+                        },
+                        event_sink,
+                    )
+                else:
+                    _emit(
+                        trace,
+                        {"phase": "reflection_passed", "message": f"第 {attempt} 次运行结果可用", "attempt": attempt},
+                        event_sink,
+                    )
                 break
             if attempt >= max_attempts:
                 _emit(
@@ -485,6 +499,8 @@ def _emit(trace: list[dict[str, Any]], item: dict[str, Any], event_sink: TraceSi
 
 def _execution_needs_retry(stdout: str, stderr: str, structured_result: dict[str, Any]) -> bool:
     if structured_result.get("success") is False:
+        if structured_result.get("retryable") is False or structured_result.get("terminal") is True:
+            return False
         return True
     if structured_result.get("error") or structured_result.get("error_code"):
         return True
@@ -493,6 +509,35 @@ def _execution_needs_retry(stdout: str, stderr: str, structured_result: dict[str
     if not stdout.strip():
         return True
     return False
+
+
+def _normalize_failure_diagnostics(structured_result: dict[str, Any]) -> None:
+    if structured_result.get("success") is not False:
+        return
+    diagnostic_keys = {
+        "diagnostics",
+        "attempted_urls",
+        "status_code",
+        "exception",
+        "exception_type",
+        "response_preview",
+        "parse_strategy",
+    }
+    if any(key in structured_result for key in diagnostic_keys):
+        return
+    structured_result.setdefault("diagnostics_missing", True)
+    structured_result.setdefault(
+        "diagnostics_required",
+        [
+            "attempted_urls",
+            "status_code",
+            "exception_type",
+            "exception_message",
+            "response_preview",
+            "parse_strategy",
+            "retryable",
+        ],
+    )
 
 
 def _with_min_tokens(model_config: ModelConfig, max_output_tokens: int) -> ModelConfig:
