@@ -21,10 +21,12 @@ class Router:
         available_skills: list[Skill],
         model_config: ModelConfig,
         conversation_context: dict[str, object] | None = None,
+        memory_context: list[dict[str, object]] | None = None,
     ) -> RouterDecision:
         payload = {
             "user_message": message,
             "conversation_context": conversation_context or {},
+            "memory_context": memory_context or [],
             "current_session": public_session(session).model_dump(),
             "available_skills": [
                 {

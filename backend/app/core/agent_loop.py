@@ -402,7 +402,7 @@ class AgentLoop:
 
             yield self._stream_status(chat_session, "routing", "正在判断用户意图")
             router_decision = self.router.decide(
-                request.message, chat_session, skills, model_config, router_context
+                request.message, chat_session, skills, model_config, router_context, memory_context
             )
             self.events.record(
                 request.tenant_id,
@@ -684,7 +684,7 @@ class AgentLoop:
 
         status("routing")
         router_decision = self.router.decide(
-            request.message, chat_session, skills, model_config, router_context
+            request.message, chat_session, skills, model_config, router_context, memory_context
         )
         self.events.record(
             request.tenant_id,
@@ -1472,7 +1472,10 @@ class AgentLoop:
             memory_context=memory_context,
             conversation_context=conversation_context,
         )
-        if not self._step_result_has_progress(validation_result):
+        if not self._step_result_has_progress(validation_result) and not self._step_result_has_reply_repair(
+            step_result,
+            validation_result,
+        ):
             return step_result
         if not validation_result.reply and step_result.reply:
             validation_result.reply = step_result.reply
@@ -1499,10 +1502,23 @@ class AgentLoop:
     ) -> bool:
         if step_result.slot_updates:
             return True
-        return router_decision.decision in {"continue_current_skill", "jump_within_current_skill"}
+        return router_decision.decision in {
+            "start_new_task",
+            "start_skill",
+            "continue_active",
+            "continue_current_skill",
+            "jump_within_current_skill",
+        }
 
     def _step_result_has_progress(self, step_result: StepAgentResult) -> bool:
         return bool(step_result.slot_updates or step_result.tool_call or step_result.handoff)
+
+    def _step_result_has_reply_repair(
+        self, previous_result: StepAgentResult, validation_result: StepAgentResult
+    ) -> bool:
+        previous_reply = (previous_result.reply or "").strip()
+        repaired_reply = (validation_result.reply or "").strip()
+        return bool(repaired_reply and repaired_reply != previous_reply)
 
     def _missing_expected_fields(
         self, skill: Skill | None, chat_session: ChatSession
@@ -1524,6 +1540,8 @@ class AgentLoop:
     ) -> bool:
         if router_decision.decision not in {
             "start_skill",
+            "start_new_task",
+            "continue_active",
             "continue_current_skill",
             "jump_within_current_skill",
             "suspend_current_and_start_new_skill",

@@ -43,12 +43,14 @@ def test_router_payload_exposes_step_details_and_allows_compound_interrupt(monke
         ),
         [_purchase_skill(), _price_compare_skill()],
         model_config=None,  # type: ignore[arg-type]
+        memory_context=[{"kind": "profile", "content": "用户姓名/称呼：hm"}],
     )
 
     assert decision.decision == "answer_related_question_then_resume"
     assert decision.target_skill_id == "price_compare"
     assert decision.target_step_id == "collect_products"
     assert captured["payload"]["current_session"]["active_skill_id"] == "purchase"
+    assert captured["payload"]["memory_context"] == [{"kind": "profile", "content": "用户姓名/称呼：hm"}]
 
 
 def test_router_accepts_ordered_pending_tasks(monkeypatch):

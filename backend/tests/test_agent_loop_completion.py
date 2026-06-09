@@ -579,6 +579,57 @@ def test_model_slot_validation_retry_does_not_fill_without_model_progress() -> N
     )
 
 
+def test_start_new_task_slot_validation_accepts_reply_repair() -> None:
+    loop = object.__new__(AgentLoop)
+    loop.events = FakeEvents()
+    loop.step_agent = _FakeStepAgent(
+        [
+            StepAgentResult(
+                reply="好的，hm！请问您想购买什么商品？另外，请提供您的姓名以便我们为您下单。",
+                slot_updates={"user_name": "hm"},
+                next_step_id="collect_user_name",
+            ),
+            StepAgentResult(
+                reply="好的，hm！请问您想购买什么商品？需要购买多少件？",
+                next_step_id="collect_user_name",
+            ),
+        ]
+    )
+    session = ChatSession(
+        id="session_test",
+        tenant_id="tenant_demo",
+        active_skill_id="purchase",
+        active_step_id="collect_user_name",
+        slots_json={},
+    )
+
+    step_result = loop._run_step_agent_with_context_repair(
+        _request("我想买东西"),
+        session,
+        _purchase_skill(),
+        [_purchase_tool()],
+        _model_config(),
+        RouterDecision(decision="start_new_task", target_skill_id="purchase"),
+        memory_context=[
+            {
+                "kind": "profile",
+                "content": "用户姓名/称呼：hm",
+                "metadata": {"key": "preferred_name"},
+            }
+        ],
+        conversation_context={"messages": [{"role": "user", "content": "我想买东西"}]},
+    )
+
+    assert loop.step_agent.calls == 2
+    assert session.slots_json["user_name"] == "hm"
+    assert step_result.reply == "好的，hm！请问您想购买什么商品？需要购买多少件？"
+    assert any(
+        event_type == "step_agent_result_repaired"
+        and payload.get("mode") == "slot_validation"
+        for _, _, event_type, payload in loop.events.records
+    )
+
+
 def test_tool_step_self_loop_advances_to_reply_and_completes_after_success() -> None:
     loop = object.__new__(AgentLoop)
     loop.events = FakeEvents()
