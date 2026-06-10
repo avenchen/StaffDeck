@@ -938,19 +938,20 @@ textarea,
 .turn-trace-summary,
 .turn-trace-line {
   min-width: 0;
-  display: flex;
+  display: grid;
   align-items: center;
-  gap: 8px;
+  column-gap: 8px;
   max-width: 100%;
   color: var(--muted);
   font-size: 13px;
-  line-height: 1.55;
+  line-height: 20px;
 }
 
 .turn-trace-summary {
   width: fit-content;
   max-width: 100%;
-  min-height: 24px;
+  min-height: 28px;
+  grid-template-columns: 22px minmax(0, auto) 18px;
   padding: 0;
   border: 0;
   background: transparent;
@@ -975,6 +976,7 @@ textarea,
 
 .turn-trace-line {
   align-items: center;
+  grid-template-columns: 22px minmax(0, 1fr);
   padding: 0;
 }
 
@@ -991,6 +993,7 @@ textarea,
   flex: 1 1 auto;
   min-width: 0;
   max-width: 100%;
+  line-height: 20px;
   overflow-wrap: anywhere;
   word-break: break-word;
 }
@@ -1054,31 +1057,46 @@ textarea,
   border-radius: 0;
 }
 
-.turn-trace-summary .anticon,
-.turn-trace-line .anticon,
+.trace-icon-slot,
+.trace-chevron-slot {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  align-self: center;
+  color: #7e8b86;
+  line-height: 0;
+}
+
+.trace-chevron-slot {
+  width: 18px;
+  height: 22px;
+}
+
+.trace-icon-slot .anticon,
+.trace-chevron-slot .anticon,
 .trace-terminal-icon {
-  flex: 0 0 20px;
   color: #7e8b86;
 }
 
-.turn-trace-summary > .anticon,
-.turn-trace-line > .anticon {
-  width: 20px;
-  height: 20px;
-  display: inline-grid;
+.trace-icon-slot .anticon,
+.trace-chevron-slot .anticon {
+  width: 22px;
+  height: 22px;
+  display: grid;
   place-items: center;
   line-height: 0;
 }
 
-.turn-trace-summary > .anticon svg,
-.turn-trace-line > .anticon svg {
+.trace-icon-slot .anticon svg,
+.trace-chevron-slot .anticon svg {
   display: block;
-  width: 18px;
-  height: 18px;
+  width: 17px;
+  height: 17px;
 }
 
-.turn-trace-summary.running .anticon:first-child,
-.turn-trace-line.running .anticon,
+.turn-trace-summary.running .trace-icon-slot,
+.turn-trace-line.running .trace-icon-slot,
 .turn-trace-line.running .trace-terminal-icon {
   animation: none;
   color: #7e8b86;
@@ -1135,8 +1153,8 @@ textarea,
   color: var(--warning);
 }
 
-.turn-trace-summary.failed .anticon,
-.turn-trace-line.failed .anticon {
+.turn-trace-summary.failed .trace-icon-slot,
+.turn-trace-line.failed .trace-icon-slot {
   color: var(--warning);
   animation: none;
 }

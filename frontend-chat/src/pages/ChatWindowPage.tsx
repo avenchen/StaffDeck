@@ -1274,23 +1274,29 @@ export default function ChatWindowPage() {
                             className={`turn-trace-summary ${summary.state}`}
                             onClick={() => toggleTrace(turnId)}
                           >
-                            <CloudSyncOutlined />
+                            <span className="trace-icon-slot"><CloudSyncOutlined /></span>
                             <span className="trace-primary-text" data-text={summary.text}>{summary.text}</span>
-                            {details.length > 0 && (expanded ? <DownOutlined /> : <RightOutlined />)}
+                            {details.length > 0 && (
+                              <span className="trace-chevron-slot">
+                                {expanded ? <DownOutlined /> : <RightOutlined />}
+                              </span>
+                            )}
                           </button>
                           {expanded && details.length > 0 && (
                             <div className="turn-trace-details">
                               {details.map((line) => (
                                 <div key={line.id} className={`turn-trace-line ${line.kind} ${line.state}`}>
-                                  {line.kind === 'skill' ? (
-                                    <BranchesOutlined />
-                                  ) : line.kind === 'tool' ? (
-                                    <ToolOutlined />
-                                  ) : line.kind === 'code' ? (
-                                    <TerminalTraceIcon />
-                                  ) : (
-                                    <CloudSyncOutlined />
-                                  )}
+                                  <span className="trace-icon-slot">
+                                    {line.kind === 'skill' ? (
+                                      <BranchesOutlined />
+                                    ) : line.kind === 'tool' ? (
+                                      <ToolOutlined />
+                                    ) : line.kind === 'code' ? (
+                                      <TerminalTraceIcon />
+                                    ) : (
+                                      <CloudSyncOutlined />
+                                    )}
+                                  </span>
                                     <span className="turn-trace-content">
                                       <span className="trace-primary-text" data-text={line.text}>{line.text}</span>
                                       {line.detail && <span className="turn-trace-detail">{line.detail}</span>}
