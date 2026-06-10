@@ -62,6 +62,9 @@ type TraceLine = {
   detail?: string;
   code?: string;
   language?: string;
+  output?: string;
+  outputLanguage?: string;
+  outputTitle?: string;
   state: 'running' | 'completed' | 'failed';
   collapsible?: boolean;
 };
@@ -447,6 +450,55 @@ function reflectionTraceDetail(data: Record<string, unknown>): string | undefine
   return parts.length > 0 ? parts.join(' · ') : undefined;
 }
 
+function formatTracePayload(value: unknown): string {
+  if (value === undefined || value === null || value === '') return '';
+  if (typeof value === 'string') {
+    try {
+      return JSON.stringify(JSON.parse(value), null, 2);
+    } catch {
+      return value;
+    }
+  }
+  return JSON.stringify(value, null, 2);
+}
+
+function tracePayloadLanguage(value: string): string {
+  if (!value.trim()) return 'text';
+  try {
+    JSON.parse(value);
+    return 'json';
+  } catch {
+    return 'text';
+  }
+}
+
+function generalSkillTraceOutput(data: Record<string, unknown>, phase: string, accumulatedText?: string): {
+  output?: string;
+  language?: string;
+  title?: string;
+} {
+  if (phase === 'stdout_chunk') {
+    const output = formatTracePayload(accumulatedText || data.stdout_preview || data.text);
+    return output ? { output, language: tracePayloadLanguage(output), title: '查看运行输出' } : {};
+  }
+  if (phase === 'stderr_chunk') {
+    const output = formatTracePayload(accumulatedText || data.stderr_preview || data.text);
+    return output ? { output, language: tracePayloadLanguage(output), title: '查看错误输出' } : {};
+  }
+  if (phase === 'code_finished' || phase === 'code_timeout') {
+    const result: Record<string, unknown> = {};
+    if ('return_code' in data) result.return_code = data.return_code;
+    if ('structured_result' in data) result.structured_result = data.structured_result;
+    if (typeof data.stdout_preview === 'string' && data.stdout_preview.trim()) result.stdout = data.stdout_preview;
+    if (typeof data.stderr_preview === 'string' && data.stderr_preview.trim()) result.stderr = data.stderr_preview;
+    const output = Object.keys(result).length > 0
+      ? formatTracePayload(result)
+      : formatTracePayload(data.stdout_preview || data.stderr_preview || data.text);
+    return output ? { output, language: tracePayloadLanguage(output), title: phase === 'code_timeout' ? '查看超时结果' : '查看执行结果' } : {};
+  }
+  return {};
+}
+
 function traceLineAllowed(line: TraceLine, config: UIConfigRead): boolean {
   if (line.kind === 'thinking' || line.kind === 'decision') return config.show_thinking_trace;
   if (line.kind === 'code') return config.show_thinking_trace;
@@ -469,7 +521,7 @@ function traceDetails(lines: TraceLine[]): TraceLine[] {
   const hiddenPlaceholders = new Set(['正在思考', '已完成思考']);
   const details = lines.filter((line) => {
     if (line.kind === 'thinking') return false;
-    if (hiddenPlaceholders.has(line.text) && !line.detail && !line.code) return false;
+    if (hiddenPlaceholders.has(line.text) && !line.detail && !line.code && !line.output) return false;
     return true;
   });
   return details.length > 0 ? details : lines.filter((line) => line.text !== '已完成思考');
@@ -962,9 +1014,11 @@ export default function ChatWindowPage() {
                   ? item.data.stderr_preview
                   : undefined;
           const existing = trace.lines.find((line) => line.id === id);
-          const detail = isOutputChunk && existing?.detail && rawDetail
-            ? `${existing.detail}${rawDetail}`
+          const previousOutput = existing?.output || existing?.detail || '';
+          const detail = isOutputChunk && previousOutput && rawDetail
+            ? `${previousOutput}${rawDetail}`
             : rawDetail;
+          const outputInfo = generalSkillTraceOutput(item.data, phase, detail);
           const codePhases = new Set([
             'plan_created',
             'attempt_started',
@@ -986,11 +1040,14 @@ export default function ChatWindowPage() {
             id,
             kind: codePhases.has(phase) ? 'code' : 'decision',
             text,
-            detail,
+            detail: outputInfo.output ? undefined : detail,
             code: code || undefined,
             language: code ? 'python' : undefined,
+            output: outputInfo.output,
+            outputLanguage: outputInfo.language,
+            outputTitle: outputInfo.title,
             state: runningPhases.has(phase) ? 'running' : phase.includes('failed') || phase === 'code_timeout' ? 'failed' : 'completed',
-            collapsible: Boolean(code),
+            collapsible: Boolean(code || outputInfo.output),
           });
           return;
         }
@@ -1304,6 +1361,12 @@ export default function ChatWindowPage() {
                                         <details className="turn-trace-code-wrap" open>
                                           <summary>查看代码</summary>
                                           <CodeBlock className="turn-trace-code" code={line.code} language={line.language || 'python'} />
+                                        </details>
+                                      )}
+                                      {line.output && (
+                                        <details className="turn-trace-code-wrap turn-trace-output-wrap" open>
+                                          <summary>{line.outputTitle || '查看输出'}</summary>
+                                          <CodeBlock className="turn-trace-code" code={line.output} language={line.outputLanguage || 'text'} />
                                         </details>
                                       )}
                                     </span>

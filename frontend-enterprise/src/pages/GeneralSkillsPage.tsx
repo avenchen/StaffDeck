@@ -7,7 +7,7 @@ import {
   PlayCircleOutlined,
   UploadOutlined,
 } from '@ant-design/icons';
-import { Button, Card, Empty, Input, Select, Space, Tabs, Tag, Typography, Upload, message } from 'antd';
+import { Button, Card, Empty, Input, Select, Space, Tag, Typography, Upload, message } from 'antd';
 import type { UploadFile } from 'antd';
 import { useEffect, useMemo, useState } from 'react';
 import { api, streamPost, TENANT_ID } from '../api/client';
@@ -56,6 +56,36 @@ function formatJson(value: unknown): string {
     }
   }
   return JSON.stringify(value, null, 2);
+}
+
+function codeLanguage(value: string, fallback = 'text'): string {
+  const trimmed = value.trim();
+  if (!trimmed) return fallback;
+  try {
+    JSON.parse(trimmed);
+    return 'json';
+  } catch {
+    return fallback;
+  }
+}
+
+function RunCodePanel({
+  title,
+  code,
+  language,
+  defaultOpen = false,
+}: {
+  title: string;
+  code: string;
+  language?: string;
+  defaultOpen?: boolean;
+}) {
+  return (
+    <details className="general-trace-code general-output-code" open={defaultOpen}>
+      <summary>{title}</summary>
+      <CodeBlock className="general-code-block" code={code} language={language || codeLanguage(code)} />
+    </details>
+  );
 }
 
 function traceDetail(item: Record<string, unknown>): string {
@@ -405,7 +435,14 @@ export default function GeneralSkillsPage({ embedded = false }: { embedded?: boo
                           <div>
                             <div className="general-trace-title">{PHASE_LABELS[phase] || String(item.message || phase || '执行')}</div>
                             <div className="general-trace-message">{String(item.message || '')}</div>
-                            {detail && <pre className="general-trace-detail">{detail}</pre>}
+                            {detail && (
+                              <RunCodePanel
+                                title={phase === 'code_finished' ? '查看执行结果' : phase === 'stdout_chunk' ? '查看运行输出' : '查看详情'}
+                                code={detail}
+                                language={codeLanguage(detail)}
+                                defaultOpen={phase === 'code_finished' || phase === 'code_timeout'}
+                              />
+                            )}
                             {code && (
                               <details className="general-trace-code" open={index === latestCodeIndex}>
                                 <summary>{codeTitle}</summary>
@@ -421,26 +458,24 @@ export default function GeneralSkillsPage({ embedded = false }: { embedded?: boo
 
                 <section>
                   <div className="general-section-label">运行输出</div>
-                  <Tabs
-                    className="general-output-tabs"
-                    items={[
-                      {
-                        key: 'structured',
-                        label: '结构化结果',
-                        children: <CodeBlock className="general-json-block" code={formatJson(activeResult.structured_result) || '无结构化结果'} language="json" />,
-                      },
-                      {
-                        key: 'stdout',
-                        label: 'stdout',
-                        children: <CodeBlock className="general-json-block" code={formatJson(activeResult.stdout) || '无 stdout'} language="text" />,
-                      },
-                      {
-                        key: 'stderr',
-                        label: 'stderr',
-                        children: <CodeBlock className="general-json-block" code={formatJson(activeResult.stderr) || '无 stderr'} language="text" />,
-                      },
-                    ]}
-                  />
+                  <div className="general-output-stack">
+                    <RunCodePanel
+                      title="结构化结果"
+                      code={formatJson(activeResult.structured_result) || '无结构化结果'}
+                      language="json"
+                      defaultOpen
+                    />
+                    <RunCodePanel
+                      title="stdout"
+                      code={formatJson(activeResult.stdout) || '无 stdout'}
+                      language={codeLanguage(formatJson(activeResult.stdout), 'text')}
+                    />
+                    <RunCodePanel
+                      title="stderr"
+                      code={formatJson(activeResult.stderr) || '无 stderr'}
+                      language={codeLanguage(formatJson(activeResult.stderr), 'text')}
+                    />
+                  </div>
                 </section>
                     </>
                   );

@@ -92,6 +92,7 @@ function tokenizePython(code: string): CodeToken[] {
 
 function tokenize(code: string, language?: string): CodeToken[] {
   const normalized = (language || '').toLowerCase();
+  if (['text', 'txt', 'log', 'stdout', 'stderr', 'plain'].includes(normalized)) return [{ text: code, type: 'plain' }];
   if (normalized.includes('json')) return tokenizeJson(code);
   if (normalized.includes('python') || normalized === 'py') return tokenizePython(code);
   return tokenizePython(code);

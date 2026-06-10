@@ -820,16 +820,26 @@ body.skill-distill-fixed .content {
   display: block;
 }
 
-.general-output-tabs .ant-tabs-nav {
-  margin-bottom: 8px;
+.general-output-stack {
+  display: grid;
+  gap: 10px;
 }
 
-.general-json-block {
+.general-output-code {
+  margin-top: 0;
+}
+
+.general-trace-item .general-output-code {
+  margin-top: 8px;
+}
+
+.general-output-stack .general-output-code {
+  margin-top: 0;
+}
+
+.general-output-code .general-code-block {
   max-height: 360px;
   margin: 0;
-  padding: 14px 16px;
-  font-size: 12px;
-  line-height: 1.65;
 }
 
 .general-skill-list-card .ant-card-body {
