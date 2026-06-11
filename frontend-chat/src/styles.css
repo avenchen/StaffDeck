@@ -1036,9 +1036,13 @@ textarea,
 }
 
 .turn-trace-line {
-  align-items: center;
+  align-items: start;
   grid-template-columns: 22px minmax(0, 1fr);
   padding: 0;
+}
+
+.turn-trace-line > .trace-icon-slot {
+  align-self: start;
 }
 
 .turn-trace-line.tool {
