@@ -240,6 +240,18 @@ class AgentLoop:
         self.events.record(
             request.tenant_id,
             chat_session.id,
+            "general_skill_intent_checked",
+            {
+                "skill_slug": skill.slug,
+                "skill_name": skill.name,
+                "confidence": selection.confidence,
+                "reason": selection.reason,
+                "scene_router_decision": router_decision.model_dump(mode="json"),
+            },
+        )
+        self.events.record(
+            request.tenant_id,
+            chat_session.id,
             "general_skill_selected",
             {
                 "skill_slug": skill.slug,
@@ -353,6 +365,20 @@ class AgentLoop:
         self.events.record(
             request.tenant_id,
             chat_session.id,
+            "general_skill_intent_checked",
+            {
+                "skill_slug": skill.slug,
+                "skill_name": skill.name,
+                "confidence": selection.confidence,
+                "reason": selection.reason,
+                "scene_router_decision": router_decision.model_dump(mode="json")
+                if router_decision
+                else None,
+            },
+        )
+        self.events.record(
+            request.tenant_id,
+            chat_session.id,
             "general_skill_selected",
             {
                 "skill_slug": skill.slug,
@@ -362,6 +388,24 @@ class AgentLoop:
                 "scene_router_decision": router_decision.model_dump(mode="json")
                 if router_decision
                 else None,
+            },
+        )
+        yield self._stream_status(
+            chat_session,
+            "general_skill_intent",
+            "正在判断意图",
+            {"skill_slug": skill.slug, "skill_name": skill.name, "reason": selection.reason},
+        )
+        yield self._stream_event(
+            "general_skill_trace",
+            chat_session,
+            {
+                "phase": "intent_checked",
+                "message": "判断意图",
+                "skill_slug": skill.slug,
+                "skill_name": skill.name,
+                "reason": selection.reason,
+                "confidence": selection.confidence,
             },
         )
         yield self._stream_status(
@@ -388,6 +432,10 @@ class AgentLoop:
             description=skill.description,
             homepage=skill.homepage,
             skill_markdown=skill.skill_markdown,
+            skill_files_json=skill.skill_files_json or [],
+            metadata_json=skill.metadata_json or {},
+            permissions_json=skill.permissions_json or {},
+            runtime_config_json=skill.runtime_config_json or {},
             status=skill.status,
         )
         model_snapshot = SimpleNamespace(

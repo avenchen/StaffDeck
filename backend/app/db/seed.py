@@ -545,7 +545,10 @@ def _tool_url_with_base(url: str, base_url: str) -> str:
 
 
 def _seed_weather_general_skill(session: Session) -> None:
-    source = Path("/Users/hm/Downloads/SKILL.md")
+    folder_source = Path("/Users/hm/Downloads/maomao-weather-1.0.2")
+    file_source = Path("/Users/hm/Downloads/SKILL.md")
+    package_files = _collect_general_skill_folder(folder_source) if folder_source.exists() else []
+    source = folder_source / "SKILL.md" if package_files else file_source
     if not source.exists():
         return
     try:
@@ -562,15 +565,19 @@ def _seed_weather_general_skill(session: Session) -> None:
         )
     ).first()
     if existing:
-        if existing.skill_markdown != markdown or existing.status != "published":
+        needs_package_backfill = package_files and not (existing.skill_files_json or [])
+        if existing.skill_markdown != markdown or existing.status != "published" or needs_package_backfill:
             existing.name = existing.name or "中国城市天气"
             existing.description = existing.description or "中国城市天气查询工具"
             existing.homepage = existing.homepage or "https://www.weather.com.cn/"
             existing.skill_markdown = markdown
+            if package_files:
+                existing.skill_files_json = package_files
+                existing.metadata_json = existing.metadata_json or {"source": "maomao-weather-1.0.2"}
             existing.status = "published"
             existing.permissions_json = existing.permissions_json or {"network": True, "python": True}
             existing.runtime_config_json = existing.runtime_config_json or {
-                "runtime": "python",
+                "runtime": "bash",
                 "timeout_seconds": 12,
             }
             existing.updated_at = utc_now()
@@ -583,11 +590,39 @@ def _seed_weather_general_skill(session: Session) -> None:
             description="中国城市天气查询工具",
             homepage="https://www.weather.com.cn/",
             skill_markdown=markdown,
+            skill_files_json=package_files,
+            metadata_json={"source": "maomao-weather-1.0.2"} if package_files else {},
             status="published",
             permissions_json={"network": True, "python": True},
-            runtime_config_json={"runtime": "python", "timeout_seconds": 12},
+            runtime_config_json={"runtime": "bash" if package_files else "python", "timeout_seconds": 12},
         )
     )
+
+
+def _collect_general_skill_folder(folder: Path) -> list[dict[str, object]]:
+    skill_file = folder / "SKILL.md"
+    if not skill_file.exists():
+        return []
+    files: list[dict[str, object]] = []
+    for path in sorted(folder.rglob("*")):
+        if not path.is_file() or path.name.startswith("."):
+            continue
+        try:
+            content = path.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            continue
+        except OSError:
+            continue
+        relative = path.relative_to(folder).as_posix()
+        files.append(
+            {
+                "path": relative,
+                "content": content,
+                "size": len(content.encode("utf-8")),
+                "mime_type": "text/markdown" if relative.lower().endswith(".md") else "text/plain",
+            }
+        )
+    return files
 
 
 def _sync_demo_skill_if_stale(existing: Skill, desired: dict) -> None:

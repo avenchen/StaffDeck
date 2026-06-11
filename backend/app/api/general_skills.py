@@ -230,6 +230,8 @@ def _general_skill_snapshot(row: GeneralSkill) -> SimpleNamespace:
         skill_markdown=row.skill_markdown,
         skill_files_json=_skill_files_or_markdown(row),
         metadata_json=row.metadata_json or {},
+        permissions_json=row.permissions_json or {},
+        runtime_config_json=row.runtime_config_json or {},
         status=row.status,
     )
 

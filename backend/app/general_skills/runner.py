@@ -97,7 +97,7 @@ class GeneralSkillRunner:
                 max_attempts,
             )
         except LLMError as exc:
-            _emit(trace, {"phase": "plan_failed", "message": "模型生成 Python runner 失败", "error": str(exc)}, event_sink)
+            _emit(trace, {"phase": "plan_failed", "message": "模型生成 runner 失败", "error": str(exc)}, event_sink)
             return GeneralSkillRunResponse(
                 skill_slug=skill.slug,
                 execution_trace=trace,
@@ -228,7 +228,7 @@ class GeneralSkillRunner:
         trace: list[dict[str, Any]],
         event_sink: TraceSink | None = None,
     ) -> GeneralSkillExecutionPlan:
-        _emit(trace, {"phase": "planning", "message": "正在根据 SKILL.md 生成 Python runner"}, event_sink)
+        _emit(trace, {"phase": "planning", "message": "正在根据 SKILL.md 生成 runner"}, event_sink)
         payload = {
             "query": query,
             "skill": {
@@ -240,7 +240,7 @@ class GeneralSkillRunner:
                 "package": _skill_package_payload(skill),
             },
             "runtime": {
-                "language": "python",
+                "languages": ["bash", "python"],
                 "stdin_json": {
                     "query": query,
                     "skill_slug": skill.slug,
@@ -256,13 +256,16 @@ class GeneralSkillRunner:
             payload,
         )
         plan = GeneralSkillExecutionPlan.model_validate(raw)
+        plan.runtime = _plan_runtime(plan)
         if not plan.code.strip():
             raise LLMError("General skill runner code is empty")
+        runtime_label = _runtime_label(plan.runtime)
         _emit(
             trace,
             {
                 "phase": "plan_created",
-                "message": "已生成 Python runner",
+                "message": f"已生成 {runtime_label} runner",
+                "runtime": plan.runtime,
                 "rationale": plan.rationale,
                 "code": plan.code,
                 "expected_output": plan.expected_output,
@@ -315,8 +318,8 @@ class GeneralSkillRunner:
                         "result_sufficient": False,
                         "needs_retry": plan_attempt < max_attempts,
                         "terminal": False,
-                        "reason": "模型未能生成可执行 runner 计划，需要重新输出合法 JSON 和完整 Python 代码。",
-                        "repair_hint": "保留原始 skill 与 query，重新输出包含 code、rationale、expected_output 的合法 JSON。",
+                        "reason": "模型未能生成可执行 runner 计划，需要重新输出合法 JSON、runtime 和完整代码。",
+                        "repair_hint": "保留原始 skill 与 query，重新输出包含 runtime、code、rationale、expected_output 的合法 JSON。",
                     },
                 }
                 planning_failures.append(failure)
@@ -324,7 +327,7 @@ class GeneralSkillRunner:
                     trace,
                     {
                         "phase": "plan_failed",
-                        "message": f"第 {plan_attempt} 次 Python runner 计划生成失败",
+                        "message": f"第 {plan_attempt} 次 runner 计划生成失败",
                         "attempt": plan_attempt,
                         "error": str(exc),
                     },
@@ -371,7 +374,7 @@ class GeneralSkillRunner:
                 "package": _skill_package_payload(skill),
             },
             "runtime": {
-                "language": "python",
+                "languages": ["bash", "python"],
                 "stdin_json": {
                     "query": query,
                     "skill_slug": skill.slug,
@@ -388,14 +391,17 @@ class GeneralSkillRunner:
             payload,
         )
         plan = GeneralSkillExecutionPlan.model_validate(raw)
+        plan.runtime = _plan_runtime(plan)
         if not plan.code.strip():
             raise LLMError("General skill repaired runner code is empty")
+        runtime_label = _runtime_label(plan.runtime)
         _emit(
             trace,
             {
                 "phase": "plan_created",
-                "message": f"已生成第 {next_attempt} 次 Python runner",
+                "message": f"已生成第 {next_attempt} 次 {runtime_label} runner",
                 "attempt": next_attempt,
+                "runtime": plan.runtime,
                 "rationale": plan.rationale,
                 "code": plan.code,
                 "expected_output": plan.expected_output,
@@ -417,7 +423,8 @@ class GeneralSkillRunner:
         run_dir = Path(mkdtemp(prefix="ultrarag_general_skill_"))
         skill_dir = run_dir / "skill"
         _materialize_skill_package(skill, skill_dir)
-        runner_path = run_dir / "runner.py"
+        runtime = _plan_runtime(plan)
+        runner_path = run_dir / ("runner.sh" if runtime == "bash" else "runner.py")
         runner_path.write_text(plan.code, encoding="utf-8")
         stdin_payload = {
             "query": query,
@@ -429,15 +436,36 @@ class GeneralSkillRunner:
         }
         _emit(
             trace,
-            {"phase": "running_code", "message": f"正在运行第 {attempt} 次 Python runner", "run_id": run_dir.name, "attempt": attempt},
+            {
+                "phase": "running_code",
+                "message": f"正在运行第 {attempt} 次 {_runtime_label(runtime)} runner",
+                "run_id": run_dir.name,
+                "attempt": attempt,
+                "runtime": runtime,
+            },
             event_sink,
         )
+        env = os.environ.copy()
+        env.update(
+            {
+                "ARGUMENTS": query,
+                "QUERY": query,
+                "SKILL_WORKSPACE": str(skill_dir),
+                "SKILL_SLUG": skill.slug,
+                "SKILL_NAME": skill.name,
+                "USER_ID": user_id,
+                "SKILL_FILES_JSON": json.dumps([file["path"] for file in _skill_files(skill)], ensure_ascii=False),
+            }
+        )
+        command = ["/bin/bash", str(runner_path)] if runtime == "bash" else [sys.executable, str(runner_path)]
+        cwd = str(skill_dir if runtime == "bash" else run_dir)
         process = subprocess.Popen(
-            [sys.executable, str(runner_path)],
+            command,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            cwd=str(run_dir),
+            cwd=cwd,
+            env=env,
             text=False,
         )
         if process.stdin:
@@ -459,8 +487,9 @@ class GeneralSkillRunner:
                 trace,
                 {
                     "phase": "code_timeout",
-                    "message": "Python runner 执行超时",
+                    "message": f"{_runtime_label(runtime)} runner 执行超时",
                     "attempt": attempt,
+                    "runtime": runtime,
                     "stdout_preview": stdout[:600],
                     "stderr_preview": stderr[:600],
                     "structured_result": structured,
@@ -480,8 +509,9 @@ class GeneralSkillRunner:
             trace,
             {
                 "phase": "code_finished",
-                "message": "Python runner 执行完成",
+                "message": f"{_runtime_label(runtime)} runner 执行完成",
                 "attempt": attempt,
+                "runtime": runtime,
                 "return_code": return_code,
                 "stdout_preview": stdout[:600],
                 "stderr_preview": stderr[:600],
@@ -600,6 +630,17 @@ def _truncate(value: str, limit: int = MAX_OUTPUT_CHARS) -> str:
     if len(value) <= limit:
         return value
     return value[:limit] + "\n...<truncated>"
+
+
+def _plan_runtime(plan: GeneralSkillExecutionPlan) -> str:
+    runtime = str(getattr(plan, "runtime", "") or "python").strip().lower()
+    if runtime in {"bash", "shell", "sh"}:
+        return "bash"
+    return "python"
+
+
+def _runtime_label(runtime: str) -> str:
+    return "Bash" if runtime == "bash" else "Python"
 
 
 def _skill_files(skill: GeneralSkill) -> list[dict[str, Any]]:

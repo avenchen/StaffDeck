@@ -779,12 +779,23 @@ def _event_trace_line(
             "detail": reason or None,
             "state": "completed",
         }
+    if event.event_type == "general_skill_intent_checked":
+        skill_name = str(payload.get("skill_name") or payload.get("skill_slug") or "").strip()
+        reason = str(payload.get("reason") or "").strip()
+        return {
+            "id": f"general_skill_intent_{event.id}",
+            "kind": "decision",
+            "text": "判断意图" if not skill_name else f"判断意图 {skill_name}",
+            "detail": reason or None,
+            "state": "completed",
+        }
     if event.event_type == "general_skill_trace":
         message = str(payload.get("message") or "").strip()
         phase = str(payload.get("phase") or "").strip()
         detail = _general_skill_trace_detail(payload, phase)
         output = _general_skill_trace_output(payload, phase)
         code = str(payload.get("code") or "").strip()
+        runtime = str(payload.get("runtime") or "").strip().lower()
         code_phases = {
             "plan_created",
             "attempt_started",
@@ -800,7 +811,7 @@ def _event_trace_line(
             "text": message or phase or "执行通用技能",
             "detail": detail or None,
             "code": code or None,
-            "language": "python" if code else None,
+            "language": "bash" if code and runtime == "bash" else "python" if code else None,
             "state": "completed",
             "collapsible": bool(code or output.get("output")),
             **output,

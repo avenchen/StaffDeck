@@ -1,4 +1,5 @@
 from fastapi import HTTPException
+from pathlib import Path
 from sqlalchemy.pool import StaticPool
 from sqlmodel import Session, SQLModel, create_engine, select
 
@@ -524,6 +525,94 @@ def test_general_skill_runner_materializes_folder_package(monkeypatch) -> None:
     assert response.structured_result["city"] == "北京"
     assert response.structured_result["files"] == ["SKILL.md", "data/city.txt"]
     assert calls == ["runner", "review", "reply"]
+
+
+def test_general_skill_runner_executes_bash_package_command(monkeypatch) -> None:
+    calls: list[str] = []
+
+    def fake_init(self, model_config):  # noqa: ANN001
+        return None
+
+    def fake_generate_json(self, system_prompt, payload):  # noqa: ANN001
+        prompt_text = str(system_prompt)
+        if "通用技能执行器" in prompt_text:
+            calls.append("runner")
+            assert payload["skill"]["package"]["file_count"] == 2
+            assert payload["runtime"]["languages"] == ["bash", "python"]
+            return {
+                "runtime": "bash",
+                "code": "set -euo pipefail\ncd \"$SKILL_WORKSPACE\"\nprintf '%s\\n' \"$ARGUMENTS\" | python3 scripts/weather.py\n",
+                "rationale": "技能声明 allowed-tools: Bash，并给出了调用 scripts/weather.py 的命令。",
+            }
+        if "通用技能运行结果审查器" in prompt_text:
+            calls.append("review")
+            assert payload["structured_result"]["city"] == "北京"
+            return {
+                "result_sufficient": True,
+                "needs_retry": False,
+                "terminal": False,
+                "reason": "Bash 已调用包内脚本并得到结果。",
+            }
+        if "通用技能结果回复器" in prompt_text:
+            calls.append("reply")
+            return {"reply": "北京今天晴。"}
+        raise AssertionError("unexpected prompt")
+
+    monkeypatch.setattr(LLMClient, "__init__", fake_init)
+    monkeypatch.setattr(LLMClient, "generate_json", fake_generate_json)
+
+    skill = GeneralSkill(
+        tenant_id="tenant_demo",
+        slug="weather-zh",
+        name="中国城市天气",
+        description="中国城市天气查询工具",
+        skill_markdown=(
+            "---\n"
+            "allowed-tools: Bash\n"
+            "---\n"
+            "```bash\nprintf '%s\\n' \"$ARGUMENTS\" | python3 \"scripts/weather.py\"\n```\n"
+        ),
+        skill_files_json=[
+            {
+                "path": "SKILL.md",
+                "content": "---\nallowed-tools: Bash\n---\n```bash\nprintf '%s\\n' \"$ARGUMENTS\" | python3 \"scripts/weather.py\"\n```\n",
+            },
+            {
+                "path": "scripts/weather.py",
+                "content": (
+                    "import json, sys\n"
+                    "query=sys.stdin.read().strip()\n"
+                    "print(json.dumps({'success': True, 'city': '北京', 'query': query}, ensure_ascii=False))\n"
+                ),
+            },
+        ],
+        status="published",
+    )
+    model_config = ModelConfig(
+        tenant_id="tenant_demo",
+        name="Fake model",
+        api_key_encrypted=encrypt_secret("test-key"),
+        model="fake",
+        is_default=True,
+        enabled=True,
+    )
+
+    response = GeneralSkillRunner().run(skill, "北京今天天气怎么样", model_config, max_attempts=1)
+
+    assert response.reply == "北京今天晴。"
+    assert response.structured_result["city"] == "北京"
+    assert calls == ["runner", "review", "reply"]
+    plan_events = [item for item in response.execution_trace if item["phase"] == "plan_created"]
+    assert plan_events[0]["runtime"] == "bash"
+
+
+def test_general_skill_prompt_rejects_unlisted_external_apis() -> None:
+    prompt = (Path(__file__).resolve().parents[1] / "app" / "llm" / "prompts" / "general_skill_runner_prompt.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "不要自行发明第三方接口" in prompt
+    assert "runtime=`bash`" in prompt
 
 
 def test_general_skill_runner_reflects_failed_initial_plan(monkeypatch) -> None:

@@ -70,6 +70,7 @@ class GeneralSkillSelection(BaseModel):
 
 class GeneralSkillExecutionPlan(BaseModel):
     code: str
+    runtime: str = "python"
     rationale: Optional[str] = None
     expected_output: Optional[str] = None
 

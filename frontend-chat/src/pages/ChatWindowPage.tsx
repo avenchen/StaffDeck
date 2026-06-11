@@ -1029,6 +1029,7 @@ export default function ChatWindowPage() {
           const phase = typeof item.data.phase === 'string' ? item.data.phase : 'trace';
           const text = typeof item.data.message === 'string' ? item.data.message : '执行通用技能';
           const code = typeof item.data.code === 'string' ? item.data.code : '';
+          const runtime = typeof item.data.runtime === 'string' ? item.data.runtime : '';
           const attempt = typeof item.data.attempt === 'number' || typeof item.data.attempt === 'string'
             ? String(item.data.attempt)
             : '';
@@ -1068,7 +1069,7 @@ export default function ChatWindowPage() {
             text,
             detail: outputInfo.output ? undefined : detail,
             code: code || undefined,
-            language: code ? 'python' : undefined,
+            language: code ? (runtime === 'bash' ? 'bash' : 'python') : undefined,
             output: outputInfo.output,
             outputLanguage: outputInfo.language,
             outputTitle: outputInfo.title,
