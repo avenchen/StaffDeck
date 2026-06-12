@@ -714,8 +714,26 @@ export default function GeneralSkillsPage({ embedded = false }: { embedded?: boo
               </Space>
             )}
           >
-            <input ref={fileInputRef} className="visually-hidden-file-input" type="file" accept=".md,.txt" onChange={handleFileInputChange} />
-            <input ref={folderInputRef} className="visually-hidden-file-input" type="file" multiple onChange={handleFolderInputChange} />
+            <input
+              ref={fileInputRef}
+              className="visually-hidden-file-input"
+              type="file"
+              accept=".md,.txt"
+              onChange={handleFileInputChange}
+              hidden
+              aria-hidden="true"
+              tabIndex={-1}
+            />
+            <input
+              ref={folderInputRef}
+              className="visually-hidden-file-input"
+              type="file"
+              multiple
+              onChange={handleFolderInputChange}
+              hidden
+              aria-hidden="true"
+              tabIndex={-1}
+            />
             {dragActive && (
               <div className="general-skill-drop-hint">
                 <UploadOutlined />
