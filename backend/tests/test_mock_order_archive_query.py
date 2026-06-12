@@ -128,7 +128,8 @@ def test_product_price_query_accepts_display_name_alias() -> None:
 def test_product_price_query_is_seeded_for_price_compare_skill() -> None:
     price_tool = next(tool for tool in DEMO_TOOLS if tool["name"] == "product.price_query")
 
-    assert price_tool["allowed_skills_json"] == ["skill_price_compare_001"]
+    assert "skill_price_compare_001" in price_tool["allowed_skills_json"]
+    assert "skill_graph_visual_demo" in price_tool["allowed_skills_json"]
     assert price_tool["url"].endswith("/api/mock/product/price-query")
 
 

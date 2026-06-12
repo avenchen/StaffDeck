@@ -271,6 +271,171 @@ PRICE_COMPARE_SKILL = {
     ],
 }
 
+GRAPH_VISUAL_DEMO_SKILL = {
+    "skill_id": "skill_graph_visual_demo",
+    "name": "图结构可视化验证流程",
+    "version": "1.0.0",
+    "business_domain": "demo",
+    "description": "用于验证 graph-only 技能流程图的分支、可选节点、工具节点、知识节点和终止节点展示效果。",
+    "trigger_intents": ["图结构验证", "流程图验证", "graph demo", "验证分支流程"],
+    "user_utterance_examples": [
+        "帮我跑一下图结构验证",
+        "我要验证一个包含分支和工具的流程",
+        "这个流程需要先查价格再确认",
+    ],
+    "goal": ["识别用户要验证的处理路径", "按条件进入工具或知识分支", "必要时确认", "给出最终结果或转人工"],
+    "required_info": ["request_type"],
+    "slot_filling_policy": {
+        "enabled": True,
+        "multi_slot_per_turn": True,
+        "extract_scope": "all_skill_expected_user_info",
+        "skip_satisfied_steps": True,
+        "target_info": ["request_type", "product_name", "confirmation"],
+    },
+    "nodes": [
+        {
+            "node_id": "intake_request",
+            "type": "collect_info",
+            "name": "识别验证请求",
+            "instruction": "识别用户想验证的是工具路径、知识路径、直接确认路径还是人工路径；若用户已说明目标，写入 request_type 并推进。",
+            "expected_user_info": ["request_type"],
+            "allowed_actions": ["ask_user", "continue_flow"],
+        },
+        {
+            "node_id": "classify_path",
+            "type": "decision",
+            "name": "选择处理分支",
+            "instruction": "根据 request_type 选择后续路径：需要外部数据时进入工具节点；需要政策依据时进入知识节点；已满足条件时进入确认节点；无法判断时转人工。",
+            "expected_user_info": [],
+            "allowed_actions": ["continue_flow", "handoff_human"],
+        },
+        {
+            "node_id": "query_product_price",
+            "type": "tool_call",
+            "name": "查询商品价格",
+            "instruction": "当用户提供商品名或要求验证工具分支时，调用 product.price_query 查询商品价格、品牌和规格；工具失败时让模型基于结果决定重试、换路径或追问。",
+            "expected_user_info": ["product_name"],
+            "allowed_actions": ["ask_user", "call_tool:product.price_query", "continue_flow"],
+            "retry_policy": {"max_attempts": 2, "on_failure": "reflect"},
+        },
+        {
+            "node_id": "read_policy_knowledge",
+            "type": "knowledge_query",
+            "name": "读取处理依据",
+            "instruction": "当用户需要解释规则或依据时，检索当前智能体可见知识库中的相关桶和片段，并把知识结果交给模型继续判断。",
+            "expected_user_info": [],
+            "allowed_actions": ["knowledge_query", "continue_flow"],
+            "knowledge_scope": {"bucket_hint": "demo_policy"},
+        },
+        {
+            "node_id": "confirm_action",
+            "type": "decision",
+            "name": "可选确认",
+            "instruction": "如动作会产生业务影响，先向用户确认；若用户已经明确确认，可跳过追问并继续回复。",
+            "optional": True,
+            "expected_user_info": ["confirmation"],
+            "allowed_actions": ["ask_user", "continue_flow"],
+        },
+        {
+            "node_id": "reply_result",
+            "type": "response",
+            "name": "反馈验证结果",
+            "instruction": "汇总已选择的分支、工具结果或知识依据，用简洁语言反馈本次 graph 流程验证结果。",
+            "expected_user_info": [],
+            "allowed_actions": ["answer_user"],
+        },
+        {
+            "node_id": "handoff_manual",
+            "type": "handoff",
+            "name": "转人工处理",
+            "instruction": "当用户明确要求人工或模型判断无法可靠完成时，说明需要人工继续处理。",
+            "expected_user_info": [],
+            "allowed_actions": ["handoff_human"],
+        },
+    ],
+    "edges": [
+        {
+            "source_node_id": "intake_request",
+            "next_node_id": "classify_path",
+            "condition": "request_type 已识别",
+            "priority": 0,
+            "label": "进入分支判断",
+        },
+        {
+            "source_node_id": "classify_path",
+            "next_node_id": "query_product_price",
+            "condition": "需要外部商品数据",
+            "priority": 0,
+            "label": "工具路径",
+        },
+        {
+            "source_node_id": "classify_path",
+            "next_node_id": "read_policy_knowledge",
+            "condition": "需要知识依据",
+            "priority": 1,
+            "label": "知识路径",
+        },
+        {
+            "source_node_id": "classify_path",
+            "next_node_id": "confirm_action",
+            "condition": "信息充分但需要确认",
+            "priority": 2,
+            "label": "确认路径",
+        },
+        {
+            "source_node_id": "classify_path",
+            "next_node_id": "handoff_manual",
+            "condition": "用户要求人工或无法判断",
+            "priority": 3,
+            "label": "人工路径",
+        },
+        {
+            "source_node_id": "query_product_price",
+            "next_node_id": "confirm_action",
+            "condition": "工具结果可用",
+            "priority": 0,
+            "label": "核验后确认",
+        },
+        {
+            "source_node_id": "query_product_price",
+            "next_node_id": "handoff_manual",
+            "condition": "工具失败且反思后仍无法处理",
+            "priority": 1,
+            "label": "工具失败",
+        },
+        {
+            "source_node_id": "read_policy_knowledge",
+            "next_node_id": "reply_result",
+            "condition": "知识依据足够",
+            "priority": 0,
+            "label": "依据充分",
+        },
+        {
+            "source_node_id": "confirm_action",
+            "next_node_id": "reply_result",
+            "condition": "用户确认或可跳过确认",
+            "priority": 0,
+            "label": "完成确认",
+        },
+        {
+            "source_node_id": "confirm_action",
+            "next_node_id": "handoff_manual",
+            "condition": "用户拒绝或需要人工",
+            "priority": 1,
+            "label": "确认失败",
+        },
+    ],
+    "start_node_id": "intake_request",
+    "terminal_node_ids": ["reply_result", "handoff_manual"],
+    "interruption_policy": {
+        "related_question": "可以回答后继续当前验证流程。",
+        "unrelated_business": "可保存当前验证流程并切换任务。",
+        "chitchat": "简短回应后继续引导用户完成验证。",
+        "user_wants_human": "直接转人工。",
+    },
+    "response_rules": ["不要编造工具结果。", "涉及知识依据时必须基于检索结果回复。", ADAPTIVE_FLOW_RULE],
+}
+
 ORDER_QUERY_TOOL = {
     "name": "order.query",
     "display_name": "订单查询",
@@ -434,7 +599,7 @@ PRODUCT_PRICE_QUERY_TOOL = {
             "updated_at": {"type": "string"},
         },
     },
-    "allowed_skills_json": ["skill_price_compare_001"],
+    "allowed_skills_json": ["skill_price_compare_001", "skill_graph_visual_demo"],
     "enabled": True,
 }
 
@@ -474,7 +639,13 @@ def seed_demo_data(session: Session) -> None:
             )
         )
 
-    for raw_content in (REFUND_SKILL, EXCHANGE_SKILL, PURCHASE_SKILL, PRICE_COMPARE_SKILL):
+    for raw_content in (
+        REFUND_SKILL,
+        EXCHANGE_SKILL,
+        PURCHASE_SKILL,
+        PRICE_COMPARE_SKILL,
+        GRAPH_VISUAL_DEMO_SKILL,
+    ):
         content = _skill_content_graph(raw_content)
         existing = session.exec(
             select(Skill).where(

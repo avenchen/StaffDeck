@@ -2285,9 +2285,26 @@ function SkillFlow({
       <div className="skill-flow-graph-canvas">
         {layout.layers.map((layer, layerIndex) => {
           const layerEdges = layer.flatMap((item) => edgeMap[item.nodeId] || []);
+          const previousEdges = layerIndex > 0
+            ? layout.layers[layerIndex - 1].flatMap((item) => edgeMap[item.nodeId] || [])
+            : [];
           return (
             <div className="skill-flow-layer-block" key={`layer_${layerIndex}`}>
-              {layerIndex > 0 && <div className="skill-flow-layer-line" />}
+              {layerIndex > 0 && (
+                <div className="skill-flow-connector">
+                  <div className="skill-flow-layer-line" />
+                  {previousEdges.length > 0 && (
+                    <div className="skill-flow-edge-row">
+                      {previousEdges.map((edge, edgeIndex) => (
+                        <span className="skill-flow-edge-chip" key={`incoming_${String(edge.source_node_id)}_${String(edge.next_node_id)}_${edgeIndex}`}>
+                          {edgeLabel(edge)}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <div className="skill-flow-layer-line" />
+                </div>
+              )}
               <div className="skill-flow-layer">
                 {layer.map((item) => (
                   <SkillFlowNodeCard
@@ -2307,15 +2324,6 @@ function SkillFlow({
                   />
                 ))}
               </div>
-              {layerEdges.length > 0 && (
-                <div className="skill-flow-edge-row">
-                  {layerEdges.map((edge, edgeIndex) => (
-                    <span className="skill-flow-edge-chip" key={`${String(edge.source_node_id)}_${String(edge.next_node_id)}_${edgeIndex}`}>
-                      {edgeLabel(edge)}
-                    </span>
-                  ))}
-                </div>
-              )}
             </div>
           );
         })}
@@ -2353,8 +2361,9 @@ function SkillFlowNodeCard({
 }) {
   const nodeId = String(step.node_id || step.step_id || `node_${index + 1}`);
   const path = stepTargetPath(index);
-  const conditionText = String(step.condition || '');
-  const toolActions = asStringList(step.allowed_actions).filter((action) => String(action).startsWith('call_tool:'));
+  const expectedInfo = asStringList(step.expected_user_info);
+  const actionList = asStringList(step.allowed_actions);
+  const instruction = String(step.instruction || '暂无说明');
   return (
     <div className="skill-flow-node-shell">
       <SelectableTarget
@@ -2370,31 +2379,31 @@ function SkillFlowNodeCard({
           <span className="skill-flow-chip">{nodeTypeLabel(String(step.type || 'collect_info'))}</span>
           {Boolean(step.optional) && <span className="skill-flow-chip">可选</span>}
           {terminal && <span className="skill-flow-chip terminal">终止</span>}
-          {conditionText ? <span className="skill-flow-chip">条件：{conditionText}</span> : null}
         </div>
-        <p><InlineDiffText path={path} field="instruction" value={String(step.instruction || '暂无说明')} diffs={textDiffs} /></p>
-        <div className="skill-flow-meta">
-          <FlowMetaRow label="期望字段">
-            <PlainChipList values={asStringList(step.expected_user_info)} />
-          </FlowMetaRow>
-          <FlowMetaRow label="知识范围">
-            <PlainChipList values={knowledgeScopeLabels(step.knowledge_scope)} />
-          </FlowMetaRow>
-          <FlowMetaRow label="允许动作">
-            <ActionList actions={asStringList(step.allowed_actions)} toolDescriptions={toolDescriptions} toolStatuses={toolStatuses} />
-          </FlowMetaRow>
-          <FlowMetaRow label="流转">
-            <PlainChipList values={outgoingEdges.length > 0 ? outgoingEdges.map(edgeLabel) : ['无后继']} />
-          </FlowMetaRow>
+        <p className="skill-flow-node-summary">
+          <InlineDiffText path={path} field="instruction" value={instruction} diffs={textDiffs} />
+        </p>
+        <div className="skill-flow-compact-meta">
+          {expectedInfo.length > 0 && (
+            <div className="skill-flow-compact-row">
+              <span>字段</span>
+              <PlainChipList values={expectedInfo.slice(0, 4)} />
+            </div>
+          )}
+          {actionList.length > 0 && (
+            <div className="skill-flow-compact-row">
+              <span>动作</span>
+              <ActionList actions={actionList.slice(0, 4)} toolDescriptions={toolDescriptions} toolStatuses={toolStatuses} />
+            </div>
+          )}
+          {outgoingEdges.length > 0 && (
+            <div className="skill-flow-compact-row">
+              <span>后继</span>
+              <PlainChipList values={[`${outgoingEdges.length} 条流转`]} />
+            </div>
+          )}
         </div>
       </SelectableTarget>
-      {toolActions.length > 0 && (
-        <div className="skill-flow-tools">
-          {toolActions.map((action) => (
-            <ActionChip action={String(action)} toolDescriptions={toolDescriptions} toolStatuses={toolStatuses} className="skill-flow-tool" key={String(action)} />
-          ))}
-        </div>
-      )}
     </div>
   );
 }

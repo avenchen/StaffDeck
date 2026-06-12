@@ -238,7 +238,7 @@ def test_reflection_target_skill_is_scheduled_instead_of_skipped() -> None:
         captured["tool_names"] = [tool.name for tool in loop._step_agent_tools(active_skill, tools)]
         return StepAgentResult(reply="已切换到比价流程。", is_step_completed=True)
 
-    loop._get_active_skill = lambda tenant_id, skill_id: skills_by_id.get(skill_id)  # type: ignore[method-assign]
+    loop._get_active_skill = lambda tenant_id, skill_id, agent_id=None: skills_by_id.get(skill_id)  # type: ignore[method-assign]
     loop._run_step_agent_with_context_repair = run_step  # type: ignore[method-assign]
     loop._skill_version = lambda tenant_id, skill_id: None  # type: ignore[method-assign]
 

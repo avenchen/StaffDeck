@@ -159,8 +159,8 @@ def _branch_version_read(row: AgentSkillBranchVersion) -> SkillVersionRead:
 @router.get("", response_model=list[SkillRead])
 def list_skills(
     tenant_id: str = Query(...),
-    agent_id: str | None = Query(None),
     db: Session = Depends(get_session),
+    agent_id: str | None = None,
 ) -> list[SkillRead]:
     ensure_tenant(db, tenant_id)
     rows = visible_skill_rows(db, tenant_id, agent_id)
@@ -172,7 +172,7 @@ def list_skills(
 @router.post("", response_model=SkillRead)
 def create_skill(
     request: SkillCreateRequest,
-    agent_id: str | None = Query(None),
+    agent_id: str | None = None,
     db: Session = Depends(get_session),
 ) -> SkillRead:
     ensure_tenant(db, request.tenant_id)
@@ -220,7 +220,7 @@ def create_skill(
 def get_skill(
     skill_id: str,
     tenant_id: str = Query(...),
-    agent_id: str | None = Query(None),
+    agent_id: str | None = None,
     db: Session = Depends(get_session),
 ) -> SkillRead:
     agent = get_agent(db, tenant_id, agent_id)
@@ -238,7 +238,7 @@ def get_skill(
 def update_skill(
     skill_id: str,
     request: SkillUpdateRequest,
-    agent_id: str | None = Query(None),
+    agent_id: str | None = None,
     db: Session = Depends(get_session),
 ) -> SkillRead:
     if request.content.skill_id != skill_id:
@@ -281,7 +281,7 @@ def update_skill(
 def publish_skill(
     skill_id: str,
     tenant_id: str = Query(...),
-    agent_id: str | None = Query(None),
+    agent_id: str | None = None,
     db: Session = Depends(get_session),
 ) -> SkillRead:
     row = _get_skill(db, tenant_id, skill_id)
@@ -309,7 +309,7 @@ def publish_skill(
 def archive_skill(
     skill_id: str,
     tenant_id: str = Query(...),
-    agent_id: str | None = Query(None),
+    agent_id: str | None = None,
     db: Session = Depends(get_session),
 ) -> SkillRead:
     row = _get_skill(db, tenant_id, skill_id)
@@ -364,8 +364,8 @@ def delete_skill(
 def list_skill_versions(
     skill_id: str,
     tenant_id: str = Query(...),
-    agent_id: str | None = Query(None),
     db: Session = Depends(get_session),
+    agent_id: str | None = None,
 ) -> list[SkillVersionRead]:
     agent = get_agent(db, tenant_id, agent_id)
     if agent and not agent.is_overall:
@@ -422,8 +422,8 @@ def rollback_skill_version(
     skill_id: str,
     version: str,
     tenant_id: str = Query(...),
-    agent_id: str | None = Query(None),
     db: Session = Depends(get_session),
+    agent_id: str | None = None,
 ) -> SkillRead:
     agent = get_agent(db, tenant_id, agent_id)
     if agent and not agent.is_overall:

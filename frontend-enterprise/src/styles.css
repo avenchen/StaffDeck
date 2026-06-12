@@ -1279,11 +1279,12 @@ body.skill-distill-fixed .content {
 
 .skill-workbench {
   display: grid;
-  grid-template-columns: minmax(420px, 0.9fr) minmax(760px, 1.1fr);
+  width: 100%;
+  grid-template-columns: minmax(380px, 0.88fr) minmax(620px, 1.12fr);
   gap: 16px;
   align-items: stretch;
   min-height: calc(100vh - 136px);
-  min-width: 1180px;
+  min-width: 0;
 }
 
 .skill-distill-page .skill-workbench {
@@ -2398,46 +2399,58 @@ body.skill-distill-fixed .content {
   height: calc(100% - 44px);
   min-height: 0;
   overflow: auto;
-  padding: 30px 28px 52px;
+  padding: clamp(16px, 2.6vw, 28px) clamp(14px, 2.6vw, 28px) 52px;
   display: grid;
   align-content: start;
   justify-items: center;
-  gap: 18px;
+  gap: 20px;
 }
 
 .skill-flow-graph-canvas {
-  width: max-content;
-  min-width: 920px;
+  width: 100%;
+  min-width: 0;
+  max-width: 1120px;
   display: grid;
   align-content: start;
   justify-items: center;
-  gap: 18px;
-  padding: 2px 0 18px;
+  gap: 0;
+  padding: 4px 0 20px;
 }
 
 .skill-flow-layer-block {
-  min-width: max-content;
+  width: 100%;
+  min-width: 0;
   display: grid;
   justify-items: center;
-  gap: 10px;
+  gap: 0;
 }
 
 .skill-flow-layer {
+  width: 100%;
   display: flex;
   align-items: stretch;
   justify-content: center;
+  flex-wrap: wrap;
   gap: 16px;
+}
+
+.skill-flow-connector {
+  min-height: 58px;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 6px;
 }
 
 .skill-flow-layer-line {
   width: 1px;
-  height: 22px;
+  height: 18px;
   background: #d9d2c7;
 }
 
 .skill-flow-edge-row {
   width: 100%;
-  max-width: 980px;
+  max-width: 920px;
   display: flex;
   justify-content: center;
   flex-wrap: wrap;
@@ -2459,7 +2472,8 @@ body.skill-distill-fixed .content {
 }
 
 .skill-flow-node-shell {
-  width: clamp(380px, 32vw, 540px);
+  width: clamp(280px, 36vw, 380px);
+  max-width: min(100%, calc(100vw - 132px));
   display: grid;
   justify-items: center;
   gap: 8px;
@@ -2468,10 +2482,10 @@ body.skill-distill-fixed .content {
 .skill-flow-node {
   position: relative;
   width: 100%;
-  min-height: 118px;
-  padding: 18px;
+  min-height: 0;
+  padding: 14px;
   display: grid;
-  gap: 10px;
+  gap: 7px;
   text-align: left;
   color: var(--foreground);
   background: var(--surface);
@@ -2485,8 +2499,15 @@ body.skill-distill-fixed .content {
 
 .skill-flow-node.root {
   justify-self: center;
-  width: min(760px, 100%);
+  width: min(680px, 100%);
   background: #f2f0eb;
+}
+
+.skill-flow-node.root p {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .save-review-form {
@@ -2685,24 +2706,58 @@ body.skill-distill-fixed .content {
 }
 
 .skill-flow-node small {
+  max-width: 100%;
+  overflow: hidden;
   color: var(--muted);
   font-family: var(--font-mono);
   font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .skill-flow-node-badges {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  max-height: 30px;
+  overflow: hidden;
 }
 
 .skill-flow-node p {
   margin: 4px 0 0;
   color: var(--foreground);
   font-size: 13px;
-  line-height: 1.75;
+  line-height: 1.62;
   white-space: normal;
   overflow-wrap: anywhere;
+}
+
+.skill-flow-node-summary {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--muted) !important;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.skill-flow-compact-meta {
+  display: grid;
+  gap: 6px;
+}
+
+.skill-flow-compact-row {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: start;
+  gap: 8px;
+}
+
+.skill-flow-compact-row > span:first-child {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 760;
+  line-height: 24px;
 }
 
 .skill-flow-meta {
@@ -2727,6 +2782,15 @@ body.skill-distill-fixed .content {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  max-height: 56px;
+  overflow: hidden;
+}
+
+.skill-flow-chip,
+.skill-action-chip {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .skill-flow-chip,
@@ -2884,7 +2948,7 @@ code {
 }
 
 body.skill-distill-fixed .content {
-  overflow: auto hidden;
+  overflow: auto;
 }
 
 .brand-title,
@@ -3449,14 +3513,14 @@ pre {
   }
 
   body.skill-distill-fixed .content {
-    overflow: auto hidden;
+    overflow: auto;
   }
 
   .persistent-distill.active,
   .skill-distill-page {
-    height: 100%;
+    height: auto;
     min-height: 0;
-    overflow: visible hidden;
+    overflow: visible;
   }
 
   .skill-distill-page {
@@ -3465,28 +3529,36 @@ pre {
 
   .skill-workbench,
   .skill-distill-page .skill-workbench {
-    height: 100%;
+    height: auto;
     min-height: 0;
-    grid-template-columns: minmax(420px, 0.9fr) minmax(760px, 1.1fr);
-    min-width: 1180px;
+    grid-template-columns: minmax(0, 1fr);
+    min-width: 0;
     overflow: visible;
   }
 
   .skill-distill-page .skill-chat-card,
   .skill-distill-page .skill-source-card {
-    height: 100%;
+    height: auto;
     min-height: 0;
+  }
+
+  .skill-distill-page .skill-chat-card {
+    min-height: min(560px, calc(100vh - 156px));
+  }
+
+  .skill-distill-page .skill-source-card {
+    min-height: min(680px, calc(100vh - 120px));
   }
 
   .skill-distill-page .skill-chat-card .ant-card-body,
   .skill-distill-page .skill-source-card .ant-card-body {
-    height: auto;
+    height: 100%;
     min-height: 0;
     overflow: hidden;
   }
 
   .skill-chat-panel {
-    height: 100%;
+    height: min(560px, calc(100vh - 156px));
     min-height: 0;
   }
 
