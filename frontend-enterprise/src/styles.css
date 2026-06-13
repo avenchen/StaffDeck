@@ -2489,52 +2489,93 @@ body.skill-distill-fixed .content {
   padding: clamp(16px, 2.6vw, 28px) clamp(14px, 2.6vw, 28px) 52px;
   display: grid;
   align-content: start;
-  justify-items: stretch;
-  gap: 20px;
+  justify-items: start;
+  gap: 18px;
 }
 
 .skill-flow-graph-canvas {
-  width: min(100%, 960px);
-  min-width: 0;
-  max-width: 960px;
+  width: max-content;
+  min-width: 100%;
+  max-width: none;
   display: grid;
   align-content: start;
-  justify-items: stretch;
-  gap: 0;
-  margin-inline: auto;
-  padding: 4px 0 20px;
+  justify-items: start;
+  gap: 10px;
+  margin-inline: 0;
+  padding: 4px 20px 28px 0;
 }
 
 .skill-flow-layer-block {
-  width: 100%;
+  width: max-content;
+  max-width: none;
   min-width: 0;
   display: grid;
-  justify-items: stretch;
-  gap: 0;
+  justify-items: start;
+  gap: 6px;
 }
 
 .skill-flow-layer {
-  width: 100%;
-  min-width: 100%;
+  width: max-content;
+  min-width: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: minmax(286px, 340px);
   align-items: stretch;
-  justify-content: stretch;
-  gap: 14px;
+  justify-content: start;
+  gap: 24px;
 }
 
-.skill-flow-connector {
+.skill-flow-layer.branching {
+  gap: clamp(26px, 3vw, 42px);
+}
+
+.skill-flow-layer-spine {
+  width: 100%;
+  height: 18px;
+  position: relative;
+}
+
+.skill-flow-layer-spine::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 1px;
+  height: 100%;
+  background: #d9d2c7;
+}
+
+.skill-flow-branch {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  justify-items: stretch;
+}
+
+.skill-flow-incoming {
   min-height: 58px;
   display: grid;
   justify-items: center;
   align-content: center;
-  gap: 6px;
+  gap: 5px;
 }
 
-.skill-flow-layer-line {
+.skill-flow-incoming-line {
   width: 1px;
-  height: 18px;
+  height: 16px;
   background: #d9d2c7;
+}
+
+.skill-flow-incoming-line.bottom {
+  height: 14px;
+}
+
+.skill-flow-incoming-chips {
+  max-width: 100%;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
 }
 
 .skill-flow-connector-count {
@@ -2557,7 +2598,7 @@ body.skill-distill-fixed .content {
 }
 
 .skill-flow-edge-chip {
-  max-width: min(420px, 78vw);
+  max-width: 100%;
   padding: 5px 10px;
   color: var(--muted);
   background: var(--surface-subtle);
@@ -2571,10 +2612,10 @@ body.skill-distill-fixed .content {
 }
 
 .skill-flow-node-shell {
-  width: min(100%, 720px);
-  max-width: 720px;
+  width: 100%;
+  max-width: 340px;
   display: grid;
-  justify-self: center;
+  justify-self: stretch;
   justify-items: stretch;
   gap: 8px;
 }
@@ -2598,9 +2639,13 @@ body.skill-distill-fixed .content {
 }
 
 .skill-flow-node.root {
-  justify-self: center;
-  width: min(680px, 100%);
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  justify-self: start;
+  width: min(720px, 100%);
   background: #f2f0eb;
+  box-shadow: 0 14px 34px rgba(37, 32, 24, 0.08);
 }
 
 .skill-flow-node.root p {
@@ -3192,7 +3237,7 @@ body.skill-distill-fixed .content {
 }
 
 .skill-flow {
-  align-items: center;
+  align-items: start;
 }
 
 .skill-flow-node {
