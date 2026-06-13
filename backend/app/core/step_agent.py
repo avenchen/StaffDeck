@@ -43,6 +43,7 @@ class StepAgent:
                     "name": tool.name,
                     "display_name": tool.display_name,
                     "description": tool.description,
+                    "bucket": getattr(tool, "bucket", None) or "未分桶",
                     "input_schema": tool.input_schema,
                     "allowed_skills": tool.allowed_skills_json,
                 }

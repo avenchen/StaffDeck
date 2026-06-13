@@ -131,6 +131,7 @@ export type ToolSuggestion = {
   name: string;
   display_name?: string;
   description?: string;
+  bucket: string;
   method: string;
   url: string;
   input_schema: Record<string, unknown>;
@@ -279,6 +280,7 @@ export type ToolRead = {
   name: string;
   display_name?: string;
   description?: string;
+  bucket: string;
   method: string;
   url: string;
   headers: Record<string, unknown>;

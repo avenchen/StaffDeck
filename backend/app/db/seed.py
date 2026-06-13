@@ -440,6 +440,7 @@ ORDER_QUERY_TOOL = {
     "name": "order.query",
     "display_name": "订单查询",
     "description": "根据订单号查询订单状态、签收天数和是否可能支持退款。",
+    "bucket": "订单工具",
     "method": "POST",
     "url": "http://localhost:8000/api/mock/order/query",
     "headers_json": {},
@@ -468,6 +469,7 @@ ORDER_ARCHIVE_QUERY_TOOL = {
     "name": "order.archive_query",
     "display_name": "历史订单查询",
     "description": "备用订单查询工具；当 order.query 主订单中心未命中、found=false、miss_reason 或历史订单场景时，用同一 order_id 查询归档订单。",
+    "bucket": "订单工具",
     "method": "POST",
     "url": "http://localhost:8000/api/mock/order/archive-query",
     "headers_json": {},
@@ -497,6 +499,7 @@ PRODUCT_PURCHASE_TOOL = {
     "name": "product.purchase",
     "display_name": "购买商品",
     "description": "模拟用户购买商品，返回支付后的订单与购买记录。",
+    "bucket": "商品工具",
     "method": "POST",
     "url": "http://localhost:8000/api/mock/product/purchase",
     "headers_json": {},
@@ -536,6 +539,7 @@ ORDER_ADD_TOOL = {
     "name": "order.add",
     "display_name": "订单添加",
     "description": "模拟新增一笔订单，返回订单号、商品、金额和订单状态。",
+    "bucket": "订单工具",
     "method": "POST",
     "url": "http://localhost:8000/api/mock/order/add",
     "headers_json": {},
@@ -575,6 +579,7 @@ PRODUCT_PRICE_QUERY_TOOL = {
     "name": "product.price_query",
     "display_name": "商品价格查询",
     "description": "根据商品名称查询商品价格、品牌、规格和更新时间，用于商品比价。",
+    "bucket": "商品工具",
     "method": "POST",
     "url": "http://localhost:8000/api/mock/product/price-query",
     "headers_json": {},
@@ -675,6 +680,20 @@ def seed_demo_data(session: Session) -> None:
         ).first()
         if not tool:
             session.add(Tool(tenant_id="tenant_demo", **tool_config))
+        else:
+            tool.bucket = tool_config.get("bucket") or tool.bucket or "未分桶"
+            tool.display_name = tool_config.get("display_name") or tool.display_name
+            tool.description = tool_config.get("description") or tool.description
+            tool.method = tool_config.get("method") or tool.method
+            tool.url = tool_config.get("url") or tool.url
+            tool.headers_json = tool_config.get("headers_json") or tool.headers_json
+            tool.auth_json = tool_config.get("auth_json") or tool.auth_json
+            tool.input_schema = tool_config.get("input_schema") or tool.input_schema
+            tool.output_schema = tool_config.get("output_schema") or tool.output_schema
+            tool.allowed_skills_json = tool_config.get("allowed_skills_json") or tool.allowed_skills_json
+            tool.enabled = bool(tool_config.get("enabled", tool.enabled))
+            tool.updated_at = utc_now()
+            session.add(tool)
 
     _seed_weather_general_skill(session)
 

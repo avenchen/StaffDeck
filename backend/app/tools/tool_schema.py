@@ -10,6 +10,7 @@ class ToolCreateRequest(BaseModel):
     name: str
     display_name: Optional[str] = None
     description: Optional[str] = None
+    bucket: str = "未分桶"
     method: Literal["GET", "POST", "PUT", "PATCH", "DELETE"] = "POST"
     url: str
     headers: dict[str, str] = Field(default_factory=dict)
@@ -30,6 +31,7 @@ class ToolRead(BaseModel):
     name: str
     display_name: Optional[str] = None
     description: Optional[str] = None
+    bucket: str
     method: str
     url: str
     headers: dict[str, Any]
@@ -42,6 +44,14 @@ class ToolRead(BaseModel):
     updated_at: str
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class ToolBucketRead(BaseModel):
+    bucket: str
+    total: int
+    enabled_count: int
+    disabled_count: int
+    tool_ids: list[str] = Field(default_factory=list)
 
 
 class ToolCall(BaseModel):
@@ -71,6 +81,7 @@ class ToolProbeRequest(BaseModel):
     name: str
     display_name: Optional[str] = None
     description: Optional[str] = None
+    bucket: str = "技能自发现工具"
     method: Literal["GET", "POST", "PUT", "PATCH", "DELETE"] = "POST"
     url: str
     headers: dict[str, str] = Field(default_factory=dict)

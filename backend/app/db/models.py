@@ -375,6 +375,7 @@ class Tool(SQLModel, table=True):
     name: str = Field(index=True)
     display_name: Optional[str] = None
     description: Optional[str] = None
+    bucket: str = Field(default="未分桶", index=True)
     method: str
     url: str
     headers_json: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))

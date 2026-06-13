@@ -13,6 +13,7 @@ from app.db.models import Tool, utc_now
 from app.security.tenant import ensure_tenant
 from app.tools import ToolExecutor
 from app.tools.tool_schema import (
+    ToolBucketRead,
     ToolCall,
     ToolCreateRequest,
     ToolError,
@@ -34,6 +35,7 @@ def tool_read(row: Tool) -> ToolRead:
         name=row.name,
         display_name=row.display_name,
         description=row.description,
+        bucket=row.bucket or "未分桶",
         method=row.method,
         url=row.url,
         headers=row.headers_json or {},
@@ -48,10 +50,34 @@ def tool_read(row: Tool) -> ToolRead:
 
 
 @router.get("", response_model=list[ToolRead])
-def list_tools(tenant_id: str = Query(...), db: Session = Depends(get_session)) -> list[ToolRead]:
+def list_tools(
+    tenant_id: str = Query(...),
+    bucket: str | None = Query(default=None),
+    db: Session = Depends(get_session),
+) -> list[ToolRead]:
     ensure_tenant(db, tenant_id)
-    rows = db.exec(select(Tool).where(Tool.tenant_id == tenant_id)).all()
+    stmt = select(Tool).where(Tool.tenant_id == tenant_id)
+    if bucket and bucket != "__all__":
+        stmt = stmt.where(Tool.bucket == bucket)
+    rows = db.exec(stmt.order_by(Tool.bucket, Tool.name)).all()
     return [tool_read(row) for row in rows]
+
+
+@router.get("/buckets", response_model=list[ToolBucketRead])
+def list_tool_buckets(tenant_id: str = Query(...), db: Session = Depends(get_session)) -> list[ToolBucketRead]:
+    ensure_tenant(db, tenant_id)
+    rows = db.exec(select(Tool).where(Tool.tenant_id == tenant_id).order_by(Tool.bucket, Tool.name)).all()
+    grouped: dict[str, ToolBucketRead] = {}
+    for row in rows:
+        bucket = row.bucket or "未分桶"
+        item = grouped.setdefault(bucket, ToolBucketRead(bucket=bucket, total=0, enabled_count=0, disabled_count=0))
+        item.total += 1
+        if row.enabled:
+            item.enabled_count += 1
+        else:
+            item.disabled_count += 1
+        item.tool_ids.append(row.id)
+    return sorted(grouped.values(), key=lambda item: (-item.total, item.bucket))
 
 
 @router.post("", response_model=ToolRead)
@@ -67,6 +93,7 @@ def create_tool(request: ToolCreateRequest, db: Session = Depends(get_session)) 
         name=request.name,
         display_name=request.display_name,
         description=request.description,
+        bucket=_normalize_bucket(request.bucket),
         method=request.method,
         url=request.url,
         headers_json=request.headers,
@@ -129,6 +156,7 @@ def update_tool(tool_id: str, request: ToolUpdateRequest, db: Session = Depends(
     row.name = request.name
     row.display_name = request.display_name
     row.description = request.description
+    row.bucket = _normalize_bucket(request.bucket)
     row.method = request.method
     row.url = request.url
     row.headers_json = request.headers
@@ -170,6 +198,11 @@ def _get_tool(db: Session, tenant_id: str, tool_id: str) -> Tool:
     if not row or row.tenant_id != tenant_id:
         raise HTTPException(status_code=404, detail="Tool not found")
     return row
+
+
+def _normalize_bucket(value: str | None) -> str:
+    normalized = (value or "").strip()
+    return normalized or "未分桶"
 
 
 def _normalize_probe_url(url: str) -> str:

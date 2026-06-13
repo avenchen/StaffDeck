@@ -1,7 +1,7 @@
-import { DeleteOutlined, ExperimentOutlined, SaveOutlined, ToolOutlined } from '@ant-design/icons';
-import { Button, Card, Form, Input, Modal, Select, Space, Switch, Table, Typography, message } from 'antd';
+import { DeleteOutlined, ExperimentOutlined, ReloadOutlined, SaveOutlined, ToolOutlined } from '@ant-design/icons';
+import { AutoComplete, Button, Card, Form, Input, Modal, Select, Space, Switch, Table, Tag, Typography, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { api, TENANT_ID } from '../api/client';
 import type { AgentProfileRead, ToolRead } from '../types';
 
@@ -13,6 +13,8 @@ export default function ToolsPage() {
   const [testToolId, setTestToolId] = useState<string | undefined>();
   const [agentId, setAgentId] = useState(() => window.localStorage.getItem(ENTERPRISE_AGENT_STORAGE_KEY) || '');
   const [isOverallAgent, setIsOverallAgent] = useState(true);
+  const [bucketFilter, setBucketFilter] = useState('__all__');
+  const [searchText, setSearchText] = useState('');
   const [form] = Form.useForm();
   const [testJson, setTestJson] = useState('{}');
   const [testResult, setTestResult] = useState('');
@@ -66,6 +68,7 @@ export default function ToolsPage() {
     setTestToolId(row.id);
     form.setFieldsValue({
       ...row,
+      bucket: row.bucket || '未分桶',
       headers: JSON.stringify(row.headers, null, 2),
       auth: JSON.stringify(row.auth, null, 2),
       input_schema: JSON.stringify(row.input_schema, null, 2),
@@ -88,6 +91,7 @@ export default function ToolsPage() {
       name: values.name,
       display_name: values.display_name,
       description: values.description,
+      bucket: values.bucket || '未分桶',
       method: values.method,
       url: values.url,
       headers: parseJson(values.headers, {}),
@@ -157,6 +161,12 @@ export default function ToolsPage() {
   const columns: ColumnsType<ToolRead> = [
     { title: '工具名称', dataIndex: 'name', width: 170, ellipsis: true },
     { title: '展示名称', dataIndex: 'display_name', width: 160, ellipsis: true },
+    {
+      title: '分桶',
+      dataIndex: 'bucket',
+      width: 130,
+      render: (value) => <Tag className="tool-bucket-tag">{value || '未分桶'}</Tag>,
+    },
     { title: 'Method', dataIndex: 'method', width: 96 },
     { title: 'URL', dataIndex: 'url', width: 280, ellipsis: true },
     { title: '启用', dataIndex: 'enabled', width: 80, render: (value) => (value ? '是' : '否') },
@@ -173,19 +183,77 @@ export default function ToolsPage() {
     },
   ];
 
+  const bucketStats = useMemo(() => buildBucketStats(rows), [rows]);
+  const filteredRows = useMemo(() => {
+    const text = searchText.trim().toLowerCase();
+    return rows.filter((row) => {
+      const bucketMatch = bucketFilter === '__all__' || (row.bucket || '未分桶') === bucketFilter;
+      if (!bucketMatch) return false;
+      if (!text) return true;
+      return [
+        row.name,
+        row.display_name || '',
+        row.description || '',
+        row.bucket || '',
+        row.url,
+      ].some((value) => value.toLowerCase().includes(text));
+    });
+  }, [bucketFilter, rows, searchText]);
+
+  const bucketOptions = useMemo(
+    () => Array.from(new Set(['未分桶', ...rows.map((row) => row.bucket || '未分桶')])).map((value) => ({ value, label: value })),
+    [rows],
+  );
+
   return (
     <>
       <div className="page-title">
         <Typography.Title level={3}>工具配置</Typography.Title>
       </div>
       <div className="grid-2">
-        <Card className="data-card" title="工具列表">
+        <Card
+          className="data-card tools-list-card"
+          title="工具列表"
+          extra={<Button icon={<ReloadOutlined />} onClick={load}>刷新</Button>}
+        >
+          <div className="tool-bucket-strip">
+            <button
+              className={`tool-bucket-card ${bucketFilter === '__all__' ? 'active' : ''}`}
+              type="button"
+              onClick={() => setBucketFilter('__all__')}
+            >
+              <span className="tool-bucket-name">全部工具</span>
+              <strong>{rows.length}</strong>
+              <span>{rows.filter((row) => row.enabled).length} 个启用</span>
+            </button>
+            {bucketStats.map((item) => (
+              <button
+                className={`tool-bucket-card ${bucketFilter === item.bucket ? 'active' : ''}`}
+                key={item.bucket}
+                type="button"
+                onClick={() => setBucketFilter(item.bucket)}
+              >
+                <span className="tool-bucket-name">{item.bucket}</span>
+                <strong>{item.total}</strong>
+                <span>{item.enabled} 个启用 · {item.disabled} 个停用</span>
+              </button>
+            ))}
+          </div>
+          <div className="tool-filter-bar">
+            <Input.Search
+              allowClear
+              placeholder="搜索工具名称、描述、URL 或分桶"
+              value={searchText}
+              onChange={(event) => setSearchText(event.target.value)}
+            />
+            <Typography.Text type="secondary">当前显示 {filteredRows.length} / {rows.length} 个工具</Typography.Text>
+          </div>
           <Table
             rowKey="id"
             columns={columns}
-            dataSource={rows}
+            dataSource={filteredRows}
             pagination={{ pageSize: 8 }}
-            scroll={{ x: 946 }}
+            scroll={{ x: 1080 }}
             size="middle"
           />
         </Card>
@@ -200,9 +268,15 @@ export default function ToolsPage() {
               </Space>
             )}
           >
-            <Form form={form} layout="vertical" initialValues={{ method: 'POST', enabled: true, headers: '{}', auth: '{}', input_schema: '{}', output_schema: '{}' }}>
+            <Form form={form} layout="vertical" initialValues={{ method: 'POST', enabled: true, bucket: '未分桶', headers: '{}', auth: '{}', input_schema: '{}', output_schema: '{}' }}>
               <Form.Item name="name" label="工具名称" rules={[{ required: true }]}><Input prefix={<ToolOutlined />} /></Form.Item>
               <Form.Item name="display_name" label="展示名称"><Input /></Form.Item>
+              <Form.Item name="bucket" label="工具分桶">
+                <AutoComplete
+                  placeholder="选择或输入分桶"
+                  options={bucketOptions}
+                />
+              </Form.Item>
               <Form.Item name="description" label="描述"><Input.TextArea rows={2} /></Form.Item>
               <Form.Item name="method" label="HTTP Method"><Select options={['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].map((value) => ({ value, label: value }))} /></Form.Item>
               <Form.Item name="url" label="URL" rules={[{ required: true }]}><Input /></Form.Item>
@@ -240,6 +314,19 @@ export default function ToolsPage() {
       </div>
     </>
   );
+}
+
+function buildBucketStats(rows: ToolRead[]) {
+  const map = new Map<string, { bucket: string; total: number; enabled: number; disabled: number }>();
+  rows.forEach((row) => {
+    const bucket = row.bucket || '未分桶';
+    const item = map.get(bucket) || { bucket, total: 0, enabled: 0, disabled: 0 };
+    item.total += 1;
+    if (row.enabled) item.enabled += 1;
+    else item.disabled += 1;
+    map.set(bucket, item);
+  });
+  return Array.from(map.values()).sort((a, b) => b.total - a.total || a.bucket.localeCompare(b.bucket));
 }
 
 function parseJson<T>(value: string, fallback: T): T {

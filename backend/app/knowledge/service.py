@@ -403,6 +403,7 @@ class KnowledgeService:
             name=name,
             display_name=_optional_str(payload.get("display_name")) or suggestion.title,
             description=_optional_str(payload.get("description") or suggestion.reason),
+            bucket=str(payload.get("bucket") or "知识自发现工具").strip() or "知识自发现工具",
             method=str(payload.get("method") or "POST").upper(),
             url=str(payload.get("url") or ""),
             headers_json=payload.get("headers") if isinstance(payload.get("headers"), dict) else {},
