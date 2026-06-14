@@ -2776,7 +2776,7 @@ body.skill-distill-fixed .content {
   position: absolute;
   top: 0;
   left: 0;
-  z-index: 1;
+  z-index: 2;
   overflow: visible;
   pointer-events: none;
 }
@@ -2797,8 +2797,8 @@ body.skill-distill-fixed .content {
 
 .skill-flow-edge-label {
   position: absolute;
-  z-index: 2;
-  max-width: 190px;
+  z-index: 4;
+  max-width: 176px;
   padding: 4px 9px;
   color: #5f574b;
   background: rgba(255, 253, 248, 0.98);
@@ -2826,12 +2826,12 @@ body.skill-distill-fixed .content {
 
 .skill-flow-root-position {
   position: absolute;
-  z-index: 4;
+  z-index: 6;
 }
 
 .skill-flow-node-position {
   position: absolute;
-  z-index: 5;
+  z-index: 7;
 }
 
 .skill-flow-connector-count {

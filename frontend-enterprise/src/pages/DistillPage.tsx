@@ -2327,7 +2327,7 @@ function SkillFlow({
                 </path>
               ))}
             </svg>
-            {graphLayout.edges.filter((edge) => edge.kind === 'root').map((edge) => (
+            {graphLayout.edges.map((edge) => (
               <span
                 className={['skill-flow-edge-label', edge.labelTone || edge.kind].filter(Boolean).join(' ')}
                 key={`${edge.id}_label`}
@@ -2522,6 +2522,7 @@ type SkillFlowCanvasNode = {
   nodeId: string;
   step: Record<string, unknown>;
   index: number;
+  rank: number;
   x: number;
   y: number;
   width: number;
@@ -2574,6 +2575,7 @@ function buildSkillFlowCanvasLayout(
     layer.forEach((item, itemIndex) => {
       const positioned = {
         ...item,
+        rank: layerIndex,
         x: layerStartX + itemIndex * (cardWidth + columnGap),
         y: paddingY + rootHeight + rootGap + layerIndex * (cardHeight + rowGap),
         width: cardWidth,
@@ -2601,19 +2603,19 @@ function buildSkillFlowCanvasLayout(
   const startNode = positionMap.get(String(skill.start_node_id || positionedNodes[0]?.nodeId || ''));
   if (startNode) {
     const sourceX = root.x + root.width / 2;
-    const sourceY = root.y + root.height;
+    const sourceY = root.y + root.height + 8;
     const targetX = startNode.x + startNode.width / 2;
-    const targetY = startNode.y;
-    const bendY = sourceY + Math.max(72, targetY - sourceY) * 0.48;
+    const targetY = startNode.y - 8;
+    const laneY = edgeLaneY(sourceY, targetY, 0, 1);
     layoutEdges.push({
       id: `root_${startNode.nodeId}`,
       kind: 'root',
       labelTone: 'root',
       label: '开始',
       title: `开始 -> ${nodeNameMap[startNode.nodeId] || startNode.nodeId}`,
-      path: verticalFlowPath(sourceX, sourceY, targetX, targetY, bendY),
+      path: forwardFlowPath(sourceX, sourceY, targetX, targetY, laneY),
       labelX: (sourceX + targetX) / 2,
-      labelY: bendY,
+      labelY: laneY,
     });
   }
   rawEdges.forEach((edge, index) => {
@@ -2631,18 +2633,17 @@ function buildSkillFlowCanvasLayout(
     const incomingIndex = incomingIndexes[targetId] || 0;
     incomingIndexes[targetId] = incomingIndex + 1;
     const sourceX = source.x + source.width / 2;
-    const sourceY = source.y + source.height;
+    const sourceY = source.y + source.height + 8;
     const targetX = target.x + target.width / 2;
-    const targetY = target.y;
-    const labelOffset = siblingCount > 1 ? (siblingIndex - (siblingCount - 1) / 2) * 26 : 0;
-    const bendY = flowEdgeBendY(sourceY, targetY, labelOffset);
+    const targetY = target.y - 8;
     const isReturn = targetY <= sourceY;
+    const laneY = edgeLaneY(sourceY, targetY, siblingIndex, siblingCount);
     const path = targetY <= sourceY
       ? sideReturnFlowPath(source, target, width, siblingIndex)
-      : verticalFlowPath(sourceX, sourceY, targetX, targetY, bendY);
+      : forwardFlowPath(sourceX, sourceY, targetX, targetY, laneY);
     const labelAnchor = isReturn
       ? returnEdgeLabelPosition(source, target, width, siblingIndex)
-      : forwardEdgeLabelPosition(sourceX, sourceY, targetX, targetY, siblingIndex, siblingCount, incomingIndex, incomingCount);
+      : forwardEdgeLabelPosition(sourceX, targetX, laneY, siblingIndex, siblingCount, incomingIndex, incomingCount);
     layoutEdges.push({
       id: `${sourceId}_${targetId}_${index}`,
       kind: 'edge',
@@ -2734,43 +2735,55 @@ function buildSkillFlowLayout(skill: SkillCard, nodes: Array<Record<string, unkn
   return { layers };
 }
 
-function flowEdgeBendY(sourceY: number, targetY: number, offset = 0): number {
-  const distance = Math.max(86, targetY - sourceY);
-  const bend = sourceY + distance * 0.48 + offset;
-  return Math.max(sourceY + 48, Math.min(targetY - 48, bend));
+function edgeLaneY(sourceY: number, targetY: number, siblingIndex: number, siblingCount: number): number {
+  const safeTop = sourceY + 58;
+  const safeBottom = targetY - 58;
+  if (safeBottom <= safeTop) {
+    return sourceY + Math.max(72, (targetY - sourceY) * 0.42);
+  }
+  const laneCount = Math.max(1, siblingCount);
+  const maxSpread = Math.min(38, Math.max(24, (safeBottom - safeTop) / Math.max(1, laneCount - 1 || 1)));
+  const start = (safeTop + safeBottom) / 2 - ((laneCount - 1) * maxSpread) / 2;
+  return Math.max(safeTop, Math.min(safeBottom, start + siblingIndex * maxSpread));
 }
 
-function verticalFlowPath(sourceX: number, sourceY: number, targetX: number, targetY: number, bendY: number): string {
-  const distance = Math.max(120, targetY - sourceY);
-  const controlY = Math.min(distance * 0.48, 132);
-  const easingX = Math.min(Math.abs(targetX - sourceX) * 0.18, 96);
-  const firstControlX = targetX > sourceX ? sourceX + easingX : sourceX - easingX;
-  const secondControlX = targetX > sourceX ? targetX - easingX : targetX + easingX;
-  const midY = Math.max(sourceY + 52, Math.min(targetY - 52, bendY));
+function forwardFlowPath(sourceX: number, sourceY: number, targetX: number, targetY: number, laneY: number): string {
+  const safeLaneY = Math.max(sourceY + 48, Math.min(targetY - 48, laneY));
+  const verticalEase = Math.min(44, Math.max(22, (targetY - sourceY) * 0.18));
+  const horizontalGap = Math.abs(targetX - sourceX);
+  if (horizontalGap < 12) {
+    return [
+      `M ${sourceX} ${sourceY}`,
+      `C ${sourceX} ${sourceY + verticalEase}, ${targetX} ${targetY - verticalEase}, ${targetX} ${targetY}`,
+    ].join(' ');
+  }
   return [
     `M ${sourceX} ${sourceY}`,
-    `C ${sourceX} ${sourceY + controlY}, ${firstControlX} ${midY}, ${(sourceX + targetX) / 2} ${midY}`,
-    `C ${secondControlX} ${midY}, ${targetX} ${targetY - controlY}, ${targetX} ${targetY}`,
+    `C ${sourceX} ${sourceY + verticalEase}, ${sourceX} ${safeLaneY - verticalEase}, ${sourceX} ${safeLaneY}`,
+    `L ${targetX} ${safeLaneY}`,
+    `C ${targetX} ${safeLaneY + verticalEase}, ${targetX} ${targetY - verticalEase}, ${targetX} ${targetY}`,
   ].join(' ');
 }
 
 function forwardEdgeLabelPosition(
   sourceX: number,
-  sourceY: number,
   targetX: number,
-  targetY: number,
+  laneY: number,
   siblingIndex: number,
   siblingCount: number,
   incomingIndex: number,
   incomingCount: number,
 ) {
-  const siblingOffset = siblingCount > 1 ? (siblingIndex - (siblingCount - 1) / 2) * 52 : 0;
-  const incomingOffset = incomingCount > 1 ? (incomingIndex - (incomingCount - 1) / 2) * 86 : 0;
-  const x = targetX + incomingOffset * 0.72 + siblingOffset * 0.22;
-  const safeTop = sourceY + 54 + Math.abs(siblingOffset) * 0.18;
-  const safeBottom = targetY - 70 - Math.abs(incomingOffset) * 0.05;
-  const y = Math.max(safeTop, Math.min(safeBottom, sourceY + 74 + siblingIndex * 32));
-  return { x, y };
+  const siblingOffset = siblingCount > 1 ? (siblingIndex - (siblingCount - 1) / 2) * 18 : 0;
+  const incomingOffset = incomingCount > 1 ? (incomingIndex - (incomingCount - 1) / 2) * 28 : 0;
+  const minX = Math.min(sourceX, targetX);
+  const maxX = Math.max(sourceX, targetX);
+  const midpoint = (sourceX + targetX) / 2;
+  const hasHorizontalRoom = maxX - minX > 220;
+  const x = hasHorizontalRoom
+    ? Math.max(minX + 98, Math.min(maxX - 98, midpoint + siblingOffset + incomingOffset))
+    : targetX + siblingOffset + incomingOffset;
+  return { x, y: laneY };
 }
 
 function returnEdgeLabelPosition(
@@ -2793,9 +2806,9 @@ function sideReturnFlowPath(
   siblingIndex: number,
 ): string {
   const sourceX = source.x + source.width / 2;
-  const sourceY = source.y + source.height;
+  const sourceY = source.y + source.height + 8;
   const targetX = target.x + target.width / 2;
-  const targetY = target.y;
+  const targetY = target.y - 8;
   const sideX = Math.min(canvasWidth - 54, Math.max(source.x + source.width + 70 + siblingIndex * 28, target.x + target.width + 70));
   const bottomY = sourceY + 64;
   const topY = Math.max(44, targetY - 64);
