@@ -157,7 +157,6 @@ class AgentLoop:
             tool_result = prepared.tool_result
             memory_context = prepared.memory_context
             conversation_context = prepared.conversation_context
-            completed_skill_ids_this_turn: set[str] = set()
             if prepared.reply_override is not None:
                 reply = prepared.reply_override
             else:
@@ -182,36 +181,12 @@ class AgentLoop:
                     tool_result,
                 )
                 if completed:
-                    if prepared.active_skill:
-                        completed_skill_ids_this_turn.add(prepared.active_skill.skill_id)
                     self.events.record(
                         request.tenant_id,
                         chat_session.id,
                         "pending_tasks_waiting",
                         {"pending_tasks": chat_session.pending_tasks_json or []},
                     )
-                    continuation = self._try_continue_pending_after_completion(
-                        request,
-                        chat_session,
-                        prepared.model_config,
-                        self._list_published_skills(request.tenant_id, chat_session.agent_id),
-                        self._tools_with_general_skills(
-                            request.tenant_id,
-                            self._list_enabled_tools(request.tenant_id),
-                            chat_session.agent_id,
-                        ),
-                        self._get_persona_prompt(request.tenant_id, chat_session.agent_id),
-                        memory_context,
-                        conversation_context,
-                        reply,
-                        completed_skill_ids_this_turn,
-                    )
-                    if continuation:
-                        reply = continuation.reply.strip() or reply
-                        active_skill = continuation.active_skill
-                        router_decision = continuation.router_decision
-                        step_result = continuation.step_result
-                        tool_result = continuation.tool_result
 
         except AgentLoopPreconditionError as exc:
             chat_session = chat_session or self._get_or_create_session(request)
@@ -1160,35 +1135,13 @@ class AgentLoop:
                 step_result,
                 tool_result,
             )
-            completed_skill_ids_this_turn: set[str] = set()
             if completed:
-                if active_skill:
-                    completed_skill_ids_this_turn.add(active_skill.skill_id)
                 self.events.record(
                     request.tenant_id,
                     chat_session.id,
                     "pending_tasks_waiting",
                     {"pending_tasks": chat_session.pending_tasks_json or []},
                 )
-                continuation = yield from self._stream_continue_pending_after_completion(
-                    request,
-                    chat_session,
-                    model_config,
-                    skills,
-                    tools,
-                    persona_prompt,
-                    memory_context,
-                    conversation_context,
-                    reply,
-                    completed_skill_ids_this_turn,
-                    True,
-                )
-                if continuation:
-                    reply = continuation.reply.strip() or reply
-                    active_skill = continuation.active_skill
-                    router_decision = continuation.router_decision
-                    step_result = continuation.step_result
-                    tool_result = continuation.tool_result
             yield self._stream_event("stream_end", chat_session, {})
 
         except AgentLoopPreconditionError as exc:
@@ -2618,39 +2571,6 @@ class AgentLoop:
             conversation_context,
         )
 
-        advanced = self._advance_past_satisfied_collection_steps(
-            request.tenant_id, chat_session, active_skill
-        )
-        if advanced and not step_result.tool_call and not step_result.handoff:
-            if stream_events is not None:
-                stream_events.append(
-                    (
-                        "status",
-                        {
-                            "phase": "stepping",
-                            "text": "正在思考",
-                            "active_skill_id": chat_session.active_skill_id,
-                            "active_step_id": chat_session.active_step_id,
-                            "repair_reason": "satisfied_step_advanced",
-                        },
-                    )
-                )
-            step_result = self._run_step_agent_once(
-                request,
-                chat_session,
-                active_skill,
-                tools,
-                model_config,
-                router_decision,
-                repair_reason="satisfied_step_advanced",
-                memory_context=memory_context,
-                conversation_context=conversation_context,
-            )
-            self._apply_step_result(request.tenant_id, chat_session, step_result, active_skill)
-            self._advance_past_satisfied_collection_steps(
-                request.tenant_id, chat_session, active_skill
-            )
-
         return step_result
 
     def _retry_slot_validation_if_needed(
@@ -2894,77 +2814,6 @@ class AgentLoop:
         if not step_id:
             return False
         return any(node.get("node_id") == step_id for node in self._skill_nodes(skill))
-
-    def _advance_past_satisfied_collection_steps(
-        self, tenant_id: str, chat_session: ChatSession, skill: Skill | None
-    ) -> bool:
-        if not skill or not chat_session.active_step_id:
-            return False
-        steps = self._skill_steps(skill)
-        step_index = next(
-            (
-                index
-                for index, step in enumerate(steps)
-                if step.get("step_id") == chat_session.active_step_id
-            ),
-            -1,
-        )
-        if step_index < 0:
-            return False
-
-        changed = False
-        slots = chat_session.slots_json or {}
-        while True:
-            current = steps[step_index]
-            expected = [str(field) for field in current.get("expected_user_info", [])]
-            if any(not self._skill_slot_satisfied(slots, field) for field in expected):
-                break
-            actions = self._step_actions(current)
-            if self._step_can_act_without_more_user_input(actions):
-                break
-            next_step = self._default_next_step(skill, str(current.get("step_id") or ""))
-            if not next_step:
-                break
-            next_step_id = str(next_step.get("step_id") or "")
-            if not next_step_id:
-                break
-            previous_step = chat_session.active_step_id
-            chat_session.active_step_id = next_step_id
-            changed = True
-            self.events.record(
-                tenant_id,
-                chat_session.id,
-                "skill_step_changed",
-                {
-                    "from_skill_id": chat_session.active_skill_id,
-                    "to_skill_id": chat_session.active_skill_id,
-                    "from_step_id": previous_step,
-                    "to_step_id": next_step_id,
-                    "reason": "expected_info_satisfied",
-                },
-            )
-            next_index = next(
-                (
-                    index
-                    for index, step in enumerate(steps)
-                    if step.get("step_id") == next_step_id
-                ),
-                -1,
-            )
-            if next_index < 0 or next_index == step_index:
-                break
-            step_index = next_index
-        return changed
-
-    def _step_can_act_without_more_user_input(self, actions: list[str]) -> bool:
-        actions = [_normalize_action(action) for action in actions]
-        return (
-            self._actions_allow_final_reply(actions)
-            or "handoff_human" in actions
-            or "query_knowledge" in actions
-            or "knowledge_query" in actions
-            or any(action.startswith("call_tool:") for action in actions)
-        )
 
     def _step_actions(self, step: dict[str, Any]) -> list[str]:
         return [

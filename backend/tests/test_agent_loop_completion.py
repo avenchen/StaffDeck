@@ -459,7 +459,7 @@ def test_answer_step_can_complete_even_if_distilled_order_has_later_satisfied_co
     )
 
 
-def test_context_repair_skips_satisfied_collect_step_and_uses_model_tool_call() -> None:
+def test_context_repair_does_not_auto_advance_satisfied_collect_step() -> None:
     loop = object.__new__(AgentLoop)
     loop.events = FakeEvents()
     loop.step_agent = _FakeStepAgent(
@@ -468,10 +468,6 @@ def test_context_repair_skips_satisfied_collect_step_and_uses_model_tool_call() 
                 reply="您好 hm，请问您想购买的商品 ID 是什么？",
                 slot_updates={"user_name": "hm"},
                 next_step_id="collect_user_name",
-            ),
-            StepAgentResult(
-                reply="正在为您创建订单，请稍候。",
-                tool_call=ToolCall(name="product.purchase", arguments={"product_id": "A3", "quantity": 1}),
             ),
         ]
     )
@@ -492,13 +488,10 @@ def test_context_repair_skips_satisfied_collect_step_and_uses_model_tool_call() 
         RouterDecision(decision="continue_current_skill", target_skill_id="purchase"),
     )
 
-    assert session.active_step_id == "confirm_product"
-    assert loop.step_agent.calls == 2
-    assert step_result.tool_call is not None
-    assert step_result.tool_call.name == "product.purchase"
-    assert step_result.tool_call.arguments["product_id"] == "A3"
-    assert step_result.tool_call.arguments["quantity"] == 1
-    assert any(
+    assert session.active_step_id == "collect_user_name"
+    assert loop.step_agent.calls == 1
+    assert step_result.tool_call is None
+    assert not any(
         event_type == "skill_step_changed"
         and payload.get("reason") == "expected_info_satisfied"
         for _, _, event_type, payload in loop.events.records
@@ -554,10 +547,6 @@ def test_model_slot_validation_retry_can_complete_missed_quantity() -> None:
             StepAgentResult(
                 reply="正在为您创建订单，请稍候。",
                 slot_updates={"quantity": 1},
-                next_step_id="collect_user_name",
-            ),
-            StepAgentResult(
-                reply="正在为您创建订单，请稍候。",
                 tool_call=ToolCall(name="product.purchase", arguments={"product_id": "A1", "quantity": 1}),
             ),
         ]
@@ -579,7 +568,7 @@ def test_model_slot_validation_retry_can_complete_missed_quantity() -> None:
         RouterDecision(decision="suspend_current_and_start_new_skill", target_skill_id="purchase"),
     )
 
-    assert loop.step_agent.calls == 3
+    assert loop.step_agent.calls == 2
     assert session.slots_json["user_name"] == "hm"
     assert session.slots_json["product_id"] == "A1"
     assert session.slots_json["quantity"] == 1
@@ -588,6 +577,11 @@ def test_model_slot_validation_retry_can_complete_missed_quantity() -> None:
     assert any(
         event_type == "step_agent_result_repaired"
         and payload.get("mode") == "slot_validation"
+        for _, _, event_type, payload in loop.events.records
+    )
+    assert not any(
+        event_type == "skill_step_changed"
+        and payload.get("reason") == "expected_info_satisfied"
         for _, _, event_type, payload in loop.events.records
     )
 
@@ -933,25 +927,6 @@ def test_duplicate_tool_call_with_reply_completes_from_existing_tool_result() ->
         record[2] == "agent_loop_completed" and record[3]["mode"] == "respond_after_duplicate"
         for record in loop.events.records
     )
-
-
-def test_context_repair_does_not_skip_satisfied_tool_step() -> None:
-    loop = object.__new__(AgentLoop)
-    loop.events = FakeEvents()
-    session = ChatSession(
-        id="session_test",
-        tenant_id="tenant_demo",
-        active_skill_id="refund",
-        active_step_id="collect_order",
-        slots_json={"order_id": "A12345"},
-    )
-
-    advanced = loop._advance_past_satisfied_collection_steps(
-        "tenant_demo", session, _refund_skill_with_tool_collect_step()
-    )
-
-    assert not advanced
-    assert session.active_step_id == "collect_order"
 
 
 def _repair_skill() -> Skill:

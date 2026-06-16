@@ -415,7 +415,7 @@ def test_general_skill_archive_publish_and_delete_api(monkeypatch) -> None:
             raise AssertionError("deleted general skill should be gone")
 
 
-def test_non_overall_agent_cannot_delete_general_skill() -> None:
+def test_non_overall_agent_delete_hides_general_skill_only_in_branch() -> None:
     with _test_session() as db:
         _seed_minimal_tenant(db)
         db.add(AgentProfile(id="agent_overall", tenant_id="tenant_demo", name="整体智能体", is_overall=True))
@@ -431,14 +431,12 @@ def test_non_overall_agent_cannot_delete_general_skill() -> None:
         )
         db.commit()
 
-        try:
-            delete_general_skill(imported.slug, "tenant_demo", db, agent_id="agent_branch")
-        except HTTPException as error:
-            assert error.status_code == 403
-        else:
-            raise AssertionError("non-overall agent should not delete global general skill")
+        deleted = delete_general_skill(imported.slug, "tenant_demo", db, agent_id="agent_branch")
 
+        assert deleted == {"status": "hidden", "slug": "weather-zh"}
         assert get_general_skill(imported.slug, "tenant_demo", db).slug == "weather-zh"
+        assert list_general_skills("tenant_demo", db, agent_id="agent_branch") == []
+        assert list_general_skills("tenant_demo", db, agent_id="agent_overall")[0].slug == "weather-zh"
 
 
 def test_chat_turn_uses_general_skill_after_scene_router_skips_unmatched_scene(
