@@ -16,10 +16,12 @@ from app.db.models import (
     AgentKnowledgeBranch,
     AgentResourceBinding,
     KnowledgeBase,
+    KnowledgeBaseVersion,
     KnowledgeBucket,
     KnowledgeChunk,
+    KnowledgeDiscoverySuggestion,
     KnowledgeDocument,
-    KnowledgeBaseVersion,
+    KnowledgeIngestJob,
     utc_now,
 )
 from app.knowledge.schema import (
@@ -343,11 +345,35 @@ def delete_knowledge_base(
         db.commit()
         return {"status": "hidden"}
     row = _get_knowledge_base(db, tenant_id, knowledge_base_id)
-    row.status = "archived"
-    row.updated_at = utc_now()
-    db.add(row)
+    for model in (
+        KnowledgeDiscoverySuggestion,
+        KnowledgeIngestJob,
+        KnowledgeChunk,
+        KnowledgeBucket,
+        KnowledgeDocument,
+        KnowledgeBaseVersion,
+        AgentKnowledgeBranch,
+    ):
+        children = db.exec(
+            select(model).where(
+                model.tenant_id == tenant_id,
+                model.knowledge_base_id == row.id,
+            )
+        ).all()
+        for child in children:
+            db.delete(child)
+    bindings = db.exec(
+        select(AgentResourceBinding).where(
+            AgentResourceBinding.tenant_id == tenant_id,
+            AgentResourceBinding.resource_type == "knowledge_base",
+            AgentResourceBinding.resource_id == row.id,
+        )
+    ).all()
+    for binding in bindings:
+        db.delete(binding)
+    db.delete(row)
     db.commit()
-    return {"status": "archived"}
+    return {"status": "deleted"}
 
 
 @router.post("/{knowledge_base_id}/sync-from-overall")

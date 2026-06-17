@@ -8,6 +8,8 @@ import {
   HistoryOutlined,
   InboxOutlined,
   MoreOutlined,
+  PauseCircleOutlined,
+  PlayCircleOutlined,
   ReloadOutlined,
   RightOutlined,
   SaveOutlined,
@@ -353,7 +355,7 @@ export default function KnowledgeManagePage() {
       title: branchMode ? `从当前智能体移除知识库：${row.name}` : `删除知识库：${row.name}`,
       content: branchMode
         ? '这只会在当前分支智能体中隐藏该知识库；整体智能体和其他分支仍然保留。'
-        : '整体智能体会删除或归档知识库；有文档的知识库会被归档，避免误删内容。',
+        : '整体智能体会永久删除该知识库及其文档、分桶、片段和版本记录。',
       okText: branchMode ? '移除' : '删除',
       okButtonProps: { danger: true },
       cancelText: '取消',
@@ -361,7 +363,7 @@ export default function KnowledgeManagePage() {
         const suffix = agentId ? `&agent_id=${encodeURIComponent(agentId)}` : '';
         try {
           await api.delete(`/api/enterprise/knowledge-bases/${row.id}?tenant_id=${TENANT_ID}${suffix}`);
-          message.success(branchMode ? '已从当前智能体移除知识库' : '已处理删除请求');
+          message.success(branchMode ? '已从当前智能体移除知识库' : '已删除知识库');
           await refresh();
         } catch (error) {
           message.error(error instanceof Error ? error.message : '删除失败');
@@ -565,8 +567,8 @@ export default function KnowledgeManagePage() {
                               !isOverallAgent ? { key: 'sync', label: '同步整体' } : null,
                               !isOverallAgent ? { key: 'promote', label: '推送到整体' } : null,
                               item.status === 'archived'
-                                ? { key: 'publish', label: '上线' }
-                                : { key: 'archive', label: '下线' },
+                                ? { key: 'publish', icon: <PlayCircleOutlined />, label: '上线' }
+                                : { key: 'archive', icon: <PauseCircleOutlined />, label: '下线' },
                               {
                                 key: 'delete',
                                 icon: <DeleteOutlined />,
