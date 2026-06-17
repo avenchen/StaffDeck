@@ -1,3 +1,6 @@
+import sys
+from pathlib import Path
+
 import pytest
 import httpx
 from fastapi import HTTPException
@@ -145,6 +148,36 @@ def test_probe_mcp_tool_error_is_stable() -> None:
         assert result.error.code == "MCP_ERROR"
 
 
+def test_probe_stdio_mcp_tool_success_infers_output_schema() -> None:
+    with _test_session() as db:
+        db.add(Tenant(id="tenant_demo", name="Demo"))
+        db.commit()
+
+        result = probe_tool(
+            ToolProbeRequest(
+                tenant_id="tenant_demo",
+                name="mcp.real_product_lookup",
+                tool_type="mcp",
+                method="POST",
+                url="mcp://stdio/mock/product_lookup",
+                mcp_config={
+                    "transport": "stdio",
+                    "command": sys.executable,
+                    "args": [str(_mock_mcp_server_path())],
+                    "tool": "product_lookup",
+                },
+                sample_arguments={"product_id": "A1"},
+            ),
+            db,
+        )
+
+        assert result.success is True
+        assert result.status_code == 200
+        assert result.data_preview["found"] is True
+        assert result.data_preview["price"] == 129.0
+        assert result.inferred_output_schema["properties"]["price"]["type"] == "number"
+
+
 def test_probe_tool_relative_url_uses_configured_tool_base(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("TOOL_BASE_URL", "http://127.0.0.1:10086/")
     get_settings.cache_clear()
@@ -200,3 +233,7 @@ def _test_session():
     )
     SQLModel.metadata.create_all(engine)
     return Session(engine)
+
+
+def _mock_mcp_server_path() -> Path:
+    return Path(__file__).resolve().parents[1] / "mock_servers" / "mcp_stdio_server.py"

@@ -9,7 +9,7 @@ from sqlmodel import Session, select
 
 from app.config import get_settings
 from app.db.models import Tool
-from app.tools.mcp_builtin import BuiltinMCPError, execute_builtin_mcp
+from app.tools.mcp_client import MCPClientError, execute_mcp_tool
 from app.tools.tool_schema import ToolCall, ToolError, ToolResult
 
 
@@ -69,9 +69,13 @@ class ToolExecutor:
 
     def _execute_mcp_tool(self, tool: Tool, arguments: dict[str, Any]) -> ToolResult:
         try:
-            data = execute_builtin_mcp(tool.config_json or {}, arguments)
+            data = execute_mcp_tool(
+                tool.config_json or {},
+                arguments,
+                timeout_seconds=self.settings.tool_timeout_seconds,
+            )
             return ToolResult(tool_name=tool.name, success=True, data=data, error=None)
-        except BuiltinMCPError as exc:
+        except MCPClientError as exc:
             return self._error(tool.name, "MCP_ERROR", str(exc))
         except Exception as exc:
             return self._error(tool.name, "MCP_EXECUTION_ERROR", str(exc))

@@ -1,3 +1,6 @@
+import sys
+from pathlib import Path
+
 from app.tools.tool_executor import ToolExecutor
 from app.tools.tool_schema import ToolCall
 from app.db.models import Tenant, Tool
@@ -70,6 +73,76 @@ def test_execute_builtin_mcp_tool_unknown_config_returns_error() -> None:
         assert result.success is False
         assert result.error is not None
         assert result.error.code == "MCP_ERROR"
+
+
+def test_execute_stdio_mcp_tool_success() -> None:
+    with _test_session() as db:
+        db.add(Tenant(id="tenant_demo", name="Demo"))
+        db.add(
+            Tool(
+                tenant_id="tenant_demo",
+                name="mcp.real_echo",
+                display_name="Real MCP Echo",
+                tool_type="mcp",
+                method="POST",
+                url="mcp://stdio/mock/echo",
+                config_json={
+                    "transport": "stdio",
+                    "command": sys.executable,
+                    "args": [str(_mock_mcp_server_path())],
+                    "tool": "echo",
+                },
+                input_schema={"type": "object"},
+                output_schema={"type": "object"},
+                enabled=True,
+            )
+        )
+        db.commit()
+
+        result = ToolExecutor(db).execute(
+            tenant_id="tenant_demo",
+            tool_call=ToolCall(name="mcp.real_echo", arguments={"text": "hello real mcp"}),
+        )
+
+        assert result.success is True
+        assert result.data == {"text": "hello real mcp", "length": 14}
+
+
+def test_execute_stdio_mcp_tool_error_is_stable() -> None:
+    with _test_session() as db:
+        db.add(Tenant(id="tenant_demo", name="Demo"))
+        db.add(
+            Tool(
+                tenant_id="tenant_demo",
+                name="mcp.real_sum",
+                display_name="Real MCP Sum",
+                tool_type="mcp",
+                method="POST",
+                url="mcp://stdio/mock/sum",
+                config_json={
+                    "transport": "stdio",
+                    "command": sys.executable,
+                    "args": [str(_mock_mcp_server_path())],
+                    "tool": "sum",
+                },
+                enabled=True,
+            )
+        )
+        db.commit()
+
+        result = ToolExecutor(db).execute(
+            tenant_id="tenant_demo",
+            tool_call=ToolCall(name="mcp.real_sum", arguments={"numbers": ["bad"]}),
+        )
+
+        assert result.success is False
+        assert result.error is not None
+        assert result.error.code == "MCP_ERROR"
+        assert "numbers" in result.error.message
+
+
+def _mock_mcp_server_path() -> Path:
+    return Path(__file__).resolve().parents[1] / "mock_servers" / "mcp_stdio_server.py"
 
 
 def _test_session():

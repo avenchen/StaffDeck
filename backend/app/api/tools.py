@@ -12,7 +12,7 @@ from app.db import get_session
 from app.db.models import Tool, utc_now
 from app.security.tenant import ensure_tenant
 from app.tools import ToolExecutor
-from app.tools.mcp_builtin import BuiltinMCPError, execute_builtin_mcp
+from app.tools.mcp_client import MCPClientError, execute_mcp_tool
 from app.tools.tool_schema import (
     ToolBucketRead,
     ToolCall,
@@ -119,8 +119,12 @@ def probe_tool(request: ToolProbeRequest, db: Session = Depends(get_session)) ->
     ensure_tenant(db, request.tenant_id)
     if request.tool_type == "mcp":
         try:
-            data = execute_builtin_mcp(request.mcp_config, request.sample_arguments)
-        except BuiltinMCPError as exc:
+            data = execute_mcp_tool(
+                request.mcp_config,
+                request.sample_arguments,
+                timeout_seconds=get_settings().tool_timeout_seconds,
+            )
+        except MCPClientError as exc:
             return ToolProbeResponse(
                 success=False,
                 status_code=400,

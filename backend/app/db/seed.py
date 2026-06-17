@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 from sqlmodel import Session, select
@@ -635,6 +636,43 @@ MCP_DEMO_ECHO_TOOL = {
     "enabled": True,
 }
 
+MOCK_MCP_STDIO_SERVER = Path(__file__).resolve().parents[2] / "mock_servers" / "mcp_stdio_server.py"
+
+MCP_STDIO_PRODUCT_LOOKUP_TOOL = {
+    "name": "mcp.stdio_product_lookup",
+    "display_name": "MCP Stdio 商品查询",
+    "description": "真实 stdio MCP mock server 工具，用于验证 MCP client transport、初始化和 tools/call 链路。",
+    "bucket": "MCP 工具",
+    "tool_type": "mcp",
+    "method": "POST",
+    "url": "mcp://stdio/mock/product_lookup",
+    "headers_json": {},
+    "auth_json": {},
+    "config_json": {
+        "transport": "stdio",
+        "command": sys.executable,
+        "args": [str(MOCK_MCP_STDIO_SERVER)],
+        "tool": "product_lookup",
+    },
+    "input_schema": {
+        "type": "object",
+        "properties": {"product_id": {"type": "string", "description": "商品 ID，例如 A1 或 A3"}},
+        "required": ["product_id"],
+    },
+    "output_schema": {
+        "type": "object",
+        "properties": {
+            "found": {"type": "boolean"},
+            "product_id": {"type": "string"},
+            "display_name": {"type": "string"},
+            "price": {"type": "number"},
+            "currency": {"type": "string"},
+        },
+    },
+    "allowed_skills_json": ["skill_price_compare_001", "skill_graph_visual_demo"],
+    "enabled": True,
+}
+
 DEMO_TOOLS = (
     ORDER_QUERY_TOOL,
     ORDER_ARCHIVE_QUERY_TOOL,
@@ -642,6 +680,7 @@ DEMO_TOOLS = (
     ORDER_ADD_TOOL,
     PRODUCT_PRICE_QUERY_TOOL,
     MCP_DEMO_ECHO_TOOL,
+    MCP_STDIO_PRODUCT_LOOKUP_TOOL,
 )
 DEFAULT_PERSONA_PROMPT = (
     "你是面壁智能的智能客服，语气专业、清晰、友好。"
