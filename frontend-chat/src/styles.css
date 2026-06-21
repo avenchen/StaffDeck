@@ -1761,8 +1761,8 @@ textarea,
 }
 
 .scheduled-draft-card {
-  width: min(900px, 100%);
-  margin: 14px auto 0;
+  width: calc(100% - 32px);
+  margin: 16px auto 18px;
   display: grid;
   grid-template-columns: 46px minmax(0, 1fr) auto;
   gap: 14px;
@@ -1774,6 +1774,10 @@ textarea,
     linear-gradient(135deg, color-mix(in srgb, var(--accent-soft) 42%, transparent), transparent 58%),
     var(--surface);
   box-shadow: var(--shadow-soft);
+}
+
+.scheduled-draft-card.editing {
+  align-items: start;
 }
 
 .scheduled-draft-icon {
@@ -1799,8 +1803,8 @@ textarea,
   font-weight: 700;
 }
 
-.scheduled-draft-main strong,
-.scheduled-draft-main span {
+.scheduled-draft-main > strong,
+.scheduled-draft-main > span {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1817,9 +1821,46 @@ textarea,
   font-size: 13px;
 }
 
+.scheduled-draft-editor {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.55fr) minmax(120px, 0.32fr);
+  gap: 10px 12px;
+}
+
+.scheduled-draft-editor label {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.scheduled-draft-editor label > span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.scheduled-draft-editor-full {
+  grid-column: 1 / -1;
+}
+
+.scheduled-draft-editor .ant-input,
+.scheduled-draft-editor textarea.ant-input {
+  border-color: color-mix(in srgb, var(--accent) 22%, var(--border));
+  background: color-mix(in srgb, var(--surface) 84%, transparent);
+  color: var(--foreground);
+}
+
+.scheduled-draft-editor textarea.ant-input {
+  resize: none;
+  line-height: 1.55;
+}
+
 .scheduled-draft-actions {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 8px;
 }
 

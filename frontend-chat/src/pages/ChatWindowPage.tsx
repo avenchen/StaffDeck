@@ -700,19 +700,99 @@ function ScheduledDraftCard({
   onDismiss,
 }: {
   draft: ScheduledTaskDraftRead;
-  onConfirm: () => void;
+  onConfirm: (draft: ScheduledTaskDraftRead) => void;
   onDismiss: () => void;
 }) {
+  const [editing, setEditing] = useState(false);
+  const [editableDraft, setEditableDraft] = useState<ScheduledTaskDraftRead>(draft);
+
+  useEffect(() => {
+    setEditableDraft(draft);
+    setEditing(false);
+  }, [
+    draft.agent_id,
+    draft.title,
+    draft.prompt,
+    draft.description,
+    draft.schedule_type,
+    draft.timezone,
+    draft.rrule,
+    JSON.stringify(draft.schedule || {}),
+  ]);
+
+  const updateDraft = (patch: Partial<ScheduledTaskDraftRead>) => {
+    setEditableDraft((current) => ({ ...current, ...patch }));
+  };
+  const scheduleValue = scheduleEditValue(editableDraft);
+  const updateScheduleValue = (value: string) => {
+    setEditableDraft((current) => ({ ...current, schedule: scheduleFromEditValue(current, value) }));
+  };
+  const completeEdit = () => {
+    if (!editableDraft.title.trim()) {
+      message.warning('请输入自动任务名称');
+      return;
+    }
+    if (!editableDraft.prompt.trim()) {
+      message.warning('请输入执行内容');
+      return;
+    }
+    if (!scheduleEditValue(editableDraft).trim()) {
+      message.warning('请输入执行计划');
+      return;
+    }
+    setEditing(false);
+  };
+
   return (
-    <div className="scheduled-draft-card">
+    <div className={`scheduled-draft-card ${editing ? 'editing' : ''}`}>
       <div className="scheduled-draft-icon"><ClockCircleOutlined /></div>
       <div className="scheduled-draft-main">
         <div className="scheduled-draft-kicker">识别到自动任务草案</div>
-        <strong>{draft.title}</strong>
-        <span>{formatDraftSchedule(draft)} · {draft.prompt}</span>
+        {editing ? (
+          <div className="scheduled-draft-editor">
+            <label>
+              <span>任务名称</span>
+              <Input
+                size="small"
+                value={editableDraft.title}
+                onChange={(event) => updateDraft({ title: event.target.value })}
+              />
+            </label>
+            <label>
+              <span>执行计划</span>
+              <Input
+                size="small"
+                value={scheduleValue}
+                placeholder={editableDraft.schedule_type === 'once' ? 'YYYY-MM-DD HH:mm' : 'HH:mm'}
+                onChange={(event) => updateScheduleValue(event.target.value)}
+              />
+            </label>
+            <label className="scheduled-draft-editor-full">
+              <span>执行内容</span>
+              <Input.TextArea
+                autoSize={{ minRows: 3, maxRows: 6 }}
+                value={editableDraft.prompt}
+                onChange={(event) => updateDraft({ prompt: event.target.value })}
+              />
+            </label>
+          </div>
+        ) : (
+          <>
+            <strong>{editableDraft.title}</strong>
+            <span>{formatDraftSchedule(editableDraft)} · {editableDraft.prompt}</span>
+          </>
+        )}
       </div>
       <div className="scheduled-draft-actions">
-        <Button size="small" type="primary" onClick={onConfirm}>确认创建</Button>
+        {editing ? (
+          <>
+            <Button size="small" type="primary" onClick={completeEdit}>完成</Button>
+            <Button size="small" type="text" onClick={() => { setEditableDraft(draft); setEditing(false); }}>取消</Button>
+          </>
+        ) : (
+          <Button size="small" type="text" icon={<EditOutlined />} onClick={() => setEditing(true)}>编辑</Button>
+        )}
+        <Button size="small" type="primary" onClick={() => onConfirm(editableDraft)}>确认创建</Button>
         <Button size="small" type="text" onClick={onDismiss}>忽略</Button>
       </div>
     </div>
@@ -1841,7 +1921,7 @@ export default function ChatWindowPage() {
                       {scheduledDraft && (
                         <ScheduledDraftCard
                           draft={scheduledDraft}
-                          onConfirm={() => void confirmScheduledTask(scheduledDraft)}
+                          onConfirm={(nextDraft) => void confirmScheduledTask(nextDraft)}
                           onDismiss={() => dismissScheduledTaskDraft(item.id)}
                         />
                       )}
@@ -1874,7 +1954,7 @@ export default function ChatWindowPage() {
           {currentScheduledDraft && !hasVisibleMessageScheduledDraft && (
             <ScheduledDraftCard
               draft={currentScheduledDraft}
-              onConfirm={() => void confirmScheduledTask(currentScheduledDraft)}
+              onConfirm={(nextDraft) => void confirmScheduledTask(nextDraft)}
               onDismiss={() => dismissScheduledTaskDraft()}
             />
           )}
@@ -2071,4 +2151,17 @@ function formatDraftSchedule(draft: ScheduledTaskDraftRead): string {
       : '一次性';
   }
   return `每天 ${schedule.time || '09:00'}`;
+}
+
+function scheduleEditValue(draft: ScheduledTaskDraftRead): string {
+  const schedule = draft.schedule || {};
+  if (draft.schedule_type === 'once') return String(schedule.run_at || '');
+  return String(schedule.time || '09:00');
+}
+
+function scheduleFromEditValue(draft: ScheduledTaskDraftRead, value: string): Record<string, unknown> {
+  if (draft.schedule_type === 'once') {
+    return { ...(draft.schedule || {}), run_at: value };
+  }
+  return { ...(draft.schedule || {}), time: value };
 }
