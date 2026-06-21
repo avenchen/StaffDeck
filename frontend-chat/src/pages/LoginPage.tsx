@@ -41,7 +41,7 @@ export default function LoginPage() {
         </div>
         <Form<LoginValues>
           layout="vertical"
-          initialValues={{ tenant_id: TENANT_ID, username: 'user_demo', password: 'demo' }}
+          initialValues={{ tenant_id: TENANT_ID, username: 'demo', password: 'demo' }}
           onFinish={login}
         >
           <Form.Item name="tenant_id" label="租户" rules={[{ required: true, message: '请输入租户' }]}>

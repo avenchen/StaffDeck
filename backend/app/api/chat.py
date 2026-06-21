@@ -207,9 +207,9 @@ def chat_turn(
     request = request.model_copy(update={"user_id": current_user.id})
     if request.session_id:
         chat_session = _ensure_chat_session_available(db, request.tenant_id, current_user.id, request.session_id)
-        request = _bind_request_to_session_agent(db, request, chat_session)
+        request = _bind_request_to_session_agent(db, request, chat_session, current_user)
     else:
-        _ensure_chat_agent_available(db, request.tenant_id, request.agent_id)
+        _ensure_chat_agent_available(db, request.tenant_id, request.agent_id, current_user)
     ensure_tenant(db, request.tenant_id)
     if not request.message.strip():
         raise HTTPException(status_code=400, detail="Message cannot be empty")
@@ -232,9 +232,9 @@ def chat_stream(
     ensure_tenant(db, request.tenant_id)
     if request.session_id:
         chat_session = _ensure_chat_session_available(db, request.tenant_id, current_user.id, request.session_id)
-        request = _bind_request_to_session_agent(db, request, chat_session)
+        request = _bind_request_to_session_agent(db, request, chat_session, current_user)
     else:
-        _ensure_chat_agent_available(db, request.tenant_id, request.agent_id)
+        _ensure_chat_agent_available(db, request.tenant_id, request.agent_id, current_user)
     if not request.message.strip():
         raise HTTPException(status_code=400, detail="Message cannot be empty")
 
@@ -284,7 +284,7 @@ def create_chat_session(
 ) -> ChatSessionRead:
     _ensure_request_tenant(request.tenant_id, current_user)
     ensure_tenant(db, request.tenant_id)
-    _ensure_chat_agent_available(db, request.tenant_id, request.agent_id)
+    _ensure_chat_agent_available(db, request.tenant_id, request.agent_id, current_user)
     title = _normalize_title(request.title)
     row = ChatSession(
         id=new_id("session"),
@@ -516,13 +516,20 @@ def _get_user_chat_session(db: Session, tenant_id: str, user_id: str, session_id
     return row
 
 
-def _ensure_chat_agent_available(db: Session, tenant_id: str, agent_id: str | None) -> AgentProfile:
+def _ensure_chat_agent_available(
+    db: Session,
+    tenant_id: str,
+    agent_id: str | None,
+    current_user: User,
+) -> AgentProfile:
     if not agent_id:
         raise HTTPException(status_code=400, detail="Agent is required")
     ensure_tenant(db, tenant_id)
     row = db.get(AgentProfile, agent_id)
     if not row or row.tenant_id != tenant_id or row.status != "active" or row.is_overall:
         raise HTTPException(status_code=404, detail="Agent not available")
+    if not _chat_agent_visible_to_user(row, current_user):
+        raise HTTPException(status_code=403, detail="Agent not available")
     return row
 
 
@@ -530,13 +537,14 @@ def _bind_request_to_session_agent(
     db: Session,
     request: ChatTurnRequest,
     chat_session: ChatSession,
+    current_user: User,
 ) -> ChatTurnRequest:
     if chat_session.agent_id:
         if request.agent_id and request.agent_id != chat_session.agent_id:
             raise HTTPException(status_code=409, detail="Session is already bound to another agent")
         return request.model_copy(update={"agent_id": chat_session.agent_id})
 
-    agent = _ensure_chat_agent_available(db, request.tenant_id, request.agent_id)
+    agent = _ensure_chat_agent_available(db, request.tenant_id, request.agent_id, current_user)
     chat_session.agent_id = agent.id
     chat_session.updated_at = utc_now()
     db.add(chat_session)
@@ -875,6 +883,19 @@ def _general_skill_trace_output(payload: dict, phase: str) -> dict[str, str]:
 def _ensure_request_tenant(tenant_id: str, current_user: User) -> None:
     if tenant_id != current_user.tenant_id:
         raise HTTPException(status_code=403, detail="Tenant mismatch")
+
+
+def _chat_agent_visible_to_user(row: AgentProfile, user: User) -> bool:
+    if user.username in {"admin", "admin_demo"}:
+        return True
+    metadata = row.metadata_json or {}
+    return (
+        metadata.get("owner_user_id") == user.id
+        or metadata.get("owner_username") == user.username
+        or metadata.get("created_by_user_id") == user.id
+        or metadata.get("created_by_username") == user.username
+        or metadata.get("published_to_gallery") is True
+    )
 
 
 def _normalize_title(value: str | None) -> str | None:

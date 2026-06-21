@@ -41,7 +41,5 @@ export function isEmployeeOwnedBy(agent: AgentProfileRead, user?: AuthUser | nul
 }
 
 export function visibleChatEmployees(rows: AgentProfileRead[], user?: AuthUser | null): AgentProfileRead[] {
-  return rows.filter((agent) => (
-    !agent.is_overall && (isEmployeeOwnedBy(agent, user) || isGalleryEmployee(agent))
-  ));
+  return rows.filter((agent) => !agent.is_overall && agent.status === 'active');
 }

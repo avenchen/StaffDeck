@@ -39,7 +39,9 @@ from app.db.models import (
     KnowledgeBase,
     Skill,
     utc_now,
+    User,
 )
+from app.security.auth import get_current_user
 from app.security.tenant import ensure_tenant
 
 enterprise_router = APIRouter(prefix="/api/enterprise/agents", tags=["enterprise:agents"])
@@ -407,7 +409,13 @@ def update_agent_models(
 
 
 @chat_router.get("", response_model=list[AgentProfileRead])
-def list_chat_agents(tenant_id: str = Query(...), db: Session = Depends(get_session)) -> list[AgentProfileRead]:
+def list_chat_agents(
+    tenant_id: str = Query(...),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_session),
+) -> list[AgentProfileRead]:
+    if tenant_id != current_user.tenant_id:
+        raise HTTPException(status_code=403, detail="Tenant mismatch")
     ensure_tenant(db, tenant_id)
     rows = db.exec(
         select(AgentProfile).where(
@@ -416,6 +424,7 @@ def list_chat_agents(tenant_id: str = Query(...), db: Session = Depends(get_sess
             AgentProfile.is_overall == False,  # noqa: E712
         ).order_by(AgentProfile.updated_at.desc())
     ).all()
+    rows = [row for row in rows if _chat_agent_visible_to_user(row, current_user)]
     bindings = _bindings_by_agent(db, tenant_id)
     return [agent_read(row, bindings.get(row.id, [])) for row in rows]
 
@@ -433,6 +442,19 @@ def agent_read(row: AgentProfile, bindings: list[AgentResourceBinding]) -> Agent
         resources=[binding_read(binding) for binding in bindings],
         created_at=row.created_at.isoformat(),
         updated_at=row.updated_at.isoformat(),
+    )
+
+
+def _chat_agent_visible_to_user(row: AgentProfile, user: User) -> bool:
+    if user.username in {"admin", "admin_demo"}:
+        return True
+    metadata = row.metadata_json or {}
+    return (
+        metadata.get("owner_user_id") == user.id
+        or metadata.get("owner_username") == user.username
+        or metadata.get("created_by_user_id") == user.id
+        or metadata.get("created_by_username") == user.username
+        or metadata.get("published_to_gallery") is True
     )
 
 

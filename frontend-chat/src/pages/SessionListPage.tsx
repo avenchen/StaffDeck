@@ -39,8 +39,9 @@ export default function SessionListPage() {
     window.localStorage.getItem('skill_agent_sidebar_collapsed') === 'true'
   ));
   const tenantId = auth?.user.tenant_id || 'tenant_demo';
-  const personalAgents = agents.filter((agent) => isEmployeeOwnedBy(agent, auth?.user));
-  const galleryAgents = agents.filter((agent) => isGalleryEmployee(agent) && !isEmployeeOwnedBy(agent, auth?.user));
+  const personalAgents = agents.filter((agent) => !isGalleryEmployee(agent) || isEmployeeOwnedBy(agent, auth?.user));
+  const personalAgentIds = new Set(personalAgents.map((agent) => agent.id));
+  const galleryAgents = agents.filter((agent) => isGalleryEmployee(agent) && !personalAgentIds.has(agent.id));
 
   const load = () =>
     api

@@ -891,8 +891,9 @@ export default function ChatWindowPage() {
 
   const currentSession = sessions.find((item) => item.id === sessionId) || null;
   const availableAgents = visibleChatEmployees(agents, auth?.user);
-  const personalAgents = availableAgents.filter((agent) => isEmployeeOwnedBy(agent, auth?.user));
-  const galleryAgents = availableAgents.filter((agent) => isGalleryEmployee(agent) && !isEmployeeOwnedBy(agent, auth?.user));
+  const personalAgents = availableAgents.filter((agent) => !isGalleryEmployee(agent) || isEmployeeOwnedBy(agent, auth?.user));
+  const personalAgentIds = new Set(personalAgents.map((agent) => agent.id));
+  const galleryAgents = availableAgents.filter((agent) => isGalleryEmployee(agent) && !personalAgentIds.has(agent.id));
   const defaultAgent = availableAgents.find((agent) => agent.id === selectedAgentId) || availableAgents[0] || null;
   const sessionAgent = currentSession?.agent_id
     ? agents.find((agent) => agent.id === currentSession.agent_id) || null
