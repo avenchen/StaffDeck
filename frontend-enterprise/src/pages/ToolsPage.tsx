@@ -15,6 +15,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api, TENANT_ID } from '../api/client';
+import CodeBlock from '../components/CodeBlock';
 import type { AgentProfileRead, ToolRead } from '../types';
 
 const ENTERPRISE_AGENT_STORAGE_KEY = 'ultrarag_enterprise_agent_scope';
@@ -364,20 +365,58 @@ export function ToolTestPage() {
           {tool && <Button onClick={() => navigate(`/enterprise/tools/${tool.id}/edit`)}>编辑工具</Button>}
         </Space>
       </div>
-      <div className="grid-2">
-        <Card className="editor-card" title="工具信息" loading={loading && !tool}>
+      <div className="tool-test-layout">
+        <Card className="tool-test-overview-card" title="工具信息" loading={loading && !tool}>
           {tool && (
-            <Space direction="vertical" size={10}>
-              <Typography.Title level={4}>{tool.display_name || tool.name}</Typography.Title>
-              <Typography.Text type="secondary">{tool.description || '暂无描述'}</Typography.Text>
-              <Space wrap>
-                <Tag>{tool.bucket || '未分桶'}</Tag>
-                <Tag color={tool.tool_type === 'mcp' ? 'geekblue' : undefined}>{tool.tool_type === 'mcp' ? 'MCP' : 'HTTP'}</Tag>
-                <Tag color={tool.enabled ? 'green' : 'default'}>{tool.enabled ? '已启用' : '已停用'}</Tag>
-              </Space>
-              <Typography.Text code>{tool.method} {tool.url}</Typography.Text>
-              <Input.TextArea rows={8} value={JSON.stringify(tool.input_schema, null, 2)} readOnly />
-            </Space>
+            <div className="tool-test-overview">
+              <div className="tool-test-hero">
+                <div className="tool-test-icon">
+                  <ToolOutlined />
+                </div>
+                <div className="tool-test-hero-main">
+                  <Typography.Text className="tool-test-eyebrow">{tool.bucket || '未分桶'}</Typography.Text>
+                  <Typography.Title level={4}>{tool.display_name || tool.name}</Typography.Title>
+                  <Typography.Paragraph type="secondary">{tool.description || '暂无描述'}</Typography.Paragraph>
+                  <Space wrap>
+                    <Tag color={tool.tool_type === 'mcp' ? 'geekblue' : undefined}>{toolTypeLabel(tool)}</Tag>
+                    <Tag color={tool.enabled ? 'green' : 'default'}>{tool.enabled ? '已启用' : '已停用'}</Tag>
+                    <Tag>{tool.method}</Tag>
+                  </Space>
+                </div>
+              </div>
+              <div className="tool-test-meta-grid">
+                <div>
+                  <span>工具 ID</span>
+                  <strong>{tool.name}</strong>
+                </div>
+                <div>
+                  <span>输入字段</span>
+                  <strong>{schemaPropertyCount(tool.input_schema)}</strong>
+                </div>
+                <div>
+                  <span>输出字段</span>
+                  <strong>{schemaPropertyCount(tool.output_schema)}</strong>
+                </div>
+                <div>
+                  <span>最近更新</span>
+                  <strong>{formatDateTime(tool.updated_at)}</strong>
+                </div>
+              </div>
+              <div className="tool-test-endpoint">
+                <span>调用地址</span>
+                <code>{tool.method} {tool.url}</code>
+              </div>
+              <div className="tool-test-schema-grid">
+                <div className="tool-test-schema-panel">
+                  <div className="tool-test-section-title">Input Schema</div>
+                  <CodeBlock className="tool-test-code" code={formatJson(tool.input_schema)} language="json" />
+                </div>
+                <div className="tool-test-schema-panel">
+                  <div className="tool-test-section-title">Output Schema</div>
+                  <CodeBlock className="tool-test-code" code={formatJson(tool.output_schema)} language="json" />
+                </div>
+              </div>
+            </div>
           )}
         </Card>
         {tool && <SavedToolTestCard tool={tool} standalone />}
@@ -526,15 +565,41 @@ function SavedToolTestCard({ tool, standalone = false }: { tool: ToolRead; stand
 
   return (
     <Card
-      className="editor-card"
-      title={standalone ? '调用测试' : '已保存工具测试'}
-      extra={<Button icon={<ExperimentOutlined />} loading={loading} onClick={() => void test()}>调用</Button>}
+      className="tool-test-console-card"
+      title={(
+        <span className="tool-test-card-title">
+          <ExperimentOutlined />
+          {standalone ? '调用测试' : '已保存工具测试'}
+        </span>
+      )}
+      extra={<Button type="primary" icon={<ExperimentOutlined />} loading={loading} onClick={() => void test()}>调用</Button>}
     >
-      <Typography.Paragraph type="secondary">
-        调用已保存的「{tool.display_name || tool.name}」，用于验证员工实际可用的工具返回。
-      </Typography.Paragraph>
-      <Input.TextArea rows={5} value={testJson} onChange={(event) => setTestJson(event.target.value)} />
-      <Input.TextArea rows={8} value={testResult} readOnly style={{ marginTop: 12 }} />
+      <div className="tool-test-console-intro">
+        <Typography.Text type="secondary">
+          调用已保存的「{tool.display_name || tool.name}」，用于验证员工实际可用的工具返回。
+        </Typography.Text>
+        <Tag>{toolTypeLabel(tool)}</Tag>
+      </div>
+      <div className="tool-test-editor-block">
+        <div className="tool-test-section-title">测试参数</div>
+        <Input.TextArea
+          className="tool-test-json-input"
+          autoSize={{ minRows: 6, maxRows: 12 }}
+          value={testJson}
+          onChange={(event) => setTestJson(event.target.value)}
+        />
+      </div>
+      <div className="tool-test-editor-block">
+        <div className="tool-test-result-head">
+          <div className="tool-test-section-title">调用结果</div>
+          <Tag color={testResult ? 'green' : 'default'}>{testResult ? '已返回' : '等待调用'}</Tag>
+        </div>
+        {testResult ? (
+          <CodeBlock className="tool-test-result-code" code={testResult} language="json" />
+        ) : (
+          <div className="tool-test-empty-result">点击调用后，这里会显示工具返回、错误信息和原始 data。</div>
+        )}
+      </div>
     </Card>
   );
 }
@@ -601,6 +666,28 @@ function buildBucketStats(rows: ToolRead[]) {
 function parseJson<T>(value: string, fallback: T): T {
   if (!value) return fallback;
   return JSON.parse(value) as T;
+}
+
+function formatJson(value: unknown): string {
+  return JSON.stringify(value || {}, null, 2);
+}
+
+function schemaPropertyCount(schema: Record<string, unknown>): string {
+  const properties = schema.properties && typeof schema.properties === 'object'
+    ? schema.properties as Record<string, unknown>
+    : {};
+  return `${Object.keys(properties).length}`;
+}
+
+function toolTypeLabel(tool: ToolRead): string {
+  return tool.tool_type === 'mcp' ? 'MCP 工具' : 'HTTP 工具';
+}
+
+function formatDateTime(value: string): string {
+  if (!value) return '-';
+  const timestamp = new Date(value).getTime();
+  if (Number.isNaN(timestamp)) return value;
+  return new Date(timestamp).toLocaleString('zh-CN', { hour12: false });
 }
 
 function exampleFromSchema(schema: Record<string, unknown>): Record<string, unknown> {

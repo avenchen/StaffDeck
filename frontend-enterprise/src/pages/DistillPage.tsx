@@ -1,5 +1,6 @@
 import {
   ApiOutlined,
+  ArrowLeftOutlined,
   BranchesOutlined,
   CheckCircleOutlined,
   CheckOutlined,
@@ -31,7 +32,7 @@ import {
   type ReactNode,
   type RefObject,
 } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api, streamGet, streamPost, TENANT_ID } from '../api/client';
 import type { SkillCard, SkillRead, ToolProbeResponse, ToolRead, ToolSuggestion } from '../types';
 
@@ -185,6 +186,7 @@ type DistillPageProps = {
 };
 
 export default function DistillPage({ active = true, searchParamsOverride }: DistillPageProps = {}) {
+  const navigate = useNavigate();
   const [routerSearchParams] = useSearchParams();
   const searchParams = searchParamsOverride || routerSearchParams;
   const skillId = searchParams.get('skill_id');
@@ -1664,8 +1666,15 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
   return (
     <div className="skill-distill-page">
       <div className="page-title">
-        <Typography.Title level={3}>SOP管理子页面</Typography.Title>
-        <Typography.Text type="secondary">新建、编辑和启用员工 SOP 学习结果。</Typography.Text>
+        <div>
+          <Typography.Title level={3}>SOP管理子页面</Typography.Title>
+          <Typography.Text type="secondary">新建、编辑和启用员工 SOP 学习结果。</Typography.Text>
+        </div>
+        <Space>
+          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/enterprise/skills')}>
+            返回SOP管理
+          </Button>
+        </Space>
       </div>
       <div className="skill-workbench">
         <Card
@@ -3101,6 +3110,10 @@ function compactInputStyle(value: string, minCh = 8, maxCh = 92): CSSProperties 
   return { width: `min(${width}ch, 100%)` };
 }
 
+function fullSourceInputStyle(): CSSProperties {
+  return { width: '100%' };
+}
+
 function EditableSourceHeading({ value, onChange }: { value: string; onChange: (value: string) => void }) {
   return (
     <EditableSourceField>
@@ -3159,15 +3172,15 @@ function EditableSourceTextLine({
             <Input.TextArea
               className="skill-source-edit-input"
               value={value}
-              style={compactInputStyle(value, 14, 110)}
-              autoSize={{ minRows: 2, maxRows: 8 }}
+              style={fullSourceInputStyle()}
+              autoSize={{ minRows: 2 }}
               onChange={(event) => onChange(event.target.value)}
             />
           ) : (
             <Input
               className="skill-source-edit-input"
               value={value}
-              style={compactInputStyle(value)}
+              style={fullSourceInputStyle()}
               onChange={(event) => onChange(event.target.value)}
             />
           )}
@@ -3194,8 +3207,8 @@ function EditableSourceListLine({
           <Input.TextArea
             className="skill-source-edit-input"
             value={values.join('\n')}
-            style={compactInputStyle(values.join('\n'), 10, 86)}
-            autoSize={{ minRows: 1, maxRows: 8 }}
+            style={fullSourceInputStyle()}
+            autoSize={{ minRows: 1 }}
             onChange={(event) => onChange(event.target.value)}
           />
         </EditableSourceField>

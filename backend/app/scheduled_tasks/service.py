@@ -49,8 +49,8 @@ class _LLMScheduledTaskDraft(BaseModel):
 
 SCHEDULE_DRAFT_PROMPT = """
 你是 UltraRAG4 数字员工的自动任务配置解析器。
-只在用户明确要求“未来自动执行、定时执行、周期执行、提醒、每天/每周/每月/某个时间执行”时返回 should_create=true。
-如果用户只是要求当前立刻办理任务、询问概念、或没有明确时间计划，返回 should_create=false。
+用户已经在对话框中选择了“创建定时任务”模式。请把用户输入整理成一个可编辑的自动任务草案。
+如果用户没有写清时间计划，默认每天 09:00 执行；如果用户没有写清任务目标，用原始输入作为执行内容。
 
 返回一个 JSON object，字段如下：
 - should_create: boolean
@@ -69,6 +69,10 @@ SCHEDULE_DRAFT_PROMPT = """
 - reason: 简短说明
 
 时间不完整时可以合理补齐：只说“每天”默认 09:00；只说“每周一”默认 09:00。
+调度类型判断规则：
+- 用户只给出一个具体时间点，例如“下午2点10分”“14:10”“今晚8点”，且没有明确“每天/每日/每周/每月/定期/重复”等周期要求时，生成 once。
+- once.run_at 使用 now 所在日期和用户给出的时间；如果该时间已经过去，则顺延到下一天。
+- 只有用户明确说“每天/每日/每晚/每早/每周/每月/工作日/定期/重复”等周期要求时，才生成 daily/weekly/monthly。
 不要输出 Markdown，不要输出解释文本，只输出 JSON。
 """
 
@@ -217,25 +221,24 @@ def detect_scheduled_task_draft(
     message: str,
     source_session_id: str | None = None,
 ) -> ScheduledTaskDraftRead | None:
-    if not _looks_like_schedule_request(message):
-        return None
     ensure_tenant(db, tenant_id)
     agent = db.get(AgentProfile, agent_id)
     if not agent or agent.tenant_id != tenant_id or agent.is_overall or agent.status != "active":
         return None
-    draft = _detect_with_llm(db, tenant_id, agent_id, message) or _fallback_draft(message)
-    if not draft or not draft.should_create or draft.confidence < 0.45:
+    llm_draft = _detect_with_llm(db, tenant_id, agent_id, message)
+    if llm_draft is not None:
+        if not llm_draft.should_create:
+            return None
+        draft: _LLMScheduledTaskDraft | ScheduledTaskDraftRead = llm_draft
+    else:
+        draft = _fallback_draft(message)
+    if not draft or not draft.should_create:
         return None
     try:
         schedule_type = _normalize_schedule_type(draft.schedule_type)
         schedule = normalize_schedule(schedule_type, draft.schedule, draft.timezone)
     except HTTPException:
-        fallback = _fallback_draft(message)
-        if not fallback or not fallback.should_create:
-            return None
-        schedule_type = fallback.schedule_type
-        schedule = normalize_schedule(schedule_type, fallback.schedule, fallback.timezone)
-        draft = fallback
+        return None
     title = (draft.title or _compact_title(message)).strip()[:80]
     prompt = (draft.prompt or _execution_goal_from_message(message)).strip()
     if not prompt:
@@ -559,82 +562,85 @@ def _detect_with_llm(db: Session, tenant_id: str, agent_id: str, message: str) -
 
 
 def _fallback_draft(message: str) -> ScheduledTaskDraftRead | None:
-    if not _looks_like_schedule_request(message):
-        return None
-    time_text = _extract_time(message) or DEFAULT_TASK_TIME
-    lowered = message.lower()
-    schedule_type = "daily"
-    schedule: dict[str, Any] = {"time": time_text}
-    if "每周" in message or "周一" in message or "周二" in message or "周三" in message or "周四" in message or "周五" in message or "周六" in message or "周日" in message or "星期" in message:
-        schedule_type = "weekly"
-        schedule = {"time": time_text, "weekdays": _extract_weekdays(message) or [0]}
-    elif "每月" in message or "每个月" in message:
-        schedule_type = "monthly"
-        schedule = {"time": time_text, "day_of_month": _extract_monthday(message) or 1}
-    elif "一次" in message or "明天" in message or "后天" in message or "今天" in message or "今晚" in message or "tomorrow" in lowered:
-        run_at = _fallback_once_time(message, time_text)
-        if not run_at:
-            return None
-        schedule_type = "once"
-        schedule = {"run_at": run_at.isoformat()}
+    schedule_type, schedule = _basic_fallback_schedule(message)
     return ScheduledTaskDraftRead(
         should_create=True,
         tenant_id="",
         agent_id="",
         title=_compact_title(message),
         prompt=_execution_goal_from_message(message),
-        description="根据用户对话规则解析出的自动任务草案",
+        description="模型未返回有效草案，已按基础关键词生成可编辑自动任务草案，请确认计划和执行内容。",
         schedule_type=schedule_type,  # type: ignore[arg-type]
         schedule=schedule,
         timezone=DEFAULT_TIMEZONE,
-        confidence=0.55,
-        reason="规则兜底识别到定时任务表达",
+        confidence=0.45,
+        reason="模型解析失败后的轻量关键词兜底草案",
     )
 
 
-def _fallback_once_time(message: str, time_text: str) -> datetime | None:
+def _basic_fallback_schedule(message: str) -> tuple[str, dict[str, Any]]:
+    time_text = _extract_basic_time(message) or DEFAULT_TASK_TIME
+    if "每周" in message or "每星期" in message or "星期" in message or re.search(r"周[一二三四五六日天]", message):
+        return "weekly", {"time": time_text, "weekdays": _extract_basic_weekdays(message) or [0]}
+    if "每月" in message or "每个月" in message:
+        return "monthly", {"time": time_text, "day_of_month": _extract_basic_monthday(message) or 1}
+    if any(keyword in message for keyword in ("一次", "今天", "今晚", "明天", "明晚", "后天")):
+        return "once", {"run_at": _basic_once_run_at(message, time_text).isoformat()}
+    return "daily", {"time": time_text}
+
+
+def _extract_basic_time(message: str) -> str | None:
+    match = re.search(r"(\d{1,2})\s*(?:点|时)\s*半", message)
+    if match:
+        return _format_time(time(_adjust_basic_hour(message, int(match.group(1))), 30))
+    match = re.search(r"(\d{1,2})\s*(?:点|时)\s*(\d{1,2})\s*分?", message)
+    if match:
+        return _format_time(time(_adjust_basic_hour(message, int(match.group(1))), int(match.group(2))))
+    match = re.search(r"(\d{1,2})\s*[:：.．]\s*(\d{1,2})\s*分?", message)
+    if match:
+        return _format_time(time(_adjust_basic_hour(message, int(match.group(1))), int(match.group(2))))
+    match = re.search(r"(\d{1,2})\s*(点|时)", message)
+    if match:
+        return _format_time(time(_adjust_basic_hour(message, int(match.group(1))), 0))
+    return None
+
+
+def _adjust_basic_hour(message: str, hour: int) -> int:
+    if any(keyword in message for keyword in ("下午", "晚上", "今晚", "晚间", "夜里", "明晚")) and 1 <= hour < 12:
+        return hour + 12
+    if any(keyword in message for keyword in ("凌晨", "半夜")) and hour == 12:
+        return 0
+    return hour
+
+
+def _extract_basic_weekdays(message: str) -> list[int]:
+    mapping = {"一": 0, "二": 1, "三": 2, "四": 3, "五": 4, "六": 5, "日": 6, "天": 6}
+    values = [
+        value
+        for key, value in mapping.items()
+        if f"周{key}" in message or f"星期{key}" in message
+    ]
+    return sorted(set(values))
+
+
+def _extract_basic_monthday(message: str) -> int | None:
+    match = re.search(r"每(?:个)?月\s*(\d{1,2})(?:号|日)?", message)
+    if not match:
+        return None
+    return _normalize_day_of_month(match.group(1))
+
+
+def _basic_once_run_at(message: str, time_text: str) -> datetime:
     now = _to_local(utc_now(), DEFAULT_TIMEZONE)
     day = now.date()
     if "后天" in message:
-        day = day + timedelta(days=2)
-    elif "明天" in message or "tomorrow" in message.lower():
-        day = day + timedelta(days=1)
+        day += timedelta(days=2)
+    elif "明天" in message or "明晚" in message:
+        day += timedelta(days=1)
     candidate = datetime.combine(day, _parse_time(time_text)).replace(tzinfo=_tz(DEFAULT_TIMEZONE))
     if candidate <= now:
         candidate += timedelta(days=1)
     return candidate
-
-
-def _looks_like_schedule_request(message: str) -> bool:
-    text = message.strip()
-    if len(text) < 4:
-        return False
-    if re.search(r"(?:今天|今晚|明天|后天|早上|上午|中午|下午|晚上|晚间|夜里)?\s*\d{1,2}\s*(?:[:：]|点|时)", text):
-        return True
-    keywords = (
-        "定时",
-        "自动任务",
-        "自动执行",
-        "周期",
-        "提醒",
-        "每天",
-        "每日",
-        "每周",
-        "每月",
-        "每晚",
-        "每早",
-        "今天",
-        "今晚",
-        "今早",
-        "今夜",
-        "明天",
-        "后天",
-        "明晚",
-        "到点",
-        "唤醒",
-        "定期",
-    )
-    return any(keyword in text for keyword in keywords)
 
 
 def _execution_goal_from_message(message: str) -> str:
@@ -647,61 +653,6 @@ def _compact_title(message: str) -> str:
     text = _execution_goal_from_message(message)
     text = re.sub(r"\s+", " ", text).strip(" ，,。")
     return (text[:28] or "自动任务").strip()
-
-
-def _extract_time(message: str) -> str | None:
-    match = re.search(r"(\d{1,2})\s*(?:点|时)\s*半", message)
-    if match:
-        return _format_time(time(_adjust_hour_for_period(message, int(match.group(1))), 30))
-    match = re.search(r"(\d{1,2})\s*(?:点|时)\s*(\d{1,2})\s*分?", message)
-    if match:
-        return _format_time(time(_adjust_hour_for_period(message, int(match.group(1))), int(match.group(2))))
-    match = re.search(r"(\d{1,2})\s*[:：]\s*(\d{1,2})", message)
-    if match:
-        return _format_time(time(_adjust_hour_for_period(message, int(match.group(1))), int(match.group(2))))
-    match = re.search(r"(\d{1,2})\s*(点|时)", message)
-    if match:
-        return _format_time(time(_adjust_hour_for_period(message, int(match.group(1))), 0))
-    if "早上" in message or "上午" in message:
-        return "09:00"
-    if "中午" in message:
-        return "12:00"
-    if "晚上" in message or "今晚" in message:
-        return "20:00"
-    return None
-
-
-def _adjust_hour_for_period(message: str, hour: int) -> int:
-    if any(key in message for key in ("下午", "晚上", "今晚", "晚间", "夜里", "今夜", "明晚")) and 1 <= hour < 12:
-        return hour + 12
-    if any(key in message for key in ("凌晨", "半夜")) and hour == 12:
-        return 0
-    return hour
-
-
-def _extract_weekdays(message: str) -> list[int]:
-    mapping = {
-        "一": 0,
-        "二": 1,
-        "三": 2,
-        "四": 3,
-        "五": 4,
-        "六": 5,
-        "日": 6,
-        "天": 6,
-    }
-    values: list[int] = []
-    for key, value in mapping.items():
-        if f"周{key}" in message or f"星期{key}" in message:
-            values.append(value)
-    return sorted(set(values))
-
-
-def _extract_monthday(message: str) -> int | None:
-    match = re.search(r"每(?:个)?月\s*(\d{1,2})(?:号|日)?", message)
-    if not match:
-        return None
-    return _normalize_day_of_month(match.group(1))
 
 
 def _normalize_schedule_type(value: str) -> str:

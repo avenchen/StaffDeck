@@ -450,7 +450,7 @@ function EnterpriseLogin({
 }: {
   onLogin: (session: EnterpriseAuthSession) => void;
 }) {
-  const [form, setForm] = useState<LoginFormState>({ username: 'admin', password: 'admin' });
+  const [form, setForm] = useState<LoginFormState>({ username: '', password: '' });
   const [loading, setLoading] = useState(false);
 
   async function login() {
@@ -466,7 +466,6 @@ function EnterpriseLogin({
         tenant_id: TENANT_ID,
         username,
         password,
-        display_name: username === 'admin' ? '管理员' : undefined,
       });
       setEnterpriseAuthSession(session);
       onLogin(session);
@@ -484,7 +483,7 @@ function EnterpriseLogin({
         <div>
           <Typography.Title level={2}>UltraRAG4 数字员工运营台</Typography.Title>
           <Typography.Paragraph type="secondary">
-            使用管理员账号进入开放广场平台和员工平台，员工账号进入自己的员工工作域。
+            登录后进入对应的数字员工工作域。
           </Typography.Paragraph>
         </div>
         <div className="enterprise-login-form">
@@ -492,6 +491,7 @@ function EnterpriseLogin({
             账号
             <Input
               value={form.username}
+              autoComplete="off"
               onChange={(event) => setForm((prev) => ({ ...prev, username: event.target.value }))}
               onPressEnter={login}
             />
@@ -500,6 +500,7 @@ function EnterpriseLogin({
             密码
             <Input.Password
               value={form.password}
+              autoComplete="new-password"
               onChange={(event) => setForm((prev) => ({ ...prev, password: event.target.value }))}
               onPressEnter={login}
             />
@@ -508,7 +509,6 @@ function EnterpriseLogin({
             登录
           </Button>
         </div>
-        <div className="enterprise-login-hint">管理员账号：admin / admin</div>
       </section>
     </div>
   );

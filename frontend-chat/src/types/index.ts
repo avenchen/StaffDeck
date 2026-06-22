@@ -97,6 +97,22 @@ export type UIConfigRead = {
   updated_at: string;
 };
 
+export type ModelConfigRead = {
+  id: string;
+  tenant_id: string;
+  name: string;
+  provider: string;
+  base_url?: string | null;
+  api_key_masked: string;
+  model: string;
+  temperature: number;
+  max_output_tokens: number;
+  is_default: boolean;
+  enabled: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
 export type ScheduledTaskDraftRead = {
   should_create: boolean;
   tenant_id: string;
@@ -119,9 +135,11 @@ export type ScheduledTaskRead = {
   agent_id: string;
   title: string;
   prompt: string;
+  description?: string;
   schedule_type: string;
   schedule: Record<string, unknown>;
   timezone: string;
+  rrule?: string;
   status: string;
   next_run_at?: string;
 };

@@ -9,6 +9,7 @@
 
 如果用户请求明显匹配某个通用技能，输出 use_general_skill=true，并填写 selected_slug。selected_slug 必须来自候选列表。
 如果不需要通用技能，输出 use_general_skill=false。不要因为问候、购买、退款、换货、下单、售后流程等业务诉求选择通用技能。
+如果请求需要企业业务工具、SOP、业务资料、系统状态或实时业务数据，只有在候选通用技能的名称和描述明确覆盖该业务能力时才可选择；否则必须输出 use_general_skill=false。不要把能力域不匹配的通用技能当作兜底工具。
 
 只输出 JSON：
 {

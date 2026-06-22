@@ -1,4 +1,4 @@
-import { ApiOutlined, CheckOutlined, ExperimentOutlined, PlusOutlined, ReloadOutlined, SaveOutlined } from '@ant-design/icons';
+import { ApiOutlined, CheckCircleFilled, CheckOutlined, ExperimentOutlined, PlusOutlined, ReloadOutlined, SaveOutlined } from '@ant-design/icons';
 import { Button, Card, Form, Input, InputNumber, Space, Switch, Table, Tag, Typography, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useEffect, useState } from 'react';
@@ -59,7 +59,27 @@ export default function ModelsPage() {
   }
 
   const columns: ColumnsType<ModelConfigRead> = [
-    { title: '名称', dataIndex: 'name', width: 150, ellipsis: true },
+    {
+      title: '名称',
+      dataIndex: 'name',
+      width: 260,
+      render: (_, row) => (
+        <div className={`model-name-cell ${row.is_default ? 'is-default' : ''}`}>
+          <span className="model-default-indicator" aria-hidden={!row.is_default}>
+            {row.is_default ? (
+              <>
+                <CheckCircleFilled />
+                默认
+              </>
+            ) : null}
+          </span>
+          <div className="model-name-main">
+            <strong>{row.name}</strong>
+            <span>{row.enabled ? '已启用' : '已停用'} · {row.provider}</span>
+          </div>
+        </div>
+      ),
+    },
     { title: '模型', dataIndex: 'model', width: 180, ellipsis: true },
     { title: 'Base URL', dataIndex: 'base_url', width: 240, ellipsis: true },
     {
@@ -68,14 +88,15 @@ export default function ModelsPage() {
       width: 180,
       render: (value) => <span className="code-cell">{value || '-'}</span>,
     },
-    { title: '默认', render: (_, row) => (row.is_default ? <Tag color="green">default</Tag> : null), width: 90 },
     {
       title: '操作',
       width: 230,
       render: (_, row) => (
         <span className="table-actions">
           <Button size="small" onClick={() => edit(row)}>编辑</Button>
-          <Button size="small" icon={<CheckOutlined />} onClick={() => setDefault(row)}>默认</Button>
+          <Button size="small" icon={<CheckOutlined />} disabled={row.is_default} onClick={() => setDefault(row)}>
+            {row.is_default ? '已默认' : '设为默认'}
+          </Button>
           <Button size="small" icon={<ExperimentOutlined />} onClick={() => test(row)}>测试</Button>
         </span>
       ),
@@ -112,7 +133,8 @@ export default function ModelsPage() {
           columns={columns}
           dataSource={rows}
           pagination={{ pageSize: 8 }}
-          scroll={{ x: 980 }}
+          rowClassName={(row) => (row.is_default ? 'model-default-row' : '')}
+          scroll={{ x: 940 }}
           size="middle"
         />
       </Card>

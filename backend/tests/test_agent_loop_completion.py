@@ -1,7 +1,7 @@
 from app.core.agent_loop import AgentLoop
 from app.core.skill_runtime import SkillRuntime
 from app.db.models import ChatSession, Message, Skill, Tool
-from app.session.session_schema import PendingTask, RouterDecision, StepAgentResult
+from app.session.session_schema import AwaitingInput, PendingTask, RouterDecision, StepAgentResult
 from app.tools.tool_schema import ToolCall, ToolResult
 
 
@@ -35,6 +35,33 @@ class FakeExecResult:
 
     def all(self) -> list[object]:
         return self.rows
+
+
+def test_router_decision_hydrates_purchase_slots_from_memory_and_product_alias() -> None:
+    loop = object.__new__(AgentLoop)
+    session = ChatSession(id="session_test", tenant_id="tenant_demo", slots_json={})
+    decision = RouterDecision(
+        decision="start_new_task",
+        target_skill_id="purchase",
+        target_step_id="collect_user_name",
+        slot_hints={"product_name": "a1", "quantity": 1},
+        awaiting_input=AwaitingInput(
+            skill_id="purchase",
+            step_id="collect_user_name",
+            expected_fields=["user_name", "product_id"],
+        ),
+    )
+
+    hydrated = loop._hydrate_router_decision_from_context(
+        session,
+        decision,
+        [_purchase_skill()],
+        [{"kind": "profile", "content": "用户姓名/称呼：hm", "metadata": {"key": "preferred_name"}}],
+    )
+
+    assert hydrated["primary"] == {"user_name": "hm", "product_id": "A1"}
+    assert decision.slot_hints == {"product_name": "a1", "quantity": 1, "user_name": "hm", "product_id": "A1"}
+    assert decision.awaiting_input is None
 
 
 class FakeMessageDb(FakeDb):
@@ -221,6 +248,41 @@ def test_finalize_turn_keeps_current_question_reply() -> None:
 
     assert session.last_agent_question is None
     assert session.summary == f"最近回复：{reply[:120]}"
+
+
+def test_merge_scheduled_reply_replaces_duplicate_followup_confirmation() -> None:
+    loop = object.__new__(AgentLoop)
+    refund_then_purchase = (
+        "好的，已为您提交订单 MOCK7A17191FC9（商品 A1）的退款申请，退款原因为“不想要了”。\n\n"
+        "接下来为您购买 A3 高阶商品，请确认以下信息：\n"
+        "- 用户：hm\n"
+        "- 商品：A3\n"
+        "- 数量：1\n\n"
+        "请问确认下单吗？"
+    )
+    purchase_confirmation = "好的，hm。已为您确认购买 A3 高阶商品 1 件，价格 239.0 元。请问确认下单吗？"
+
+    replies, replaced = loop._merge_scheduled_reply_segment([], refund_then_purchase)
+    replies, replaced = loop._merge_scheduled_reply_segment(replies, purchase_confirmation)
+
+    assert replaced is True
+    assert len(replies) == 1
+    assert "退款申请" in replies[0]
+    assert "已为您确认购买 A3 高阶商品 1 件，价格 239.0 元" in replies[0]
+    assert "请确认以下信息" not in replies[0]
+    assert replies[0].count("请问确认下单吗") == 1
+
+
+def test_merge_scheduled_reply_keeps_distinct_followup_confirmations() -> None:
+    loop = object.__new__(AgentLoop)
+    first = "退款已处理。接下来为您购买 A1，请问确认下单吗？"
+    second = "好的，hm。已为您确认购买 A3 高阶商品 1 件，价格 239.0 元。请问确认下单吗？"
+
+    replies, replaced = loop._merge_scheduled_reply_segment([], first)
+    replies, replaced = loop._merge_scheduled_reply_segment(replies, second)
+
+    assert replaced is False
+    assert replies == [first, second]
 
 
 def test_apply_step_result_records_skill_context_for_step_change() -> None:

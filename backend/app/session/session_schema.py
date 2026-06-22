@@ -147,9 +147,11 @@ class ChatTurnRequest(BaseModel):
     tenant_id: str
     session_id: Optional[str] = None
     agent_id: Optional[str] = None
+    model_config_id: Optional[str] = None
     user_id: str = ""
     message: str
     channel: str = "web"
+    interaction_mode: Literal["normal", "scheduled_task"] = "normal"
     debug: bool = False
 
 

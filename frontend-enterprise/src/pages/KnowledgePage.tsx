@@ -2281,6 +2281,10 @@ function routePhaseLabel(phase: string) {
 }
 
 function isEmptyDefaultKnowledgeBase(item: KnowledgeBaseRead) {
+  const hasRuntimeKnowledge = item.document_count > 0 || item.bucket_count > 0 || item.chunk_count > 0;
+  if (!hasRuntimeKnowledge && item.metadata?.created_from_document_upload && !item.metadata?.source_document_id) {
+    return true;
+  }
   return (
     item.name === '默认知识库' &&
     item.document_count === 0 &&

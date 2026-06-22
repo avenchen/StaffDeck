@@ -1,6 +1,6 @@
 from app.core.skill_runtime import SkillRuntime
 from app.db.models import ChatSession
-from app.session.session_schema import RouterDecision
+from app.session.session_schema import PendingTask, RouterDecision
 
 
 def test_suspend_and_explicitly_restore_skill_stack():
@@ -259,6 +259,101 @@ def test_pending_task_is_not_claimed_without_selected_task_id():
         "quantity": 1,
         "purchase_confirmed": True,
     }
+
+
+def test_semantic_duplicate_pending_task_is_merged_on_append():
+    session = ChatSession(
+        id="session_test",
+        tenant_id="tenant_demo",
+        pending_tasks_json=[
+            {
+                "task_id": "pending_refund_001",
+                "status": "pending",
+                "target_skill_id": "after_sales_refund",
+                "target_step_id": "confirm_refund_order",
+                "slot_hints": {"order_id": "ORDER-1", "refund_type": "退款"},
+            }
+        ],
+    )
+    runtime = SkillRuntime()
+
+    runtime.apply_decision(
+        session,
+        RouterDecision(
+            decision="create_pending",
+            pending_tasks=[
+                PendingTask(
+                    task_id="preserved_refund_001",
+                    target_skill_id="after_sales_refund",
+                    target_step_id="collect_order_info",
+                    user_intent="继续当前退款任务",
+                    slot_hints={
+                        "order_id": "ORDER-1",
+                        "refund_type": "退款",
+                        "refund_reason": "不需要了",
+                    },
+                ),
+                PendingTask(
+                    task_id="purchase_a3_001",
+                    target_skill_id="purchase",
+                    target_step_id="collect_user_name",
+                    user_intent="退款后购买 A3",
+                    slot_hints={"product_id": "A3", "quantity": 1},
+                ),
+            ],
+        ),
+    )
+
+    assert [frame["task_id"] for frame in session.pending_tasks_json] == [
+        "pending_refund_001",
+        "purchase_a3_001",
+    ]
+    refund_frame = session.pending_tasks_json[0]
+    assert refund_frame["target_step_id"] == "collect_order_info"
+    assert refund_frame["slot_hints"] == {
+        "order_id": "ORDER-1",
+        "refund_type": "退款",
+        "refund_reason": "不需要了",
+    }
+
+
+def test_complete_current_skill_drops_equivalent_pending_frames():
+    session = ChatSession(
+        id="session_test",
+        tenant_id="tenant_demo",
+        active_skill_id="after_sales_refund",
+        active_step_id="collect_refund_reason",
+        slots_json={
+            "order_id": "ORDER-1",
+            "refund_type": "退款",
+            "order_confirmed": True,
+            "refund_reason": "不需要了",
+        },
+        awaiting_input_json={"task_id": "pending_refund_001"},
+        pending_tasks_json=[
+            {
+                "task_id": "preserved_refund_001",
+                "status": "pending",
+                "target_skill_id": "after_sales_refund",
+                "target_step_id": "collect_order_info",
+                "slot_hints": {"order_id": "ORDER-1", "refund_type": "退款"},
+            },
+            {
+                "task_id": "purchase_a3_001",
+                "status": "pending",
+                "target_skill_id": "purchase",
+                "target_step_id": "collect_user_name",
+                "slot_hints": {"product_id": "A3", "quantity": 1},
+            },
+        ],
+    )
+    runtime = SkillRuntime()
+
+    runtime.complete_current_skill(session)
+
+    assert session.active_skill_id is None
+    assert session.slots_json == {}
+    assert [frame["task_id"] for frame in session.pending_tasks_json] == ["purchase_a3_001"]
 
 
 def test_selected_pending_task_switch_does_not_suspend_completed_current_skill():

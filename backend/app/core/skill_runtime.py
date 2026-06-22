@@ -6,6 +6,20 @@ from app.db.models import ChatSession, new_id, utc_now
 from app.session.session_schema import PendingTask, RouterDecision, TaskUpdate
 
 
+TASK_IDENTITY_FIELDS = {
+    "document_id",
+    "knowledge_base_id",
+    "order_id",
+    "product_id",
+    "product_name",
+    "product_name_1",
+    "product_name_2",
+    "refund_type",
+    "sku_id",
+    "tool_name",
+}
+
+
 class SkillRuntime:
     def apply_decision(self, session: ChatSession, decision: RouterDecision) -> ChatSession:
         self._apply_task_updates(session, decision.task_updates)
@@ -82,8 +96,20 @@ class SkillRuntime:
 
     def complete_current_skill(self, session: ChatSession) -> ChatSession:
         active_task_id = _active_task_id(session)
+        completed_frame = _current_frame(session, status="completed")
         if active_task_id:
             self._remove_task_frame(session, active_task_id)
+        if completed_frame:
+            session.pending_tasks_json = _without_equivalent_task_frames(
+                session.pending_tasks_json,
+                completed_frame,
+                exclude_task_id=active_task_id,
+            )
+            session.skill_stack_json = _without_equivalent_task_frames(
+                session.skill_stack_json,
+                completed_frame,
+                exclude_task_id=active_task_id,
+            )
         session.skill_stack_json = _without_task_or_skill(
             session.skill_stack_json,
             task_id=active_task_id,
@@ -191,6 +217,10 @@ class SkillRuntime:
             frame = _task_frame_from_pending(task)
             task_id = str(frame.get("task_id") or "")
             if not task_id or task_id in existing_ids:
+                continue
+            existing_index = _find_equivalent_task_frame_index(frames, frame)
+            if existing_index is not None:
+                frames[existing_index] = _merge_task_frames(frames[existing_index], frame)
                 continue
             frames.append(frame)
             existing_ids.add(task_id)
@@ -379,6 +409,82 @@ def _without_task_or_skill(
             continue
         frames.append(frame)
     return frames
+
+
+def _find_equivalent_task_frame_index(frames: list[dict], target: dict[str, Any]) -> int | None:
+    for index, frame in enumerate(frames):
+        if isinstance(frame, dict) and _task_frames_equivalent(frame, target):
+            return index
+    return None
+
+
+def _without_equivalent_task_frames(
+    frames_json: list[dict] | None,
+    completed_frame: dict[str, Any],
+    exclude_task_id: str | None = None,
+) -> list[dict]:
+    frames: list[dict] = []
+    for frame in list(frames_json or []):
+        if not isinstance(frame, dict):
+            continue
+        if exclude_task_id and str(frame.get("task_id") or "") == exclude_task_id:
+            continue
+        if _task_frames_equivalent(frame, completed_frame):
+            continue
+        frames.append(frame)
+    return frames
+
+
+def _task_frames_equivalent(left: dict[str, Any], right: dict[str, Any]) -> bool:
+    if _frame_skill_id(left) != _frame_skill_id(right):
+        return False
+    left_identity = _task_identity_slots(left)
+    right_identity = _task_identity_slots(right)
+    if not left_identity or not right_identity:
+        return False
+    common_keys = set(left_identity) & set(right_identity)
+    if not common_keys:
+        return False
+    return all(left_identity[key] == right_identity[key] for key in common_keys)
+
+
+def _merge_task_frames(existing: dict[str, Any], incoming: dict[str, Any]) -> dict[str, Any]:
+    merged = dict(existing)
+    existing_slots = existing.get("slots") if isinstance(existing.get("slots"), dict) else {}
+    incoming_slots = incoming.get("slots") if isinstance(incoming.get("slots"), dict) else {}
+    slots = {**existing_slots, **incoming_slots}
+    merged.update(
+        {
+            key: value
+            for key, value in incoming.items()
+            if key not in {"task_id", "created_at", "slots", "slot_hints"} and value not in {None, ""}
+        }
+    )
+    if slots:
+        merged["slots"] = slots
+        merged["slot_hints"] = slots
+    merged["task_id"] = existing.get("task_id") or incoming.get("task_id")
+    merged["created_at"] = existing.get("created_at") or incoming.get("created_at")
+    merged["updated_at"] = utc_now().isoformat()
+    return merged
+
+
+def _frame_skill_id(frame: dict[str, Any]) -> str | None:
+    value = frame.get("skill_id") or frame.get("target_skill_id")
+    return str(value) if value else None
+
+
+def _task_identity_slots(frame: dict[str, Any]) -> dict[str, str]:
+    slots = frame.get("slots") if isinstance(frame.get("slots"), dict) else frame.get("slot_hints")
+    if not isinstance(slots, dict):
+        return {}
+    identity: dict[str, str] = {}
+    for key in TASK_IDENTITY_FIELDS:
+        value = slots.get(key)
+        if value is None or value == "":
+            continue
+        identity[key] = str(value).strip().lower()
+    return identity
 
 
 def _patch_task_frame(frames_json: list[dict] | None, task_id: str, patch: dict[str, Any]) -> list[dict]:

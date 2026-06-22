@@ -5,10 +5,30 @@ from fastapi import HTTPException
 from sqlalchemy.pool import StaticPool
 from sqlmodel import Session, SQLModel, create_engine, select
 
-from app.agents.branching import copy_overall_scope_to_agent, require_overall_agent, update_branch_skill, visible_skill_rows
+from app.agents.branching import (
+    copy_overall_scope_to_agent,
+    ensure_knowledge_base_version,
+    knowledge_version_for_upload,
+    require_overall_agent,
+    update_branch_skill,
+    visible_skill_rows,
+)
 from app.agents.schema import AgentResourceImportRequest
 from app.api.agents import _skill_branch_read, import_agent_resources
-from app.db.models import AgentProfile, AgentResourceBinding, AgentSkillBranch, GeneralSkill, KnowledgeBase, Skill, Tenant
+from app.db.models import (
+    AgentProfile,
+    AgentResourceBinding,
+    AgentSkillBranch,
+    GeneralSkill,
+    KnowledgeBase,
+    KnowledgeBucket,
+    KnowledgeChunk,
+    KnowledgeConcept,
+    KnowledgeDocument,
+    Skill,
+    Tenant,
+)
+from app.knowledge.okf import upsert_concepts
 
 
 def test_agent_skill_branch_is_copy_on_write_and_reports_branch_state() -> None:
@@ -183,6 +203,101 @@ def test_disabled_open_gallery_resources_cannot_be_learned() -> None:
         copy_overall_scope_to_agent(db, "tenant_demo", inherited)
 
         assert db.exec(select(AgentResourceBinding).where(AgentResourceBinding.agent_id == inherited.id)).all() == []
+
+
+def test_knowledge_branch_write_clones_existing_wiki_before_appending_concept() -> None:
+    with _test_session() as db:
+        db.add(Tenant(id="tenant_demo", name="Demo"))
+        agent = AgentProfile(id="agent_branch", tenant_id="tenant_demo", name="客服分支", is_overall=False)
+        kb = KnowledgeBase(id="kb_demo", tenant_id="tenant_demo", name="业务资料")
+        db.add(agent)
+        db.add(kb)
+        base_version = ensure_knowledge_base_version(db, kb, "1.0.0")
+        document = KnowledgeDocument(
+            id="doc_base",
+            tenant_id="tenant_demo",
+            knowledge_base_id=kb.id,
+            knowledge_base_version_id=base_version.id,
+            filename="policy.md",
+            file_type="md",
+            title="政策文档",
+            status="ready",
+            bucket_count=1,
+            chunk_count=1,
+        )
+        bucket = KnowledgeBucket(
+            id="bucket_base",
+            tenant_id="tenant_demo",
+            knowledge_base_id=kb.id,
+            knowledge_base_version_id=base_version.id,
+            document_id=document.id,
+            bucket_key="policy",
+            title="政策桶",
+            summary="政策摘要",
+        )
+        chunk = KnowledgeChunk(
+            id="chunk_base",
+            tenant_id="tenant_demo",
+            knowledge_base_id=kb.id,
+            knowledge_base_version_id=base_version.id,
+            document_id=document.id,
+            bucket_id=bucket.id,
+            chunk_index=0,
+            content="用户取消订单前需要确认当前订单状态。",
+        )
+        concept = KnowledgeConcept(
+            tenant_id="tenant_demo",
+            knowledge_base_id=kb.id,
+            knowledge_base_version_id=base_version.id,
+            document_id=document.id,
+            concept_id="playbooks/order-cancel",
+            concept_type="Playbook",
+            title="订单取消",
+            description="订单取消流程",
+            content_md='---\ntype: Playbook\ntitle: 订单取消\n---\n\n# Summary\n确认订单状态。',
+        )
+        db.add(document)
+        db.add(bucket)
+        db.add(chunk)
+        db.add(concept)
+        db.commit()
+
+        target_version = knowledge_version_for_upload(db, "tenant_demo", kb.id, agent.id)
+        upsert_concepts(
+            db,
+            "tenant_demo",
+            kb.id,
+            target_version.id,
+            [
+                {
+                    "concept_id": "topics/new-topic",
+                    "content_md": "---\ntype: Topic\ntitle: 新 Wiki 页面\n---\n\n# Summary\n补充新主题。",
+                    "document_id": document.id,
+                    "status": "active",
+                }
+            ],
+        )
+
+        concepts = db.exec(
+            select(KnowledgeConcept).where(KnowledgeConcept.knowledge_base_version_id == target_version.id)
+        ).all()
+        assert {row.concept_id for row in concepts} == {"playbooks/order-cancel", "topics/new-topic"}
+        cloned_documents = db.exec(
+            select(KnowledgeDocument).where(KnowledgeDocument.knowledge_base_version_id == target_version.id)
+        ).all()
+        cloned_buckets = db.exec(
+            select(KnowledgeBucket).where(KnowledgeBucket.knowledge_base_version_id == target_version.id)
+        ).all()
+        cloned_chunks = db.exec(
+            select(KnowledgeChunk).where(KnowledgeChunk.knowledge_base_version_id == target_version.id)
+        ).all()
+        assert len(cloned_documents) == 1
+        assert len(cloned_buckets) == 1
+        assert len(cloned_chunks) == 1
+        assert cloned_documents[0].id != document.id
+        assert cloned_buckets[0].document_id == cloned_documents[0].id
+        assert cloned_chunks[0].document_id == cloned_documents[0].id
+        assert cloned_chunks[0].bucket_id == cloned_buckets[0].id
 
 
 def _graph(name: str, version: str) -> dict[str, object]:

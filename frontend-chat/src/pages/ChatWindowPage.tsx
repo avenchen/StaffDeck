@@ -1,5 +1,7 @@
 import {
   BranchesOutlined,
+  CheckCircleOutlined,
+  CheckOutlined,
   ClockCircleOutlined,
   CloudSyncOutlined,
   DeleteOutlined,
@@ -17,7 +19,7 @@ import {
   StopOutlined,
   ToolOutlined,
 } from '@ant-design/icons';
-import { Button, Empty, Input, Modal, Typography, message } from 'antd';
+import { Button, Dropdown, Empty, Input, Modal, Select, Typography, message } from 'antd';
 import type { MouseEvent, ReactNode } from 'react';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -31,6 +33,7 @@ import type {
   ChatSession,
   ChatTurnResponse,
   KnowledgeCitation,
+  ModelConfigRead,
   ScheduledTaskDraftRead,
   ScheduledTaskRead,
   TurnTraceRead,
@@ -87,6 +90,22 @@ type TurnTrace = {
   startedAt: number;
   completedAt?: number;
 };
+
+type ComposerIntent = 'normal' | 'scheduled_task';
+const MODEL_CONFIG_STORAGE_PREFIX = 'skill_agent_selected_model_config';
+
+function modelStorageKey(tenantId: string): string {
+  return `${MODEL_CONFIG_STORAGE_PREFIX}:${tenantId}`;
+}
+
+function modelDisplayName(model: ModelConfigRead): string {
+  return (model.name || model.model || '模型').trim();
+}
+
+function modelDetailText(model: ModelConfigRead): string {
+  const detail = model.model && model.model !== model.name ? model.model : model.provider;
+  return model.is_default ? `${detail} · 默认` : detail;
+}
 
 function createEmptySlot(): SessionSlot {
   return { serverMessages: [], realtimeMessages: [] };
@@ -385,7 +404,7 @@ function publicStreamPhase(data: Record<string, unknown>): string {
   const phase = typeof data.phase === 'string' ? data.phase : '';
   const text = typeof data.text === 'string' ? data.text : '';
   if (phase === 'error') return text || '请求失败';
-  if (phase === 'scheduled_task_draft') return text || '已识别自动任务草案';
+  if (phase === 'scheduled_task_draft') return text || '生成自动任务草案';
   if (isKnowledgeTracePhase(phase)) return text || knowledgeTraceText(data);
   return '正在思考';
 }
@@ -694,17 +713,45 @@ function scheduledDraftForMessage(item: ChatMessage): ScheduledTaskDraftRead | n
   return draft as unknown as ScheduledTaskDraftRead;
 }
 
+function createdScheduledTaskForMessage(item: ChatMessage): ScheduledTaskRead | undefined {
+  const task = item.metadata?.scheduled_task_created;
+  if (!isPlainRecord(task)) return undefined;
+  if (typeof task.id !== 'string' || typeof task.title !== 'string' || typeof task.prompt !== 'string') {
+    return undefined;
+  }
+  return task as unknown as ScheduledTaskRead;
+}
+
+function isScheduledTaskPrompt(item: ChatMessage): boolean {
+  return item.role === 'user' && item.metadata?.interaction_mode === 'scheduled_task';
+}
+
 function ScheduledDraftCard({
   draft,
+  createdTask,
   onConfirm,
   onDismiss,
 }: {
   draft: ScheduledTaskDraftRead;
+  createdTask?: ScheduledTaskRead;
   onConfirm: (draft: ScheduledTaskDraftRead) => void;
   onDismiss: () => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [editableDraft, setEditableDraft] = useState<ScheduledTaskDraftRead>(draft);
+  const created = Boolean(createdTask);
+  const displayDraft = createdTask
+    ? ({
+      ...draft,
+      title: createdTask.title,
+      prompt: createdTask.prompt,
+      description: createdTask.description || draft.description,
+      schedule_type: createdTask.schedule_type,
+      schedule: createdTask.schedule,
+      timezone: createdTask.timezone,
+      rrule: createdTask.rrule || draft.rrule,
+    } as ScheduledTaskDraftRead)
+    : editableDraft;
 
   useEffect(() => {
     setEditableDraft(draft);
@@ -718,83 +765,187 @@ function ScheduledDraftCard({
     draft.timezone,
     draft.rrule,
     JSON.stringify(draft.schedule || {}),
+    createdTask?.id,
   ]);
 
   const updateDraft = (patch: Partial<ScheduledTaskDraftRead>) => {
     setEditableDraft((current) => ({ ...current, ...patch }));
   };
   const scheduleValue = scheduleEditValue(editableDraft);
+  const validateDraft = (nextDraft: ScheduledTaskDraftRead) => {
+    if (!nextDraft.title.trim()) {
+      message.warning('请输入自动任务名称');
+      return false;
+    }
+    if (!nextDraft.prompt.trim()) {
+      message.warning('请输入执行内容');
+      return false;
+    }
+    if (!scheduleEditValue(nextDraft).trim()) {
+      message.warning('请输入执行计划');
+      return false;
+    }
+    return true;
+  };
+  const updateScheduleType = (value: ScheduledTaskDraftRead['schedule_type']) => {
+    setEditableDraft((current) => {
+      const currentSchedule = current.schedule || {};
+      const time = String(currentSchedule.time || '09:00');
+      let schedule: Record<string, unknown>;
+      if (value === 'once') {
+        schedule = { run_at: String(currentSchedule.run_at || '') };
+      } else if (value === 'weekly') {
+        schedule = {
+          time,
+          weekdays: Array.isArray(currentSchedule.weekdays) ? currentSchedule.weekdays : [0],
+        };
+      } else if (value === 'monthly') {
+        schedule = {
+          time,
+          day_of_month: currentSchedule.day_of_month || 1,
+        };
+      } else {
+        schedule = { time };
+      }
+      return { ...current, schedule_type: value, schedule };
+    });
+  };
   const updateScheduleValue = (value: string) => {
     setEditableDraft((current) => ({ ...current, schedule: scheduleFromEditValue(current, value) }));
   };
   const completeEdit = () => {
-    if (!editableDraft.title.trim()) {
-      message.warning('请输入自动任务名称');
-      return;
-    }
-    if (!editableDraft.prompt.trim()) {
-      message.warning('请输入执行内容');
-      return;
-    }
-    if (!scheduleEditValue(editableDraft).trim()) {
-      message.warning('请输入执行计划');
-      return;
-    }
+    if (!validateDraft(editableDraft)) return;
     setEditing(false);
+  };
+  const confirmDraft = () => {
+    if (created) return;
+    if (!validateDraft(editableDraft)) return;
+    onConfirm(editableDraft);
   };
 
   return (
-    <div className={`scheduled-draft-card ${editing ? 'editing' : ''}`}>
-      <div className="scheduled-draft-icon"><ClockCircleOutlined /></div>
-      <div className="scheduled-draft-main">
-        <div className="scheduled-draft-kicker">识别到自动任务草案</div>
-        {editing ? (
-          <div className="scheduled-draft-editor">
-            <label>
-              <span>任务名称</span>
+    <div className={`scheduled-draft-card ${editing ? 'editing' : ''}${created ? ' created' : ''}`}>
+      <div className="scheduled-draft-header">
+        <div className="scheduled-draft-identity">
+          <div className="scheduled-draft-icon">{created ? <CheckCircleOutlined /> : <ClockCircleOutlined />}</div>
+          <div className="scheduled-draft-title-block">
+            <div className="scheduled-draft-kicker">{created ? '定时任务已创建' : '定时任务草案'}</div>
+            {editing ? (
               <Input
                 size="small"
+                className="scheduled-draft-title-input"
                 value={editableDraft.title}
                 onChange={(event) => updateDraft({ title: event.target.value })}
               />
-            </label>
-            <label>
-              <span>执行计划</span>
-              <Input
-                size="small"
-                value={scheduleValue}
-                placeholder={editableDraft.schedule_type === 'once' ? 'YYYY-MM-DD HH:mm' : 'HH:mm'}
-                onChange={(event) => updateScheduleValue(event.target.value)}
-              />
-            </label>
-            <label className="scheduled-draft-editor-full">
-              <span>执行内容</span>
-              <Input.TextArea
-                autoSize={{ minRows: 3, maxRows: 6 }}
-                value={editableDraft.prompt}
-                onChange={(event) => updateDraft({ prompt: event.target.value })}
-              />
-            </label>
+            ) : (
+              <strong>{displayDraft.title}</strong>
+            )}
           </div>
-        ) : (
-          <>
-            <strong>{editableDraft.title}</strong>
-            <span>{formatDraftSchedule(editableDraft)} · {editableDraft.prompt}</span>
-          </>
-        )}
+        </div>
+        <div className="scheduled-draft-top-actions">
+          {created ? (
+            <span className="scheduled-draft-created-badge">
+              <CheckCircleOutlined />
+              已创建
+            </span>
+          ) : editing ? (
+            <>
+              <Button size="small" type="primary" onClick={completeEdit}>完成</Button>
+              <Button size="small" type="text" onClick={() => { setEditableDraft(draft); setEditing(false); }}>取消</Button>
+            </>
+          ) : (
+            <>
+              <Button size="small" type="text" icon={<EditOutlined />} onClick={() => setEditing(true)}>编辑</Button>
+              <Button size="small" type="text" onClick={onDismiss}>忽略</Button>
+            </>
+          )}
+        </div>
       </div>
-      <div className="scheduled-draft-actions">
-        {editing ? (
-          <>
-            <Button size="small" type="primary" onClick={completeEdit}>完成</Button>
-            <Button size="small" type="text" onClick={() => { setEditableDraft(draft); setEditing(false); }}>取消</Button>
-          </>
-        ) : (
-          <Button size="small" type="text" icon={<EditOutlined />} onClick={() => setEditing(true)}>编辑</Button>
-        )}
-        <Button size="small" type="primary" onClick={() => onConfirm(editableDraft)}>确认创建</Button>
-        <Button size="small" type="text" onClick={onDismiss}>忽略</Button>
-      </div>
+      {editing ? (
+        <div className="scheduled-draft-editor">
+          <label>
+            <span>计划类型</span>
+            <Select
+              size="small"
+              value={editableDraft.schedule_type}
+              onChange={updateScheduleType}
+              options={[
+                { value: 'once', label: '一次性' },
+                { value: 'daily', label: '每天' },
+                { value: 'weekly', label: '每周' },
+                { value: 'monthly', label: '每月' },
+              ]}
+            />
+          </label>
+          <label>
+            <span>执行计划</span>
+            <Input
+              size="small"
+              value={scheduleValue}
+              placeholder={editableDraft.schedule_type === 'once' ? 'YYYY-MM-DDTHH:mm:ss+08:00' : 'HH:mm'}
+              onChange={(event) => updateScheduleValue(event.target.value)}
+            />
+          </label>
+          <label>
+            <span>时区</span>
+            <Input
+              size="small"
+              value={editableDraft.timezone || 'Asia/Shanghai'}
+              onChange={(event) => updateDraft({ timezone: event.target.value })}
+            />
+          </label>
+          <label className="scheduled-draft-editor-full">
+            <span>执行内容</span>
+            <Input.TextArea
+              autoSize={{ minRows: 3, maxRows: 6 }}
+              value={editableDraft.prompt}
+              onChange={(event) => updateDraft({ prompt: event.target.value })}
+            />
+          </label>
+          <label className="scheduled-draft-editor-full">
+            <span>说明</span>
+            <Input.TextArea
+              autoSize={{ minRows: 2, maxRows: 4 }}
+              value={editableDraft.description || ''}
+              placeholder="可补充任务目的、范围或结果要求"
+              onChange={(event) => updateDraft({ description: event.target.value })}
+            />
+          </label>
+        </div>
+      ) : (
+        <div className="scheduled-draft-body">
+          <div className="scheduled-draft-meta-grid">
+            <div className="scheduled-draft-meta-item">
+              <span>计划</span>
+              <strong>{formatDraftSchedule(displayDraft)}</strong>
+            </div>
+            <div className="scheduled-draft-meta-item">
+              <span>类型</span>
+              <strong>{scheduleTypeLabel(displayDraft.schedule_type)}</strong>
+            </div>
+            <div className="scheduled-draft-meta-item">
+              <span>时区</span>
+              <strong>{displayDraft.timezone || 'Asia/Shanghai'}</strong>
+            </div>
+          </div>
+          <div className="scheduled-draft-prompt">
+            <span>执行内容</span>
+            <p>{displayDraft.prompt}</p>
+          </div>
+          {displayDraft.description && (
+            <div className="scheduled-draft-description">
+              <span>说明</span>
+              <p>{displayDraft.description}</p>
+            </div>
+          )}
+        </div>
+      )}
+      {!created && (
+        <div className="scheduled-draft-footer">
+          {editing && <Button size="small" type="text" onClick={onDismiss}>忽略草案</Button>}
+          <Button size="small" type="primary" onClick={confirmDraft}>确认创建</Button>
+        </div>
+      )}
     </div>
   );
 }
@@ -836,9 +987,14 @@ export default function ChatWindowPage() {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [agents, setAgents] = useState<AgentProfileRead[]>([]);
   const [selectedAgentId, setSelectedAgentId] = useState(() => window.localStorage.getItem('skill_agent_selected_agent') || '');
+  const [modelConfigs, setModelConfigs] = useState<ModelConfigRead[]>([]);
+  const [selectedModelConfigId, setSelectedModelConfigId] = useState(
+    () => window.localStorage.getItem(modelStorageKey(tenantId)) || '',
+  );
   const [newSessionOpen, setNewSessionOpen] = useState(false);
   const [newSessionAgentId, setNewSessionAgentId] = useState('');
   const [input, setInput] = useState('');
+  const [composerIntent, setComposerIntent] = useState<ComposerIntent>('normal');
   const [lastTurn, setLastTurn] = useState<ChatTurnResponse | null>(null);
   const [renameSession, setRenameSession] = useState<ChatSession | null>(null);
   const [renameTitle, setRenameTitle] = useState('');
@@ -847,6 +1003,7 @@ export default function ChatWindowPage() {
   const [traceTick, setTraceTick] = useState(0);
   const [expandedTraceIds, setExpandedTraceIds] = useState<string[]>([]);
   const [scheduledDrafts, setScheduledDrafts] = useState<Record<string, ScheduledTaskDraftRead>>({});
+  const [createdScheduledTasks, setCreatedScheduledTasks] = useState<Record<string, ScheduledTaskRead>>({});
   const [dismissedDraftMessageIds, setDismissedDraftMessageIds] = useState<string[]>([]);
   const [activeCitation, setActiveCitation] = useState<KnowledgeCitation | null>(null);
   const [isComposing, setIsComposing] = useState(false);
@@ -900,11 +1057,27 @@ export default function ChatWindowPage() {
     : null;
   const displayedAgent = sessionAgent || defaultAgent;
   const displayedProfile = displayedAgent ? employeeProfile(displayedAgent) : null;
+  const enabledModelConfigs = useMemo(() => modelConfigs.filter((item) => item.enabled), [modelConfigs]);
+  const selectedModelConfig = (
+    enabledModelConfigs.find((item) => item.id === selectedModelConfigId)
+    || enabledModelConfigs.find((item) => item.is_default)
+    || enabledModelConfigs[0]
+    || null
+  );
 
   const changeAgent = useCallback((value: string) => {
     setSelectedAgentId(value);
     window.localStorage.setItem('skill_agent_selected_agent', value);
   }, []);
+
+  const changeModelConfig = useCallback((value: string) => {
+    setSelectedModelConfigId(value);
+    if (value) {
+      window.localStorage.setItem(modelStorageKey(tenantId), value);
+    } else {
+      window.localStorage.removeItem(modelStorageKey(tenantId));
+    }
+  }, [tenantId]);
 
   useEffect(() => {
     api
@@ -926,6 +1099,34 @@ export default function ChatWindowPage() {
       })
       .catch(() => setAgents([]));
   }, [auth?.user, selectedAgentId, tenantId]);
+
+  useEffect(() => {
+    if (!auth) return;
+    api
+      .get<ModelConfigRead[]>(`/api/enterprise/model-configs?tenant_id=${tenantId}`)
+      .then((rows) => {
+        setModelConfigs(rows);
+        setSelectedModelConfigId((current) => {
+          const enabledRows = rows.filter((item) => item.enabled);
+          const stored = window.localStorage.getItem(modelStorageKey(tenantId)) || '';
+          if (current && enabledRows.some((item) => item.id === current)) return current;
+          if (stored && enabledRows.some((item) => item.id === stored)) return stored;
+          const next = enabledRows.find((item) => item.is_default)?.id || enabledRows[0]?.id || '';
+          if (next) {
+            window.localStorage.setItem(modelStorageKey(tenantId), next);
+          }
+          return next;
+        });
+      })
+      .catch((error) => {
+        if (isAuthError(error)) {
+          clearAuthSession();
+          navigate('/login', { replace: true });
+          return;
+        }
+        setModelConfigs([]);
+      });
+  }, [auth, navigate, tenantId]);
   const toggleTrace = useCallback((turnId: string) => {
     setExpandedTraceIds((current) => (
       current.includes(turnId)
@@ -1001,6 +1202,29 @@ export default function ChatWindowPage() {
     void streamTick;
     return sessionId ? getStreamSlot(sessionId) : createStreamSlot();
   }, [getStreamSlot, sessionId, streamTick]);
+  const modelMenuItems = useMemo(() => {
+    if (!enabledModelConfigs.length) {
+      return [
+        {
+          key: 'empty',
+          disabled: true,
+          label: <span className="composer-model-menu-empty">暂无可用模型</span>,
+        },
+      ];
+    }
+    return enabledModelConfigs.map((model) => ({
+      key: model.id,
+      label: (
+        <span className="composer-model-menu-item">
+          <span className="composer-model-menu-copy">
+            <span className="composer-model-menu-name">{modelDisplayName(model)}</span>
+            <span className="composer-model-menu-detail">{modelDetailText(model)}</span>
+          </span>
+          {selectedModelConfig?.id === model.id && <CheckOutlined />}
+        </span>
+      ),
+    }));
+  }, [enabledModelConfigs, selectedModelConfig?.id]);
   const currentScheduledDraft = sessionId ? scheduledDrafts[sessionId] : undefined;
   const hasVisibleMessageScheduledDraft = displayedMessages.some((item) => (
     item.role === 'assistant'
@@ -1304,7 +1528,7 @@ export default function ChatWindowPage() {
     }
   }
 
-  async function confirmScheduledTask(draft: ScheduledTaskDraftRead) {
+  async function confirmScheduledTask(draft: ScheduledTaskDraftRead, draftKey?: string) {
     if (!sessionId) return;
     try {
       const saved = await api.post<ScheduledTaskRead>('/api/chat/scheduled-tasks', {
@@ -1327,6 +1551,8 @@ export default function ChatWindowPage() {
           reason: draft.reason,
         },
       });
+      const createdKey = draftKey || `session:${sessionId}`;
+      setCreatedScheduledTasks((prev) => ({ ...prev, [createdKey]: saved }));
       setScheduledDrafts((prev) => {
         const next = { ...prev };
         delete next[sessionId];
@@ -1371,8 +1597,10 @@ export default function ChatWindowPage() {
     const stream = getStreamSlot(currentSessionId);
     if (stream.loading) return;
     const userText = input.trim();
+    const requestIntent = composerIntent;
     const turnId = `turn_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     setInput('');
+    setComposerIntent('normal');
     stream.accumulated = '';
     stream.turnId = turnId;
     appendRealtime(currentSessionId, {
@@ -1380,6 +1608,9 @@ export default function ChatWindowPage() {
       turnId,
       role: 'user',
       content: userText,
+      metadata: requestIntent === 'scheduled_task'
+        ? { interaction_mode: 'scheduled_task' }
+        : {},
       created_at: new Date().toISOString(),
     });
     upsertTraceLine(turnId, { id: 'thinking', kind: 'thinking', text: '正在思考', state: 'running' });
@@ -1399,6 +1630,8 @@ export default function ChatWindowPage() {
         agent_id: sessionAgentId,
         message: userText,
         channel: 'web',
+        interaction_mode: requestIntent,
+        model_config_id: selectedModelConfig?.id,
       }, (item) => {
         const eventSessionId = String(item.data.sessionId || currentSessionId);
         if (item.event === 'session_created') {
@@ -1594,7 +1827,7 @@ export default function ChatWindowPage() {
               id: 'scheduled_task_draft',
               kind: 'decision',
               text: '生成自动任务草案',
-              detail: '识别到自动任务需求，等待用户确认后启用',
+              detail: '来自本条消息的定时项目，等待用户确认后启用',
               state: 'completed',
             });
           } else if (phase !== 'received') {
@@ -1827,9 +2060,13 @@ export default function ChatWindowPage() {
               const visibleContent = item.role === 'assistant'
                 ? contentWithVisibleCitationLabels(item.content, citations)
                 : item.content;
+              const scheduledTaskPrompt = isScheduledTaskPrompt(item);
               const scheduledDraft = item.role === 'assistant' && !dismissedDraftMessageIds.includes(item.id)
                 ? scheduledDraftForMessage(item)
                 : null;
+              const persistedCreatedTask = item.role === 'assistant'
+                ? createdScheduledTaskForMessage(item)
+                : undefined;
               void traceTick;
               return (
                 <div key={item.id} className="message-item">
@@ -1893,7 +2130,15 @@ export default function ChatWindowPage() {
                         item.role === 'assistant' ? (
                           <MarkdownMessage content={visibleContent} />
                         ) : (
-                          <div className="plain-answer">{visibleContent}</div>
+                          <div className="plain-answer">
+                            {scheduledTaskPrompt && (
+                              <span className="message-mode-chip">
+                                <ClockCircleOutlined />
+                                定时项目
+                              </span>
+                            )}
+                            <span>{visibleContent}</span>
+                          </div>
                         )
                       ) : item.role === 'assistant' && item.isStreaming && !summary ? (
                         <span className="typing-caret" />
@@ -1922,7 +2167,8 @@ export default function ChatWindowPage() {
                       {scheduledDraft && (
                         <ScheduledDraftCard
                           draft={scheduledDraft}
-                          onConfirm={(nextDraft) => void confirmScheduledTask(nextDraft)}
+                          createdTask={createdScheduledTasks[item.id] || persistedCreatedTask}
+                          onConfirm={(nextDraft) => void confirmScheduledTask(nextDraft, item.id)}
                           onDismiss={() => dismissScheduledTaskDraft(item.id)}
                         />
                       )}
@@ -1955,6 +2201,7 @@ export default function ChatWindowPage() {
           {currentScheduledDraft && !hasVisibleMessageScheduledDraft && (
             <ScheduledDraftCard
               draft={currentScheduledDraft}
+              createdTask={sessionId ? createdScheduledTasks[`session:${sessionId}`] : undefined}
               onConfirm={(nextDraft) => void confirmScheduledTask(nextDraft)}
               onDismiss={() => dismissScheduledTaskDraft()}
             />
@@ -1985,14 +2232,80 @@ export default function ChatWindowPage() {
               placeholder="描述要交给员工办理的任务..."
             />
             <div className="composer-toolbar">
-              <div className="composer-hint">Enter 发送 / Shift+Enter 换行</div>
-              <Button
-                type="primary"
-                htmlType={currentStream.loading ? 'button' : 'submit'}
-                icon={currentStream.loading ? <StopOutlined /> : <SendOutlined />}
-                onClick={currentStream.loading ? abortStream : undefined}
-                className={currentStream.loading ? 'stop-button' : undefined}
-              />
+              <div className="composer-context-row">
+                <Dropdown
+                  trigger={['click']}
+                  placement="topLeft"
+                  menu={{
+                    items: [
+                      {
+                        key: 'scheduled_task',
+                        icon: <ClockCircleOutlined />,
+                        label: '创建定时任务',
+                      },
+                    ],
+                    onClick: ({ key }) => {
+                      if (key === 'scheduled_task') setComposerIntent('scheduled_task');
+                    },
+                  }}
+                >
+                  <Button
+                    type="text"
+                    htmlType="button"
+                    className="composer-plus-button"
+                    icon={<PlusOutlined />}
+                    disabled={currentStream.loading}
+                    aria-label="添加对话项目"
+                  />
+                </Dropdown>
+                {composerIntent === 'scheduled_task' && (
+                  <button
+                    type="button"
+                    className="composer-intent-chip"
+                    title="取消定时项目"
+                    onClick={() => setComposerIntent('normal')}
+                  >
+                    <span className="composer-intent-icon" aria-hidden="true">
+                      <ClockCircleOutlined />
+                    </span>
+                    <span>定时项目</span>
+                  </button>
+                )}
+                <div className="composer-hint">Enter 发送 / Shift+Enter 换行</div>
+              </div>
+              <div className="composer-actions-row">
+                <Dropdown
+                  trigger={['click']}
+                  placement="topRight"
+                  overlayClassName="composer-model-dropdown"
+                  menu={{
+                    items: modelMenuItems,
+                    onClick: ({ key }) => {
+                      if (key !== 'empty') changeModelConfig(String(key));
+                    },
+                  }}
+                >
+                  <Button
+                    type="text"
+                    htmlType="button"
+                    className="composer-model-button"
+                    disabled={currentStream.loading || !enabledModelConfigs.length}
+                  >
+                    <span className="composer-model-label">
+                      {selectedModelConfig ? modelDisplayName(selectedModelConfig) : '默认模型'}
+                    </span>
+                    <DownOutlined />
+                  </Button>
+                </Dropdown>
+                <Button
+                  type="primary"
+                  htmlType={currentStream.loading ? 'button' : 'submit'}
+                  icon={currentStream.loading ? <StopOutlined /> : <SendOutlined />}
+                  onClick={currentStream.loading ? abortStream : undefined}
+                  className={`composer-send-button${currentStream.loading ? ' stop-button' : ''}`}
+                  aria-label={currentStream.loading ? '停止生成' : '发送'}
+                />
+              </div>
             </div>
           </form>
         </div>
@@ -2152,6 +2465,13 @@ function formatDraftSchedule(draft: ScheduledTaskDraftRead): string {
       : '一次性';
   }
   return `每天 ${schedule.time || '09:00'}`;
+}
+
+function scheduleTypeLabel(type: ScheduledTaskDraftRead['schedule_type']): string {
+  if (type === 'once') return '一次性';
+  if (type === 'weekly') return '每周';
+  if (type === 'monthly') return '每月';
+  return '每天';
 }
 
 function scheduleEditValue(draft: ScheduledTaskDraftRead): string {

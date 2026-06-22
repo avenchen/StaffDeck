@@ -19,12 +19,13 @@ from app.api.general_skills import (
 from app.core import AgentLoop
 from app.core.reflection_agent import ReflectionDecision
 from app.db.models import AgentEvent, AgentProfile, ChatSession, GeneralSkill, ModelConfig, Skill, Tenant, User
-from app.general_skills.runner import GeneralSkillRunner
+from app.general_skills.runner import GeneralSkillRunner, GeneralSkillSelector
 from app.general_skills.schema import (
     GeneralSkillClawHubImportRequest,
     GeneralSkillImportRequest,
     GeneralSkillRunRequest,
     GeneralSkillRunResponse,
+    GeneralSkillSelection,
 )
 from app.llm import LLMClient, LLMError
 from app.security.auth import hash_password
@@ -637,6 +638,14 @@ def test_general_skill_response_keeps_active_scene_context(monkeypatch) -> None:
 
 
 def test_scene_tool_call_to_general_skill_records_expandable_trace(monkeypatch) -> None:
+    def fake_decide(self, query, general_skills, model_config):  # noqa: ANN001
+        return GeneralSkillSelection(
+            use_general_skill=True,
+            selected_slug="weather-zh",
+            confidence=0.95,
+            reason="天气查询与天气技能匹配。",
+        )
+
     def fake_run(self, skill, query, model_config, user_id="", max_attempts=10, event_sink=None):  # noqa: ANN001
         trace = [
             {"phase": "skill_loaded", "message": "已加载通用技能 中国城市天气", "slug": skill.slug},
@@ -665,6 +674,7 @@ def test_scene_tool_call_to_general_skill_records_expandable_trace(monkeypatch) 
             reply="北京天气已查询。",
         )
 
+    monkeypatch.setattr(GeneralSkillSelector, "decide", fake_decide)
     monkeypatch.setattr(GeneralSkillRunner, "run", fake_run)
 
     with _test_session() as db:
@@ -720,6 +730,14 @@ def test_scene_tool_call_to_general_skill_records_expandable_trace(monkeypatch) 
 
 
 def test_scene_tool_call_to_general_skill_backfills_returned_trace(monkeypatch) -> None:
+    def fake_decide(self, query, general_skills, model_config):  # noqa: ANN001
+        return GeneralSkillSelection(
+            use_general_skill=True,
+            selected_slug="weather-zh",
+            confidence=0.95,
+            reason="天气查询与天气技能匹配。",
+        )
+
     def fake_run(self, skill, query, model_config, user_id="", max_attempts=10, event_sink=None):  # noqa: ANN001
         trace = [
             {"phase": "skill_loaded", "message": "已加载通用技能 中国城市天气", "slug": skill.slug},
@@ -742,6 +760,7 @@ def test_scene_tool_call_to_general_skill_backfills_returned_trace(monkeypatch) 
             reply="北京天气已查询。",
         )
 
+    monkeypatch.setattr(GeneralSkillSelector, "decide", fake_decide)
     monkeypatch.setattr(GeneralSkillRunner, "run", fake_run)
 
     with _test_session() as db:
@@ -791,6 +810,123 @@ def test_scene_tool_call_to_general_skill_backfills_returned_trace(monkeypatch) 
             "reply_created",
         ]
         assert [name for name, _payload in stream_events].count("general_skill_trace") == len(trace_payloads)
+
+
+def test_scene_tool_call_rejects_mismatched_general_skill(monkeypatch) -> None:
+    runner_calls: list[str] = []
+
+    def fake_decide(self, query, general_skills, model_config):  # noqa: ANN001
+        return GeneralSkillSelection(
+            use_general_skill=False,
+            selected_slug=None,
+            confidence=0.12,
+            reason="商品价格查询不属于候选通用技能能力。",
+        )
+
+    def fake_run(self, skill, query, model_config, user_id="", max_attempts=10, event_sink=None):  # noqa: ANN001
+        runner_calls.append(query)
+        return GeneralSkillRunResponse(
+            skill_slug=skill.slug,
+            execution_trace=[],
+            generated_code="",
+            stdout="",
+            stderr="",
+            structured_result={"success": True},
+            reply="不应执行。",
+        )
+
+    monkeypatch.setattr(GeneralSkillSelector, "decide", fake_decide)
+    monkeypatch.setattr(GeneralSkillRunner, "run", fake_run)
+
+    with _test_session() as db:
+        _seed_minimal_tenant(db)
+        db.add(
+            GeneralSkill(
+                tenant_id="tenant_demo",
+                slug="weather-zh",
+                name="中国城市天气",
+                description="中国城市天气查询工具",
+                skill_markdown=WEATHER_SKILL_MD,
+                status="published",
+            )
+        )
+        db.add(
+            ChatSession(
+                id="session_general_skill_mismatch",
+                tenant_id="tenant_demo",
+                user_id="user_demo",
+                active_skill_id="purchase",
+                active_step_id="collect_product",
+            )
+        )
+        db.commit()
+
+        result = AgentLoop(db)._execute_tool_call(
+            ChatTurnRequest(
+                tenant_id="tenant_demo",
+                session_id="session_general_skill_mismatch",
+                user_id="user_demo",
+                message="查询商品 A1 和 A3 的当前实时价格",
+            ),
+            db.get(ChatSession, "session_general_skill_mismatch"),
+            ToolCall(name="general_skill.weather-zh", arguments={"query": "查询商品 A1 和 A3 的当前实时价格"}),
+            tool_call_id="toolcall_weather_mismatch",
+        )
+
+        assert result.success is False
+        assert result.error is not None
+        assert result.error.code == "GENERAL_SKILL_MISMATCH"
+        assert runner_calls == []
+        rows = db.exec(select(AgentEvent).where(AgentEvent.session_id == "session_general_skill_mismatch")).all()
+        assert any(row.event_type == "general_skill_guard_rejected" for row in rows)
+
+
+def test_scene_step_agent_does_not_expose_irrelevant_general_skill(monkeypatch) -> None:
+    def fake_decide(self, query, general_skills, model_config):  # noqa: ANN001
+        return GeneralSkillSelection(
+            use_general_skill=False,
+            selected_slug=None,
+            confidence=0.08,
+            reason="商品价格查询不属于天气通用技能。",
+        )
+
+    monkeypatch.setattr(GeneralSkillSelector, "decide", fake_decide)
+
+    with _test_session() as db:
+        _seed_minimal_tenant(db)
+        db.add(
+            GeneralSkill(
+                tenant_id="tenant_demo",
+                slug="weather-zh",
+                name="中国城市天气",
+                description="中国城市天气查询工具",
+                skill_markdown=WEATHER_SKILL_MD,
+                status="published",
+            )
+        )
+        db.commit()
+
+        model_config = db.exec(select(ModelConfig).where(ModelConfig.tenant_id == "tenant_demo")).first()
+        active_skill = Skill(
+            tenant_id="tenant_demo",
+            skill_id="after_sales_refund",
+            name="售后退款流程",
+            status="published",
+            content_json={},
+        )
+        tools = [
+            SimpleNamespace(enabled=True, name="order.query", allowed_skills_json=["after_sales_refund"]),
+            SimpleNamespace(enabled=True, name="general_skill.weather-zh", allowed_skills_json=[]),
+        ]
+
+        scoped = AgentLoop(db)._step_agent_tools(
+            active_skill,
+            tools,
+            "查询商品 'a' 的价格",
+            model_config,
+        )
+
+        assert [tool.name for tool in scoped] == ["order.query"]
 
 
 def test_reflection_can_retry_general_skill_with_user_query() -> None:

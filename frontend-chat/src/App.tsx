@@ -1,6 +1,6 @@
 import { ConfigProvider, theme as antdTheme } from 'antd';
 import zhCN from 'antd/locale/zh_CN';
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { getAuthSession } from './api/client';
 import ChatWindowPage from './pages/ChatWindowPage';
 import LoginPage from './pages/LoginPage';
@@ -8,7 +8,9 @@ import SessionListPage from './pages/SessionListPage';
 import { useThemeController } from './theme';
 
 function RequireAuth({ children }: { children: JSX.Element }) {
-  return getAuthSession() ? children : <Navigate to="/login" replace />;
+  const location = useLocation();
+  const from = `${location.pathname}${location.search}`;
+  return getAuthSession() ? children : <Navigate to="/login" replace state={{ from }} />;
 }
 
 export default function App() {

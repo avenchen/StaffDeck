@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import Session, select
 
 from app.db import get_session
-from app.db.models import ScheduledTask, ScheduledTaskRun, User, utc_now
+from app.db.models import Message, ScheduledTask, ScheduledTaskRun, User, utc_now
 from app.scheduled_tasks.schema import (
     ScheduledTaskCreateRequest,
     ScheduledTaskDraftRead,
@@ -147,7 +147,7 @@ def run_enterprise_scheduled_task_now(
 ) -> ScheduledTaskRunRead:
     row = _get_task(db, tenant_id, task_id, current_user)
     if row.status == "archived":
-        raise HTTPException(status_code=400, detail="已删除的自动任务需要先恢复再运行")
+        raise HTTPException(status_code=400, detail="已删除的自动任务不能运行")
     run = execute_scheduled_task(db, row, scheduled_for=utc_now(), manual=True)
     return scheduled_task_run_read(run, row)
 
@@ -172,7 +172,9 @@ def create_chat_scheduled_task(
 ) -> ScheduledTaskRead:
     _ensure_request_tenant(request.tenant_id, current_user)
     row = create_scheduled_task(db, request, current_user)
-    return scheduled_task_read(row)
+    read = scheduled_task_read(row)
+    _mark_chat_draft_created(db, row, read)
+    return read
 
 
 @chat_draft_router.post("", response_model=ScheduledTaskDraftRead)
@@ -198,6 +200,30 @@ def create_chat_scheduled_task_draft(
             source_session_id=request.session_id,
         )
     return draft
+
+
+def _mark_chat_draft_created(db: Session, row: ScheduledTask, read: ScheduledTaskRead) -> None:
+    if not row.source_session_id:
+        return
+    messages = db.exec(
+        select(Message)
+        .where(
+            Message.tenant_id == row.tenant_id,
+            Message.session_id == row.source_session_id,
+            Message.role == "assistant",
+        )
+        .order_by(Message.created_at.desc())
+        .limit(20)
+    ).all()
+    for message in messages:
+        metadata = dict(message.metadata_json or {})
+        if not isinstance(metadata.get("scheduled_task_draft"), dict):
+            continue
+        metadata["scheduled_task_created"] = read.model_dump(mode="json")
+        message.metadata_json = metadata
+        db.add(message)
+        db.commit()
+        return
 
 
 def _list_tasks(

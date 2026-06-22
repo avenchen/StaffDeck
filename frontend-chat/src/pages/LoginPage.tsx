@@ -1,8 +1,8 @@
 import { LockOutlined, UserOutlined } from '@ant-design/icons';
 import { Button, Form, Input, Typography, message } from 'antd';
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { TENANT_ID, api, setAuthSession } from '../api/client';
+import { useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { TENANT_ID, api, getAuthSession, setAuthSession } from '../api/client';
 import type { AuthSession } from '../api/client';
 
 type LoginValues = {
@@ -15,6 +15,17 @@ type LoginValues = {
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  const redirectTo = useMemo(() => {
+    const state = location.state as { from?: unknown } | null;
+    return typeof state?.from === 'string' && state.from && state.from !== '/login' ? state.from : '/';
+  }, [location.state]);
+
+  useEffect(() => {
+    if (getAuthSession()) {
+      navigate(redirectTo, { replace: true });
+    }
+  }, [navigate, redirectTo]);
 
   async function login(values: LoginValues) {
     setLoading(true);
@@ -22,7 +33,7 @@ export default function LoginPage() {
       const result = await api.post<AuthSession>('/api/auth/login', values);
       setAuthSession(result);
       message.success('登录成功');
-      navigate('/', { replace: true });
+      navigate(redirectTo, { replace: true });
     } catch (error) {
       message.error(error instanceof Error ? error.message : '登录失败');
     } finally {
@@ -41,7 +52,7 @@ export default function LoginPage() {
         </div>
         <Form<LoginValues>
           layout="vertical"
-          initialValues={{ tenant_id: TENANT_ID, username: 'demo', password: 'demo' }}
+          initialValues={{ tenant_id: TENANT_ID }}
           onFinish={login}
         >
           <Form.Item name="tenant_id" label="租户" rules={[{ required: true, message: '请输入租户' }]}>

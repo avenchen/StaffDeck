@@ -360,6 +360,7 @@ def upsert_okf_concept(
     db: Session = Depends(get_session),
 ) -> KnowledgeConceptRead:
     version = _writable_knowledge_version(db, request.tenant_id, knowledge_base_id, agent_id)
+    document_id = _document_id_for_version(db, request.tenant_id, knowledge_base_id, version.id, request.document_id)
     parsed = parse_okf_markdown(concept_id, request.content_md)
     rows = upsert_concepts(
         db,
@@ -370,7 +371,7 @@ def upsert_okf_concept(
             {
                 "concept_id": parsed.concept_id,
                 "content_md": parsed.content_md,
-                "document_id": request.document_id,
+                "document_id": document_id,
                 "status": request.status,
             }
         ],
@@ -706,6 +707,39 @@ def _get_concept(
     if not row:
         raise HTTPException(status_code=404, detail="OKF concept not found")
     return row
+
+
+def _document_id_for_version(
+    db: Session,
+    tenant_id: str,
+    knowledge_base_id: str,
+    knowledge_base_version_id: str,
+    document_id: str | None,
+) -> str | None:
+    if not document_id:
+        return None
+    current = db.get(KnowledgeDocument, document_id)
+    if (
+        current
+        and current.tenant_id == tenant_id
+        and current.knowledge_base_id == knowledge_base_id
+        and current.knowledge_base_version_id == knowledge_base_version_id
+    ):
+        return current.id
+    if not current or current.tenant_id != tenant_id or current.knowledge_base_id != knowledge_base_id:
+        return document_id
+    cloned = db.exec(
+        select(KnowledgeDocument)
+        .where(
+            KnowledgeDocument.tenant_id == tenant_id,
+            KnowledgeDocument.knowledge_base_id == knowledge_base_id,
+            KnowledgeDocument.knowledge_base_version_id == knowledge_base_version_id,
+            KnowledgeDocument.filename == current.filename,
+            KnowledgeDocument.file_type == current.file_type,
+        )
+        .order_by(KnowledgeDocument.created_at.asc())
+    ).first()
+    return cloned.id if cloned else document_id
 
 
 def _management_knowledge_base_versions(

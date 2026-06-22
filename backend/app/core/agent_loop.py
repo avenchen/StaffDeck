@@ -64,6 +64,20 @@ ROUTER_CONTEXT_MESSAGES = 8
 TOOL_CALL_HISTORY_SLOT = "_tool_call_history"
 TOOL_RESULTS_SLOT = "_tool_results"
 GENERAL_SKILL_TOOL_PREFIX = "general_skill."
+PROFILE_NAME_PREFIX = "用户姓名/称呼："
+TASK_CONFIRMATION_MARKERS = ("确认下单", "确认购买", "请确认", "是否确认")
+TASK_HANDOFF_MARKERS = ("接下来", "然后", "下一步", "随后", "之后")
+TASK_PRODUCT_PATTERN = re.compile(r"(?<![A-Za-z0-9])([Aa]\d+|SKU-\d+)(?![A-Za-z0-9])")
+KNOWN_PRODUCT_ID_ALIASES = {
+    "a1": "A1",
+    "a3": "A3",
+    "sku001": "SKU-001",
+    "sku-001": "SKU-001",
+    "sku002": "SKU-002",
+    "sku-002": "SKU-002",
+    "sku003": "SKU-003",
+    "sku-003": "SKU-003",
+}
 
 
 def _normalize_action(action: object) -> str:
@@ -86,6 +100,54 @@ def _normalize_action(action: object) -> str:
         "escalate_to_human": "handoff_human",
     }
     return aliases.get(text, text)
+
+
+def _slot_has_value(slots: dict[str, Any], field: str) -> bool:
+    value = slots.get(field)
+    return value is not None and value != "" and value != []
+
+
+def _skill_expected_fields(skill: Skill) -> set[str]:
+    content = skill.content_json or {}
+    fields: set[str] = set()
+    required_info = content.get("required_info")
+    if isinstance(required_info, list):
+        fields.update(str(item) for item in required_info if str(item).strip())
+    nodes = content.get("nodes")
+    if isinstance(nodes, list):
+        for node in nodes:
+            if not isinstance(node, dict):
+                continue
+            expected = node.get("expected_user_info")
+            if isinstance(expected, list):
+                fields.update(str(item) for item in expected if str(item).strip())
+    return fields
+
+
+def _profile_name_from_memory(memory_context: list[dict[str, object]]) -> str:
+    for memory in memory_context:
+        if memory.get("kind") != "profile":
+            continue
+        metadata = memory.get("metadata")
+        key = metadata.get("key") if isinstance(metadata, dict) else None
+        content = str(memory.get("content") or "").strip()
+        if key != "preferred_name" and not content.startswith(PROFILE_NAME_PREFIX):
+            continue
+        name = content.split("：", 1)[1] if "：" in content else content
+        name = re.split(r"[。；;，,\n]", name, maxsplit=1)[0].strip()
+        name = re.sub(r"^(用户)?(姓名|称呼)?[:：为是叫\s]+", "", name).strip()
+        if name:
+            return name[:40]
+    return ""
+
+
+def _known_product_id(value: Any) -> str:
+    text = str(value or "").strip()
+    if not text:
+        return ""
+    normalized = re.sub(r"[\s_]+", "-", text.lower())
+    compact = re.sub(r"[^a-z0-9]+", "", text.lower())
+    return KNOWN_PRODUCT_ID_ALIASES.get(normalized) or KNOWN_PRODUCT_ID_ALIASES.get(compact, "")
 
 
 def _node_as_step(node: dict[str, Any]) -> dict[str, Any]:
@@ -148,6 +210,84 @@ class AgentLoop:
         self.general_skill_runner = GeneralSkillRunner()
         self.tool_executor = ToolExecutor(db)
         self.memory = MemoryService(db)
+
+    def _hydrate_router_decision_from_context(
+        self,
+        chat_session: ChatSession,
+        router_decision: RouterDecision,
+        skills: list[Skill],
+        memory_context: list[dict[str, object]],
+    ) -> dict[str, Any]:
+        skills_by_id = {skill.skill_id: skill for skill in skills}
+        hydrated: dict[str, Any] = {}
+
+        target_skill = skills_by_id.get(router_decision.target_skill_id or chat_session.active_skill_id or "")
+        base_slots = dict(chat_session.slots_json or {})
+        base_slots.update(dict(router_decision.slot_hints or {}))
+        patch = self._slot_hydration_patch(target_skill, base_slots, memory_context)
+        if patch:
+            router_decision.slot_hints = {**dict(router_decision.slot_hints or {}), **patch}
+            hydrated["primary"] = patch
+        remaining_awaiting = self._trim_satisfied_awaiting_fields(router_decision, {**base_slots, **patch})
+        if remaining_awaiting is not None:
+            hydrated["awaiting_input_expected_fields"] = remaining_awaiting
+
+        task_patches: list[dict[str, Any]] = []
+        for task in [*router_decision.pending_tasks, *router_decision.created_tasks]:
+            task_skill = skills_by_id.get(task.target_skill_id or "")
+            task_slots = dict(task.slot_hints or {})
+            task_patch = self._slot_hydration_patch(task_skill, task_slots, memory_context)
+            if task_patch:
+                task.slot_hints = {**task_slots, **task_patch}
+                task_patches.append(
+                    {
+                        "task_id": task.task_id,
+                        "target_skill_id": task.target_skill_id,
+                        "slots": task_patch,
+                    }
+                )
+        if task_patches:
+            hydrated["tasks"] = task_patches
+        return hydrated
+
+    def _slot_hydration_patch(
+        self,
+        skill: Skill | None,
+        slots: dict[str, Any],
+        memory_context: list[dict[str, object]],
+    ) -> dict[str, Any]:
+        if not skill:
+            return {}
+        expected_fields = _skill_expected_fields(skill)
+        patch: dict[str, Any] = {}
+        if "user_name" in expected_fields and not _slot_has_value(slots, "user_name"):
+            profile_name = _profile_name_from_memory(memory_context)
+            if profile_name:
+                patch["user_name"] = profile_name
+        if "product_id" in expected_fields and not _slot_has_value(slots, "product_id"):
+            product_id = _known_product_id(slots.get("product_name") or slots.get("product_id"))
+            if product_id:
+                patch["product_id"] = product_id
+        return patch
+
+    def _trim_satisfied_awaiting_fields(
+        self, router_decision: RouterDecision, slots: dict[str, Any]
+    ) -> list[str] | None:
+        if not router_decision.awaiting_input:
+            return None
+        original = list(router_decision.awaiting_input.expected_fields)
+        remaining = [
+            field
+            for field in router_decision.awaiting_input.expected_fields
+            if not _slot_has_value(slots, field)
+        ]
+        if remaining == original:
+            return None
+        if remaining:
+            router_decision.awaiting_input.expected_fields = remaining
+        else:
+            router_decision.awaiting_input = None
+        return remaining
 
     def handle_turn(self, request: ChatTurnRequest) -> ChatTurnResponse:
         router_decision: RouterDecision | None = None
@@ -739,7 +879,13 @@ class AgentLoop:
                             replaced_current_reply = True
                         yield self._stream_event("stream_delta", chat_session, {"content": chunk})
                         self._pace_stream()
-                replies.append(segment)
+                replies, replaced_reply = self._merge_scheduled_reply_segment(replies, segment)
+                if replaced_reply:
+                    yield self._stream_event(
+                        "stream_replace",
+                        chat_session,
+                        {"content": "\n\n".join(replies).strip()},
+                    )
                 executed_actions += 1
                 completed = self._finalize_execution_after_reply(
                     request.tenant_id,
@@ -782,7 +928,13 @@ class AgentLoop:
                 {"newSessionId": chat_session.id, "sessionId": chat_session.id},
             )
             yield self._stream_status(chat_session, "received", "已收到消息")
-            self._append_message(request.tenant_id, chat_session.id, "user", request.message)
+            self._append_message(
+                request.tenant_id,
+                chat_session.id,
+                "user",
+                request.message,
+                metadata=self._user_message_metadata(request),
+            )
             self.events.record(
                 request.tenant_id,
                 chat_session.id,
@@ -790,7 +942,7 @@ class AgentLoop:
                 {"message": request.message, "channel": request.channel, "user_id": request.user_id},
             )
 
-            model_config = self._get_default_model(request.tenant_id, chat_session.agent_id)
+            model_config = self._get_request_model(request, chat_session.agent_id)
             if not model_config:
                 raise AgentLoopPreconditionError("missing_model_config", "没有默认模型配置。")
             memory_model_config = model_config
@@ -885,6 +1037,16 @@ class AgentLoop:
             router_decision = self.router.decide(
                 request.message, chat_session, skills, model_config, router_context, memory_context
             )
+            hydrated_slots = self._hydrate_router_decision_from_context(
+                chat_session, router_decision, skills, memory_context
+            )
+            if hydrated_slots:
+                self.events.record(
+                    request.tenant_id,
+                    chat_session.id,
+                    "router_slots_hydrated",
+                    hydrated_slots,
+                )
             self.events.record(
                 request.tenant_id,
                 chat_session.id,
@@ -1300,7 +1462,13 @@ class AgentLoop:
 
         chat_session = self._get_or_create_session(request)
         status("received", {"session_id": chat_session.id})
-        self._append_message(request.tenant_id, chat_session.id, "user", request.message)
+        self._append_message(
+            request.tenant_id,
+            chat_session.id,
+            "user",
+            request.message,
+            metadata=self._user_message_metadata(request),
+        )
         self.events.record(
             request.tenant_id,
             chat_session.id,
@@ -1308,7 +1476,7 @@ class AgentLoop:
             {"message": request.message, "channel": request.channel, "user_id": request.user_id},
         )
 
-        model_config = self._get_default_model(request.tenant_id, chat_session.agent_id)
+        model_config = self._get_request_model(request, chat_session.agent_id)
         skills = self._list_published_skills(request.tenant_id, chat_session.agent_id)
         tools = self._tools_with_general_skills(
             request.tenant_id,
@@ -1385,6 +1553,16 @@ class AgentLoop:
         router_decision = self.router.decide(
             request.message, chat_session, skills, model_config, router_context, memory_context
         )
+        hydrated_slots = self._hydrate_router_decision_from_context(
+            chat_session, router_decision, skills, memory_context
+        )
+        if hydrated_slots:
+            self.events.record(
+                request.tenant_id,
+                chat_session.id,
+                "router_slots_hydrated",
+                hydrated_slots,
+            )
         self.events.record(
             request.tenant_id,
             chat_session.id,
@@ -1893,7 +2071,7 @@ class AgentLoop:
                     conversation_context,
                 )
                 if segment:
-                    replies.append(segment)
+                    replies, _replaced_reply = self._merge_scheduled_reply_segment(replies, segment)
                 executed_actions += 1
                 completed = self._finalize_execution_after_reply(
                     request.tenant_id,
@@ -1937,6 +2115,48 @@ class AgentLoop:
             step_result=step_result,
             tool_result=tool_result,
         )
+
+    def _merge_scheduled_reply_segment(self, replies: list[str], segment: str) -> tuple[list[str], bool]:
+        clean_segment = str(segment or "").strip()
+        if not clean_segment:
+            return replies, False
+        if not replies:
+            return [clean_segment], False
+
+        previous = replies[-1].strip()
+        merged = self._merge_overlapping_task_confirmation(previous, clean_segment)
+        if merged:
+            return [*replies[:-1], merged], True
+        return [*replies, clean_segment], False
+
+    def _merge_overlapping_task_confirmation(self, previous: str, current: str) -> str | None:
+        if not previous or not current:
+            return None
+        if not self._has_task_confirmation(previous) or not self._has_task_confirmation(current):
+            return None
+        previous_products = self._task_reply_products(previous)
+        current_products = self._task_reply_products(current)
+        if previous_products and current_products and previous_products.isdisjoint(current_products):
+            return None
+
+        split_index = self._task_handoff_index(previous)
+        if split_index is None:
+            return None
+        prefix = previous[:split_index].strip()
+        if not prefix:
+            return current.strip()
+        return f"{prefix}\n\n{current.strip()}"
+
+    def _has_task_confirmation(self, text: str) -> bool:
+        return any(marker in text for marker in TASK_CONFIRMATION_MARKERS)
+
+    def _task_handoff_index(self, text: str) -> int | None:
+        indexes = [text.find(marker) for marker in TASK_HANDOFF_MARKERS if marker in text]
+        indexes = [index for index in indexes if index >= 0]
+        return min(indexes) if indexes else None
+
+    def _task_reply_products(self, text: str) -> set[str]:
+        return {match.group(1).upper() for match in TASK_PRODUCT_PATTERN.finditer(text or "")}
 
     def _router_decision_from_task_frame(
         self,
@@ -3010,7 +3230,13 @@ class AgentLoop:
             request.message,
             chat_session,
             active_skill,
-            self._step_agent_tools(active_skill, tools),
+            self._step_agent_tools(
+                active_skill,
+                tools,
+                request.message,
+                model_config,
+                chat_session.agent_id,
+            ),
             model_config,
             router_decision,
             repair_context,
@@ -3029,17 +3255,25 @@ class AgentLoop:
         )
         return step_result
 
-    def _step_agent_tools(self, active_skill: Skill | None, tools: list[Tool]) -> list[Tool]:
+    def _step_agent_tools(
+        self,
+        active_skill: Skill | None,
+        tools: list[Tool],
+        user_message: str | None = None,
+        model_config: ModelConfig | None = None,
+        agent_id: str | None = None,
+    ) -> list[Tool]:
         if active_skill is None:
             return []
         active_skill_id = active_skill.skill_id
         scoped_tools: list[Tool] = []
+        general_skill_tools: list[Tool] = []
         for tool in tools:
             if not getattr(tool, "enabled", False):
                 continue
             tool_name = str(getattr(tool, "name", "") or "")
             if tool_name.startswith(GENERAL_SKILL_TOOL_PREFIX):
-                scoped_tools.append(tool)
+                general_skill_tools.append(tool)
                 continue
             allowed_skills = [
                 str(skill_id)
@@ -3049,7 +3283,54 @@ class AgentLoop:
             if allowed_skills and active_skill_id not in allowed_skills:
                 continue
             scoped_tools.append(tool)
+        selected_general_tool = self._selected_general_skill_tool_name(
+            user_message,
+            model_config,
+            agent_id,
+            general_skill_tools,
+        )
+        if selected_general_tool:
+            scoped_tools.extend(
+                tool
+                for tool in general_skill_tools
+                if str(getattr(tool, "name", "") or "") == selected_general_tool
+            )
         return scoped_tools
+
+    def _selected_general_skill_tool_name(
+        self,
+        user_message: str | None,
+        model_config: ModelConfig | None,
+        agent_id: str | None,
+        general_skill_tools: list[Tool],
+    ) -> str | None:
+        message = str(user_message or "").strip()
+        if not message or not model_config or not general_skill_tools:
+            return None
+        allowed_slugs = {
+            str(getattr(tool, "name", "") or "").removeprefix(GENERAL_SKILL_TOOL_PREFIX)
+            for tool in general_skill_tools
+            if str(getattr(tool, "name", "") or "").startswith(GENERAL_SKILL_TOOL_PREFIX)
+        }
+        allowed_slugs = {slug for slug in allowed_slugs if slug}
+        if not allowed_slugs:
+            return None
+        candidates = [
+            skill
+            for skill in self._list_published_general_skills(model_config.tenant_id, agent_id)
+            if skill.slug in allowed_slugs
+        ]
+        if not candidates:
+            return None
+        try:
+            selection = self.general_skill_selector.decide(message, candidates, model_config)
+        except LLMError:
+            return None
+        if not selection.use_general_skill or not selection.selected_slug:
+            return None
+        if selection.selected_slug not in allowed_slugs:
+            return None
+        return f"{GENERAL_SKILL_TOOL_PREFIX}{selection.selected_slug}"
 
     def _apply_step_result(
         self,
@@ -3259,7 +3540,15 @@ class AgentLoop:
                 data=None,
                 error=ToolError(code="GENERAL_SKILL_NOT_FOUND", message="通用技能不存在或未发布。"),
             )
-        model_config = self._get_default_model(request.tenant_id, agent_id)
+        try:
+            model_config = self._get_request_model(request, agent_id)
+        except AgentLoopPreconditionError as exc:
+            return ToolResult(
+                tool_name=tool_call.name,
+                success=False,
+                data=None,
+                error=ToolError(code=exc.code.upper(), message=exc.message),
+            )
         if not model_config:
             return ToolResult(
                 tool_name=tool_call.name,
@@ -3268,6 +3557,17 @@ class AgentLoop:
                 error=ToolError(code="MISSING_MODEL_CONFIG", message="没有默认模型配置。"),
             )
         query = str(tool_call.arguments.get("query") or request.message).strip()
+        guard_result = self._validate_general_skill_tool_match(
+            request,
+            chat_session,
+            tool_call,
+            skill,
+            query,
+            model_config,
+            agent_id,
+        )
+        if guard_result is not None:
+            return guard_result
         emitted_trace_keys: set[str] = set()
 
         def trace_key(trace_item: dict[str, Any]) -> str:
@@ -3337,6 +3637,64 @@ class AgentLoop:
             error=ToolError(
                 code=str(structured.get("error") or "GENERAL_SKILL_FAILED"),
                 message=str(structured.get("message") or response.reply or "通用技能执行失败。"),
+            ),
+        )
+
+    def _validate_general_skill_tool_match(
+        self,
+        request: ChatTurnRequest,
+        chat_session: ChatSession,
+        tool_call: ToolCall,
+        requested_skill: GeneralSkill,
+        query: str,
+        model_config: ModelConfig,
+        agent_id: str | None,
+    ) -> ToolResult | None:
+        if not query:
+            return ToolResult(
+                tool_name=tool_call.name,
+                success=False,
+                data={
+                    "requested_slug": requested_skill.slug,
+                    "selected_slug": None,
+                    "reason": "通用技能调用缺少自然语言任务。",
+                },
+                error=ToolError(code="GENERAL_SKILL_MISMATCH", message="通用技能调用缺少自然语言任务。"),
+            )
+        candidates = self._list_published_general_skills(request.tenant_id, agent_id)
+        if not candidates:
+            return ToolResult(
+                tool_name=tool_call.name,
+                success=False,
+                data={
+                    "requested_slug": requested_skill.slug,
+                    "selected_slug": None,
+                    "reason": "当前员工没有可用通用技能。",
+                },
+                error=ToolError(code="GENERAL_SKILL_NOT_FOUND", message="当前员工没有可用通用技能。"),
+            )
+        try:
+            selection = self.general_skill_selector.decide(query, candidates, model_config)
+        except LLMError:
+            return None
+        selected_slug = selection.selected_slug if selection.use_general_skill else None
+        if selected_slug == requested_skill.slug:
+            return None
+        payload = {
+            "requested_slug": requested_skill.slug,
+            "selected_slug": selected_slug,
+            "reason": selection.reason,
+            "query": query,
+            "tool_call": tool_call.model_dump(mode="json"),
+        }
+        self.events.record(request.tenant_id, chat_session.id, "general_skill_guard_rejected", payload)
+        return ToolResult(
+            tool_name=tool_call.name,
+            success=False,
+            data=payload,
+            error=ToolError(
+                code="GENERAL_SKILL_MISMATCH",
+                message="通用技能与当前子任务不匹配，已取消调用。",
             ),
         )
 
@@ -3789,6 +4147,21 @@ class AgentLoop:
             },
         )
 
+    def _get_request_model(
+        self,
+        request: ChatTurnRequest,
+        agent_id: str | None = None,
+        role: str = "default",
+    ) -> ModelConfig | None:
+        if request.model_config_id:
+            row = self.db.get(ModelConfig, request.model_config_id)
+            if not row or row.tenant_id != request.tenant_id:
+                raise AgentLoopPreconditionError("invalid_model_config", "选中的模型配置不存在。")
+            if not row.enabled:
+                raise AgentLoopPreconditionError("disabled_model_config", "选中的模型配置已停用。")
+            return row
+        return self._get_default_model(request.tenant_id, agent_id, role)
+
     def _get_default_model(self, tenant_id: str, agent_id: str | None = None, role: str = "default") -> ModelConfig | None:
         return model_for_agent(self.db, tenant_id, agent_id, role)
 
@@ -3865,8 +4238,8 @@ class AgentLoop:
                     display_name=skill.name,
                     description=(
                         f"通用技能：{skill.description or skill.name}。"
-                        "当当前场景技能需要该通用能力才能完成目标时，"
-                        "可以显式输出 tool_call 调用它。"
+                        "仅当当前子任务与该名称、描述和能力边界直接匹配时才能调用；"
+                        "不得把它作为场景工具、已有工具结果、知识查询或追问用户的兜底替代。"
                     ),
                     input_schema={
                         "type": "object",
@@ -4026,6 +4399,14 @@ class AgentLoop:
                 metadata_json=metadata or {},
             )
         )
+
+    def _user_message_metadata(self, request: ChatTurnRequest) -> dict[str, str]:
+        metadata: dict[str, str] = {}
+        if request.interaction_mode == "scheduled_task":
+            metadata["interaction_mode"] = "scheduled_task"
+        if request.model_config_id:
+            metadata["model_config_id"] = request.model_config_id
+        return metadata
 
     def _record_runtime_event(
         self,

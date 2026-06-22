@@ -31,7 +31,7 @@ export default function AccountsPage() {
   const [draft, setDraft] = useState<AccountDraft>({ displayName: '', password: '' });
   const [saving, setSaving] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
-  const [createDraft, setCreateDraft] = useState<AccountCreateDraft>({ username: '', displayName: '', password: 'demo' });
+  const [createDraft, setCreateDraft] = useState<AccountCreateDraft>({ username: '', displayName: '', password: '' });
   const [creating, setCreating] = useState(false);
 
   async function load() {
@@ -56,7 +56,7 @@ export default function AccountsPage() {
   }
 
   function openCreate() {
-    setCreateDraft({ username: '', displayName: '', password: 'demo' });
+    setCreateDraft({ username: '', displayName: '', password: '' });
     setCreateOpen(true);
   }
 

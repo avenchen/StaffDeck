@@ -72,12 +72,21 @@ def message_read(row: Message, feedback_rating: str | None = None) -> MessageRea
     )
 
 
+def _user_message_metadata(request: ChatTurnRequest) -> dict[str, str]:
+    metadata: dict[str, str] = {}
+    if request.interaction_mode == "scheduled_task":
+        metadata["interaction_mode"] = "scheduled_task"
+    if request.model_config_id:
+        metadata["model_config_id"] = request.model_config_id
+    return metadata
+
+
 def _maybe_handle_scheduled_task_request(
     db: Session,
     request: ChatTurnRequest,
     chat_session: ChatSession,
 ) -> tuple[ChatTurnResponse, ScheduledTaskDraftRead] | None:
-    if not request.agent_id:
+    if request.interaction_mode != "scheduled_task" or not request.agent_id:
         return None
     draft = detect_scheduled_task_draft(
         db,
@@ -103,7 +112,7 @@ def _maybe_handle_scheduled_task_request(
             session_id=chat_session.id,
             role="user",
             content=request.message,
-            metadata_json={},
+            metadata_json=_user_message_metadata(request),
             created_at=now,
         )
     )
@@ -166,7 +175,7 @@ def _maybe_handle_scheduled_task_request(
 
 def _scheduled_task_draft_reply(draft: ScheduledTaskDraftRead) -> str:
     lines = [
-        "我识别到这是一个自动任务需求，已经先整理成草案。",
+        "我已按你选择的定时项目整理成自动任务草案。",
         f"任务：{draft.title}",
         f"计划：{_format_draft_schedule(draft)}",
         f"执行内容：{draft.prompt}",
@@ -250,7 +259,7 @@ def chat_turn(
             response, _draft = scheduled_response
             return response
     response = AgentLoop(db).handle_turn(request)
-    if request.session_id and request.agent_id:
+    if request.interaction_mode == "scheduled_task" and request.agent_id:
         draft = detect_scheduled_task_draft(
             db,
             request.tenant_id,
@@ -289,7 +298,7 @@ def chat_stream(
                 scheduled_response = _maybe_handle_scheduled_task_request(db, request, chat_session)
                 if scheduled_response:
                     response, draft = scheduled_response
-                    yield _sse("status", {"phase": "scheduled_task_draft", "text": "已识别自动任务草案"})
+                    yield _sse("status", {"phase": "scheduled_task_draft", "text": "生成自动任务草案"})
                     for chunk in _reply_chunks(response.reply):
                         yield _sse("stream_delta", {"content": chunk})
                     yield _sse("stream_end", {})
@@ -298,7 +307,7 @@ def chat_stream(
                     return
             for item in AgentLoop(db).handle_turn_stream(request):
                 yield _sse(item["event"], item["data"])
-                if item["event"] == "complete" and request.agent_id:
+                if item["event"] == "complete" and request.interaction_mode == "scheduled_task" and request.agent_id:
                     source_session_id = str(item["data"].get("sessionId") or request.session_id or "")
                     draft = detect_scheduled_task_draft(
                         db,

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from copy import deepcopy
 from datetime import datetime
 from typing import Any, Iterable
 
@@ -404,12 +405,15 @@ def knowledge_version_for_upload(
     if not agent or agent.is_overall:
         return ensure_knowledge_base_version(db, kb, _current_knowledge_version(kb))
     branch = _ensure_knowledge_branch(db, tenant_id, agent.id, kb)
+    source_version = ensure_knowledge_base_version(db, kb, branch.head_version)
     next_version = _next_knowledge_branch_version(branch)
+    target_version = ensure_knowledge_base_version(db, kb, next_version)
+    clone_knowledge_version_assets(db, tenant_id, knowledge_base_id, source_version.id, target_version.id)
     branch.head_version = next_version
     branch.sync_state = "diverged"
     branch.status = "active"
     branch.updated_at = utc_now()
-    return ensure_knowledge_base_version(db, kb, next_version)
+    return target_version
 
 
 def sync_knowledge_branch_from_overall(
@@ -710,6 +714,237 @@ def _retag_knowledge_version(
             row.knowledge_base_version_id = target_version_id
             row.updated_at = utc_now()
             db.add(row)
+
+
+def clone_knowledge_version_assets(
+    db: Session,
+    tenant_id: str,
+    knowledge_base_id: str,
+    source_version_id: str,
+    target_version_id: str,
+) -> None:
+    if source_version_id == target_version_id:
+        return
+
+    document_id_map: dict[str, str] = {}
+    bucket_id_map: dict[str, str] = {}
+    source_documents = db.exec(
+        select(KnowledgeDocument)
+        .where(
+            KnowledgeDocument.tenant_id == tenant_id,
+            KnowledgeDocument.knowledge_base_id == knowledge_base_id,
+            KnowledgeDocument.knowledge_base_version_id == source_version_id,
+        )
+        .order_by(KnowledgeDocument.created_at.asc())
+    ).all()
+    target_has_documents = db.exec(
+        select(KnowledgeDocument.id).where(
+            KnowledgeDocument.tenant_id == tenant_id,
+            KnowledgeDocument.knowledge_base_id == knowledge_base_id,
+            KnowledgeDocument.knowledge_base_version_id == target_version_id,
+        )
+    ).first()
+
+    if not target_has_documents:
+        for document in source_documents:
+            clone = KnowledgeDocument(
+                tenant_id=document.tenant_id,
+                knowledge_base_id=document.knowledge_base_id,
+                knowledge_base_version_id=target_version_id,
+                filename=document.filename,
+                file_type=document.file_type,
+                title=document.title,
+                status=document.status,
+                bucket_count=document.bucket_count,
+                chunk_count=document.chunk_count,
+                metadata_json=deepcopy(document.metadata_json or {}),
+                error=document.error,
+                created_at=document.created_at,
+                updated_at=utc_now(),
+            )
+            db.add(clone)
+            db.flush()
+            document_id_map[document.id] = clone.id
+
+        source_buckets = db.exec(
+            select(KnowledgeBucket)
+            .where(
+                KnowledgeBucket.tenant_id == tenant_id,
+                KnowledgeBucket.knowledge_base_id == knowledge_base_id,
+                KnowledgeBucket.knowledge_base_version_id == source_version_id,
+            )
+            .order_by(KnowledgeBucket.created_at.asc())
+        ).all()
+        for bucket in source_buckets:
+            clone = KnowledgeBucket(
+                tenant_id=bucket.tenant_id,
+                knowledge_base_id=bucket.knowledge_base_id,
+                knowledge_base_version_id=target_version_id,
+                document_id=document_id_map.get(bucket.document_id, bucket.document_id),
+                bucket_key=bucket.bucket_key,
+                title=bucket.title,
+                summary=bucket.summary,
+                token_estimate=bucket.token_estimate,
+                metadata_json=deepcopy(bucket.metadata_json or {}),
+                created_at=bucket.created_at,
+                updated_at=utc_now(),
+            )
+            db.add(clone)
+            db.flush()
+            bucket_id_map[bucket.id] = clone.id
+
+        source_chunks = db.exec(
+            select(KnowledgeChunk)
+            .where(
+                KnowledgeChunk.tenant_id == tenant_id,
+                KnowledgeChunk.knowledge_base_id == knowledge_base_id,
+                KnowledgeChunk.knowledge_base_version_id == source_version_id,
+            )
+            .order_by(KnowledgeChunk.bucket_id.asc(), KnowledgeChunk.chunk_index.asc())
+        ).all()
+        for chunk in source_chunks:
+            clone = KnowledgeChunk(
+                tenant_id=chunk.tenant_id,
+                knowledge_base_id=chunk.knowledge_base_id,
+                knowledge_base_version_id=target_version_id,
+                document_id=document_id_map.get(chunk.document_id, chunk.document_id),
+                bucket_id=bucket_id_map.get(chunk.bucket_id, chunk.bucket_id),
+                chunk_index=chunk.chunk_index,
+                content=chunk.content,
+                summary=chunk.summary,
+                source_ref=chunk.source_ref,
+                metadata_json=deepcopy(chunk.metadata_json or {}),
+                created_at=chunk.created_at,
+                updated_at=utc_now(),
+            )
+            db.add(clone)
+
+        source_suggestions = db.exec(
+            select(KnowledgeDiscoverySuggestion)
+            .where(
+                KnowledgeDiscoverySuggestion.tenant_id == tenant_id,
+                KnowledgeDiscoverySuggestion.knowledge_base_id == knowledge_base_id,
+                KnowledgeDiscoverySuggestion.knowledge_base_version_id == source_version_id,
+            )
+            .order_by(KnowledgeDiscoverySuggestion.created_at.asc())
+        ).all()
+        for suggestion in source_suggestions:
+            clone = KnowledgeDiscoverySuggestion(
+                tenant_id=suggestion.tenant_id,
+                knowledge_base_id=suggestion.knowledge_base_id,
+                knowledge_base_version_id=target_version_id,
+                document_id=document_id_map.get(suggestion.document_id, suggestion.document_id),
+                bucket_id=bucket_id_map.get(suggestion.bucket_id or "", suggestion.bucket_id),
+                suggestion_type=suggestion.suggestion_type,
+                title=suggestion.title,
+                status=suggestion.status,
+                payload_json=deepcopy(suggestion.payload_json or {}),
+                source_refs_json=_remap_source_refs(suggestion.source_refs_json or [], document_id_map),
+                reason=suggestion.reason,
+                created_at=suggestion.created_at,
+                updated_at=utc_now(),
+            )
+            db.add(clone)
+
+    else:
+        target_documents = db.exec(
+            select(KnowledgeDocument).where(
+                KnowledgeDocument.tenant_id == tenant_id,
+                KnowledgeDocument.knowledge_base_id == knowledge_base_id,
+                KnowledgeDocument.knowledge_base_version_id == target_version_id,
+            )
+        ).all()
+        for source_document in source_documents:
+            match = next(
+                (
+                    target_document
+                    for target_document in target_documents
+                    if target_document.filename == source_document.filename
+                    and target_document.file_type == source_document.file_type
+                    and target_document.title == source_document.title
+                ),
+                None,
+            )
+            if match:
+                document_id_map[source_document.id] = match.id
+
+    if document_id_map:
+        existing_target_concepts = db.exec(
+            select(KnowledgeConcept).where(
+                KnowledgeConcept.tenant_id == tenant_id,
+                KnowledgeConcept.knowledge_base_id == knowledge_base_id,
+                KnowledgeConcept.knowledge_base_version_id == target_version_id,
+            )
+        ).all()
+        for concept in existing_target_concepts:
+            changed = False
+            mapped_document_id = document_id_map.get(concept.document_id or "")
+            if mapped_document_id:
+                concept.document_id = mapped_document_id
+                changed = True
+            next_source_refs = _remap_source_refs(concept.source_refs_json or [], document_id_map)
+            if next_source_refs != (concept.source_refs_json or []):
+                concept.source_refs_json = next_source_refs
+                changed = True
+            if changed:
+                concept.updated_at = utc_now()
+                db.add(concept)
+
+    target_concept_ids = {
+        concept_id
+        for concept_id in db.exec(
+            select(KnowledgeConcept.concept_id).where(
+                KnowledgeConcept.tenant_id == tenant_id,
+                KnowledgeConcept.knowledge_base_id == knowledge_base_id,
+                KnowledgeConcept.knowledge_base_version_id == target_version_id,
+            )
+        ).all()
+    }
+    source_concepts = db.exec(
+        select(KnowledgeConcept)
+        .where(
+            KnowledgeConcept.tenant_id == tenant_id,
+            KnowledgeConcept.knowledge_base_id == knowledge_base_id,
+            KnowledgeConcept.knowledge_base_version_id == source_version_id,
+            KnowledgeConcept.status != "deleted",
+        )
+        .order_by(KnowledgeConcept.created_at.asc())
+    ).all()
+    for concept in source_concepts:
+        if concept.concept_id in target_concept_ids:
+            continue
+        clone = KnowledgeConcept(
+            tenant_id=concept.tenant_id,
+            knowledge_base_id=concept.knowledge_base_id,
+            knowledge_base_version_id=target_version_id,
+            document_id=document_id_map.get(concept.document_id or "", concept.document_id),
+            concept_id=concept.concept_id,
+            concept_type=concept.concept_type,
+            title=concept.title,
+            description=concept.description,
+            content_md=concept.content_md,
+            frontmatter_json=deepcopy(concept.frontmatter_json or {}),
+            links_json=deepcopy(concept.links_json or []),
+            citations_json=deepcopy(concept.citations_json or []),
+            source_refs_json=_remap_source_refs(concept.source_refs_json or [], document_id_map),
+            status=concept.status,
+            created_at=concept.created_at,
+            updated_at=utc_now(),
+        )
+        db.add(clone)
+
+
+def _remap_source_refs(source_refs: list[dict[str, Any]], document_id_map: dict[str, str]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for source_ref in source_refs:
+        if not isinstance(source_ref, dict):
+            continue
+        next_ref = deepcopy(source_ref)
+        document_id = next_ref.get("document_id")
+        if isinstance(document_id, str) and document_id in document_id_map:
+            next_ref["document_id"] = document_id_map[document_id]
+        rows.append(next_ref)
+    return rows
 
 
 def _safe_version_id(value: str) -> str:

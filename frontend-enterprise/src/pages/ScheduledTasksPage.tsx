@@ -4,6 +4,9 @@ import {
   DeleteOutlined,
   DownOutlined,
   EditOutlined,
+  FileSearchOutlined,
+  MoreOutlined,
+  PauseCircleOutlined,
   PlayCircleOutlined,
   PlusOutlined,
   ReloadOutlined,
@@ -120,7 +123,7 @@ export default function ScheduledTasksPage() {
 
   async function toggleStatus(row: ScheduledTaskRead) {
     if (row.status === 'archived') {
-      message.warning('已删除的自动任务需要先恢复');
+      message.warning('已删除的自动任务不能重新启用');
       return;
     }
     if (row.status === 'completed') {
@@ -142,7 +145,7 @@ export default function ScheduledTasksPage() {
 
   async function runNow(row: ScheduledTaskRead) {
     if (row.status === 'archived') {
-      message.warning('已删除的自动任务需要先恢复再运行');
+      message.warning('已删除的自动任务不能运行');
       return;
     }
     const hide = message.loading('正在拉起独立任务会话...', 0);
@@ -150,7 +153,7 @@ export default function ScheduledTasksPage() {
       const run = await api.post<ScheduledTaskRunRead>(
         `/api/enterprise/scheduled-tasks/${row.id}/run-now?tenant_id=${TENANT_ID}`,
       );
-      message.success(run.session_id ? '已执行，任务记录已生成' : '已触发执行');
+      message.success(run.session_id ? '已执行，执行记录已生成' : '已触发执行');
       await load();
     } catch (error) {
       message.error(error instanceof Error ? error.message : '立即执行失败');
@@ -162,7 +165,7 @@ export default function ScheduledTasksPage() {
   function remove(row: ScheduledTaskRead) {
     Modal.confirm({
       title: `删除自动任务「${row.title}」？`,
-      content: '删除后不再唤醒该员工，历史执行记录会保留在任务记录里。',
+      content: '删除后不再唤醒该员工，历史执行记录会继续保留。',
       okText: '删除',
       okButtonProps: { danger: true },
       cancelText: '取消',
@@ -172,19 +175,6 @@ export default function ScheduledTasksPage() {
         await load();
       },
     });
-  }
-
-  async function restore(row: ScheduledTaskRead) {
-    try {
-      await api.put<ScheduledTaskRead>(`/api/enterprise/scheduled-tasks/${row.id}`, {
-        tenant_id: TENANT_ID,
-        status: 'active',
-      });
-      message.success('已恢复自动任务，下一次执行时间已重新计算');
-      await load();
-    } catch (error) {
-      message.error(error instanceof Error ? error.message : '恢复自动任务失败');
-    }
   }
 
   async function openRuns(row: ScheduledTaskRead) {
@@ -220,22 +210,57 @@ export default function ScheduledTasksPage() {
   const renderTaskActions = (row: ScheduledTaskRead) => {
     const isArchived = row.status === 'archived';
     const isCompleted = row.status === 'completed';
+    const items = [
+      {
+        key: 'runs',
+        icon: <FileSearchOutlined />,
+        label: '执行记录',
+      },
+      ...(!isArchived ? [
+        {
+          key: 'edit',
+          icon: <EditOutlined />,
+          label: '编辑',
+        },
+        {
+          key: 'run',
+          icon: <PlayCircleOutlined />,
+          label: '现在运行',
+        },
+        ...(!isCompleted ? [
+          {
+            key: 'toggle',
+            icon: row.status === 'active' ? <PauseCircleOutlined /> : <PlayCircleOutlined />,
+            label: row.status === 'active' ? '暂停' : '启用',
+          },
+        ] : []),
+        {
+          key: 'delete',
+          icon: <DeleteOutlined />,
+          label: '删除',
+          danger: true,
+        },
+      ] : []),
+    ];
     return (
-      <span className="table-actions scheduled-task-actions">
-        <Button size="small" onClick={() => openRuns(row)}>记录</Button>
-        {isArchived ? (
-          <Button size="small" icon={<ReloadOutlined />} onClick={() => void restore(row)}>恢复</Button>
-        ) : (
-          <>
-            <Button size="small" icon={<EditOutlined />} onClick={() => navigate(`/enterprise/scheduled-tasks/${row.id}/edit`)}>编辑</Button>
-            <Button size="small" icon={<PlayCircleOutlined />} onClick={() => void runNow(row)}>现在运行</Button>
-            {!isCompleted && (
-              <Button size="small" onClick={() => void toggleStatus(row)}>{row.status === 'active' ? '暂停' : '启用'}</Button>
-            )}
-            <Button size="small" danger icon={<DeleteOutlined />} onClick={() => remove(row)}>删除</Button>
-          </>
-        )}
-      </span>
+      <Dropdown
+        trigger={['click']}
+        placement="bottomRight"
+        menu={{
+          items,
+          onClick: ({ key }) => {
+            if (key === 'runs') void openRuns(row);
+            if (key === 'edit') navigate(`/enterprise/scheduled-tasks/${row.id}/edit`);
+            if (key === 'run') void runNow(row);
+            if (key === 'toggle') void toggleStatus(row);
+            if (key === 'delete') remove(row);
+          },
+        }}
+      >
+        <Button size="small" icon={<MoreOutlined />} className="scheduled-task-action-trigger">
+          操作
+        </Button>
+      </Dropdown>
     );
   };
   const columns: ColumnsType<ScheduledTaskRead> = [
@@ -263,7 +288,8 @@ export default function ScheduledTasksPage() {
     {
       title: '操作',
       fixed: 'right',
-      width: 300,
+      width: 110,
+      align: 'right',
       render: (_, row) => renderTaskActions(row),
     },
   ];
@@ -310,7 +336,7 @@ export default function ScheduledTasksPage() {
         <div>
           <Typography.Title level={3}>自动任务</Typography.Title>
           <Typography.Paragraph type="secondary">
-            为当前员工设置周期或一次性任务，到点后会新建独立任务记录，并按员工已有 SOP、技能、资料和工具执行。
+            为当前员工设置周期或一次性任务，到点后会新建独立执行记录，并按员工已有 SOP、技能、资料和工具执行。
           </Typography.Paragraph>
         </div>
         <Space>
@@ -378,7 +404,7 @@ export default function ScheduledTasksPage() {
                     <span><b>已执行</b>{row.run_count || 0} 次</span>
                     <span><b>最近</b>{row.last_status ? <TaskRunStatusTag status={row.last_status} /> : '暂无'}</span>
                   </div>
-                  {renderTaskActions(row)}
+                  <div className="scheduled-task-mobile-actions">{renderTaskActions(row)}</div>
                 </article>
               )) : (
                 <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无自动任务" />
@@ -427,7 +453,7 @@ export default function ScheduledTasksPage() {
                     {row.result_summary || row.error || '暂无结果'}
                   </Typography.Paragraph>
                   <span className="table-actions scheduled-task-actions">
-                    <Button size="small" disabled={!row.session_id} onClick={() => openChatSession(row.session_id)}>
+                    <Button size="small" icon={<FileSearchOutlined />} disabled={!row.session_id} onClick={() => openChatSession(row.session_id)}>
                       打开会话
                     </Button>
                   </span>
@@ -569,7 +595,7 @@ function ScheduledTaskEditorPage({ mode }: { mode: 'new' | 'edit' }) {
         <div>
           <Typography.Title level={3}>{isEdit ? '编辑自动任务' : '新建空白自动任务'}</Typography.Title>
           <Typography.Text type="secondary">
-            保存后到点会拉起一个新的任务记录，并交给当前员工按 SOP、技能、资料和工具执行。
+            保存后到点会拉起一个新的执行记录，并交给当前员工按 SOP、技能、资料和工具执行。
           </Typography.Text>
         </div>
         <Space>
