@@ -21,7 +21,7 @@ import { Button, Card, Dropdown, Empty, Input, Modal, Select, Space, Table, Tag,
 import type { ColumnsType } from 'antd/es/table';
 import type { ChangeEvent, DragEvent } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { api, streamPost, TENANT_ID } from '../api/client';
 import CodeBlock, { renderCodeTokens } from '../components/CodeBlock';
 import type { AgentProfileRead, GeneralSkillRead, GeneralSkillRunResponse } from '../types';
@@ -146,6 +146,7 @@ export function GeneralSkillEditPage() {
 
 export default function GeneralSkillsPage({ embedded = false }: { embedded?: boolean }) {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [rows, setRows] = useState<GeneralSkillRead[]>([]);
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | GeneralSkillRead['status']>('all');
@@ -161,6 +162,7 @@ export default function GeneralSkillsPage({ embedded = false }: { embedded?: boo
   const [agentImportSourceAgentId, setAgentImportSourceAgentId] = useState('');
   const [agentImportSourceSkills, setAgentImportSourceSkills] = useState<GeneralSkillRead[]>([]);
   const [agentImportSelectedSkillIds, setAgentImportSelectedSkillIds] = useState<string[]>([]);
+  const [agentScopeLoaded, setAgentScopeLoaded] = useState(false);
 
   const pageTitle = isOverallAgent ? '通用技能广场' : '已掌握技能';
 
@@ -181,9 +183,28 @@ export default function GeneralSkillsPage({ embedded = false }: { embedded?: boo
       .get<Array<{ id: string; is_overall: boolean }>>(`/api/enterprise/agents?tenant_id=${TENANT_ID}`)
       .then((items) => {
         setIsOverallAgent(Boolean(items.find((item) => item.id === agentId)?.is_overall ?? true));
+        setAgentScopeLoaded(true);
       })
-      .catch(() => setIsOverallAgent(true));
+      .catch(() => {
+        setIsOverallAgent(true);
+        setAgentScopeLoaded(true);
+      });
   }, [agentId]);
+
+  useEffect(() => {
+    if (searchParams.get('add') !== 'plaza') return;
+    if (!agentScopeLoaded) return;
+    const resourceId = searchParams.get('resourceId') || undefined;
+    if (isOverallAgent) {
+      message.warning('请先切换到具体数字员工，再从通用技能广场新增技能');
+    } else {
+      void requestAgentImport('plaza', resourceId);
+    }
+    const next = new URLSearchParams(searchParams);
+    next.delete('add');
+    next.delete('resourceId');
+    setSearchParams(next, { replace: true });
+  }, [agentScopeLoaded, isOverallAgent, searchParams, setSearchParams]);
 
   useEffect(() => {
     const onScopeChange = (event: Event) => {
@@ -269,7 +290,7 @@ export default function GeneralSkillsPage({ embedded = false }: { embedded?: boo
     }
   }
 
-  async function requestAgentImport(mode: GeneralSkillImportMode) {
+  async function requestAgentImport(mode: GeneralSkillImportMode, selectedResourceId?: string) {
     try {
       const agents = await api.get<AgentProfileRead[]>(`/api/enterprise/agents?tenant_id=${TENANT_ID}`);
       const candidates = agents.filter((item) => (
@@ -282,7 +303,10 @@ export default function GeneralSkillsPage({ embedded = false }: { embedded?: boo
       setAgentImportSelectedSkillIds([]);
       setAgentImportOpen(true);
       if (firstSource) {
-        await loadAgentImportSourceSkills(firstSource);
+        const sourceRows = await loadAgentImportSourceSkills(firstSource);
+        if (selectedResourceId && sourceRows.some((item) => item.id === selectedResourceId)) {
+          setAgentImportSelectedSkillIds([selectedResourceId]);
+        }
       } else {
         setAgentImportSourceSkills([]);
       }
@@ -291,18 +315,21 @@ export default function GeneralSkillsPage({ embedded = false }: { embedded?: boo
     }
   }
 
-  async function loadAgentImportSourceSkills(sourceAgentId: string) {
+  async function loadAgentImportSourceSkills(sourceAgentId: string): Promise<GeneralSkillRead[]> {
     setAgentImportSourceSkills([]);
     setAgentImportSelectedSkillIds([]);
-    if (!sourceAgentId) return;
+    if (!sourceAgentId) return [];
     try {
       const sourceRows = await api.get<GeneralSkillRead[]>(
         `/api/enterprise/general-skills?tenant_id=${TENANT_ID}&agent_id=${encodeURIComponent(sourceAgentId)}`,
       );
       const existingIds = new Set(rows.map((item) => item.id));
-      setAgentImportSourceSkills(sourceRows.filter((item) => item.status === 'published' && !existingIds.has(item.id)));
+      const publishedRows = sourceRows.filter((item) => item.status === 'published' && !existingIds.has(item.id));
+      setAgentImportSourceSkills(publishedRows);
+      return publishedRows;
     } catch (error) {
       message.error(error instanceof Error ? error.message : '加载来源技能失败');
+      return [];
     }
   }
 

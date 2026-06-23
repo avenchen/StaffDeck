@@ -5,6 +5,7 @@ import {
   DashboardOutlined,
   DatabaseOutlined,
   FileSearchOutlined,
+  GlobalOutlined,
   IdcardOutlined,
   LogoutOutlined,
   PlusOutlined,
@@ -38,6 +39,7 @@ import GeneralSkillsPage, { GeneralSkillEditPage, GeneralSkillNewPage } from './
 import KnowledgeManagePage, { KnowledgeAddPage } from './pages/KnowledgePage';
 import MemoriesPage from './pages/MemoriesPage';
 import ModelsPage from './pages/ModelsPage';
+import OpenPlatformPage from './pages/OpenPlatformPage';
 import SkillsPage from './pages/SkillsPage';
 import ScheduledTasksPage, { ScheduledTaskEditPage, ScheduledTaskNewPage } from './pages/ScheduledTasksPage';
 import ToolsPage, { ToolEditPage, ToolNewPage, ToolTestPage } from './pages/ToolsPage';
@@ -90,7 +92,7 @@ function Shell({
   const isDistillRoute = location.pathname === '/enterprise/skills/distill';
   const selected = location.pathname === '/enterprise'
     ? '/enterprise/dashboard'
-    : location.pathname === '/enterprise/platform'
+    : location.pathname.startsWith('/enterprise/platform')
       ? '/enterprise/platform'
       : location.pathname.startsWith('/enterprise/knowledge')
         ? '/enterprise/knowledge'
@@ -180,6 +182,7 @@ function Shell({
   const sourceAgents = isAdmin ? scopeAgents : scopeAgents.filter((item) => !item.is_overall);
   const isOverallScope = Boolean(selectedAgent?.is_overall);
   const navItems = [
+    { key: '/enterprise/platform', icon: <GlobalOutlined />, label: '开放广场平台' },
     ...(!isOverallScope ? [{ key: '/enterprise/agents', icon: <TeamOutlined />, label: '员工名册' }] : []),
     ...(!isOverallScope
       ? [
@@ -224,12 +227,6 @@ function Shell({
   ];
 
   function handleMenuClick(key: string) {
-    if (isAdmin && key === '/enterprise/platform') {
-      const overallAgent = agents.find((item) => item.is_overall);
-      if (overallAgent && overallAgent.id !== selectedAgentId) {
-        changeAgentScope(overallAgent.id);
-      }
-    }
     navigate(key);
   }
 
@@ -340,7 +337,8 @@ function Shell({
           {!isDistillRoute && (
             <Routes>
               <Route path="/enterprise" element={<Navigate to="/enterprise/dashboard" replace />} />
-              <Route path="/enterprise/platform" element={<DashboardPage currentUser={auth.user} isAdmin={isAdmin} forceOverall />} />
+              <Route path="/enterprise/platform" element={<OpenPlatformPage currentUser={auth.user} isAdmin={isAdmin} />} />
+              <Route path="/enterprise/platform/:kind" element={<OpenPlatformPage currentUser={auth.user} isAdmin={isAdmin} />} />
               <Route path="/enterprise/dashboard" element={<DashboardPage currentUser={auth.user} isAdmin={isAdmin} />} />
               <Route path="/enterprise/agents" element={<AgentsPage currentUser={auth.user} isAdmin={isAdmin} />} />
               <Route path="/enterprise/memories" element={<MemoriesPage />} />

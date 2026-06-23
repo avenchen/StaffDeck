@@ -21,7 +21,7 @@ import {
 } from '@ant-design/icons';
 import { Button, Card, Col, Collapse, Dropdown, Empty, Input, Modal, Progress, Row, Select, Space, Table, Tag, Typography, Upload, message } from 'antd';
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api, TENANT_ID } from '../api/client';
 import type {
   KnowledgeBaseRead,
@@ -81,6 +81,7 @@ const DEFAULT_INGEST_STEPS: IngestStepView[] = [
 
 export default function KnowledgeManagePage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [documents, setDocuments] = useState<KnowledgeDocumentRead[]>([]);
   const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBaseRead[]>([]);
   const [selectedDocument, setSelectedDocument] = useState<KnowledgeDocumentRead | null>(null);
@@ -167,6 +168,21 @@ export default function KnowledgeManagePage() {
   useEffect(() => {
     void refresh();
   }, [agentId]);
+
+  useEffect(() => {
+    if (searchParams.get('add') !== 'plaza') return;
+    if (agents.length === 0) return;
+    const resourceId = searchParams.get('resourceId') || undefined;
+    if (isOverallAgent) {
+      message.warning('请先切换到具体数字员工，再从业务知识广场新增资料');
+    } else {
+      void openImportKnowledgeBases('plaza', resourceId);
+    }
+    const next = new URLSearchParams(searchParams);
+    next.delete('add');
+    next.delete('resourceId');
+    setSearchParams(next, { replace: true });
+  }, [agents.length, isOverallAgent, searchParams, setSearchParams]);
 
   useEffect(() => {
     if (knowledgeBaseFilter !== '__all__' && !visibleKnowledgeBases.some((item) => item.id === knowledgeBaseFilter)) {
@@ -300,7 +316,7 @@ export default function KnowledgeManagePage() {
     }
   }
 
-  async function openImportKnowledgeBases(mode: 'plaza' | 'employee' = 'plaza') {
+  async function openImportKnowledgeBases(mode: 'plaza' | 'employee' = 'plaza', selectedResourceId?: string) {
     try {
       const agentRows = agents.length ? agents : await api.get<AgentProfileRead[]>(`/api/enterprise/agents?tenant_id=${TENANT_ID}`);
       setAgents(agentRows);
@@ -313,7 +329,10 @@ export default function KnowledgeManagePage() {
       setImportSelectedKnowledgeBaseIds([]);
       setImportOpen(true);
       if (firstSource) {
-        await loadImportSourceKnowledgeBases(firstSource);
+        const sourceRows = await loadImportSourceKnowledgeBases(firstSource);
+        if (selectedResourceId && sourceRows.some((item) => item.id === selectedResourceId)) {
+          setImportSelectedKnowledgeBaseIds([selectedResourceId]);
+        }
       } else {
         setImportSourceKnowledgeBases([]);
       }
@@ -322,17 +341,20 @@ export default function KnowledgeManagePage() {
     }
   }
 
-  async function loadImportSourceKnowledgeBases(sourceAgentId: string) {
+  async function loadImportSourceKnowledgeBases(sourceAgentId: string): Promise<KnowledgeBaseRead[]> {
     setImportSourceKnowledgeBases([]);
     setImportSelectedKnowledgeBaseIds([]);
-    if (!sourceAgentId) return;
+    if (!sourceAgentId) return [];
     try {
       const rows = await api.get<KnowledgeBaseRead[]>(
         `/api/enterprise/knowledge-bases?tenant_id=${TENANT_ID}&agent_id=${encodeURIComponent(sourceAgentId)}`,
       );
-      setImportSourceKnowledgeBases(rows.filter((item) => item.status === 'active'));
+      const activeRows = rows.filter((item) => item.status === 'active');
+      setImportSourceKnowledgeBases(activeRows);
+      return activeRows;
     } catch (error) {
       message.error(error instanceof Error ? error.message : '加载来源知识库失败');
+      return [];
     }
   }
 

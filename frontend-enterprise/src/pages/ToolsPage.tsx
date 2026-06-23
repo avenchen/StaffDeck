@@ -13,7 +13,7 @@ import { AutoComplete, Button, Card, Dropdown, Form, Input, Modal, Select, Space
 import type { FormInstance } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { api, TENANT_ID } from '../api/client';
 import CodeBlock from '../components/CodeBlock';
 import type { AgentProfileRead, ToolRead } from '../types';
@@ -43,9 +43,11 @@ export default function ToolsPage() {
   const [rows, setRows] = useState<ToolRead[]>([]);
   const [agentId, setAgentId] = useState(() => window.localStorage.getItem(ENTERPRISE_AGENT_STORAGE_KEY) || '');
   const [isOverallAgent, setIsOverallAgent] = useState(true);
+  const [agentScopeLoaded, setAgentScopeLoaded] = useState(false);
   const [bucketFilter, setBucketFilter] = useState('__all__');
   const [searchText, setSearchText] = useState('');
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const load = () =>
     api
@@ -63,8 +65,10 @@ export default function ToolsPage() {
         const agents = await api.get<AgentProfileRead[]>(`/api/enterprise/agents?tenant_id=${TENANT_ID}`);
         const selectedAgent = agents.find((agent) => agent.id === agentId) || agents.find((agent) => agent.is_overall) || null;
         setIsOverallAgent(Boolean(selectedAgent?.is_overall));
+        setAgentScopeLoaded(true);
       } catch {
         setIsOverallAgent(true);
+        setAgentScopeLoaded(true);
       }
     };
     void loadAgentScope();
@@ -78,6 +82,19 @@ export default function ToolsPage() {
     window.addEventListener('ultrarag-enterprise-agent-scope-change', onScopeChange);
     return () => window.removeEventListener('ultrarag-enterprise-agent-scope-change', onScopeChange);
   }, []);
+
+  useEffect(() => {
+    if (searchParams.get('add') !== 'plaza') return;
+    if (!agentScopeLoaded) return;
+    if (isOverallAgent) {
+      message.warning('请先切换到具体数字员工，再从工具广场新增工具');
+    } else {
+      handleCreateAction('plaza');
+    }
+    const next = new URLSearchParams(searchParams);
+    next.delete('add');
+    setSearchParams(next, { replace: true });
+  }, [agentScopeLoaded, isOverallAgent, searchParams, setSearchParams]);
 
   async function remove(row: ToolRead) {
     Modal.confirm({

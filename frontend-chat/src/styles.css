@@ -1027,6 +1027,164 @@ textarea,
   scroll-behavior: auto;
 }
 
+.chat-gallery-platform {
+  width: min(1120px, 100%);
+  margin: 0 auto;
+  display: grid;
+  gap: 18px;
+}
+
+.chat-gallery-hero {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+  padding: 22px;
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 0 0, color-mix(in srgb, var(--accent-soft) 58%, transparent), transparent 36%),
+    linear-gradient(180deg, color-mix(in srgb, var(--surface) 92%, transparent), color-mix(in srgb, var(--surface-subtle) 75%, transparent));
+  box-shadow: 0 20px 58px rgba(8, 13, 24, 0.08);
+}
+
+.chat-gallery-icon {
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border));
+  border-radius: 18px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent-soft) 62%, var(--surface));
+  font-size: 22px;
+}
+
+.chat-gallery-hero .ant-typography {
+  margin: 0;
+}
+
+.chat-gallery-section {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  background: color-mix(in srgb, var(--surface) 86%, transparent);
+}
+
+.chat-gallery-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.chat-gallery-section-head .ant-typography {
+  margin: 0;
+}
+
+.chat-gallery-section-head span {
+  min-width: 32px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+  background: var(--surface-subtle);
+  font-size: 12px;
+  font-weight: 780;
+}
+
+.chat-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.chat-gallery-card {
+  min-width: 0;
+  min-height: 154px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: 1fr auto;
+  gap: 12px 14px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  color: var(--foreground);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface) 92%, transparent), color-mix(in srgb, var(--surface-subtle) 72%, transparent));
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.chat-gallery-card:hover,
+.chat-gallery-card.selected {
+  border-color: color-mix(in srgb, var(--accent) 38%, var(--border));
+  box-shadow: 0 16px 44px rgba(8, 13, 24, 0.12);
+  transform: translateY(-1px);
+}
+
+.chat-gallery-avatar {
+  width: 46px;
+  height: 46px;
+}
+
+.chat-gallery-copy {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.chat-gallery-copy strong,
+.chat-gallery-copy em,
+.chat-gallery-copy span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chat-gallery-copy strong {
+  color: var(--foreground);
+  font-size: 16px;
+  font-weight: 820;
+  white-space: nowrap;
+}
+
+.chat-gallery-copy em {
+  color: var(--accent);
+  font-style: normal;
+  font-size: 12px;
+  font-weight: 760;
+  white-space: nowrap;
+}
+
+.chat-gallery-copy span {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.chat-gallery-action {
+  grid-column: 2;
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border));
+  border-radius: 999px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent-soft) 44%, transparent);
+  font-size: 12px;
+  font-weight: 780;
+}
+
 .message-stack {
   width: min(900px, 100%);
   margin: 0 auto;
@@ -2635,6 +2793,19 @@ textarea,
 
   .chat-messages {
     padding: 30px 18px;
+  }
+
+  .chat-gallery-hero {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .chat-gallery-hero .ant-btn {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+
+  .chat-gallery-grid {
+    grid-template-columns: 1fr;
   }
 
   .message-stack {

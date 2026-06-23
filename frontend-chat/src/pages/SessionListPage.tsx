@@ -1,11 +1,13 @@
 import {
   DeleteOutlined,
   EditOutlined,
+  GlobalOutlined,
   LogoutOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   PlusOutlined,
   ReloadOutlined,
+  RightOutlined,
 } from '@ant-design/icons';
 import { Button, Empty, Input, Modal, Typography, message } from 'antd';
 import type { MouseEvent } from 'react';
@@ -90,8 +92,7 @@ export default function SessionListPage() {
     setNewSessionOpen(true);
   }
 
-  async function createSession() {
-    const agentId = newSessionAgentId || selectedAgentId || agents[0]?.id || '';
+  async function createSessionForAgent(agentId: string) {
     if (!agentId) {
       message.warning('请先选择接单员工');
       return;
@@ -101,6 +102,11 @@ export default function SessionListPage() {
     window.localStorage.setItem('skill_agent_selected_agent', agentId);
     setNewSessionOpen(false);
     navigate(`/${session.id}`);
+  }
+
+  async function createSession() {
+    const agentId = newSessionAgentId || selectedAgentId || agents[0]?.id || '';
+    await createSessionForAgent(agentId);
   }
 
   function toggleSidebar() {
@@ -246,7 +252,33 @@ export default function SessionListPage() {
           </div>
         </div>
         <div className="chat-messages">
-          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
+          <div className="chat-gallery-platform">
+            <div className="chat-gallery-hero">
+              <span className="chat-gallery-icon"><GlobalOutlined /></span>
+              <div>
+                <Typography.Text type="secondary">员工广场平台</Typography.Text>
+                <Typography.Title level={2}>选择接单员工</Typography.Title>
+                <Typography.Paragraph>
+                  从个人员工或员工广场中选择一位数字员工，直接发起绑定该员工的新任务。
+                </Typography.Paragraph>
+              </div>
+              <Button type="primary" icon={<PlusOutlined />} onClick={openCreateSession}>新建任务</Button>
+            </div>
+            <ChatAgentSection
+              title="个人员工"
+              emptyText="暂无个人员工"
+              agents={personalAgents}
+              selectedAgentId={selectedAgentId}
+              onCreate={(agentId) => void createSessionForAgent(agentId)}
+            />
+            <ChatAgentSection
+              title="员工广场"
+              emptyText="暂无开放员工"
+              agents={galleryAgents}
+              selectedAgentId={selectedAgentId}
+              onCreate={(agentId) => void createSessionForAgent(agentId)}
+            />
+          </div>
         </div>
       </main>
       <Modal
@@ -330,5 +362,55 @@ export default function SessionListPage() {
         />
       </Modal>
     </div>
+  );
+}
+
+function ChatAgentSection({
+  title,
+  emptyText,
+  agents,
+  selectedAgentId,
+  onCreate,
+}: {
+  title: string;
+  emptyText: string;
+  agents: AgentProfileRead[];
+  selectedAgentId: string;
+  onCreate: (agentId: string) => void;
+}) {
+  return (
+    <section className="chat-gallery-section">
+      <div className="chat-gallery-section-head">
+        <Typography.Title level={4}>{title}</Typography.Title>
+        <span>{agents.length}</span>
+      </div>
+      {agents.length === 0 ? (
+        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={emptyText} />
+      ) : (
+        <div className="chat-gallery-grid">
+          {agents.map((agent) => {
+            const profile = employeeProfile(agent);
+            return (
+              <button
+                key={agent.id}
+                type="button"
+                className={`chat-gallery-card ${selectedAgentId === agent.id ? 'selected' : ''}`}
+                onClick={() => onCreate(agent.id)}
+              >
+                <EmployeeAvatarMark profile={profile} className="chat-gallery-avatar" />
+                <span className="chat-gallery-copy">
+                  <strong>{employeeDisplayName(agent)}</strong>
+                  <em>{profile.roleName}</em>
+                  <span>{agent.description || '使用该员工的技能、SOP、业务资料和岗位人设。'}</span>
+                </span>
+                <span className="chat-gallery-action">
+                  发起对话 <RightOutlined />
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </section>
   );
 }

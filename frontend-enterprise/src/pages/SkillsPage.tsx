@@ -16,7 +16,7 @@ import {
 import { Button, Card, Col, Descriptions, Dropdown, Input, Modal, Row, Segmented, Select, Space, Table, Tag, Typography, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api, TENANT_ID } from '../api/client';
 import type { AgentProfileRead, SkillRead, SkillVersionRead } from '../types';
 
@@ -53,6 +53,7 @@ type NumericSkillMetric =
 
 export default function SkillsPage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [rows, setRows] = useState<SkillRead[]>([]);
   const [versionRows, setVersionRows] = useState<SkillVersionRead[]>([]);
   const [versionSkill, setVersionSkill] = useState<SkillRead | null>(null);
@@ -98,6 +99,21 @@ export default function SkillsPage() {
   useEffect(() => {
     load();
   }, [agentId]);
+
+  useEffect(() => {
+    if (searchParams.get('add') !== 'plaza') return;
+    if (agents.length === 0) return;
+    const resourceId = searchParams.get('resourceId') || undefined;
+    if (isOverallAgent) {
+      message.warning('请先切换到具体数字员工，再从 SOP 广场新增 SOP');
+    } else {
+      void openImport('plaza', resourceId);
+    }
+    const next = new URLSearchParams(searchParams);
+    next.delete('add');
+    next.delete('resourceId');
+    setSearchParams(next, { replace: true });
+  }, [agents.length, isOverallAgent, searchParams, setSearchParams]);
 
   useEffect(() => {
     const onScopeChange = (event: Event) => {
@@ -255,7 +271,7 @@ export default function SkillsPage() {
     navigate(`/enterprise/skills/distill?mode=create${agentId ? `&agent_id=${encodeURIComponent(agentId)}` : ''}`);
   }
 
-  async function openImport(mode: 'plaza' | 'employee' = 'plaza') {
+  async function openImport(mode: 'plaza' | 'employee' = 'plaza', selectedResourceId?: string) {
     try {
       const agentRows = agents.length ? agents : await api.get<AgentProfileRead[]>(`/api/enterprise/agents?tenant_id=${TENANT_ID}`);
       setAgents(agentRows);
@@ -268,7 +284,10 @@ export default function SkillsPage() {
       setImportSelectedSkillIds([]);
       setImportOpen(true);
       if (firstSource) {
-        await loadImportSourceSkills(firstSource);
+        const sourceRows = await loadImportSourceSkills(firstSource);
+        if (selectedResourceId && sourceRows.some((item) => item.id === selectedResourceId)) {
+          setImportSelectedSkillIds([selectedResourceId]);
+        }
       } else {
         setImportSourceSkills([]);
       }
@@ -277,15 +296,18 @@ export default function SkillsPage() {
     }
   }
 
-  async function loadImportSourceSkills(sourceAgentId: string) {
+  async function loadImportSourceSkills(sourceAgentId: string): Promise<SkillRead[]> {
     setImportSourceSkills([]);
     setImportSelectedSkillIds([]);
-    if (!sourceAgentId) return;
+    if (!sourceAgentId) return [];
     try {
       const sourceRows = await api.get<SkillRead[]>(`/api/enterprise/agents/${sourceAgentId}/skills?tenant_id=${TENANT_ID}`);
-      setImportSourceSkills(sourceRows.filter((item) => item.status === 'published'));
+      const publishedRows = sourceRows.filter((item) => item.status === 'published');
+      setImportSourceSkills(publishedRows);
+      return publishedRows;
     } catch (error) {
       message.error(error instanceof Error ? error.message : '加载来源 SOP 失败');
+      return [];
     }
   }
 
