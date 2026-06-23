@@ -898,6 +898,16 @@ class AgentLoop:
                 if completed and active_skill:
                     completed_skill_ids_this_turn.add(active_skill.skill_id)
                 if not completed:
+                    if self._should_attempt_scheduled_task_followup(
+                        request,
+                        chat_session,
+                        skills,
+                        "\n\n".join([completed_reply, *replies]).strip(),
+                        schedule_round + 1,
+                    ):
+                        if active_skill:
+                            completed_skill_ids_this_turn.add(active_skill.skill_id)
+                        continue
                     return self._scheduled_continuation(
                         replies, active_skill, router_decision, step_result, tool_result
                     )
@@ -2084,6 +2094,16 @@ class AgentLoop:
                 if completed and active_skill:
                     completed_skill_ids_this_turn.add(active_skill.skill_id)
                 if not completed:
+                    if self._should_attempt_scheduled_task_followup(
+                        request,
+                        chat_session,
+                        skills,
+                        "\n\n".join([completed_reply, *replies]).strip(),
+                        schedule_round + 1,
+                    ):
+                        if active_skill:
+                            completed_skill_ids_this_turn.add(active_skill.skill_id)
+                        continue
                     return self._scheduled_continuation(
                         replies, active_skill, router_decision, step_result, tool_result
                     )
@@ -2115,6 +2135,43 @@ class AgentLoop:
             step_result=step_result,
             tool_result=tool_result,
         )
+
+    def _should_attempt_scheduled_task_followup(
+        self,
+        request: ChatTurnRequest,
+        chat_session: ChatSession,
+        skills: list[Skill],
+        completed_reply: str,
+        schedule_round: int,
+    ) -> bool:
+        if request.interaction_mode != "scheduled_task":
+            return False
+        if chat_session.awaiting_input_json:
+            return False
+        if not (chat_session.pending_tasks_json or chat_session.skill_stack_json):
+            return False
+
+        self._finish_stale_completed_skill(request.tenant_id, chat_session, skills)
+        self.db.commit()
+        self.db.refresh(chat_session)
+
+        if chat_session.awaiting_input_json or chat_session.active_skill_id:
+            return False
+        if not (chat_session.pending_tasks_json or chat_session.skill_stack_json):
+            return False
+
+        self.events.record(
+            request.tenant_id,
+            chat_session.id,
+            "scheduled_task_followup_requested",
+            {
+                "round": schedule_round,
+                "pending_tasks": chat_session.pending_tasks_json or [],
+                "completed_reply": completed_reply[:500],
+                "reason": "scheduled_task_mode_attempts_to_finish_pending_work",
+            },
+        )
+        return True
 
     def _merge_scheduled_reply_segment(self, replies: list[str], segment: str) -> tuple[list[str], bool]:
         clean_segment = str(segment or "").strip()

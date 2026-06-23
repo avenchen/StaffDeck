@@ -372,6 +372,7 @@ def execute_scheduled_task(
             user_id=task.created_by_user_id,
             message=automatic_task_message(task),
             channel="scheduled_task",
+            interaction_mode="scheduled_task",
         )
         result: ChatTurnResponse | None = None
         for seq, item in enumerate(AgentLoop(db).handle_turn_stream(request), start=1):

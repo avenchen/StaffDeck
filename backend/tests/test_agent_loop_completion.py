@@ -487,6 +487,90 @@ def test_stale_terminal_skill_is_cleared_before_next_route() -> None:
     assert loop.events.records[0][3]["reason"] == "stale_terminal_state"
 
 
+def test_scheduled_task_followup_can_continue_after_stale_terminal_completion() -> None:
+    loop = object.__new__(AgentLoop)
+    loop.runtime = SkillRuntime()
+    loop.events = FakeEvents()
+    loop.db = FakeDb()
+    session = ChatSession(
+        id="session_test",
+        tenant_id="tenant_demo",
+        active_skill_id="repair_ticket",
+        active_step_id="reply_ticket_result",
+        slots_json={"reporter_name": "hm", "asset_id": "EQ-9", "issue_desc": "无法开机"},
+        pending_tasks_json=[
+            {
+                "task_id": "task_purchase_after_compare",
+                "status": "pending",
+                "skill_id": "purchase",
+                "target_skill_id": "purchase",
+                "step_id": "collect_user_name",
+                "target_step_id": "collect_user_name",
+                "slots": {"user_name": "hm"},
+                "slot_hints": {"user_name": "hm"},
+                "intent_summary": "购买比价后更贵的商品",
+            }
+        ],
+    )
+    request = _request("自动任务唤醒：完成维修后继续处理购买任务")
+    request.interaction_mode = "scheduled_task"
+
+    should_continue = loop._should_attempt_scheduled_task_followup(
+        request,
+        session,
+        [_repair_skill(), _purchase_skill()],
+        "维修结果已反馈。",
+        1,
+    )
+
+    assert should_continue is True
+    assert session.active_skill_id is None
+    assert session.active_step_id is None
+    assert session.pending_tasks_json[0]["task_id"] == "task_purchase_after_compare"
+    assert [record[2] for record in loop.events.records] == [
+        "skill_completed",
+        "scheduled_task_followup_requested",
+    ]
+
+
+def test_normal_chat_does_not_auto_continue_pending_after_stale_terminal_completion() -> None:
+    loop = object.__new__(AgentLoop)
+    loop.runtime = SkillRuntime()
+    loop.events = FakeEvents()
+    loop.db = FakeDb()
+    session = ChatSession(
+        id="session_test",
+        tenant_id="tenant_demo",
+        active_skill_id="repair_ticket",
+        active_step_id="reply_ticket_result",
+        slots_json={"reporter_name": "hm", "asset_id": "EQ-9", "issue_desc": "无法开机"},
+        pending_tasks_json=[
+            {
+                "task_id": "task_purchase_after_compare",
+                "status": "pending",
+                "skill_id": "purchase",
+                "target_skill_id": "purchase",
+                "step_id": "collect_user_name",
+                "target_step_id": "collect_user_name",
+                "slots": {"user_name": "hm"},
+                "slot_hints": {"user_name": "hm"},
+            }
+        ],
+    )
+
+    should_continue = loop._should_attempt_scheduled_task_followup(
+        _request("普通聊天继续处理"),
+        session,
+        [_repair_skill(), _purchase_skill()],
+        "维修结果已反馈。",
+        1,
+    )
+
+    assert should_continue is False
+    assert session.active_skill_id == "repair_ticket"
+    assert loop.events.records == []
+
+
 def test_stale_terminal_skill_is_removed_from_suspended_stack() -> None:
     loop = object.__new__(AgentLoop)
     loop.runtime = SkillRuntime()
