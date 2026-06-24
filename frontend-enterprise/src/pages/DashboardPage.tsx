@@ -22,7 +22,7 @@ import { isEmployeeOwnedBy, isGalleryEmployee, type EnterpriseAuthUser } from '.
 import EmployeeAvatar from '../components/EmployeeAvatar';
 import EmployeeAvatarEditor from '../components/EmployeeAvatarEditor';
 import EmployeeProfileEditor from '../components/EmployeeProfileEditor';
-import { employeeDisplayName, employeeProfile, resourceCount } from '../employee';
+import { employeeDisplayName, employeeProfile } from '../employee';
 import type {
   AgentProfileRead,
   EnterpriseChatSessionRead,
@@ -355,9 +355,9 @@ export default function DashboardPage({
           </div>
         </div>
         <div className="employee-home-side">
-          <MetricTile label="SOP" value={resourceCount(selectedAgent.resources, 'skill')} />
-          <MetricTile label="技能" value={resourceCount(selectedAgent.resources, 'general_skill')} />
-          <MetricTile label="资料" value={resourceCount(selectedAgent.resources, 'knowledge_base')} />
+          <MetricTile label="SOP" value={activeSkills.length} />
+          <MetricTile label="已掌握技能" value={activeGeneralSkills.length} />
+          <MetricTile label="资料" value={activeKnowledge.length} />
           <MetricTile label="自动任务" value={activeScheduledTasks.length} />
         </div>
       </section>
