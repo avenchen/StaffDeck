@@ -5680,18 +5680,17 @@ body,
   bottom: 100px;
   z-index: 8;
   width: 48px !important;
-  height: 56px !important;
+  height: 48px !important;
   overflow: visible !important;
   pointer-events: none;
 }
 
 .chat-composer-avatar img {
-  width: 54px !important;
-  height: 63px !important;
-  max-width: none !important;
+  width: 100% !important;
+  height: 100% !important;
   object-fit: contain !important;
   object-position: center bottom !important;
-  transform: translate(-3px, -7px) !important;
+  transform: none !important;
 }
 
 @media (max-width: 1180px) {

@@ -12770,14 +12770,22 @@ body,
   overflow: auto;
 }
 
+.app-shell.sidebar-expanded .sd1-agents-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .sd1-agents-page .employee-roster-card.ant-card {
   width: 294px;
   height: 262px;
   border: 1px solid #eef1f5;
-  border-radius: 18px;
+  border-radius: 20px;
   background: #ffffff;
   box-shadow: 0 16px 34px rgba(21, 26, 38, 0.055) !important;
   overflow: visible;
+}
+
+.app-shell.sidebar-expanded .sd1-agents-page .employee-roster-card.ant-card {
+  width: 100%;
 }
 
 .sd1-agents-page .employee-roster-card.is-active.ant-card {
@@ -12808,8 +12816,8 @@ body,
   right: -8px;
   top: 34px;
   height: 64px;
-  border-radius: 16px;
-  background: #f8f8f9;
+  border-radius: 20px;
+  background: #f6f6f6;
 }
 
 .sd1-agents-page .employee-roster-head > .employee-avatar {
@@ -12892,8 +12900,9 @@ body,
 .sd1-agents-page .employee-roster-card .ant-typography {
   position: absolute;
   left: 12px;
+  right: 12px;
   top: 124px;
-  width: 270px;
+  width: auto;
   height: 36px;
   margin: 0 !important;
   overflow: hidden;
@@ -12906,8 +12915,9 @@ body,
 .sd1-agents-page .employee-roster-tags {
   position: absolute;
   left: 12px;
+  right: 12px;
   top: 164px;
-  width: 270px;
+  width: auto;
   height: 18px;
   min-height: 0;
   overflow: hidden;
