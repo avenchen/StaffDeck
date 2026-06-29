@@ -12120,10 +12120,11 @@ body,
   border-radius: 0 !important;
   background: transparent !important;
   box-shadow: none !important;
-  overflow: hidden !important;
+  overflow: visible !important;
 }
 
 .employee-heatmap-months {
+  height: 18px;
   display: grid;
   grid-template-columns: repeat(33, 10px);
   column-gap: 12px;
@@ -12132,7 +12133,16 @@ body,
   width: 714px !important;
   color: #8c95aa;
   font-size: 12px;
+  line-height: 16px;
   font-weight: 650;
+  overflow: visible;
+}
+
+.employee-heatmap-months span {
+  min-width: max-content;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: nowrap;
 }
 
 .employee-heatmap-body {
@@ -12766,8 +12776,12 @@ body,
   border: 1px solid #eef1f5;
   border-radius: 18px;
   background: #ffffff;
-  box-shadow: 0 16px 34px rgba(21, 26, 38, 0.055);
+  box-shadow: 0 16px 34px rgba(21, 26, 38, 0.055) !important;
   overflow: visible;
+}
+
+.sd1-agents-page .employee-roster-card.is-active.ant-card {
+  box-shadow: 0 26px 42px rgba(21, 26, 38, 0.1) !important;
 }
 
 .sd1-agents-page .employee-roster-card.ant-card .ant-card-body {
@@ -13477,4 +13491,418 @@ body,
     justify-content: flex-start;
     padding-inline: 12px;
   }
+}
+
+/* SD1 follow-up alignment: scheduled page, employee rail card and adaptive profile cards. */
+body:has(.sd1-scheduled-page) .topbar {
+  top: 28px !important;
+  right: 28px !important;
+}
+
+.sd1-scheduled-page {
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 72px 28px 40px !important;
+  gap: 24px !important;
+}
+
+.sd1-scheduled-page .page-title {
+  min-height: 58px;
+  margin: 0 0 6px !important;
+  padding-right: 184px;
+  align-items: flex-start;
+}
+
+.sd1-scheduled-page .page-title h3.ant-typography {
+  font-size: 16px !important;
+  line-height: 22px !important;
+}
+
+.sd1-scheduled-page .page-title .ant-typography-secondary {
+  max-width: 980px;
+  margin-top: 6px !important;
+  color: #202226 !important;
+  font-size: 20px !important;
+  line-height: 28px !important;
+  font-weight: 760 !important;
+}
+
+.scheduled-task-page-actions {
+  margin-top: 4px;
+}
+
+.sd1-scheduled-page .scheduled-task-stats {
+  margin-top: 8px;
+}
+
+.sd1-scheduled-page .scheduled-task-list-card {
+  border-radius: 14px !important;
+}
+
+.sd1-sidebar.is-expanded .sd1-rail-agent {
+  width: 132px;
+  min-height: 96px;
+  margin: 30px 12px 0;
+}
+
+.sd1-sidebar.is-expanded .sd1-rail-agent .employee-avatar {
+  left: 16px;
+  top: -42px;
+  width: 86px !important;
+  height: 101px !important;
+}
+
+.sd1-sidebar.is-expanded .sd1-rail-agent .employee-avatar img {
+  width: 96px;
+  height: 112px;
+  transform: translate(-5px, -9px);
+}
+
+.sd1-sidebar.is-expanded .sd1-rail-agent-label {
+  left: 76px;
+  top: 42px;
+  width: 50px;
+}
+
+.sd1-sidebar.is-expanded .sd1-rail-agent-name,
+.sd1-sidebar.is-expanded .sd1-rail-agent-role {
+  max-width: 50px;
+}
+
+.sd1-sidebar.is-expanded .sd1-rail-divider {
+  margin-top: 22px;
+}
+
+@media (min-width: 1181px) {
+  .sd1-dashboard-content {
+    overflow: auto !important;
+  }
+
+  .employee-home-page {
+    min-height: 1030px;
+    padding-bottom: 48px;
+  }
+
+  .employee-work-card {
+    height: auto;
+    min-height: 785px;
+    overflow: visible;
+  }
+
+  .employee-capability-grid {
+    top: 403px;
+    height: auto;
+    min-height: 230px;
+  }
+}
+
+.employee-capability-card.ant-card,
+.employee-capability-card.is-dark.ant-card {
+  color: #202226 !important;
+  border-color: #eef1f5 !important;
+  background: #ffffff !important;
+  box-shadow: 0 16px 34px rgba(21, 26, 38, 0.055) !important;
+}
+
+.employee-capability-card.is-dark .employee-capability-head,
+.employee-capability-card.is-dark .employee-capability-head em,
+.employee-capability-card.is-dark .employee-capability-title {
+  color: #202226 !important;
+}
+
+.employee-capability-card.is-dark .ant-typography {
+  color: #7d879c !important;
+}
+
+.employee-capability-head {
+  min-height: 22px;
+}
+
+.employee-capability-title {
+  position: absolute;
+  left: 24px;
+  top: 38px;
+  width: calc(100% - 72px);
+  margin: 0 !important;
+}
+
+.employee-capability-head em {
+  top: 70px !important;
+  font-size: 34px !important;
+  line-height: 38px !important;
+}
+
+.employee-capability-card .ant-typography {
+  margin-top: 92px !important;
+}
+
+.employee-capability-card::after {
+  content: '';
+  position: absolute;
+  left: 24px;
+  right: 24px;
+  top: 116px;
+  height: 4px;
+  border-radius: 999px;
+  background: #e5e5e7;
+}
+
+.employee-capability-card::before {
+  content: '';
+  position: absolute;
+  left: 24px;
+  top: 116px;
+  z-index: 1;
+  width: 24px;
+  height: 4px;
+  border-radius: 999px;
+  background: #202226;
+}
+
+:root[data-theme='dark'] .employee-capability-card.ant-card,
+:root[data-theme='dark'] .employee-capability-card.is-dark.ant-card {
+  color: #f0f2f6 !important;
+  border-color: #343741 !important;
+  background: #202126 !important;
+  box-shadow: none !important;
+}
+
+:root[data-theme='dark'] .employee-capability-card.is-dark.ant-card {
+  background: #2a2b31 !important;
+}
+
+:root[data-theme='dark'] .employee-capability-card::after {
+  background: #555862;
+}
+
+:root[data-theme='dark'] .employee-capability-card::before {
+  background: #f0f2f6;
+}
+
+/* SD1 follow-up: selected cards and dark theme must stay coherent after late overrides. */
+.sd1-agents-page .employee-roster-card.ant-card:hover,
+.sd1-agents-page .employee-roster-card.is-active.ant-card {
+  border-color: #dfe4ec !important;
+  box-shadow: 0 26px 42px rgba(21, 26, 38, 0.1) !important;
+  transform: none !important;
+}
+
+.sd1-agents-page .employee-roster-card.ant-card {
+  overflow: hidden;
+}
+
+.sd1-agents-page .employee-roster-stats {
+  bottom: 8px;
+  height: 66px;
+  overflow: hidden;
+}
+
+.sd1-agents-page .employee-roster-stats span {
+  padding: 7px 20px;
+}
+
+:root[data-theme='dark'] body,
+:root[data-theme='dark'] .ant-layout,
+:root[data-theme='dark'] .app-shell,
+:root[data-theme='dark'] .content,
+:root[data-theme='dark'] .enterprise-shell,
+:root[data-theme='dark'] .sd1-dashboard-content,
+:root[data-theme='dark'] .sd1-agents-page {
+  color: #f0f2f6 !important;
+  background: #18191d !important;
+}
+
+:root[data-theme='dark'] .sd1-sidebar,
+:root[data-theme='dark'] .sd1-rail {
+  color: #9da6b8 !important;
+  border-color: #30333b !important;
+  background: #18191d !important;
+}
+
+:root[data-theme='dark'] .sd1-sidebar.is-expanded .sd1-rail-logo,
+:root[data-theme='dark'] .sd1-brand-text strong,
+:root[data-theme='dark'] .sd1-sidebar.is-expanded .sd1-rail-agent-name,
+:root[data-theme='dark'] .sd1-sidebar.is-expanded .sd1-rail-agent-role,
+:root[data-theme='dark'] .sd1-sidebar.is-expanded .sd1-rail-menu-text {
+  color: #f0f2f6 !important;
+}
+
+:root[data-theme='dark'] .sd1-brand-text small,
+:root[data-theme='dark'] .sd1-rail-label,
+:root[data-theme='dark'] .sd1-sidebar.is-expanded .sd1-rail-label,
+:root[data-theme='dark'] .sd1-rail-agent-short {
+  color: #8f98aa !important;
+}
+
+:root[data-theme='dark'] .sd1-rail-primary,
+:root[data-theme='dark'] .sd1-rail-divider {
+  border-color: #30333b !important;
+  background-color: #30333b !important;
+}
+
+:root[data-theme='dark'] .sd1-rail-employee,
+:root[data-theme='dark'] .sd1-sidebar.is-expanded .sd1-rail-employee,
+:root[data-theme='dark'] .sd1-sidebar.is-expanded .sd1-rail-agent,
+:root[data-theme='dark'] .sd1-sidebar.is-expanded .sd1-rail-agent.active,
+:root[data-theme='dark'] .sd1-sidebar.is-expanded .sd1-rail-agent:hover {
+  color: #f0f2f6 !important;
+  border-color: #30333b !important;
+  background: #111827 !important;
+}
+
+:root[data-theme='dark'] .sd1-rail-icon.active,
+:root[data-theme='dark'] .sd1-rail-icon:hover,
+:root[data-theme='dark'] .sd1-sidebar.is-expanded .sd1-rail-icon.active,
+:root[data-theme='dark'] .sd1-sidebar.is-expanded .sd1-rail-icon:hover {
+  color: #f0f2f6 !important;
+  background: #222936 !important;
+}
+
+:root[data-theme='dark'] .sd1-rail-chat,
+:root[data-theme='dark'] .sd1-sidebar.is-expanded .sd1-rail-chat {
+  color: #111827 !important;
+  background: #f0f2f6 !important;
+}
+
+:root[data-theme='dark'] .sd1-agents-search .ant-input-affix-wrapper,
+:root[data-theme='dark'] .sd1-agents-search .ant-input,
+:root[data-theme='dark'] .sd1-agents-summary button,
+:root[data-theme='dark'] .sd1-agents-add {
+  color: #d8dcef !important;
+  border-color: #303846 !important;
+  background: #111827 !important;
+  box-shadow: none !important;
+}
+
+:root[data-theme='dark'] .sd1-agents-search .ant-input::placeholder {
+  color: #6f788a !important;
+}
+
+:root[data-theme='dark'] .sd1-agents-tabs button.active,
+:root[data-theme='dark'] .sd1-agents-summary strong,
+:root[data-theme='dark'] .sd1-agents-page .employee-roster-title strong,
+:root[data-theme='dark'] .sd1-agents-page .employee-roster-stats strong {
+  color: #f0f2f6 !important;
+}
+
+:root[data-theme='dark'] .sd1-agents-tabs button.active::after {
+  background: #f0f2f6 !important;
+}
+
+:root[data-theme='dark'] .sd1-agents-page .employee-roster-card.ant-card,
+:root[data-theme='dark'] .sd1-agents-page .employee-roster-card.is-active.ant-card,
+:root[data-theme='dark'] .sd1-agents-page .employee-roster-card.ant-card:hover {
+  color: #f0f2f6 !important;
+  border-color: #2b3445 !important;
+  background: #111827 !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+:root[data-theme='dark'] .sd1-agents-page .employee-roster-card.is-active.ant-card {
+  border-color: #536078 !important;
+  box-shadow: 0 0 0 1px rgba(148, 163, 184, 0.28) !important;
+}
+
+:root[data-theme='dark'] .sd1-agents-page .employee-roster-chat.ant-btn,
+:root[data-theme='dark'] .sd1-agents-page .employee-roster-head .ant-dropdown-trigger.ant-btn {
+  color: #c5ccd8 !important;
+  background: #f0f2f6 !important;
+  border-color: transparent !important;
+}
+
+:root[data-theme='dark'] .sd1-agents-page .employee-roster-head,
+:root[data-theme='dark'] .sd1-agents-page .employee-roster-stats,
+:root[data-theme='dark'] .sd1-agents-page .employee-roster-tags .ant-tag {
+  color: #c5ccd8 !important;
+  border-color: #2b3445 !important;
+  background: #182131 !important;
+}
+
+:root[data-theme='dark'] .sd1-agents-page .employee-roster-card .ant-typography,
+:root[data-theme='dark'] .sd1-agents-page .employee-roster-title span,
+:root[data-theme='dark'] .sd1-agents-page .employee-roster-stats em,
+:root[data-theme='dark'] .sd1-agents-summary span:not(.sd1-agents-add),
+:root[data-theme='dark'] .sd1-agents-summary small,
+:root[data-theme='dark'] .sd1-agents-tabs button {
+  color: #9da6b8 !important;
+}
+
+:root[data-theme='dark'] .sd1-agents-page .employee-roster-stats span {
+  border-color: #2b3445 !important;
+}
+
+:root[data-theme='dark'] .page-title h2.ant-typography,
+:root[data-theme='dark'] .page-title h3.ant-typography,
+:root[data-theme='dark'] .sd1-scheduled-page .page-title .ant-typography-secondary {
+  color: #f0f2f6 !important;
+}
+
+:root[data-theme='dark'] .scheduled-task-list-card,
+:root[data-theme='dark'] .scheduled-task-stat {
+  color: #f0f2f6 !important;
+  border-color: #303846 !important;
+  background: #111827 !important;
+}
+
+.sd1-sidebar.is-expanded .sd1-rail-agent .employee-avatar {
+  left: 14px;
+  top: -34px;
+  width: 76px !important;
+  height: 89px !important;
+}
+
+.sd1-sidebar.is-expanded .sd1-rail-agent .employee-avatar img {
+  width: 84px;
+  height: 98px;
+  transform: translate(-4px, -8px);
+}
+
+.sd1-sidebar.is-expanded .sd1-rail-agent-label {
+  left: 0;
+  top: 56px;
+  width: 132px;
+  justify-items: center;
+  text-align: center;
+}
+
+.sd1-sidebar.is-expanded .sd1-rail-agent-name,
+.sd1-sidebar.is-expanded .sd1-rail-agent-role {
+  max-width: 112px;
+}
+
+:root[data-theme='dark'] .employee-home-meta .ant-tag,
+:root[data-theme='dark'] .employee-avatar-actions .ant-btn,
+:root[data-theme='dark'] .employee-home-side .employee-metric-tile,
+:root[data-theme='dark'] .employee-profile-tabs button.active {
+  color: #c5ccd8 !important;
+  border-color: #303846 !important;
+  background: #202126 !important;
+  box-shadow: none !important;
+}
+
+:root[data-theme='dark'] .employee-avatar-actions .ant-btn:hover {
+  color: #f0f2f6 !important;
+  background: #283040 !important;
+}
+
+:root[data-theme='dark'] .employee-online-dot {
+  background: #37d681 !important;
+}
+
+:root[data-theme='dark'] .employee-capability-card.is-dark .employee-capability-head,
+:root[data-theme='dark'] .employee-capability-card.is-dark .employee-capability-head > span,
+:root[data-theme='dark'] .employee-capability-card.is-dark .employee-capability-head em,
+:root[data-theme='dark'] .employee-capability-card.is-dark .employee-capability-title,
+:root[data-theme='dark'] .employee-capability-card.is-dark .employee-capability-action,
+:root[data-theme='dark'] .employee-capability-card.is-dark .employee-capability-action .sd1-icon {
+  color: #f0f2f6 !important;
+}
+
+:root[data-theme='dark'] .employee-capability-card.is-dark .ant-typography {
+  color: #c5ccd8 !important;
+}
+
+:root[data-theme='dark'] .employee-capability-card.is-dark .employee-capability-illustration {
+  opacity: 0.92;
 }

@@ -222,6 +222,7 @@ export default function AgentsPage({
           <EmployeeCard
             key={employee.id}
             employee={employee}
+            active={currentScopeAgent?.id === employee.id}
             canManage={isAdmin || isEmployeeOwnedBy(employee, currentUser)}
             onOpen={() => selectEmployee(employee)}
             onStatus={(status) => void updateStatus(employee, status)}
@@ -258,6 +259,7 @@ export default function AgentsPage({
 
 function EmployeeCard({
   employee,
+  active,
   canManage,
   onOpen,
   onStatus,
@@ -268,6 +270,7 @@ function EmployeeCard({
   onChat,
 }: {
   employee: AgentProfileRead;
+  active: boolean;
   canManage: boolean;
   onOpen: () => void;
   onStatus: (status: 'active' | 'archived') => void;
@@ -283,7 +286,7 @@ function EmployeeCard({
   const kbCount = resourceCount(employee.resources, 'knowledge_base');
   const galleryPublished = isGalleryEmployee(employee);
   return (
-    <Card className="employee-roster-card" hoverable onClick={onOpen}>
+    <Card className={`employee-roster-card${active ? ' is-active' : ''}`} hoverable onClick={onOpen}>
       <div className="employee-roster-head">
         <EmployeeAvatar agent={employee} size={54} />
         <div className="employee-roster-title">

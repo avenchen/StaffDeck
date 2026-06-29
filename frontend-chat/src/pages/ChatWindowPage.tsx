@@ -1441,6 +1441,41 @@ export default function ChatWindowPage() {
     void streamTick;
     return sessionId ? getStreamSlot(sessionId) : createStreamSlot();
   }, [getStreamSlot, sessionId, streamTick]);
+  const bottomTraceStatus = useMemo(() => {
+    void traceTick;
+    if (!sessionId) return null;
+    const candidateTurnIds = [
+      currentStream.turnId || '',
+      ...displayedMessages
+        .slice()
+        .reverse()
+        .map((item) => item.turnId || item.id),
+    ].filter(Boolean);
+    const seen = new Set<string>();
+    for (const turnId of candidateTurnIds) {
+      if (seen.has(turnId)) continue;
+      seen.add(turnId);
+      const trace = turnTraceRef.current.get(turnId);
+      const visibleTrace = trace?.lines.filter((line) => traceLineAllowed(line, uiConfig)) || [];
+      if (!trace || visibleTrace.length === 0) continue;
+      const summary = traceSummary(trace, visibleTrace);
+      if (summary.state === 'running') {
+        return {
+          turnId,
+          summary,
+          details: traceDetails(visibleTrace),
+        };
+      }
+    }
+    if (currentStream.loading) {
+      return {
+        turnId: currentStream.turnId || '__current_stream__',
+        summary: { text: '正在执行', state: 'running' as const },
+        details: [],
+      };
+    }
+    return null;
+  }, [currentStream.loading, currentStream.turnId, displayedMessages, sessionId, traceTick, uiConfig]);
   const modelMenuItems = useMemo(() => {
     if (!enabledModelConfigs.length) {
       return [
@@ -2890,6 +2925,7 @@ export default function ChatWindowPage() {
               const summary = trace && visibleTrace.length > 0 ? traceSummary(trace, visibleTrace) : null;
               const details = traceDetails(visibleTrace);
               const expanded = expandedTraceIds.includes(turnId);
+              const showInlineTrace = Boolean(summary && summary.state !== 'running');
               const visibleContent = staffdeckDisplayText(item.role === 'assistant'
                 ? stripTrailingCitationSummary(item.content)
                 : item.content);
@@ -2901,12 +2937,22 @@ export default function ChatWindowPage() {
               const persistedCreatedTask = item.role === 'assistant'
                 ? createdScheduledTaskForMessage(item)
                 : undefined;
+              if (
+                item.role === 'assistant'
+                && !visibleContent
+                && !showInlineTrace
+                && !scheduledDraft
+                && !persistedCreatedTask
+                && citations.length === 0
+              ) {
+                return null;
+              }
               void traceTick;
               return (
-                <div key={item.id} className="message-item">
+                <div key={item.id} className={`message-item ${item.role}`}>
                   <div className={`message-row ${item.role} ${item.isError ? 'error' : ''}`}>
-                    <div className={`bubble ${summary ? 'has-trace' : ''}`}>
-                      {summary && (
+                    <div className={`bubble ${showInlineTrace ? 'has-trace' : ''}`}>
+                      {showInlineTrace && summary && (
                         <div className="assistant-trace">
                           <button
                             type="button"
@@ -3043,13 +3089,37 @@ export default function ChatWindowPage() {
           {SHOW_DEBUG && lastTurn && <pre className="debug-panel">{JSON.stringify(lastTurn.session_state, null, 2)}</pre>}
         </div>
         <div className="chat-input">
-          <form
-            className="composer-v2"
-            onSubmit={(event) => {
-              event.preventDefault();
-              send();
-            }}
-          >
+          <div className="composer-stage">
+            {bottomTraceStatus && (
+              <div className="chat-bottom-status" aria-live="polite">
+                <EmployeeAvatarMark profile={displayedProfile} fallback="SD" className="chat-bottom-status-avatar" />
+                <button
+                  type="button"
+                  className={`turn-trace-summary chat-bottom-status-card ${bottomTraceStatus.summary.state}`}
+                  onClick={() => toggleTrace(bottomTraceStatus.turnId)}
+                >
+                  <span className="trace-icon-slot"><StaffdeckIcon name="refresh" /></span>
+                  <span className="trace-primary-text" data-text={bottomTraceStatus.summary.text}>
+                    {bottomTraceStatus.summary.text}
+                  </span>
+                  {bottomTraceStatus.details.length > 0 && (
+                    <span className="trace-chevron-slot">
+                      <StaffdeckIcon
+                        name="arrow"
+                        style={expandedTraceIds.includes(bottomTraceStatus.turnId) ? { transform: 'rotate(90deg)' } : undefined}
+                      />
+                    </span>
+                  )}
+                </button>
+              </div>
+            )}
+            <form
+              className="composer-v2"
+              onSubmit={(event) => {
+                event.preventDefault();
+                send();
+              }}
+            >
             <Input.TextArea
               value={input}
               onChange={(event) => setInput(event.target.value)}
@@ -3141,7 +3211,8 @@ export default function ChatWindowPage() {
                 />
               </div>
             </div>
-          </form>
+            </form>
+          </div>
         </div>
       </main>
       <Modal

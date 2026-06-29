@@ -420,7 +420,7 @@ export default function ScheduledTasksPage() {
   ];
 
   return (
-    <div className="page scheduled-task-page">
+    <div className="page scheduled-task-page sd1-scheduled-page">
       <div className="page-title">
         <div>
           <Typography.Title level={3}>定时任务</Typography.Title>
@@ -428,7 +428,7 @@ export default function ScheduledTasksPage() {
             为当前员工设置周期或一次性任务，到点后会新建独立执行记录，并按员工已有 SOP、技能、资料和工具执行。
           </Typography.Paragraph>
         </div>
-        <Space>
+        <Space className="scheduled-task-page-actions">
           <Button icon={<ReloadOutlined />} onClick={() => void load()} loading={loading}>刷新</Button>
           <Dropdown
             trigger={['click']}

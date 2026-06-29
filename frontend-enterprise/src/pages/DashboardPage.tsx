@@ -555,7 +555,13 @@ function monthLabels(days: ReturnType<typeof heatmapDays>) {
   days.forEach((day, index) => {
     const label = `${day.date.getMonth() + 1}月`;
     if (label !== last) {
-      labels.push({ label, offset: Math.floor(index / HEATMAP_ROWS), span: 1 });
+      const offset = Math.floor(index / HEATMAP_ROWS);
+      const previous = labels[labels.length - 1];
+      if (previous && offset <= previous.offset) {
+        labels[labels.length - 1] = { label, offset: previous.offset, span: 1 };
+      } else {
+        labels.push({ label, offset, span: 1 });
+      }
       last = label;
     }
   });
