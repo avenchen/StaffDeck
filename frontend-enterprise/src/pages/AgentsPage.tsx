@@ -292,6 +292,10 @@ function EmployeeCard({
         <div className="employee-roster-title">
           <strong>{employeeDisplayName(employee)}</strong>
           <span>{profile.roleName}</span>
+          <span className={`employee-roster-status ${employee.status === 'active' ? 'online' : 'offline'}`}>
+            <i aria-hidden="true" />
+            {employee.status === 'active' ? '在线' : '下线'}
+          </span>
         </div>
         <Button
           type="text"
@@ -346,16 +350,15 @@ function EmployeeCard({
         {staffdeckDisplayText(employee.description || '暂无描述')}
       </Typography.Paragraph>
       <Space wrap className="employee-roster-tags">
-        <Tag color={employee.status === 'active' ? 'green' : 'default'}>{employee.status === 'active' ? '在线' : '下线'}</Tag>
-        {galleryPublished && <Tag color="cyan">广场</Tag>}
+        {profile.workStyles.slice(0, 3).map((item) => <Tag key={item}>{item}</Tag>)}
       </Space>
       <div className="employee-roster-styles">
         {profile.workStyles.slice(0, 3).map((item) => <span key={item}>{item}</span>)}
       </div>
       <div className="employee-roster-stats">
-        <span><strong>{sopCount}</strong><em>SOP</em></span>
-        <span><strong>{skillCount}</strong><em>技能</em></span>
         <span><strong>{kbCount}</strong><em>资料</em></span>
+        <span><strong>{skillCount}</strong><em>技能</em></span>
+        <span><strong>{sopCount}</strong><em>SOP</em></span>
       </div>
     </Card>
   );
