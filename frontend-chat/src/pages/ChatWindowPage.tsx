@@ -1231,6 +1231,11 @@ export default function ChatWindowPage() {
       element.scrollTop = 0;
       return;
     }
+    if (options?.preserveShortContentTop && hasFloatingStatus) {
+      const statusBottomOffset = Math.min(320, element.clientHeight * 0.42);
+      element.scrollTop = Math.max(0, targetScrollTop - statusBottomOffset);
+      return;
+    }
     window.requestAnimationFrame(() => {
       element.scrollTop = Math.max(0, element.scrollHeight - element.clientHeight);
       window.requestAnimationFrame(() => {

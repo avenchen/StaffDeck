@@ -13717,6 +13717,7 @@ body:has(.sd1-scheduled-page) .topbar {
 }
 
 .employee-capability-head em {
+  left: 24px !important;
   top: 70px !important;
   font-size: 34px !important;
   line-height: 38px !important;
@@ -14232,13 +14233,13 @@ body:has(.sd1-scheduled-page) .topbar {
 }
 
 .employee-capability-card.has-illustration {
-  --capability-illustration-size: 64px;
+  --capability-illustration-size: 56px;
 }
 
 .employee-capability-card.has-illustration:not(.is-dark) .ant-typography {
   display: block !important;
-  width: calc(100% - var(--capability-illustration-size) + 12px) !important;
-  max-width: calc(100% - var(--capability-illustration-size) + 12px) !important;
+  width: 100% !important;
+  max-width: 100% !important;
 }
 
 .employee-capability-card.has-illustration:not(.is-dark) .employee-capability-illustration {
@@ -14246,42 +14247,44 @@ body:has(.sd1-scheduled-page) .topbar {
   bottom: 6px !important;
   z-index: 0 !important;
   width: var(--capability-illustration-size) !important;
-  max-height: 52px !important;
+  max-height: 44px !important;
   opacity: 0.68 !important;
 }
 
-.employee-capability-card.has-illustration:not(.is-dark) .employee-capability-head,
-.employee-capability-card.has-illustration:not(.is-dark) .employee-capability-title,
 .employee-capability-card.has-illustration:not(.is-dark) .ant-typography,
 .employee-capability-card.has-illustration:not(.is-dark) .employee-capability-action {
   position: relative;
   z-index: 1;
 }
 
+.employee-capability-card.has-illustration:not(.is-dark) .employee-capability-title {
+  z-index: 1;
+}
+
 :root[data-theme='dark'] .employee-capability-card.has-illustration {
-  --capability-illustration-size: 72px;
+  --capability-illustration-size: 60px;
 }
 
 :root[data-theme='dark'] .employee-capability-card.has-illustration .ant-typography {
   display: block !important;
-  width: calc(100% - var(--capability-illustration-size) + 10px) !important;
-  max-width: calc(100% - var(--capability-illustration-size) + 10px) !important;
+  width: 100% !important;
+  max-width: 100% !important;
 }
 
 :root[data-theme='dark'] .employee-capability-card.has-illustration .employee-capability-illustration {
   right: 8px !important;
   bottom: 0 !important;
   width: var(--capability-illustration-size) !important;
-  max-height: 72px !important;
+  max-height: 50px !important;
   opacity: 0.92 !important;
 }
 
 @media (min-width: 1600px) {
   .employee-capability-card.has-illustration {
-    --capability-illustration-size: 92px;
+    --capability-illustration-size: 72px;
   }
 
   :root[data-theme='dark'] .employee-capability-card.has-illustration {
-    --capability-illustration-size: 108px;
+    --capability-illustration-size: 76px;
   }
 }
