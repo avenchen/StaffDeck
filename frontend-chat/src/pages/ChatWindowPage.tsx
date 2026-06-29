@@ -1221,19 +1221,9 @@ export default function ChatWindowPage() {
     const element = chatMessagesRef.current;
     if (!element) return;
     const targetScrollTop = Math.max(0, element.scrollHeight - element.clientHeight);
-    const hasFloatingStatus = Boolean(
-      element.querySelector('.turn-trace-summary.running, .message-row.assistant .bubble.status-only'),
-    );
-    const shortContentGuard = hasFloatingStatus
-      ? Math.min(760, element.clientHeight)
-      : Math.min(520, element.clientHeight * 0.72);
+    const shortContentGuard = Math.min(520, element.clientHeight * 0.72);
     if (options?.preserveShortContentTop && targetScrollTop <= shortContentGuard) {
       element.scrollTop = 0;
-      return;
-    }
-    if (options?.preserveShortContentTop && hasFloatingStatus) {
-      const statusBottomOffset = Math.min(320, element.clientHeight * 0.42);
-      element.scrollTop = Math.max(0, targetScrollTop - statusBottomOffset);
       return;
     }
     window.requestAnimationFrame(() => {

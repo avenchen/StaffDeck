@@ -80,7 +80,10 @@ function Shell({
   const location = useLocation();
   const [agents, setAgents] = useState<AgentProfileRead[]>([]);
   const [selectedAgentId, setSelectedAgentId] = useState(() => window.localStorage.getItem(ENTERPRISE_AGENT_STORAGE_KEY) || '');
-  const [sidebarExpanded, setSidebarExpanded] = useState(() => window.localStorage.getItem(ENTERPRISE_SIDEBAR_STORAGE_KEY) === '1');
+  const [sidebarExpanded, setSidebarExpanded] = useState(() => {
+    const stored = window.localStorage.getItem(ENTERPRISE_SIDEBAR_STORAGE_KEY);
+    return stored == null ? true : stored === '1';
+  });
   const [agentCreateOpen, setAgentCreateOpen] = useState(false);
   const [agentForm, setAgentForm] = useState<AgentCreateFormState>(EMPTY_AGENT_FORM);
   const isAdmin = isEnterpriseAdmin(auth.user);
