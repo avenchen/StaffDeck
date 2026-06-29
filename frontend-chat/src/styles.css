@@ -5077,7 +5077,7 @@ body,
 }
 
 .message-stack {
-  width: min(900px, calc(100% - 260px)) !important;
+  width: min(1100px, calc(100% - 120px)) !important;
   margin: 16px auto 0 !important;
 }
 
@@ -5686,11 +5686,6 @@ body,
 /* SD1 keeps assistant artwork out of message bubbles; the compact avatar sits on the composer edge. */
 .message-assistant-avatar {
   display: none !important;
-}
-
-.message-stack:has(.turn-trace-summary.running),
-.message-stack:has(.message-row.assistant .bubble.status-only) {
-  padding-bottom: clamp(180px, 30vh, 280px);
 }
 
 .composer-stage {
