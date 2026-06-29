@@ -11,7 +11,7 @@ import {
   PlusOutlined,
   ReloadOutlined,
   SaveOutlined,
-} from '@ant-design/icons';
+} from '../icons';
 import {
   Button,
   Card,
@@ -694,7 +694,7 @@ function ScheduledTaskEditorPage({ mode }: { mode: 'new' | 'edit' }) {
         <div className="grid-2 scheduled-task-editor-grid">
           <Card className="editor-card" title="任务说明" loading={loading && isEdit && !task}>
             <Form.Item name="title" label="任务名称" rules={[{ required: true, message: '请填写任务名称' }]}>
-              <Input prefix={<ClockCircleOutlined />} maxLength={80} placeholder="例如：每日售后质量复盘" />
+              <Input prefix={<ClockCircleOutlined />} maxLength={80} placeholder="例如：每日交付质量复盘" />
             </Form.Item>
             <Form.Item name="prompt" label="每次执行时交给员工的任务" rules={[{ required: true, message: '请填写任务描述' }]}>
               <Input.TextArea rows={7} maxLength={10000} showCount placeholder="描述员工每次执行时需要做什么，可以包含拆解要求、输出格式和注意事项。" />

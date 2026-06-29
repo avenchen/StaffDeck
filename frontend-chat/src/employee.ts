@@ -17,10 +17,10 @@ export type EmployeeProfile = {
 const AVATAR_PRESETS: Record<string, { text: string; tone: string }> = {
   'service-orbit': { text: '研', tone: 'teal' },
   'after-sales-seal': { text: '行', tone: 'copper' },
-  'knowledge-node': { text: '知', tone: 'olive' },
+  'knowledge-node': { text: '法', tone: 'olive' },
   'commerce-compass': { text: '财', tone: 'blue' },
-  'ops-grid': { text: '运', tone: 'ink' },
-  'quality-star': { text: '质', tone: 'gold' },
+  'ops-grid': { text: '人', tone: 'ink' },
+  'quality-star': { text: '法', tone: 'gold' },
 };
 
 const EMPLOYEE_TEMPLATES: Record<string, {
@@ -51,13 +51,13 @@ const EMPLOYEE_TEMPLATES: Record<string, {
     workModes: ['确认事项', '拆解步骤', '同步结果'],
   },
   'knowledge-operator': {
-    roleName: '知识运营',
-    avatarText: '知',
+    roleName: '法务',
+    avatarText: '法',
     avatarTone: 'olive',
     avatarPreset: 'knowledge-node',
-    workStyles: ['结构化整理', '可追溯', '持续学习'],
-    expertiseTags: ['资料维护', '引用来源', 'SOP'],
-    workModes: ['解析文档', '组织结构', '发现缺口'],
+    workStyles: ['证据优先', '口径严谨', '风险克制'],
+    expertiseTags: ['合同检索', '合规核对', '风险提示'],
+    workModes: ['查依据', '核条款', '给建议'],
   },
   'commerce-guide': {
     roleName: '财务',
@@ -75,9 +75,14 @@ const DEFAULT_EXPERTISE = ['业务问答', 'SOP 执行', '工具调用'];
 const DEFAULT_WORK_MODES = ['识别意图', '补齐信息', '执行并复盘'];
 
 const SD1_TEXT_REPLACEMENTS: Array<[RegExp, string]> = [
+  [/默认员工/g, '研发员工'],
   [/在线客服员工/g, '研发员工'],
   [/在线客服/g, '研发'],
   [/客服接待/g, '研发协作'],
+  [/知识运营员工/g, '法务员工'],
+  [/知识运营/g, '法务'],
+  [/运营排查/g, '人事'],
+  [/质量复盘/g, '法务'],
   [/客服分支/g, '研发分支'],
   [/智能客服/g, '数字员工'],
   [/客服/g, '员工'],
@@ -157,7 +162,7 @@ export function employeeProfile(agent?: AgentProfileRead | null): EmployeeProfil
 export function employeeDisplayName(agent?: AgentProfileRead | null): string {
   if (!agent) return '数字员工';
   if (agent.is_overall) return '开放广场';
-  return (agent.name || '数字员工').replace(/智能体/g, '员工');
+  return staffdeckDisplayText((agent.name || '数字员工').replace(/智能体/g, '员工'));
 }
 
 export function isGalleryEmployee(agent?: AgentProfileRead | null): boolean {

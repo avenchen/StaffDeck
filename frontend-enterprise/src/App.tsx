@@ -14,7 +14,13 @@ import {
 } from './auth';
 import EmployeeAvatar from './components/EmployeeAvatar';
 import StaffdeckIcon from './components/StaffdeckIcon';
-import { employeeBlankMetadata, employeeDisplayName, employeeProfile } from './employee';
+import {
+  employeeBlankMetadata,
+  employeeDisplayName,
+  employeeProfile,
+  isDefaultEmployeeAgent,
+  preferredEmployeeAgent,
+} from './employee';
 import AccountsPage from './pages/AccountsPage';
 import AgentsPage from './pages/AgentsPage';
 import DashboardPage from './pages/DashboardPage';
@@ -30,9 +36,13 @@ import ScheduledTasksPage, { ScheduledTaskEditPage, ScheduledTaskNewPage } from 
 import ToolsPage, { ToolEditPage, ToolNewPage, ToolTestPage } from './pages/ToolsPage';
 import { ThemeToggleButton, useThemeController, type EffectiveTheme } from './theme';
 import type { AgentProfileRead } from './types';
+import logoMark from './assets/staffdeck/staffdeck-logo-mark.png';
 
 const { Header, Sider, Content } = Layout;
 const ENTERPRISE_AGENT_STORAGE_KEY = 'ultrarag_enterprise_agent_scope';
+const ENTERPRISE_SIDEBAR_STORAGE_KEY = 'ultrarag_enterprise_sidebar_expanded';
+const ENTERPRISE_SIDEBAR_COLLAPSED_WIDTH = 72;
+const ENTERPRISE_SIDEBAR_EXPANDED_WIDTH = 220;
 
 type AgentCreateMode = 'copy' | 'blank';
 
@@ -70,6 +80,7 @@ function Shell({
   const location = useLocation();
   const [agents, setAgents] = useState<AgentProfileRead[]>([]);
   const [selectedAgentId, setSelectedAgentId] = useState(() => window.localStorage.getItem(ENTERPRISE_AGENT_STORAGE_KEY) || '');
+  const [sidebarExpanded, setSidebarExpanded] = useState(() => window.localStorage.getItem(ENTERPRISE_SIDEBAR_STORAGE_KEY) === '1');
   const [agentCreateOpen, setAgentCreateOpen] = useState(false);
   const [agentForm, setAgentForm] = useState<AgentCreateFormState>(EMPTY_AGENT_FORM);
   const isAdmin = isEnterpriseAdmin(auth.user);
@@ -133,10 +144,11 @@ function Shell({
         const selectableRows = rows.filter((item) => canUseAgentScope(item));
         setSelectedAgentId((current) => {
           if (current && selectableRows.some((item) => item.id === current)) return current;
+          const ownedRows = selectableRows.filter((item) => !item.is_overall && isEmployeeOwnedBy(item, auth.user));
           const next = isAdmin
-            ? selectableRows.find((item) => item.is_overall)?.id || selectableRows[0]?.id || ''
-            : selectableRows.find((item) => !item.is_overall && isEmployeeOwnedBy(item, auth.user))?.id
-              || selectableRows.find((item) => !item.is_overall)?.id
+            ? selectableRows.find((item) => item.is_overall)?.id || preferredEmployeeAgent(selectableRows)?.id || ''
+            : preferredEmployeeAgent(ownedRows)?.id
+              || preferredEmployeeAgent(selectableRows)?.id
               || '';
           if (next) {
             window.localStorage.setItem(ENTERPRISE_AGENT_STORAGE_KEY, next);
@@ -153,13 +165,21 @@ function Shell({
   function canUseAgentScope(agent: AgentProfileRead): boolean {
     if (isAdmin) return true;
     if (agent.is_overall) return false;
-    return isEmployeeOwnedBy(agent, auth.user) || isGalleryEmployee(agent);
+    return isDefaultEmployeeAgent(agent) || isEmployeeOwnedBy(agent, auth.user) || isGalleryEmployee(agent);
   }
 
   function changeAgentScope(agentId: string) {
     setSelectedAgentId(agentId);
     window.localStorage.setItem(ENTERPRISE_AGENT_STORAGE_KEY, agentId);
     window.dispatchEvent(new CustomEvent('ultrarag-enterprise-agent-scope-change', { detail: { agentId } }));
+  }
+
+  function toggleSidebar() {
+    setSidebarExpanded((current) => {
+      const next = !current;
+      window.localStorage.setItem(ENTERPRISE_SIDEBAR_STORAGE_KEY, next ? '1' : '0');
+      return next;
+    });
   }
 
   const selectedAgent = agents.find((item) => item.id === selectedAgentId);
@@ -170,6 +190,7 @@ function Shell({
   const selectedAgentCaption = selectedAgent?.is_overall
     ? '开放广场'
     : employeeProfile(selectedAgent).roleName;
+  const sidebarWidth = sidebarExpanded ? ENTERPRISE_SIDEBAR_EXPANDED_WIDTH : ENTERPRISE_SIDEBAR_COLLAPSED_WIDTH;
   const navItems = [
     { key: '/enterprise/platform', icon: <StaffdeckIcon name="globe" />, label: '开放广场' },
     ...(!isOverallScope ? [{ key: '/enterprise/agents', icon: <StaffdeckIcon name="user" />, label: '我的数字员工' }] : []),
@@ -270,62 +291,103 @@ function Shell({
   }
 
   return (
-    <Layout className="app-shell">
-      <Sider width={232} theme={effectiveTheme} className="sidebar">
-        <div className="brand">
-          <span className="brand-mark">SD</span>
-          <div>
-            <div className="brand-title">Modelbest</div>
-            <div className="brand-subtitle">UltraRAG4</div>
-          </div>
-        </div>
-        <Menu
-          className="nav-menu"
-          mode="inline"
-          selectedKeys={[selected]}
-          onClick={(item) => handleMenuClick(String(item.key))}
-          items={navItems}
-        />
-        <div className="agent-dock">
+    <Layout className={`app-shell ${sidebarExpanded ? 'sidebar-expanded' : 'sidebar-collapsed'}`}>
+      <Sider width={sidebarWidth} theme={effectiveTheme} className={`sidebar sd1-sidebar ${sidebarExpanded ? 'is-expanded' : 'is-collapsed'}`}>
+        <nav className="sd1-rail" aria-label="企业端导航">
+          <button type="button" className="sd1-rail-logo" title="开放广场" onClick={() => navigate('/enterprise/platform')}>
+            <img src={logoMark} alt="" />
+            <span className="sd1-brand-text">
+              <small>Modelbest</small>
+              <strong>UltraRAG4</strong>
+            </span>
+          </button>
+          <button type="button" className="sd1-rail-top-icon" title="模型" onClick={() => navigate('/enterprise/models')}>
+            <StaffdeckIcon name="grid" />
+          </button>
+
+          <div className="sd1-rail-primary">
+            <button
+              type="button"
+              className={`sd1-rail-icon ${selected === '/enterprise/platform' ? 'active' : ''}`}
+              title="开放广场"
+            onClick={() => navigate('/enterprise/platform')}
+          >
+            <StaffdeckIcon name="desktop" />
+            <span className="sd1-rail-menu-text">开放广场</span>
+          </button>
           <button
             type="button"
-            className="agent-dock-mark"
-            title="新建数字员工"
-            aria-label="新建数字员工"
-            onClick={openCreateAgentModal}
+              className={`sd1-rail-icon ${selected === '/enterprise/agents' ? 'active' : ''}`}
+              title="我的数字员工"
+            onClick={() => navigate('/enterprise/agents')}
           >
-            <EmployeeAvatar agent={selectedAgent} size={36} />
+            <StaffdeckIcon name="user" />
+            <span className="sd1-rail-menu-text">我的数字员工</span>
           </button>
-          <div className="agent-dock-main">
-            <div className="agent-dock-label">当前数字员工</div>
-            <Select
-              className="agent-dock-select"
-              value={selectedAgentId || undefined}
-              placeholder="选择数字员工"
-              popupMatchSelectWidth={260}
-              options={scopeAgents.map((agent) => ({
-                value: agent.id,
-                label: agent.is_overall ? '开放广场' : `${employeeDisplayName(agent)} · ${employeeProfile(agent).roleName}`,
-              }))}
-              onChange={changeAgentScope}
-              popupRender={(menu) => (
-                <>
-                  {menu}
-                  <div className="agent-dock-dropdown-footer" onMouseDown={(event) => event.preventDefault()}>
-                    <Button type="text" block icon={<StaffdeckIcon name="user" />} onClick={openCreateAgentModal}>
-                      新建数字员工
-                    </Button>
-                  </div>
-                </>
-              )}
-            />
-          </div>
         </div>
-        <button type="button" className="enterprise-sidebar-chat-link" onClick={() => { window.location.href = '/chat/'; }}>
-          <StaffdeckIcon name="chat" />
-          <span>聊天端</span>
-          <StaffdeckIcon name="arrow" />
-        </button>
+
+          <div className="sd1-rail-employee">
+            <button
+              type="button"
+              className={`sd1-rail-agent ${selected === '/enterprise/dashboard' ? 'active' : ''}`}
+              title={selectedAgentName}
+              onClick={() => navigate('/enterprise/dashboard')}
+            >
+              <EmployeeAvatar agent={selectedAgent} size={32} />
+              <span>{selectedAgent?.is_overall ? '广场' : employeeProfile(selectedAgent).roleName.slice(0, 2)}</span>
+            </button>
+            <div className="sd1-rail-divider" />
+            <span className="sd1-rail-label">资料</span>
+            <button type="button" className={`sd1-rail-icon ${selected === '/enterprise/dashboard' ? 'active' : ''}`} title="员工档案" onClick={() => navigate('/enterprise/dashboard')}>
+              <StaffdeckIcon name="file" />
+              <span className="sd1-rail-menu-text">员工档案</span>
+            </button>
+            <button type="button" className={`sd1-rail-icon ${selected === '/enterprise/scheduled-tasks' ? 'active' : ''}`} title="定时任务" onClick={() => navigate('/enterprise/scheduled-tasks')}>
+              <StaffdeckIcon name="clock" />
+              <span className="sd1-rail-menu-text">定时任务</span>
+            </button>
+            <button type="button" className={`sd1-rail-icon ${selected === '/enterprise/memories' ? 'active' : ''}`} title="记忆" onClick={() => navigate('/enterprise/memories')}>
+              <StaffdeckIcon name="history" />
+              <span className="sd1-rail-menu-text">记忆</span>
+            </button>
+            <button type="button" className={`sd1-rail-icon ${selected === '/enterprise/feedback' ? 'active' : ''}`} title="对话日志" onClick={() => navigate('/enterprise/feedback')}>
+              <StaffdeckIcon name="calendar" />
+              <span className="sd1-rail-menu-text">对话日志</span>
+            </button>
+            <span className="sd1-rail-label">能力</span>
+            <button type="button" className={`sd1-rail-icon ${selected === '/enterprise/knowledge' ? 'active' : ''}`} title="知识库" onClick={() => navigate('/enterprise/knowledge')}>
+              <StaffdeckIcon name="folder" />
+              <span className="sd1-rail-menu-text">知识库</span>
+            </button>
+            <button type="button" className={`sd1-rail-icon ${selected === '/enterprise/general-skills' ? 'active' : ''}`} title="技能" onClick={() => navigate('/enterprise/general-skills')}>
+              <StaffdeckIcon name="spark" />
+              <span className="sd1-rail-menu-text">技能</span>
+            </button>
+            <button type="button" className={`sd1-rail-icon ${selected === '/enterprise/skills' ? 'active' : ''}`} title="SOP" onClick={() => navigate('/enterprise/skills')}>
+              <StaffdeckIcon name="filter" />
+              <span className="sd1-rail-menu-text">SOP</span>
+            </button>
+            <button type="button" className={`sd1-rail-icon ${selected === '/enterprise/tools' ? 'active' : ''}`} title="工具" onClick={() => navigate('/enterprise/tools')}>
+              <StaffdeckIcon name="tool" />
+              <span className="sd1-rail-menu-text">工具</span>
+            </button>
+          </div>
+
+          <button type="button" className="sd1-rail-chat" title="聊天端" onClick={() => { window.location.href = '/chat/'; }}>
+            <StaffdeckIcon name="chat" />
+            <span className="sd1-rail-menu-text">聊天端</span>
+          </button>
+          <button
+            type="button"
+            className="sd1-rail-toggle"
+            title={sidebarExpanded ? '收起边栏' : '展开边栏'}
+            aria-label={sidebarExpanded ? '收起边栏' : '展开边栏'}
+            aria-pressed={sidebarExpanded}
+            onClick={toggleSidebar}
+          >
+            <StaffdeckIcon name={sidebarExpanded ? 'sidebar-close' : 'sidebar-open'} />
+          </button>
+        </nav>
       </Sider>
       <Layout>
         <Header className="topbar">
@@ -338,9 +400,6 @@ function Shell({
             </div>
           </div>
           <div className="topbar-actions">
-            <Button icon={<StaffdeckIcon name="chat" />} onClick={() => { window.location.href = '/chat/'; }}>
-              聊天端
-            </Button>
             {accountRoleLabel && <span className="account-chip">{accountRoleLabel}</span>}
             <ThemeToggleButton />
             <Button icon={<StaffdeckIcon name="logout" />} onClick={onLogout} aria-label="退出登录" />

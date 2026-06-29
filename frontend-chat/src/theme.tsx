@@ -1,4 +1,4 @@
-import { DesktopOutlined, MoonOutlined, SunOutlined } from '@ant-design/icons';
+import { DesktopOutlined, MoonOutlined, SunOutlined } from './icons';
 import { Button } from 'antd';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 

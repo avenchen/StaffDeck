@@ -6,7 +6,7 @@ import {
   MessageOutlined,
   ReloadOutlined,
   ToolOutlined,
-} from '@ant-design/icons';
+} from '../icons';
 import { Button, Card, Descriptions, Drawer, Empty, Segmented, Space, Table, Tag, Typography, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useEffect, useMemo, useState } from 'react';

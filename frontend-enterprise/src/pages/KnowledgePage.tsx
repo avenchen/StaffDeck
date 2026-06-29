@@ -18,7 +18,7 @@ import {
   RightOutlined,
   SaveOutlined,
   TeamOutlined,
-} from '@ant-design/icons';
+} from '../icons';
 import { Button, Card, Col, Collapse, Dropdown, Empty, Input, Modal, Progress, Row, Select, Space, Table, Tag, Typography, Upload, message } from 'antd';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';

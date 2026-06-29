@@ -8,10 +8,16 @@ import EmployeeAvatar from '../components/EmployeeAvatar';
 import EmployeeAvatarEditor from '../components/EmployeeAvatarEditor';
 import EmployeeProfileEditor from '../components/EmployeeProfileEditor';
 import StaffdeckIcon from '../components/StaffdeckIcon';
-import capabilityLogs from '../assets/staffdeck/staffdeck-avatar-quality.png';
-import capabilityTasks from '../assets/staffdeck/staffdeck-avatar-ops.png';
-import capabilityTools from '../assets/staffdeck/staffdeck-avatar-commerce.png';
-import { employeeDisplayName, employeeProfile, staffdeckDisplayText } from '../employee';
+import capabilityLogs from '../assets/staffdeck/sd1-card-logs.png';
+import capabilityTasks from '../assets/staffdeck/sd1-card-scheduled.png';
+import capabilityTools from '../assets/staffdeck/sd1-card-tools.png';
+import {
+  employeeDisplayName,
+  employeeProfile,
+  isDefaultEmployeeAgent,
+  preferredEmployeeAgent,
+  staffdeckDisplayText,
+} from '../employee';
 import type {
   AgentProfileRead,
   EnterpriseChatSessionRead,
@@ -94,7 +100,11 @@ export default function DashboardPage({
     ])
       .then(([agentRows, skillRows, generalSkillRows, kbRows, modelRows, toolRows, sessionRows, feedbackRows, taskRows]) => {
         const visibleAgents = agentRows.filter((item) => (
-          isAdmin || (!item.is_overall && (isEmployeeOwnedBy(item, currentUser) || isGalleryEmployee(item)))
+          isAdmin || (!item.is_overall && (
+            isDefaultEmployeeAgent(item)
+            || isEmployeeOwnedBy(item, currentUser)
+            || isGalleryEmployee(item)
+          ))
         ));
         setAgents(visibleAgents);
         setSkills(skillRows);
@@ -115,10 +125,11 @@ export default function DashboardPage({
           return;
         }
         if (!agentId || !visibleAgents.some((item) => item.id === agentId)) {
+          const ownedAgents = visibleAgents.filter((item) => !item.is_overall && isEmployeeOwnedBy(item, currentUser));
           const next = isAdmin
-            ? visibleAgents.find((item) => item.is_overall)?.id || visibleAgents[0]?.id || ''
-            : visibleAgents.find((item) => !item.is_overall && isEmployeeOwnedBy(item, currentUser))?.id
-              || visibleAgents.find((item) => !item.is_overall)?.id
+            ? visibleAgents.find((item) => item.is_overall)?.id || preferredEmployeeAgent(visibleAgents)?.id || ''
+            : preferredEmployeeAgent(ownedAgents)?.id
+              || preferredEmployeeAgent(visibleAgents)?.id
               || '';
           if (next) {
             window.localStorage.setItem(ENTERPRISE_AGENT_STORAGE_KEY, next);
@@ -317,21 +328,10 @@ export default function DashboardPage({
       <section className="employee-home-hero">
         <div className="employee-id-card">
           <EmployeeAvatar agent={selectedAgent} size={116} />
-          <span>ID: {selectedAgent.id.slice(-8)}</span>
-          {canEditSelectedAgent && (
-            <Button
-              size="small"
-              icon={<StaffdeckIcon name="user" />}
-              onClick={() => setAvatarEditorOpen(true)}
-            >
-              更换头像
+          <div className="employee-avatar-actions">
+            <Button size="small" icon={<StaffdeckIcon name="chat" />} onClick={() => { window.location.href = '/chat/'; }}>
+              去对话
             </Button>
-          )}
-        </div>
-        <div className="employee-home-main">
-          <div className="employee-home-title-row">
-            <Typography.Title level={2}>{employeeDisplayName(selectedAgent)}</Typography.Title>
-            <Tag>{employee.roleName}</Tag>
             {canEditSelectedAgent && (
               <Button
                 size="small"
@@ -342,21 +342,35 @@ export default function DashboardPage({
               </Button>
             )}
           </div>
+          {canEditSelectedAgent && (
+            <Button
+              size="small"
+              className="employee-avatar-change"
+              icon={<StaffdeckIcon name="user" />}
+              onClick={() => setAvatarEditorOpen(true)}
+            >
+              更换头像
+            </Button>
+          )}
+        </div>
+        <div className="employee-home-main">
+          <div className="employee-home-title-row">
+            <Typography.Title level={2}>{employee.roleName || employeeDisplayName(selectedAgent)}</Typography.Title>
+            <span>{employeeDisplayName(selectedAgent)}</span>
+          </div>
           <Space wrap className="employee-home-meta">
             <span className="employee-online-dot" />
             <Typography.Text>{selectedAgent.status === 'active' ? '在线' : '下线'}</Typography.Text>
             <Typography.Text type="secondary">入职时间：{employee.onboardedAt}</Typography.Text>
+            {employee.workStyles.slice(0, 3).map((item) => <Tag key={item}>{item}</Tag>)}
           </Space>
           <Typography.Paragraph className="employee-system-summary">{systemSummary}</Typography.Paragraph>
-          <div className="employee-home-tags">
-            {employee.expertiseTags.slice(0, 4).map((item) => <span key={item}>{item}</span>)}
-          </div>
         </div>
         <div className="employee-home-side">
-          <MetricTile label="SOP" value={activeSkills.length} />
-          <MetricTile label="技能" value={activeGeneralSkills.length} />
           <MetricTile label="资料" value={activeKnowledge.length} />
-          <MetricTile label="定时任务" value={activeScheduledTasks.length} />
+          <MetricTile label="技能" value={activeGeneralSkills.length} />
+          <MetricTile label="SOP" value={activeSkills.length} />
+          <MetricTile label="定期任务" value={activeScheduledTasks.length} />
         </div>
       </section>
       <EmployeeAvatarEditor
@@ -373,57 +387,23 @@ export default function DashboardPage({
         onSaved={(saved) => setAgents((current) => current.map((item) => (item.id === saved.id ? saved : item)))}
       />
 
+      <nav className="employee-profile-tabs" aria-label="个人档案分区">
+        <button type="button" className="active"><StaffdeckIcon name="file" /> 工作记录</button>
+        <button type="button" onClick={() => navigate('/enterprise/scheduled-tasks')}><StaffdeckIcon name="clock" /> 定时任务</button>
+        <button type="button" onClick={() => navigate('/enterprise/memories')}><StaffdeckIcon name="history" /> 记忆</button>
+        <button type="button" onClick={() => navigate('/enterprise/feedback')}><StaffdeckIcon name="calendar" /> 对话日志</button>
+      </nav>
+
       <section className="employee-work-card">
-        <div className="employee-section-head">
-          <div>
-            <Typography.Title level={4}>工作记录</Typography.Title>
-            <Typography.Text type="secondary">每天完成多少轮对话，以及近期质量表现。</Typography.Text>
-          </div>
-        </div>
         <div className="employee-work-metrics">
-          <ClickableMetric label="今日对话" value={todayRounds} suffix="轮" onClick={goToLogs} />
+          <ClickableMetric label="今日对话" value={todayRounds} onClick={goToLogs} />
           <ClickableMetric label="累计对话" value={replyStats.total} onClick={goToLogs} />
           <ClickableMetric label="好评率" value={positiveRate} suffix="%" onClick={goToLogs} />
           <ClickableMetric label="差评率" value={negativeRate} suffix="%" onClick={goToLogs} />
         </div>
         <ConversationHeatmap byDay={replyStats.byDay} />
-      </section>
 
-      <section className="employee-task-card" id="scheduled-tasks">
-        <div className="employee-section-head">
-          <div>
-            <Typography.Title level={4}>
-              <span className="employee-memory-heading"><StaffdeckIcon name="clock" /> 定时任务</span>
-            </Typography.Title>
-          </div>
-          <Button type="link" onClick={() => navigate('/enterprise/scheduled-tasks')}>全部任务 <StaffdeckIcon name="arrow" /></Button>
-        </div>
-        {employeeScheduledTasks.length ? (
-          <div className="employee-task-list">
-            {employeeScheduledTasks.slice(0, 4).map((item) => (
-              <button type="button" className="employee-task-item" key={item.id} onClick={() => navigate('/enterprise/scheduled-tasks')}>
-                <span className="employee-task-icon"><StaffdeckIcon name="clock" /></span>
-                <span className="employee-task-copy">
-                  <strong>{staffdeckDisplayText(item.title)}</strong>
-                  <small>{formatTaskSchedule(item)} · {item.next_run_at ? `下次 ${formatTaskTime(item.next_run_at)}` : '暂无下次执行'}</small>
-                </span>
-                <Tag color={item.status === 'active' ? 'green' : 'gold'}>{item.status === 'active' ? '启用' : '暂停'}</Tag>
-              </button>
-            ))}
-          </div>
-        ) : (
-          <div className="employee-memory-empty">暂无定时任务</div>
-        )}
-      </section>
-
-      <section className="employee-memory-card" id="memory">
-        <div className="employee-section-head">
-          <div>
-            <Typography.Title level={4}>
-              <span className="employee-memory-heading"><StaffdeckIcon name="database" /> 成长轨迹</span>
-            </Typography.Title>
-          </div>
-        </div>
+        <div className="employee-growth-title"><StaffdeckIcon name="arrow" /> 成长记录</div>
         {growthItems.length ? (
           <div className="employee-memory-timeline">
             {growthItems.map((item) => (
@@ -444,15 +424,7 @@ export default function DashboardPage({
         ) : (
           <div className="employee-memory-empty">暂无成长轨迹</div>
         )}
-      </section>
 
-      <section className="employee-capability-wrap" id="capabilities">
-        <div className="employee-section-head">
-          <div>
-            <Typography.Title level={4}>能力与工具</Typography.Title>
-            <Typography.Text type="secondary">员工当前能用什么、会走哪些流程、能引用哪些知识库。</Typography.Text>
-          </div>
-        </div>
         <div className="employee-capability-grid">
           {capabilityCards.map((item) => (
             <Card
@@ -636,7 +608,7 @@ function growthTimeline(
   return events
     .filter((item) => Boolean(item.timestamp))
     .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
-    .slice(-8);
+    .slice(-6);
 }
 
 function stableGrowthTimestamp(item: GrowthTimestampSource): string {

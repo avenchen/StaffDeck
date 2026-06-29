@@ -1,4 +1,4 @@
-import { SaveOutlined, UserOutlined } from '@ant-design/icons';
+import { SaveOutlined, UserOutlined } from '../icons';
 import { Button, Card, Form, Input, InputNumber, Switch, Typography, message } from 'antd';
 import { useEffect, useState } from 'react';
 import { api, TENANT_ID } from '../api/client';

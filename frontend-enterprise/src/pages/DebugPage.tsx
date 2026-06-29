@@ -1,4 +1,4 @@
-import { SendOutlined } from '@ant-design/icons';
+import { SendOutlined } from '../icons';
 import { Button, Card, Collapse, Input, Space, Typography, message } from 'antd';
 import { useState } from 'react';
 import { api, TENANT_ID } from '../api/client';

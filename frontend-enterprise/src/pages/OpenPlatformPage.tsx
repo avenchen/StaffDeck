@@ -6,7 +6,7 @@ import {
   SolutionOutlined,
   ToolOutlined,
   UsergroupAddOutlined,
-} from '@ant-design/icons';
+} from '../icons';
 import { Button, Card, Drawer, Empty, Space, Tag, Typography, message } from 'antd';
 import type { ReactNode } from 'react';
 import { useEffect, useMemo, useState } from 'react';

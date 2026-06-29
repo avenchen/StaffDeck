@@ -1,4 +1,4 @@
-import { CheckOutlined, UploadOutlined } from '@ant-design/icons';
+import { CheckOutlined, UploadOutlined } from '../icons';
 import { Button, Modal, Typography, message } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 import { api, TENANT_ID } from '../api/client';

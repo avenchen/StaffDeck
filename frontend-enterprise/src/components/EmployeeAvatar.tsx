@@ -5,17 +5,21 @@ import type { AgentProfileRead } from '../types';
 type AvatarProfile = Pick<EmployeeProfile, 'avatarKind' | 'avatarImage' | 'avatarPreset' | 'avatarText' | 'avatarTone'>;
 
 import avatarAfterSales from '../assets/staffdeck/staffdeck-avatar-after-sales.png';
+import avatarCommerce from '../assets/staffdeck/staffdeck-avatar-commerce.png';
 import avatarKnowledge from '../assets/staffdeck/staffdeck-avatar-knowledge.png';
+import avatarOps from '../assets/staffdeck/staffdeck-avatar-ops.png';
+import avatarOverall from '../assets/staffdeck/staffdeck-avatar-overall.png';
+import avatarQuality from '../assets/staffdeck/staffdeck-avatar-quality.png';
 import avatarService from '../assets/staffdeck/staffdeck-avatar-service.png';
 
 const PRESET_AVATARS: Record<string, string> = {
   'service-orbit': avatarService,
   'after-sales-seal': avatarAfterSales,
   'knowledge-node': avatarKnowledge,
-  'commerce-compass': avatarKnowledge,
-  'ops-grid': avatarAfterSales,
-  'quality-star': avatarService,
-  overall: avatarService,
+  'commerce-compass': avatarCommerce,
+  'ops-grid': avatarOps,
+  'quality-star': avatarQuality,
+  overall: avatarOverall,
 };
 
 export default function EmployeeAvatar({

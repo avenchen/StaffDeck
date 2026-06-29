@@ -1,4 +1,4 @@
-import { DatabaseOutlined, EyeOutlined, SearchOutlined } from '@ant-design/icons';
+import { DatabaseOutlined, EyeOutlined, SearchOutlined } from '../icons';
 import { Button, Card, Descriptions, Drawer, Empty, Form, Input, Space, Table, Tag, Typography, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useEffect, useMemo, useState } from 'react';

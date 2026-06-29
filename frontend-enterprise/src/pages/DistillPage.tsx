@@ -17,7 +17,7 @@ import {
   StopOutlined,
   UploadOutlined,
   WarningOutlined,
-} from '@ant-design/icons';
+} from '../icons';
 import { Button, Card, Empty, Input, Modal, Space, Tag, Tooltip, Typography, Upload, message } from 'antd';
 import {
   useEffect,

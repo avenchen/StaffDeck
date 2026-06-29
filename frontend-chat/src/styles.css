@@ -138,6 +138,16 @@ textarea,
   transition-timing-function: cubic-bezier(0.2, 0.72, 0.22, 1) !important;
 }
 
+.sd1-icon-spin {
+  animation: sd1-spin 1s linear infinite;
+}
+
+@keyframes sd1-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .login-page {
   min-height: 100vh;
   display: grid;

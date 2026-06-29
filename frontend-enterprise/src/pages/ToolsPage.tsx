@@ -8,7 +8,7 @@ import {
   SaveOutlined,
   TeamOutlined,
   ToolOutlined,
-} from '@ant-design/icons';
+} from '../icons';
 import { AutoComplete, Button, Card, Dropdown, Form, Input, Modal, Select, Space, Switch, Table, Tag, Typography, message } from 'antd';
 import type { FormInstance } from 'antd';
 import type { ColumnsType } from 'antd/es/table';

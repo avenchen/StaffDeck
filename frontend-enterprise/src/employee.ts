@@ -33,13 +33,20 @@ export type EmployeeTemplate = {
   workModes: string[];
 };
 
+type EmployeeAgentLike = {
+  id?: string;
+  name?: string;
+  is_overall?: boolean;
+  metadata?: Record<string, unknown>;
+};
+
 export const EMPLOYEE_AVATAR_PRESETS: EmployeeAvatarPreset[] = [
   { key: 'service-orbit', label: '研发员工', text: '研', tone: 'teal' },
   { key: 'after-sales-seal', label: '行政员工', text: '行', tone: 'copper' },
-  { key: 'knowledge-node', label: '知识运营', text: '知', tone: 'olive' },
+  { key: 'knowledge-node', label: '法务员工', text: '法', tone: 'olive' },
   { key: 'commerce-compass', label: '财务员工', text: '财', tone: 'blue' },
-  { key: 'ops-grid', label: '运营排查', text: '运', tone: 'ink' },
-  { key: 'quality-star', label: '质量复盘', text: '质', tone: 'gold' },
+  { key: 'ops-grid', label: '人事员工', text: '人', tone: 'ink' },
+  { key: 'quality-star', label: '法务员工', text: '法', tone: 'gold' },
 ];
 
 export const EMPLOYEE_TEMPLATES: EmployeeTemplate[] = [
@@ -67,14 +74,14 @@ export const EMPLOYEE_TEMPLATES: EmployeeTemplate[] = [
   },
   {
     key: 'knowledge-operator',
-    roleName: '知识运营',
-    avatarText: '知',
+    roleName: '法务',
+    avatarText: '法',
     avatarTone: 'olive',
     avatarPreset: 'knowledge-node',
-    description: '负责维护知识库、沉淀引用来源并推动 SOP。',
-    workStyles: ['结构化整理', '可追溯', '持续学习'],
-    expertiseTags: ['资料维护', '引用来源', 'SOP'],
-    workModes: ['解析文档', '组织结构', '发现缺口'],
+    description: '负责合同条款检索、合规材料核对、风险提示和审批依据沉淀。',
+    workStyles: ['证据优先', '口径严谨', '风险克制'],
+    expertiseTags: ['合同检索', '合规核对', '风险提示'],
+    workModes: ['查依据', '核条款', '给建议'],
   },
   {
     key: 'commerce-guide',
@@ -94,9 +101,14 @@ const DEFAULT_EXPERTISE = ['业务问答', 'SOP 执行', '工具调用'];
 const DEFAULT_WORK_MODES = ['识别意图', '补齐信息', '执行并复盘'];
 
 const SD1_TEXT_REPLACEMENTS: Array<[RegExp, string]> = [
+  [/默认员工/g, '研发员工'],
   [/在线客服员工/g, '研发员工'],
   [/在线客服/g, '研发'],
   [/客服接待/g, '研发协作'],
+  [/知识运营员工/g, '法务员工'],
+  [/知识运营/g, '法务'],
+  [/运营排查/g, '人事'],
+  [/质量复盘/g, '法务'],
   [/客服分支/g, '研发分支'],
   [/智能客服/g, '数字员工'],
   [/客服/g, '员工'],
@@ -116,6 +128,30 @@ const SD1_TEXT_REPLACEMENTS: Array<[RegExp, string]> = [
 
 export function staffdeckDisplayText(value: string): string {
   return SD1_TEXT_REPLACEMENTS.reduce((current, [pattern, replacement]) => current.replace(pattern, replacement), value);
+}
+
+function staffdeckRoleName(value: string): string {
+  const text = staffdeckDisplayText(value);
+  return text.endsWith('员工') ? text.slice(0, -2) : text;
+}
+
+export function isDefaultEmployeeAgent(agent?: EmployeeAgentLike | null): boolean {
+  if (!agent || agent.is_overall) return false;
+  const metadata = agent.metadata || {};
+  const roleKey = String(metadata.role_key || '');
+  const avatarPreset = String(metadata.avatar_preset || '');
+  const roleName = String(metadata.role_name || '');
+  const name = String(agent.name || '');
+  return (
+    roleKey === 'service-specialist'
+    || avatarPreset === 'service-orbit'
+    || Boolean(agent.id && agent.id.endsWith('_default'))
+    || /研发|在线客服/.test(`${roleName} ${name}`)
+  );
+}
+
+export function preferredEmployeeAgent<T extends EmployeeAgentLike>(agents: T[]): T | undefined {
+  return agents.find(isDefaultEmployeeAgent) || agents.find((item) => !item.is_overall);
 }
 
 function asStringArray(value: unknown): string[] {
@@ -142,7 +178,7 @@ export function employeeProfile(agent?: AgentProfileRead | null): EmployeeProfil
     : 'preset';
   return {
     roleKey: stringFromMeta(metadata, 'role_key') || template?.key || '',
-    roleName: isOverall ? '开放广场' : staffdeckDisplayText(stringFromMeta(metadata, 'role_name') || template?.roleName || '待补充岗位'),
+    roleName: isOverall ? '开放广场' : staffdeckRoleName(stringFromMeta(metadata, 'role_name') || template?.roleName || '待补充岗位'),
     avatarText: isOverall ? '广' : stringFromMeta(metadata, 'avatar_text') || preset.text || template?.avatarText || '员',
     avatarTone: isOverall ? 'overall' : stringFromMeta(metadata, 'avatar_tone') || preset.tone || template?.avatarTone || 'teal',
     avatarKind: isOverall ? 'preset' : avatarKind,
@@ -158,7 +194,7 @@ export function employeeProfile(agent?: AgentProfileRead | null): EmployeeProfil
 export function employeeDisplayName(agent?: AgentProfileRead | null): string {
   if (!agent) return '数字员工';
   if (agent.is_overall) return '开放广场';
-  return (agent.name || '数字员工').replace(/智能体/g, '员工');
+  return staffdeckDisplayText((agent.name || '数字员工').replace(/智能体/g, '员工'));
 }
 
 export function resourceCount(resources: AgentResourceBindingRead[] | undefined, type: AgentResourceBindingRead['resource_type']): number {

@@ -16,7 +16,7 @@ import {
   TeamOutlined,
   UploadOutlined,
   DownOutlined,
-} from '@ant-design/icons';
+} from '../icons';
 import { Button, Card, Dropdown, Empty, Input, Modal, Select, Space, Table, Tag, Typography, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { ChangeEvent, DragEvent } from 'react';

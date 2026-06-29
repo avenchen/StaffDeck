@@ -1,4 +1,4 @@
-import { IdcardOutlined } from '@ant-design/icons';
+import { IdcardOutlined } from '../icons';
 import { Form, Input, Modal, Select, Switch, Typography, message } from 'antd';
 import { useEffect, useMemo, useState } from 'react';
 import { api, TENANT_ID } from '../api/client';
