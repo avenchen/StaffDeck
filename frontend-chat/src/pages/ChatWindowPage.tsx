@@ -1204,8 +1204,15 @@ export default function ChatWindowPage() {
     const elementRect = element.getBoundingClientRect();
     const statusRect = status.getBoundingClientRect();
     const maxStatusTop = elementRect.top + Math.min(369, Math.max(180, element.clientHeight * 0.54));
-    if (statusRect.top <= maxStatusTop) return false;
-    element.scrollTop = Math.max(0, element.scrollTop + statusRect.top - maxStatusTop);
+    const minStatusTop = elementRect.top + Math.max(160, element.clientHeight * 0.26);
+    if (statusRect.top < minStatusTop) {
+      element.scrollTop = Math.max(0, element.scrollTop - (minStatusTop - statusRect.top));
+      return true;
+    }
+    if (statusRect.top > maxStatusTop) {
+      element.scrollTop = Math.max(0, element.scrollTop + statusRect.top - maxStatusTop);
+      return true;
+    }
     return true;
   }, []);
   const notifyRequestError = useCallback((scope: string, error: unknown, fallback: string) => {
