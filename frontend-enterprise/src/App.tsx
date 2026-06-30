@@ -1,4 +1,4 @@
-import { Button, ConfigProvider, Input, Layout, Menu, Modal, Radio, Select, Typography, message, theme as antdTheme } from 'antd';
+import { Button, ConfigProvider, Dropdown, Input, Layout, Menu, Modal, Radio, Select, Typography, message, theme as antdTheme } from 'antd';
 import zhCN from 'antd/locale/zh_CN';
 import { useEffect, useMemo, useState } from 'react';
 import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
@@ -36,6 +36,7 @@ import ScheduledTasksPage, { ScheduledTaskEditPage, ScheduledTaskNewPage } from 
 import ToolsPage, { ToolEditPage, ToolNewPage, ToolTestPage } from './pages/ToolsPage';
 import { ThemeToggleButton, useThemeController, type EffectiveTheme } from './theme';
 import type { AgentProfileRead } from './types';
+import type { MenuProps } from 'antd';
 import logoMark from './assets/staffdeck/staffdeck-logo-mark.png';
 
 const { Header, Sider, Content } = Layout;
@@ -196,6 +197,28 @@ function Shell({
       ? '开放广场'
       : employeeProfile(selectedAgent).roleName
     : '-';
+  const agentSwitcherItems: MenuProps['items'] = scopeAgents.map((agent) => {
+    const profile = agent.is_overall ? undefined : employeeProfile(agent);
+    return {
+      key: agent.id,
+      label: (
+        <span className="sd1-agent-switcher-option">
+          <EmployeeAvatar agent={agent} size={30} />
+          <span>
+            <strong>{agent.is_overall ? '开放广场' : employeeDisplayName(agent)}</strong>
+            <small>{agent.is_overall ? '平台' : profile?.roleName}</small>
+          </span>
+        </span>
+      ),
+    };
+  });
+  const handleAgentSwitcherClick: MenuProps['onClick'] = ({ key }) => {
+    const nextAgentId = String(key);
+    if (nextAgentId !== selectedAgentId) {
+      changeAgentScope(nextAgentId);
+    }
+    navigate('/enterprise/dashboard');
+  };
   const sidebarWidth = sidebarExpanded ? ENTERPRISE_SIDEBAR_EXPANDED_WIDTH : ENTERPRISE_SIDEBAR_COLLAPSED_WIDTH;
   const navItems = [
     { key: '/enterprise/platform', icon: <StaffdeckIcon name="globe" />, label: '开放广场' },
@@ -333,28 +356,51 @@ function Shell({
         </div>
 
           <div className="sd1-rail-employee">
-            <button
-              type="button"
-              className={`sd1-rail-agent ${selected === '/enterprise/dashboard' ? 'active' : ''}${selectedAgent ? '' : ' is-empty'}`}
-              title={selectedAgentName}
-              onClick={() => (selectedAgent ? navigate('/enterprise/dashboard') : openCreateAgentModal())}
-            >
-              {selectedAgent ? (
-                <EmployeeAvatar agent={selectedAgent} size={32} />
-              ) : (
+            {selectedAgent ? (
+              <Dropdown
+                trigger={['click']}
+                placement="bottomLeft"
+                overlayClassName="sd1-agent-switcher-dropdown"
+                menu={{
+                  items: agentSwitcherItems,
+                  selectedKeys: selectedAgentId ? [selectedAgentId] : [],
+                  onClick: handleAgentSwitcherClick,
+                }}
+              >
+                <button
+                  type="button"
+                  className={`sd1-rail-agent ${selected === '/enterprise/dashboard' ? 'active' : ''}`}
+                  title="切换当前员工"
+                  aria-label="切换当前员工"
+                >
+                  <EmployeeAvatar agent={selectedAgent} size={32} />
+                  <span className="sd1-rail-agent-label">
+                    <span className="sd1-rail-agent-short">{selectedAgent.is_overall ? '广场' : employeeProfile(selectedAgent).roleName.slice(0, 2)}</span>
+                    <span className="sd1-rail-agent-name">{selectedAgent.is_overall ? '开放广场' : employeeDisplayName(selectedAgent)}</span>
+                    <span className="sd1-rail-agent-role">{selectedAgent.is_overall ? '平台' : employeeProfile(selectedAgent).roleName}</span>
+                  </span>
+                  <span className="sd1-rail-agent-chevron" aria-hidden="true">
+                    <StaffdeckIcon name="arrow" style={{ transform: 'rotate(90deg)' }} />
+                  </span>
+                </button>
+              </Dropdown>
+            ) : (
+              <button
+                type="button"
+                className="sd1-rail-agent is-empty"
+                title="创建员工"
+                onClick={openCreateAgentModal}
+              >
                 <span className="sd1-rail-agent-empty-mark" aria-hidden="true">
                   <StaffdeckIcon name="plus" />
                 </span>
-              )}
-              <span className="sd1-rail-agent-label">
-                <span className="sd1-rail-agent-short">{selectedAgent ? (selectedAgent.is_overall ? '广场' : employeeProfile(selectedAgent).roleName.slice(0, 2)) : '+'}</span>
-                <span className="sd1-rail-agent-name">{selectedAgent ? '当前员工' : '未选择'}</span>
-                <span className="sd1-rail-agent-role">{selectedAgent ? (selectedAgent.is_overall ? '平台' : employeeProfile(selectedAgent).roleName) : '-'}</span>
-              </span>
-              <span className="sd1-rail-agent-chevron" aria-hidden="true">
-                <StaffdeckIcon name="arrow" style={{ transform: 'rotate(90deg)' }} />
-              </span>
-            </button>
+                <span className="sd1-rail-agent-label">
+                  <span className="sd1-rail-agent-short">+</span>
+                  <span className="sd1-rail-agent-name">未选择</span>
+                  <span className="sd1-rail-agent-role">-</span>
+                </span>
+              </button>
+            )}
             <div className="sd1-rail-divider" />
             <span className="sd1-rail-label">
               <span className="sd1-rail-label-collapsed">资料</span>
