@@ -3023,7 +3023,6 @@ export default function ChatWindowPage() {
               const summary = trace && visibleTrace.length > 0 ? traceSummary(trace, visibleTrace) : null;
               const details = traceDetails(visibleTrace);
               const expanded = expandedTraceIds.includes(turnId);
-              const showInlineTrace = Boolean(summary);
               const visibleContent = staffdeckDisplayText(item.role === 'assistant'
                 ? stripTrailingCitationSummary(item.content)
                 : item.content);
@@ -3035,15 +3034,19 @@ export default function ChatWindowPage() {
               const persistedCreatedTask = item.role === 'assistant'
                 ? createdScheduledTaskForMessage(item)
                 : undefined;
-              const runningStatusOnly = Boolean(
+              const streamingWithoutContent = Boolean(
                 item.role === 'assistant'
                 && item.isStreaming
-                && summary?.state === 'running'
                 && !visibleContent
                 && !scheduledDraft
                 && !persistedCreatedTask
                 && citations.length === 0
               );
+              const runningStatusOnly = Boolean(
+                streamingWithoutContent
+                && (!summary || summary.state === 'running')
+              );
+              const showInlineTrace = Boolean(summary && !runningStatusOnly);
               if (
                 item.role === 'assistant'
                 && !visibleContent
