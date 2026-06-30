@@ -12583,25 +12583,25 @@ body,
     left: 18px;
     top: 278px;
     width: calc(100% - 36px);
-    height: 101px;
+    height: 128px;
     grid-template-columns: repeat(4, 160px);
     gap: 80px;
     padding: 0 0 0 60px;
   }
 
   .employee-memory-timeline::before {
-    top: 27px;
+    top: 45px;
     left: 36px;
     right: 20px;
   }
 
   .employee-memory-event {
     width: 160px;
-    height: 101px;
+    height: 128px;
   }
 
   .employee-memory-dot {
-    top: 24px;
+    top: 42px;
     left: 76px;
     width: 8px;
     height: 8px;
@@ -12611,7 +12611,7 @@ body,
   .employee-memory-copy {
     position: absolute;
     left: 10px;
-    top: 40px;
+    top: 64px;
     width: 140px;
     height: 61px;
     min-height: 61px;
@@ -12621,7 +12621,7 @@ body,
   .employee-capability-grid {
     position: absolute;
     left: 18px;
-    top: 403px;
+    top: 440px;
     width: calc(100% - 36px);
     height: 230px;
     grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
@@ -13713,7 +13713,7 @@ body:has(.sd1-scheduled-page) .topbar {
   }
 
   .employee-capability-grid {
-    top: 403px;
+    top: 440px;
     height: auto;
     min-height: 230px;
   }
@@ -14320,22 +14320,27 @@ body:has(.sd1-scheduled-page) .topbar {
 }
 
 .employee-capability-card.has-illustration {
-  --capability-illustration-size: 56px;
+  --capability-illustration-size: 76px;
 }
 
 .employee-capability-card.has-illustration:not(.is-dark) .ant-typography {
   display: block !important;
-  width: 100% !important;
-  max-width: 100% !important;
+  width: calc(100% - 54px) !important;
+  max-width: calc(100% - 54px) !important;
+  max-height: 18px !important;
+  white-space: nowrap;
+  overflow: hidden !important;
+  text-overflow: ellipsis;
 }
 
 .employee-capability-card.has-illustration:not(.is-dark) .employee-capability-illustration {
-  right: 8px !important;
-  bottom: 6px !important;
+  right: 12px !important;
+  bottom: 4px !important;
   z-index: 0 !important;
   width: var(--capability-illustration-size) !important;
-  max-height: 44px !important;
-  opacity: 0.68 !important;
+  height: 62px !important;
+  max-height: 62px !important;
+  opacity: 0.62 !important;
 }
 
 .employee-capability-card.has-illustration:not(.is-dark) .ant-typography,
@@ -14349,21 +14354,26 @@ body:has(.sd1-scheduled-page) .topbar {
 }
 
 :root[data-theme='dark'] .employee-capability-card.has-illustration {
-  --capability-illustration-size: 60px;
+  --capability-illustration-size: 76px;
 }
 
 :root[data-theme='dark'] .employee-capability-card.has-illustration .ant-typography {
   display: block !important;
-  width: 100% !important;
-  max-width: 100% !important;
+  width: calc(100% - 54px) !important;
+  max-width: calc(100% - 54px) !important;
+  max-height: 18px !important;
+  white-space: nowrap;
+  overflow: hidden !important;
+  text-overflow: ellipsis;
 }
 
 :root[data-theme='dark'] .employee-capability-card.has-illustration .employee-capability-illustration {
-  right: 8px !important;
-  bottom: 0 !important;
+  right: 12px !important;
+  bottom: 4px !important;
   width: var(--capability-illustration-size) !important;
-  max-height: 50px !important;
-  opacity: 0.92 !important;
+  height: 64px !important;
+  max-height: 64px !important;
+  opacity: 0.86 !important;
 }
 
 .employee-capability-card.is-dark.has-illustration .ant-typography {
@@ -14389,10 +14399,10 @@ body:has(.sd1-scheduled-page) .topbar {
 
 @media (min-width: 1600px) {
   .employee-capability-card.has-illustration {
-    --capability-illustration-size: 72px;
+    --capability-illustration-size: 92px;
   }
 
   :root[data-theme='dark'] .employee-capability-card.has-illustration {
-    --capability-illustration-size: 76px;
+    --capability-illustration-size: 92px;
   }
 }

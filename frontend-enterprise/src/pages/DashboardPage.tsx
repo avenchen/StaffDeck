@@ -301,7 +301,6 @@ export default function DashboardPage({
       count: activeTools.length,
       body: activeTools.slice(0, 3).map((item) => staffdeckDisplayText(item.display_name || item.name)).join(' / ') || '暂无启用工具',
       icon: <StaffdeckIcon name="tool" />,
-      dark: true,
       illustration: capabilityTools,
     },
     {
@@ -311,7 +310,6 @@ export default function DashboardPage({
       count: activeScheduledTasks.length,
       body: activeScheduledTasks.slice(0, 2).map((item) => staffdeckDisplayText(item.title)).join(' / ') || '暂无启用定时任务',
       icon: <StaffdeckIcon name="clock" />,
-      dark: true,
       illustration: capabilityTasks,
     },
     {
@@ -321,7 +319,6 @@ export default function DashboardPage({
       count: replyStats.total,
       body: staffdeckDisplayText(employeeSessions[0]?.summary || employeeSessions[0]?.last_agent_question || '暂无对话任务'),
       icon: <StaffdeckIcon name="chat" />,
-      dark: true,
       illustration: capabilityLogs,
     },
   ];
