@@ -6046,6 +6046,75 @@ body,
   border-color: #7d8495 !important;
 }
 
+:root[data-theme='dark'] .staffdeck-search-input.ant-input-affix-wrapper {
+  color: #d8dcef !important;
+  background: #111827 !important;
+  border: 1px solid #2b3445 !important;
+  box-shadow: none !important;
+}
+
+:root[data-theme='dark'] .staffdeck-search-input.ant-input-affix-wrapper:hover,
+:root[data-theme='dark'] .staffdeck-search-input.ant-input-affix-wrapper-focused {
+  border-color: #465267 !important;
+  background: #121b2b !important;
+}
+
+:root[data-theme='dark'] .staffdeck-search-input .ant-input,
+:root[data-theme='dark'] .staffdeck-search-input .ant-input::placeholder {
+  color: #9da6b8 !important;
+}
+
+:root[data-theme='dark'] .staffdeck-search-input .anticon {
+  color: #9da6b8 !important;
+}
+
+:root[data-theme='dark'] .session-filter-select .ant-select-selector {
+  color: #d8dcef !important;
+  background: #111827 !important;
+  border-color: #2b3445 !important;
+  box-shadow: none !important;
+}
+
+:root[data-theme='dark'] .session-filter-select .ant-select-selection-item,
+:root[data-theme='dark'] .session-filter-select .ant-select-arrow {
+  color: #d8dcef !important;
+}
+
+:root[data-theme='dark'] .brand-block .brand-title,
+:root[data-theme='dark'] .brand-block .brand-subtitle {
+  color: #f0f2f6 !important;
+}
+
+:root[data-theme='dark'] .brand-block .brand-title {
+  color: #7d8bd7 !important;
+}
+
+:root[data-theme='dark'] .employee-gallery-tabs button {
+  color: #8f98aa !important;
+}
+
+:root[data-theme='dark'] .employee-gallery-tabs button span {
+  color: #d8dcef !important;
+  background: #303846 !important;
+}
+
+:root[data-theme='dark'] .employee-gallery-tabs button.active {
+  color: #f0f2f6 !important;
+}
+
+:root[data-theme='dark'] .employee-gallery-tabs button.active::after {
+  background: #f0f2f6 !important;
+}
+
+:root[data-theme='dark'] .session-title,
+:root[data-theme='dark'] .session-title-text {
+  color: #f0f2f6 !important;
+}
+
+:root[data-theme='dark'] .session-summary {
+  color: #9da6b8 !important;
+}
+
 .composer-model-dropdown .ant-dropdown-menu {
   width: 200px !important;
   min-width: 200px !important;
