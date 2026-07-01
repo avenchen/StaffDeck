@@ -11848,12 +11848,12 @@ body,
   overflow-x: hidden;
 }
 
-.sd1-rail:has(.sd1-rail-system) .sd1-rail-employee {
+.sd1-rail:has(.sd1-rail-primary) .sd1-rail-employee {
   height: min(625px, calc(100vh - 486px));
   overflow-y: auto;
 }
 
-.sd1-rail:has(.sd1-rail-system) .sd1-rail-employee::-webkit-scrollbar {
+.sd1-rail:has(.sd1-rail-primary) .sd1-rail-employee::-webkit-scrollbar {
   display: none;
 }
 
@@ -11869,7 +11869,7 @@ body,
   overflow: visible;
 }
 
-.sd1-sidebar.is-expanded .sd1-rail:has(.sd1-rail-system) .sd1-rail-employee {
+.sd1-sidebar.is-expanded .sd1-rail:has(.sd1-rail-primary) .sd1-rail-employee {
   height: auto;
   overflow: visible;
 }
@@ -15031,7 +15031,7 @@ body:has(.sd1-scheduled-page) .topbar {
     overflow: hidden !important;
   }
 
-  .sd1-sidebar.is-expanded .sd1-rail:has(.sd1-rail-system) .sd1-rail-employee {
+  .sd1-sidebar.is-expanded .sd1-rail:has(.sd1-rail-primary) .sd1-rail-employee {
     height: min(625px, calc(100vh - 486px)) !important;
     overflow-y: auto !important;
   }
