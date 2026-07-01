@@ -7,10 +7,12 @@ import {
   CodeOutlined,
   CloseOutlined,
   CloseCircleOutlined,
+  DeleteOutlined,
   DownOutlined,
   FileTextOutlined,
   InfoCircleOutlined,
   LoadingOutlined,
+  PlusOutlined,
   RightOutlined,
   SaveOutlined,
   SendOutlined,
@@ -18,7 +20,7 @@ import {
   UploadOutlined,
   WarningOutlined,
 } from '../icons';
-import { Button, Card, Dropdown, Empty, Input, Modal, Space, Tag, Tooltip, Typography, Upload, message } from 'antd';
+import { Button, Card, Dropdown, Empty, Input, InputNumber, Modal, Select, Space, Tag, Tooltip, Typography, Upload, message } from 'antd';
 import {
   useEffect,
   useMemo,
@@ -88,6 +90,46 @@ type ToolStatusMap = Record<string, ToolActionStatus>;
 
 type ViewMode = 'source' | 'flow';
 type TeacherPraiseStage = 'idle' | 'praised';
+
+type SelectOption = {
+  value: string;
+  label: string;
+};
+
+const NODE_TYPE_OPTIONS: SelectOption[] = [
+  { value: 'collect_info', label: '收集信息' },
+  { value: 'decision', label: '条件判断' },
+  { value: 'tool_call', label: '调用工具' },
+  { value: 'knowledge_query', label: '检索知识' },
+  { value: 'response', label: '回复用户' },
+  { value: 'handoff', label: '转人工' },
+  { value: 'subflow', label: '子流程' },
+];
+
+const BASE_ACTION_OPTIONS: SelectOption[] = [
+  { value: 'ask_user', label: '询问用户' },
+  { value: 'continue_flow', label: '继续流程' },
+  { value: 'answer_user', label: '回复用户' },
+  { value: 'handoff_human', label: '转人工' },
+  { value: 'ask_clarification', label: '澄清问题' },
+  { value: 'clarify_user', label: '澄清用户需求' },
+  { value: 'update_memory', label: '更新记忆' },
+  { value: 'reflect', label: '反思检查' },
+  { value: 'finish', label: '结束流程' },
+  { value: 'stop', label: '停止流程' },
+];
+
+const CONDITION_PRESET_OPTIONS: SelectOption[] = [
+  { value: '__always__', label: '总是可进入' },
+  { value: 'missing_required_info', label: '缺少任一必填信息' },
+  { value: 'missing_slots([])', label: '缺少指定字段' },
+  { value: 'all_required_info_collected', label: '必填信息已收集完成' },
+  { value: 'tool_success', label: '工具执行成功' },
+  { value: 'tool_failed', label: '工具执行失败' },
+  { value: 'user_confirmed', label: '用户已确认' },
+  { value: 'user_rejected', label: '用户已拒绝' },
+  { value: '__custom__', label: '自定义条件' },
+];
 type PendingChange = {
   assistantId: string;
   previousDraft: SkillCard;
@@ -2241,19 +2283,216 @@ function SkillSource({
     onEdit(next, 'basic');
   }
 
-  function editStep(index: number, field: string, value: string | string[]) {
+  function editStep(index: number, field: string, value: string | string[] | boolean) {
     const next = cloneSkill(skill);
     const listValue = field === 'expected_user_info' || field === 'allowed_actions'
       ? Array.isArray(value)
         ? value
-        : splitEditableList(value)
+        : splitEditableList(String(value))
       : value;
     next.nodes = Array.isArray(next.nodes) ? [...next.nodes] : [];
     const currentNode = { ...(next.nodes[index] || {}) };
     const nodeField = field === 'step_id' ? 'node_id' : field;
+    if (nodeField === 'node_id') {
+      const previousId = String(currentNode.node_id || currentNode.step_id || `node_${index + 1}`);
+      const nextId = String(listValue || '').trim();
+      if (!nextId) {
+        message.warning('节点 ID 不能为空');
+        return;
+      }
+      const duplicated = next.nodes.some((node, nodeIndex) => (
+        nodeIndex !== index && String(node?.node_id || node?.step_id || '') === nextId
+      ));
+      if (duplicated) {
+        message.warning(`节点 ID「${nextId}」已经存在`);
+        return;
+      }
+      currentNode.node_id = nextId;
+      next.edges = normalizeSkillEdges(next).map((edge) => ({
+        ...edge,
+        source_node_id: String(edge.source_node_id || '') === previousId ? nextId : edge.source_node_id,
+        next_node_id: String(edge.next_node_id || '') === previousId ? nextId : edge.next_node_id,
+      }));
+      if (next.start_node_id === previousId) next.start_node_id = nextId;
+      next.terminal_node_ids = asStringList(next.terminal_node_ids).map((nodeId) => (nodeId === previousId ? nextId : nodeId));
+      next.nodes[index] = currentNode;
+      onEdit(next, stepTargetPath(index));
+      return;
+    }
     currentNode[nodeField] = listValue;
     next.nodes[index] = currentNode;
     onEdit(next, stepTargetPath(index));
+  }
+
+  function updateEdge(index: number, edgeIndex: number, patch: Record<string, unknown>) {
+    const next = cloneSkill(skill);
+    const sourceId = nodeIdAt(next, index);
+    const edges = normalizeSkillEdges(next);
+    const globalIndex = findSourceEdgeIndex(edges, sourceId, edgeIndex);
+    if (globalIndex < 0) return;
+    edges[globalIndex] = { ...edges[globalIndex], ...patch };
+    next.edges = edges;
+    onEdit(next, stepTargetPath(index));
+  }
+
+  function addEdge(index: number) {
+    const next = cloneSkill(skill);
+    const sourceId = nodeIdAt(next, index);
+    const nodes = normalizeSkillNodes(next);
+    const fallbackTarget = nodes.find((node) => String(node.node_id || node.step_id || '') !== sourceId);
+    const targetId = String(nodes[index + 1]?.node_id || nodes[index + 1]?.step_id || fallbackTarget?.node_id || fallbackTarget?.step_id || '');
+    const sourceEdges = normalizeSkillEdges(next).filter((edge) => String(edge.source_node_id || '') === sourceId);
+    const priority = sourceEdges.length > 0
+      ? Math.max(...sourceEdges.map((edge, sourceIndex) => edgePriority(edge, sourceIndex))) + 1
+      : 1;
+    next.edges = [
+      ...normalizeSkillEdges(next),
+      {
+        source_node_id: sourceId,
+        next_node_id: targetId,
+        condition: '',
+        priority,
+        label: targetId ? '新增流转' : '',
+      },
+    ];
+    onEdit(next, stepTargetPath(index));
+  }
+
+  function deleteEdge(index: number, edgeIndex: number) {
+    const next = cloneSkill(skill);
+    const sourceId = nodeIdAt(next, index);
+    const edges = normalizeSkillEdges(next);
+    const globalIndex = findSourceEdgeIndex(edges, sourceId, edgeIndex);
+    if (globalIndex < 0) return;
+    edges.splice(globalIndex, 1);
+    next.edges = edges;
+    onEdit(next, stepTargetPath(index));
+  }
+
+  function insertNodeBetween(index: number) {
+    const next = cloneSkill(skill);
+    const nodes = normalizeSkillNodes(next);
+    if (index < 0 || index >= nodes.length - 1) return;
+    const sourceNode = nodes[index];
+    const targetNode = nodes[index + 1];
+    const sourceId = String(sourceNode.node_id || sourceNode.step_id || `node_${index + 1}`);
+    const targetId = String(targetNode.node_id || targetNode.step_id || `node_${index + 2}`);
+    const newNodeId = uniqueNodeId(nodes, `node_${index + 2}`);
+    const newNode = {
+      node_id: newNodeId,
+      type: 'collect_info',
+      name: '新增节点',
+      instruction: '说明这个节点要完成的目标。',
+      optional: false,
+      condition: '',
+      expected_user_info: [],
+      allowed_actions: ['continue_flow'],
+      knowledge_scope: {},
+      retry_policy: {},
+      metadata: {},
+    };
+    nodes.splice(index + 1, 0, newNode);
+    next.nodes = nodes;
+
+    const edges = normalizeSkillEdges(next);
+    const directEdgeIndexes = edges
+      .map((edge, edgeIndex) => ({ edge, edgeIndex }))
+      .filter(({ edge }) => String(edge.source_node_id || '') === sourceId && String(edge.next_node_id || '') === targetId)
+      .map(({ edgeIndex }) => edgeIndex);
+    if (directEdgeIndexes.length > 0) {
+      directEdgeIndexes.forEach((edgeIndex) => {
+        edges[edgeIndex] = {
+          ...edges[edgeIndex],
+          next_node_id: newNodeId,
+          label: String(edges[edgeIndex].label || '').trim() || '进入新增节点',
+        };
+      });
+      const maxPriority = Math.max(...directEdgeIndexes.map((edgeIndex, localIndex) => edgePriority(edges[edgeIndex], localIndex)));
+      edges.push({
+        source_node_id: newNodeId,
+        next_node_id: targetId,
+        condition: '',
+        priority: maxPriority + 1,
+        label: `继续到 ${String(targetNode.name || targetId)}`,
+      });
+    } else {
+      const sourcePriority = normalizeSkillEdges(next)
+        .filter((edge) => String(edge.source_node_id || '') === sourceId)
+        .reduce((max, edge, sourceIndex) => Math.max(max, edgePriority(edge, sourceIndex)), 0) + 1;
+      edges.push({
+        source_node_id: sourceId,
+        next_node_id: newNodeId,
+        condition: '',
+        priority: sourcePriority,
+        label: '进入新增节点',
+      });
+      edges.push({
+        source_node_id: newNodeId,
+        next_node_id: targetId,
+        condition: '',
+        priority: 1,
+        label: `继续到 ${String(targetNode.name || targetId)}`,
+      });
+    }
+    next.edges = edges;
+    if (!next.start_node_id) next.start_node_id = String(nodes[0]?.node_id || '');
+    if (asStringList(next.terminal_node_ids).length === 0 && nodes.length > 0) {
+      next.terminal_node_ids = [String(nodes[nodes.length - 1].node_id || '')];
+    }
+    onEdit(next, stepTargetPath(index + 1));
+  }
+
+  function confirmDeleteNode(index: number) {
+    const nodes = normalizeSkillNodes(skill);
+    if (nodes.length <= 1) {
+      message.warning('至少需要保留一个节点');
+      return;
+    }
+    const node = nodes[index];
+    const nodeId = String(node.node_id || node.step_id || `node_${index + 1}`);
+    const edges = normalizeSkillEdges(skill);
+    const incomingEdges = edges.filter((edge) => String(edge.next_node_id || '') === nodeId);
+    const outgoingEdges = edges.filter((edge) => String(edge.source_node_id || '') === nodeId);
+    Modal.confirm({
+      title: `确认删除 Node ${index + 1}：${String(node.name || nodeId)}？`,
+      content: (
+        <div className="skill-node-delete-confirm">
+          <p>删除后会同时移除所有连接到这个节点、或从这个节点发出的流转规则。</p>
+          <strong>将受影响的连接</strong>
+          <ul>
+            {[...incomingEdges, ...outgoingEdges].length > 0 ? (
+              [...incomingEdges, ...outgoingEdges].map((edge, edgeIndex) => (
+                <li key={`${String(edge.source_node_id)}_${String(edge.next_node_id)}_${edgeIndex}`}>
+                  {nodeDisplayNameById(nodes, String(edge.source_node_id || ''))}
+                  {' -> '}
+                  {nodeDisplayNameById(nodes, String(edge.next_node_id || ''))}
+                  {String(edge.label || edge.condition || '').trim() ? `：${String(edge.label || edge.condition)}` : ''}
+                </li>
+              ))
+            ) : (
+              <li>无直接连接关系</li>
+            )}
+          </ul>
+        </div>
+      ),
+      okText: '确认删除',
+      okButtonProps: { danger: true },
+      cancelText: '取消',
+      onOk: () => {
+        const next = cloneSkill(skill);
+        const nextNodes = normalizeSkillNodes(next).filter((_node, nodeIndex) => nodeIndex !== index);
+        next.nodes = nextNodes;
+        next.edges = normalizeSkillEdges(next).filter((edge) => (
+          String(edge.source_node_id || '') !== nodeId && String(edge.next_node_id || '') !== nodeId
+        ));
+        if (next.start_node_id === nodeId) next.start_node_id = String(nextNodes[0]?.node_id || '');
+        next.terminal_node_ids = asStringList(next.terminal_node_ids).filter((terminalId) => terminalId !== nodeId);
+        if (next.terminal_node_ids.length === 0 && nextNodes.length > 0) {
+          next.terminal_node_ids = [String(nextNodes[nextNodes.length - 1].node_id || '')];
+        }
+        onEdit(next, stepTargetPath(Math.min(index, Math.max(nextNodes.length - 1, 0))));
+      },
+    });
   }
 
   const steps = skillGraphSteps(skill);
@@ -2265,6 +2504,14 @@ function SkillSource({
   const edgeMap = skillGraphEdgeMap(skill);
   const terminalNodeIds = new Set(asStringList(skill.terminal_node_ids));
   const startNodeId = String(skill.start_node_id || '');
+  const nodeOptions = steps.map((step, index) => {
+    const nodeId = String(step.node_id || step.step_id || `node_${index + 1}`);
+    return {
+      value: nodeId,
+      label: `Node ${index + 1} · ${String(step.name || nodeId)}`,
+    };
+  });
+  const actionOptions = buildActionOptions(toolDescriptions, toolStatuses, steps);
 
   return (
     <div className="skill-source-md" ref={containerRef}>
@@ -2301,46 +2548,70 @@ function SkillSource({
             Boolean(step.optional) ? '可选' : '必选',
             terminalNodeIds.has(stepId) ? '终止节点' : '流程节点',
           ].filter(Boolean).join(' · ');
-          const routeText = outgoingEdges.length > 0
-            ? outgoingEdges.map((edge, edgeIndex) => sourceEdgeSummary(edge, nodeNameMap, edgeIndex, outgoingEdges)).join('\n')
-            : terminalNodeIds.has(stepId)
-              ? '流程结束'
-              : '未配置后续节点';
           return (
-            <SelectableTarget
-              key={path}
-              className={targetClass('skill-source-section', path, selectedPaths, highlightedPaths, updatingPaths, dirtyPaths)}
-              target={{ path, label: `节点 ${index + 1}：${step.name || stepId}` }}
-              onToggle={onToggle}
-            >
-              {selectedPaths.includes(path) && <span className="selection-mark"><CheckOutlined /></span>}
-              <div className="skill-source-rendered">
-                <EditableSourceStepHeading
-                  index={index}
-                  value={String(step.name || '')}
-                  fallback={stepId}
-                  onChange={(value) => editStep(index, 'name', value)}
-                />
-                <div className="skill-source-meta-list">
-                  <EditableSourceTextLine label={fieldLabel('step_id')} value={stepId} onChange={(value) => editStep(index, 'step_id', value)} />
-                  <EditableSourceTextLine label={fieldLabel('type')} value={String(step.type || 'collect_info')} onChange={(value) => editStep(index, 'type', value)} />
-                  <SourceReadonlyLine label="节点状态" value={nodeState} />
-                  <EditableSourceTextLine label={fieldLabel('condition')} value={String(step.condition || '')} onChange={(value) => editStep(index, 'condition', value)} />
-                  <EditableSourceTextLine label={fieldLabel('instruction')} value={String(step.instruction || '')} multiline onChange={(value) => editStep(index, 'instruction', value)} />
-                  <EditableSourceListLine label={fieldLabel('expected_user_info')} values={asStringList(step.expected_user_info)} onChange={(value) => editStep(index, 'expected_user_info', value)} />
-                  <EditableSourceActionLine
-                    values={asStringList(step.allowed_actions)}
-                    toolDescriptions={toolDescriptions}
-                    toolStatuses={toolStatuses}
-                    onChange={(value) => editStep(index, 'allowed_actions', value)}
-                  />
-                  <SourceReadonlyLine label="流转规则" value={routeText} />
-                  <SourceJsonLine label="知识范围" value={step.knowledge_scope} />
-                  <SourceJsonLine label="重试策略" value={step.retry_policy} />
-                  <SourceJsonLine label="节点元数据" value={step.metadata} />
+            <div className="skill-source-step-block" key={path}>
+              {index > 0 && (
+                <div className="skill-node-insert-row">
+                  <Button size="small" icon={<PlusOutlined />} onClick={() => insertNodeBetween(index - 1)}>
+                    在 Node {index} 和 Node {index + 1} 之间新增节点
+                  </Button>
                 </div>
-              </div>
-            </SelectableTarget>
+              )}
+              <SelectableTarget
+                className={targetClass('skill-source-section', path, selectedPaths, highlightedPaths, updatingPaths, dirtyPaths)}
+                target={{ path, label: `节点 ${index + 1}：${step.name || stepId}` }}
+                onToggle={onToggle}
+              >
+                {selectedPaths.includes(path) && <span className="selection-mark"><CheckOutlined /></span>}
+                <div className="skill-source-rendered">
+                  <div className="skill-source-step-header">
+                    <EditableSourceStepHeading
+                      index={index}
+                      value={String(step.name || '')}
+                      fallback={stepId}
+                      onChange={(value) => editStep(index, 'name', value)}
+                    />
+                    <EditableSourceField>
+                      <Button danger size="small" icon={<DeleteOutlined />} onClick={() => confirmDeleteNode(index)}>
+                        删除节点
+                      </Button>
+                    </EditableSourceField>
+                  </div>
+                  <div className="skill-source-meta-list">
+                    <EditableSourceTextLine label={fieldLabel('step_id')} value={stepId} onChange={(value) => editStep(index, 'step_id', value)} />
+                    <EditableSourceSelectLine
+                      label={fieldLabel('type')}
+                      value={String(step.type || 'collect_info')}
+                      options={NODE_TYPE_OPTIONS}
+                      onChange={(value) => editStep(index, 'type', value)}
+                    />
+                    <SourceReadonlyLine label="节点状态" value={nodeState} />
+                    <EditableConditionLine value={String(step.condition || '')} onChange={(value) => editStep(index, 'condition', value)} />
+                    <EditableSourceTextLine label={fieldLabel('instruction')} value={String(step.instruction || '')} multiline onChange={(value) => editStep(index, 'instruction', value)} />
+                    <EditableSourceListLine label={fieldLabel('expected_user_info')} values={asStringList(step.expected_user_info)} onChange={(value) => editStep(index, 'expected_user_info', value)} />
+                    <EditableSourceActionLine
+                      values={asStringList(step.allowed_actions)}
+                      options={actionOptions}
+                      toolDescriptions={toolDescriptions}
+                      toolStatuses={toolStatuses}
+                      onChange={(value) => editStep(index, 'allowed_actions', value)}
+                    />
+                    <EditableFlowRulesLine
+                      sourceNodeId={stepId}
+                      edges={outgoingEdges}
+                      nodes={steps}
+                      nodeOptions={nodeOptions}
+                      terminal={terminalNodeIds.has(stepId)}
+                      onAdd={() => addEdge(index)}
+                      onUpdate={(edgeIndex, patch) => updateEdge(index, edgeIndex, patch)}
+                      onDelete={(edgeIndex) => deleteEdge(index, edgeIndex)}
+                    />
+                    <SourceJsonLine label="知识范围" value={step.knowledge_scope} />
+                    <SourceJsonLine label="重试策略" value={step.retry_policy} />
+                  </div>
+                </div>
+              </SelectableTarget>
+            </div>
           );
         })}
       </div>
@@ -2649,6 +2920,60 @@ function skillGraphEdgeMap(skill: SkillCard): Record<string, Array<Record<string
     map[source].push(edge);
   });
   return map;
+}
+
+function normalizeSkillNodes(skill: SkillCard): Array<Record<string, unknown>> {
+  return Array.isArray(skill.nodes) ? skill.nodes.filter(isRecord).map((node, index) => ({
+    ...node,
+    node_id: String(node.node_id || node.step_id || `node_${index + 1}`),
+  })) : [];
+}
+
+function normalizeSkillEdges(skill: SkillCard): Array<Record<string, unknown>> {
+  return Array.isArray(skill.edges) ? skill.edges.filter(isRecord).map((edge, index) => ({
+    source_node_id: String(edge.source_node_id || ''),
+    next_node_id: String(edge.next_node_id || ''),
+    condition: typeof edge.condition === 'string' ? edge.condition : '',
+    priority: Number.isFinite(Number(edge.priority)) ? Number(edge.priority) : index,
+    label: typeof edge.label === 'string' ? edge.label : '',
+  })) : [];
+}
+
+function nodeIdAt(skill: SkillCard, index: number): string {
+  const node = normalizeSkillNodes(skill)[index];
+  return String(node?.node_id || node?.step_id || `node_${index + 1}`);
+}
+
+function findSourceEdgeIndex(edges: Array<Record<string, unknown>>, sourceId: string, localIndex: number): number {
+  let seen = -1;
+  return edges.findIndex((edge) => {
+    if (String(edge.source_node_id || '') !== sourceId) return false;
+    seen += 1;
+    return seen === localIndex;
+  });
+}
+
+function edgePriority(edge: Record<string, unknown>, fallback = 0): number {
+  const value = Number(edge.priority);
+  return Number.isFinite(value) ? value : fallback;
+}
+
+function uniqueNodeId(nodes: Array<Record<string, unknown>>, preferred: string): string {
+  const used = new Set(nodes.map((node) => String(node.node_id || node.step_id || '')).filter(Boolean));
+  const base = preferred.replace(/\s+/g, '_').replace(/[^\w.-]/g, '') || 'node';
+  if (!used.has(base)) return base;
+  for (let suffix = 2; suffix < 1000; suffix += 1) {
+    const candidate = `${base}_${suffix}`;
+    if (!used.has(candidate)) return candidate;
+  }
+  return `${base}_${Date.now()}`;
+}
+
+function nodeDisplayNameById(nodes: Array<Record<string, unknown>>, nodeId: string): string {
+  const index = nodes.findIndex((node) => String(node.node_id || node.step_id || '') === nodeId);
+  if (index < 0) return nodeId || '未指定节点';
+  const node = nodes[index];
+  return `Node ${index + 1} · ${String(node.name || nodeId)}`;
 }
 
 type SkillFlowCanvasNode = {
@@ -3263,16 +3588,7 @@ function compactEdgeLabel(value: string): string {
 }
 
 function nodeTypeLabel(type: string): string {
-  const labels: Record<string, string> = {
-    collect_info: '收集信息',
-    decision: '条件判断',
-    tool_call: '调用工具',
-    knowledge_query: '检索知识',
-    response: '回复用户',
-    handoff: '转人工',
-    subflow: '子流程',
-  };
-  return labels[type] || type || '节点';
+  return NODE_TYPE_OPTIONS.find((item) => item.value === type)?.label || type || '节点';
 }
 
 function knowledgeScopeLabels(value: unknown): string[] {
@@ -3404,6 +3720,77 @@ function EditableSourceListLine({
   );
 }
 
+function EditableSourceSelectLine({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  options: SelectOption[];
+  onChange: (value: string) => void;
+}) {
+  const mergedOptions = options.some((option) => option.value === value) || !value
+    ? options
+    : [...options, { value, label: value }];
+  return (
+    <div className="skill-source-line">
+      <span className="skill-source-key">{label}</span>
+      <span className="skill-source-value">
+        <EditableSourceField>
+          <Select
+            className="skill-source-select"
+            value={value || undefined}
+            options={mergedOptions}
+            popupMatchSelectWidth={260}
+            onChange={onChange}
+          />
+        </EditableSourceField>
+      </span>
+    </div>
+  );
+}
+
+function EditableConditionLine({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const presetValue = conditionPresetValue(value);
+  return (
+    <div className="skill-source-line skill-condition-line">
+      <span className="skill-source-key">{fieldLabel('condition')}</span>
+      <span className="skill-source-value">
+        <EditableSourceField>
+          <div className="skill-condition-editor">
+            <Select
+              className="skill-condition-preset"
+              value={presetValue}
+              options={CONDITION_PRESET_OPTIONS}
+              popupMatchSelectWidth={260}
+              onChange={(nextValue) => {
+                if (nextValue === '__custom__') return;
+                onChange(nextValue === '__always__' ? '' : nextValue);
+              }}
+            />
+            <Input.TextArea
+              className="skill-source-edit-input skill-condition-input"
+              value={value}
+              placeholder="留空表示总是可进入；也可写 missing_slots(['field'])、tool_success 等条件。"
+              autoSize={{ minRows: 1, maxRows: 4 }}
+              onChange={(event) => onChange(event.target.value)}
+            />
+            <span className="skill-condition-readable">{conditionReadableText(value)}</span>
+          </div>
+        </EditableSourceField>
+      </span>
+    </div>
+  );
+}
+
 function SourceReadonlyLine({ label, value }: { label: string; value: string }) {
   return (
     <div className="skill-source-line readonly">
@@ -3432,11 +3819,13 @@ function hasReadableSourceObject(value: unknown): boolean {
 
 function EditableSourceActionLine({
   values,
+  options,
   toolDescriptions,
   toolStatuses,
   onChange,
 }: {
   values: string[];
+  options: SelectOption[];
   toolDescriptions: ToolDescriptionMap;
   toolStatuses: ToolStatusMap;
   onChange: (value: string) => void;
@@ -3448,6 +3837,7 @@ function EditableSourceActionLine({
         <EditableSourceField>
           <EditableActionList
             actions={values}
+            options={options}
             toolDescriptions={toolDescriptions}
             toolStatuses={toolStatuses}
             onChange={onChange}
@@ -3460,97 +3850,119 @@ function EditableSourceActionLine({
 
 function EditableActionList({
   actions,
+  options,
   toolDescriptions,
   toolStatuses,
   onChange,
 }: {
   actions: string[];
+  options: SelectOption[];
   toolDescriptions: ToolDescriptionMap;
   toolStatuses: ToolStatusMap;
   onChange: (value: string) => void;
 }) {
-  const [editingAction, setEditingAction] = useState<{ index: number; value: string } | null>(null);
-
-  function beginEdit(index: number, value: string) {
-    setEditingAction({ index, value });
-  }
-
-  function commitEdit() {
-    if (!editingAction) return;
-    const next = [...actions];
-    const nextValue = editingAction.value.trim();
-    if (editingAction.index >= next.length) {
-      if (nextValue) next.push(nextValue);
-    } else if (nextValue) {
-      next[editingAction.index] = nextValue;
-    } else {
-      next.splice(editingAction.index, 1);
-    }
-    onChange(next.join('\n'));
-    setEditingAction(null);
-  }
-
-  function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
-    if (event.key === 'Enter') {
-      event.preventDefault();
-      commitEdit();
-    }
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      setEditingAction(null);
-    }
-  }
-
-  if (actions.length === 0 && !editingAction) {
-    return (
-      <button type="button" className="skill-source-action-add" onClick={() => beginEdit(0, '')}>
-        点击新增动作
-      </button>
-    );
-  }
+  const mergedOptions = mergeSelectOptions(options, actions.map((action) => ({
+    value: action,
+    label: actionLabel(action),
+  })));
 
   return (
     <div className="skill-source-action-editor">
-      <div className="skill-action-list editable">
-        {actions.map((action, index) =>
-          editingAction?.index === index ? (
-            <Input
-              key={`editing_${index}`}
-              className="skill-source-action-input"
-              style={compactInputStyle(editingAction.value, 8, 42)}
-              value={editingAction.value}
-              autoFocus
-              onBlur={commitEdit}
-              onChange={(event) => setEditingAction({ index, value: event.target.value })}
-              onKeyDown={handleKeyDown}
-            />
-          ) : (
-            <button
-              type="button"
-              className="skill-source-action-edit-button"
-              key={`${action}_${index}`}
-              onClick={() => beginEdit(index, action)}
-            >
-              <ActionChip action={action} toolDescriptions={toolDescriptions} toolStatuses={toolStatuses} />
-            </button>
-          ),
+      <Select
+        mode="multiple"
+        allowClear
+        className="skill-source-action-select"
+        value={actions}
+        options={mergedOptions}
+        optionFilterProp="label"
+        placeholder="选择当前节点允许执行的动作"
+        popupMatchSelectWidth={320}
+        onChange={(nextActions) => onChange(nextActions.join('\n'))}
+        tagRender={(props) => (
+          <span className="skill-action-select-tag" title={props.value}>
+            <ActionChip action={String(props.value)} toolDescriptions={toolDescriptions} toolStatuses={toolStatuses} />
+            <button type="button" onClick={props.onClose} aria-label={`移除 ${props.label}`}>×</button>
+          </span>
         )}
-        {editingAction && editingAction.index >= actions.length && (
-          <Input
-            className="skill-source-action-input"
-            style={compactInputStyle(editingAction.value, 8, 42)}
-            value={editingAction.value}
-            autoFocus
-            onBlur={commitEdit}
-            onChange={(event) => setEditingAction({ index: editingAction.index, value: event.target.value })}
-            onKeyDown={handleKeyDown}
-          />
-        )}
-        <button type="button" className="skill-source-action-add" onClick={() => beginEdit(actions.length, '')}>
-          +
-        </button>
-      </div>
-      <span className="skill-source-edit-hint">点击单个动作修改</span>
+      />
+      <span className="skill-source-edit-hint">可选择基础动作，也可选择已配置工具动作。</span>
+    </div>
+  );
+}
+
+function EditableFlowRulesLine({
+  sourceNodeId,
+  edges,
+  nodes,
+  nodeOptions,
+  terminal,
+  onAdd,
+  onUpdate,
+  onDelete,
+}: {
+  sourceNodeId: string;
+  edges: Array<Record<string, unknown>>;
+  nodes: Array<Record<string, unknown>>;
+  nodeOptions: SelectOption[];
+  terminal: boolean;
+  onAdd: () => void;
+  onUpdate: (edgeIndex: number, patch: Record<string, unknown>) => void;
+  onDelete: (edgeIndex: number) => void;
+}) {
+  const orderedEdges = edges
+    .map((edge, index) => ({ edge, index }))
+    .sort((a, b) => edgePriority(a.edge, a.index) - edgePriority(b.edge, b.index));
+  return (
+    <div className="skill-source-line skill-flow-rule-line">
+      <span className="skill-source-key">流转规则</span>
+      <span className="skill-source-value">
+        <EditableSourceField>
+          <div className="skill-flow-rule-editor">
+            <div className="skill-flow-rule-head">
+              <span>从 {nodeDisplayNameById(nodes, sourceNodeId)} 出发</span>
+              <Button size="small" icon={<PlusOutlined />} onClick={onAdd}>新增规则</Button>
+            </div>
+            {orderedEdges.length === 0 ? (
+              <div className="skill-flow-rule-empty">{terminal ? '当前节点是终止节点，默认流程结束。' : '还没有后续节点，请新增流转规则。'}</div>
+            ) : (
+              <div className="skill-flow-rule-list">
+                {orderedEdges.map(({ edge, index }) => (
+                  <div className="skill-flow-rule-item" key={`${String(edge.next_node_id)}_${index}`}>
+                    <Select
+                      className="skill-flow-rule-target"
+                      value={String(edge.next_node_id || '') || undefined}
+                      options={nodeOptions}
+                      placeholder="选择目标 Node"
+                      popupMatchSelectWidth={280}
+                      onChange={(value) => onUpdate(index, { next_node_id: value })}
+                    />
+                    <Input
+                      className="skill-flow-rule-label-input"
+                      value={String(edge.label || '')}
+                      placeholder="规则名称"
+                      onChange={(event) => onUpdate(index, { label: event.target.value })}
+                    />
+                    <Input
+                      className="skill-flow-rule-condition-input"
+                      value={String(edge.condition || '')}
+                      placeholder="进入条件，可留空"
+                      onChange={(event) => onUpdate(index, { condition: event.target.value })}
+                    />
+                    <InputNumber
+                      className="skill-flow-rule-priority"
+                      min={0}
+                      precision={0}
+                      value={edgePriority(edge, index)}
+                      onChange={(value) => onUpdate(index, { priority: Number(value ?? 0) })}
+                    />
+                    <Button danger size="small" icon={<DeleteOutlined />} onClick={() => onDelete(index)} />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </EditableSourceField>
+      </span>
     </div>
   );
 }
@@ -4899,19 +5311,70 @@ function toolNameFromAction(action: string): string {
 function actionLabel(action: string): string {
   const toolName = toolNameFromAction(action);
   if (toolName) return `调用工具：${toolName}`;
+  return BASE_ACTION_OPTIONS.find((item) => item.value === action)?.label || action;
+}
+
+function buildActionOptions(
+  toolDescriptions: ToolDescriptionMap,
+  toolStatuses: ToolStatusMap,
+  steps: Array<Record<string, unknown>>,
+): SelectOption[] {
+  const toolNames = Array.from(new Set([
+    ...Object.keys(toolDescriptions),
+    ...Object.keys(toolStatuses),
+  ])).filter(Boolean).sort((a, b) => a.localeCompare(b));
+  const toolOptions = toolNames.map((toolName) => ({
+    value: `call_tool:${toolName}`,
+    label: `调用工具：${toolName}`,
+  }));
+  const currentActionOptions = steps
+    .flatMap((step) => asStringList(step.allowed_actions))
+    .filter(Boolean)
+    .map((action) => ({ value: action, label: actionLabel(action) }));
+  return mergeSelectOptions(BASE_ACTION_OPTIONS, toolOptions, currentActionOptions);
+}
+
+function mergeSelectOptions(...groups: SelectOption[][]): SelectOption[] {
+  const seen = new Set<string>();
+  const output: SelectOption[] = [];
+  groups.flat().forEach((option) => {
+    if (!option.value || seen.has(option.value)) return;
+    seen.add(option.value);
+    output.push(option);
+  });
+  return output;
+}
+
+function conditionPresetValue(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) return '__always__';
+  if (CONDITION_PRESET_OPTIONS.some((option) => option.value === trimmed)) return trimmed;
+  if (/^missing_slots\s*\(/.test(trimmed)) return 'missing_slots([])';
+  return '__custom__';
+}
+
+function conditionReadableText(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) return '通俗说明：没有额外限制，流程可以从这里继续。';
+  const missingMatch = trimmed.match(/^missing_slots\((.*)\)$/);
+  if (missingMatch) {
+    const fields = missingMatch[1]
+      .split(',')
+      .map((item) => item.replace(/[\[\]'"\s]/g, ''))
+      .filter(Boolean);
+    return fields.length > 0
+      ? `通俗说明：当还缺少 ${fields.join('、')} 时进入这个节点。`
+      : '通俗说明：当还缺少指定字段时进入这个节点。';
+  }
   const labels: Record<string, string> = {
-    ask_user: '询问用户',
-    continue_flow: '继续流程',
-    answer_user: '回复用户',
-    handoff_human: '转人工',
-    ask_clarification: '澄清问题',
-    clarify_user: '澄清用户需求',
-    update_memory: '更新记忆',
-    reflect: '反思',
-    finish: '结束流程',
-    stop: '停止流程',
+    missing_required_info: '通俗说明：当还有任一必填信息没有收集到时进入这个节点。',
+    all_required_info_collected: '通俗说明：当所有必填信息都已经收集完成时进入这个节点。',
+    tool_success: '通俗说明：上一步工具调用成功后进入这个节点。',
+    tool_failed: '通俗说明：上一步工具调用失败后进入这个节点。',
+    user_confirmed: '通俗说明：用户明确确认后进入这个节点。',
+    user_rejected: '通俗说明：用户明确拒绝后进入这个节点。',
   };
-  return labels[action] || action;
+  return labels[trimmed] || `通俗说明：满足「${trimmed}」时进入这个节点。`;
 }
 
 function diffTargetLabel(path: string, skill: SkillCard | null): string {

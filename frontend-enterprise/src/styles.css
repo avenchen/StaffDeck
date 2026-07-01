@@ -4698,7 +4698,7 @@ body.skill-distill-fixed .content {
 .skill-workbench {
   display: grid;
   width: 100%;
-  grid-template-columns: minmax(360px, 0.72fr) minmax(760px, 1.28fr);
+  grid-template-columns: minmax(320px, 0.72fr) minmax(0, 1.28fr);
   gap: 16px;
   align-items: stretch;
   min-height: calc(100vh - 136px);
@@ -5605,6 +5605,30 @@ body.skill-distill-fixed .content {
   box-shadow: inset 3px 0 0 #d8c7a4;
 }
 
+.skill-source-step-block {
+  display: grid;
+  gap: 10px;
+}
+
+.skill-node-insert-row {
+  display: flex;
+  justify-content: center;
+}
+
+.skill-node-insert-row .ant-btn {
+  color: var(--muted);
+  background: var(--surface-subtle);
+  border-color: var(--border);
+  border-radius: 999px;
+  box-shadow: none;
+}
+
+.skill-node-insert-row .ant-btn:hover,
+.skill-node-insert-row .ant-btn:focus-visible {
+  color: var(--foreground);
+  border-color: var(--accent);
+}
+
 .skill-source-code {
   color: var(--foreground);
   font-family: var(--font-mono);
@@ -5650,6 +5674,14 @@ body.skill-distill-fixed .content {
   align-items: start;
 }
 
+.skill-source-step-header {
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 .skill-source-key {
   color: var(--muted);
   font-size: 12px;
@@ -5669,6 +5701,12 @@ body.skill-distill-fixed .content {
   max-width: 100%;
   display: flex;
   align-items: flex-start;
+}
+
+.skill-source-line:has(.skill-condition-editor) .skill-source-edit-field,
+.skill-source-line:has(.skill-source-action-editor) .skill-source-edit-field,
+.skill-source-line:has(.skill-flow-rule-editor) .skill-source-edit-field {
+  width: 100%;
 }
 
 .skill-source-value .ant-input,
@@ -5718,6 +5756,10 @@ body.skill-distill-fixed .content {
 
 .skill-source-step-title-edit span {
   white-space: nowrap;
+}
+
+.skill-source-step-title-edit > span:first-child {
+  color: var(--foreground);
 }
 
 .skill-source-step-title-edit .ant-input {
@@ -5842,6 +5884,146 @@ textarea.skill-source-edit-input.ant-input,
   color: var(--foreground);
   border-color: var(--accent);
   outline: none;
+}
+
+.skill-source-select.ant-select,
+.skill-condition-preset.ant-select {
+  min-width: 168px;
+}
+
+.skill-source-select .ant-select-selector,
+.skill-condition-preset .ant-select-selector,
+.skill-source-action-select .ant-select-selector {
+  min-height: 34px;
+  background: var(--surface-subtle) !important;
+  border-color: var(--border) !important;
+  border-radius: 10px !important;
+  box-shadow: none !important;
+}
+
+.skill-condition-editor {
+  min-width: 0;
+  width: min(920px, 100%);
+  display: grid;
+  grid-template-columns: minmax(160px, 220px) minmax(280px, 1fr);
+  gap: 8px 10px;
+  align-items: start;
+}
+
+.skill-condition-readable {
+  grid-column: 1 / -1;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.skill-condition-input.ant-input,
+.skill-condition-input textarea.ant-input {
+  width: 100% !important;
+  min-width: 0;
+}
+
+.skill-source-action-editor {
+  width: min(820px, 100%);
+  display: grid;
+  gap: 6px;
+}
+
+.skill-source-action-select.ant-select {
+  width: 100%;
+  max-width: 820px;
+}
+
+.skill-action-select-tag {
+  max-width: 100%;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 2px 4px 2px 0;
+}
+
+.skill-action-select-tag > button {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.skill-action-select-tag > button:hover {
+  color: var(--foreground);
+  background: var(--surface-muted);
+}
+
+.skill-flow-rule-editor {
+  width: min(1040px, 100%);
+  display: grid;
+  gap: 8px;
+}
+
+.skill-flow-rule-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 720;
+}
+
+.skill-flow-rule-list {
+  display: grid;
+  gap: 8px;
+}
+
+.skill-flow-rule-item {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) minmax(96px, 0.8fr) minmax(120px, 1.1fr) 76px 32px;
+  gap: 8px;
+  align-items: center;
+  padding: 8px;
+  background: var(--surface-subtle);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  min-width: 0;
+}
+
+.skill-flow-rule-target.ant-select,
+.skill-flow-rule-label-input.ant-input,
+.skill-flow-rule-condition-input.ant-input,
+.skill-flow-rule-priority.ant-input-number {
+  width: 100%;
+  min-width: 0;
+}
+
+.skill-flow-rule-empty {
+  padding: 10px 12px;
+  color: var(--muted);
+  background: var(--surface-subtle);
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  font-size: 12px;
+}
+
+.skill-node-delete-confirm {
+  display: grid;
+  gap: 8px;
+}
+
+.skill-node-delete-confirm p {
+  margin: 0;
+}
+
+.skill-node-delete-confirm ul {
+  margin: 0;
+  padding-left: 18px;
 }
 
 .skill-inline-remove,
@@ -7094,10 +7276,30 @@ pre {
 :root[data-theme='dark'] .skill-flow-chip,
 :root[data-theme='dark'] .skill-flow-edge-chip,
 :root[data-theme='dark'] .skill-action-chip,
-:root[data-theme='dark'] .skill-source-action-add {
+:root[data-theme='dark'] .skill-source-action-add,
+:root[data-theme='dark'] .skill-node-insert-row .ant-btn,
+:root[data-theme='dark'] .skill-flow-rule-item,
+:root[data-theme='dark'] .skill-flow-rule-empty {
   color: rgba(203, 213, 225, 0.78);
   background: rgba(248, 250, 252, 0.055);
   border-color: rgba(226, 232, 240, 0.16);
+}
+
+:root[data-theme='dark'] .skill-source-select .ant-select-selector,
+:root[data-theme='dark'] .skill-condition-preset .ant-select-selector,
+:root[data-theme='dark'] .skill-source-action-select .ant-select-selector {
+  color: rgba(248, 250, 252, 0.92);
+  background: rgba(248, 250, 252, 0.055) !important;
+  border-color: rgba(226, 232, 240, 0.16) !important;
+}
+
+:root[data-theme='dark'] .skill-condition-readable,
+:root[data-theme='dark'] .skill-flow-rule-head {
+  color: rgba(203, 213, 225, 0.72);
+}
+
+:root[data-theme='dark'] .skill-action-select-tag > button:hover {
+  background: rgba(248, 250, 252, 0.1);
 }
 
 :root[data-theme='dark'] .skill-action-chip.tool {
@@ -7687,6 +7889,21 @@ pre {
   .skill-source-line {
     grid-template-columns: minmax(0, 1fr);
     gap: 2px;
+  }
+
+  .skill-source-step-header,
+  .skill-condition-editor,
+  .skill-flow-rule-item {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .skill-source-step-header {
+    display: grid;
+  }
+
+  .skill-condition-editor,
+  .skill-flow-rule-item {
+    align-items: stretch;
   }
 
   .skill-flow {
