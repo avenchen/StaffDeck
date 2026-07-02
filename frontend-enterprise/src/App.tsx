@@ -1,4 +1,4 @@
-import { Button, ConfigProvider, Input, Layout, Modal, Radio, Select, Typography, message, theme as antdTheme } from 'antd';
+import { ConfigProvider, Input, Layout, Modal, Radio, Select, message, theme as antdTheme } from 'antd';
 import zhCN from 'antd/locale/zh_CN';
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
@@ -9,7 +9,6 @@ import {
   isEmployeeOwnedBy,
   isEnterpriseAdmin,
   isGalleryEmployee,
-  setEnterpriseAuthSession,
   type EnterpriseAuthSession,
 } from './auth';
 import AppSidebar from './components/AppSidebar';
@@ -30,6 +29,7 @@ import DistillPage from './pages/DistillPage';
 import FeedbackPage from './pages/FeedbackPage';
 import GeneralSkillsPage, { GeneralSkillEditPage, GeneralSkillNewPage } from './pages/GeneralSkillsPage';
 import KnowledgeManagePage, { KnowledgeAddPage } from './pages/KnowledgePage';
+import LoginPage from './pages/LoginPage';
 import MemoriesPage from './pages/MemoriesPage';
 import ModelsPage from './pages/ModelsPage';
 import OpenPlatformPage from './pages/OpenPlatformPage';
@@ -52,11 +52,6 @@ type AgentCreateFormState = {
   roleName: string;
   sourceMode: AgentCreateMode;
   copyFromAgentId: string;
-};
-
-type LoginFormState = {
-  username: string;
-  password: string;
 };
 
 const EMPTY_AGENT_FORM: AgentCreateFormState = {
@@ -390,99 +385,6 @@ function Shell({
   );
 }
 
-function EnterpriseLogin({
-  onLogin,
-}: {
-  onLogin: (session: EnterpriseAuthSession) => void;
-}) {
-  const [form, setForm] = useState<LoginFormState>({ username: '', password: '' });
-  const [loading, setLoading] = useState(false);
-
-  async function login() {
-    const username = form.username.trim();
-    const password = form.password.trim();
-    if (!username || !password) {
-      message.error('请填写账号和密码');
-      return;
-    }
-    setLoading(true);
-    try {
-      const session = await api.post<EnterpriseAuthSession>('/api/auth/login', {
-        tenant_id: TENANT_ID,
-        username,
-        password,
-      });
-      setEnterpriseAuthSession(session);
-      onLogin(session);
-    } catch (error) {
-      message.error(error instanceof Error ? error.message : '登录失败');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  return (
-    <div className="enterprise-login-page">
-      <section className="enterprise-login-card">
-        <span className="brand-mark">SD</span>
-        <div>
-          <Typography.Text className="brand-title">Modelbest</Typography.Text>
-          <Typography.Title level={2}>StaffDeck 数字员工运营台</Typography.Title>
-        </div>
-        <div className="enterprise-login-form">
-          <label>
-            账号
-            <Input
-              value={form.username}
-              autoComplete="off"
-              onChange={(event) => setForm((prev) => ({ ...prev, username: event.target.value }))}
-              onPressEnter={login}
-            />
-          </label>
-          <label>
-            密码
-            <Input.Password
-              value={form.password}
-              autoComplete="new-password"
-              onChange={(event) => setForm((prev) => ({ ...prev, password: event.target.value }))}
-              onPressEnter={login}
-            />
-          </label>
-          <Button type="primary" size="large" loading={loading} onClick={login}>
-            登录
-          </Button>
-        </div>
-      </section>
-    </div>
-  );
-}
-
-function AppRoutes({
-  auth,
-  effectiveTheme,
-  onLogin,
-  onLogout,
-}: {
-  auth: EnterpriseAuthSession | null;
-  effectiveTheme: EffectiveTheme;
-  onLogin: (session: EnterpriseAuthSession) => void;
-  onLogout: () => void;
-}) {
-  return (
-    <Routes>
-      <Route path="/enterprise/tutorial" element={<TutorialPage />} />
-      <Route
-        path="*"
-        element={auth ? (
-          <Shell effectiveTheme={effectiveTheme} auth={auth} onLogout={onLogout} />
-        ) : (
-          <EnterpriseLogin onLogin={onLogin} />
-        )}
-      />
-    </Routes>
-  );
-}
-
 export default function App() {
   const isDark = false;
   const [auth, setAuth] = useState<EnterpriseAuthSession | null>(() => getEnterpriseAuthSession());
@@ -529,7 +431,7 @@ export default function App() {
           {auth ? (
             <Shell auth={auth} onLogout={logout} />
           ) : (
-            <EnterpriseLogin onLogin={setAuth} />
+            <LoginPage onLogin={setAuth} />
           )}
         </BrowserRouter>
         <Toaster richColors closeButton position="top-right" />

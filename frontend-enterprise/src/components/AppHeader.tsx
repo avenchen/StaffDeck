@@ -15,6 +15,12 @@ import StaffdeckIcon from './StaffdeckIcon';
 export type AppHeaderProps = {
   /** Page-specific content rendered on the left side of the header. */
   left?: ReactNode;
+  /**
+   * Custom content for the right side of the header. When provided it fully
+   * replaces the default user avatar / logout dropdown (used e.g. on the
+   * signed-out login page which shows a theme toggle + login button instead).
+   */
+  right?: ReactNode;
   /** Called when the logout menu item is clicked. */
   onLogout?: () => void;
   /** Current user's display name, used for the avatar initial. */
@@ -25,14 +31,16 @@ export type AppHeaderProps = {
 /**
  * Global page header. The right side shows a user avatar button whose dropdown
  * holds the logout action; the left side is provided per-page via the `left` slot.
+ * Pass `right` to override the default avatar with page-specific actions.
  */
-export default function AppHeader({ left, onLogout, userName, className }: AppHeaderProps) {
+export default function AppHeader({ left, right, onLogout, userName, className }: AppHeaderProps) {
   const initial = userName?.trim()?.[0]?.toUpperCase();
 
   return (
     <header className={cn('flex w-full items-center gap-[16px]', className)}>
       <div className="min-w-0 flex-1">{left}</div>
       <div className="flex shrink-0 items-center gap-[8px]">
+        {right !== undefined ? right : (
         <DropdownMenu>
           <DropdownMenuTrigger
             aria-label="账户菜单"
@@ -56,6 +64,7 @@ export default function AppHeader({ left, onLogout, userName, className }: AppHe
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        )}
       </div>
     </header>
   );
