@@ -1167,6 +1167,7 @@ export default function ChatWindowPage() {
   const [input, setInput] = useState('');
   const [composerAttachments, setComposerAttachments] = useState<ComposerAttachment[]>([]);
   const [composerDragActive, setComposerDragActive] = useState(false);
+  const [composerPlusOpen, setComposerPlusOpen] = useState(false);
   const [lastTurn, setLastTurn] = useState<ChatTurnResponse | null>(null);
   const [renameSession, setRenameSession] = useState<ChatSession | null>(null);
   const [renameTitle, setRenameTitle] = useState('');
@@ -2676,11 +2677,12 @@ export default function ChatWindowPage() {
   }, [auth, pollScheduledSessionEvents, sessionId, sessions, streamTick]);
 
   async function send(interactionMode: 'normal' | 'scheduled_task' = 'normal') {
-    if ((!input.trim() && readyComposerAttachments.length === 0) || !sessionId) return;
+    if (!sessionId) return;
     if (interactionMode === 'scheduled_task' && !input.trim()) {
       message.warning('请输入要创建的定时任务内容');
       return;
     }
+    if (!input.trim() && readyComposerAttachments.length === 0) return;
     if (uploadingComposerAttachment) {
       message.warning('文件还在解析中，请稍后发送');
       return;
@@ -3064,6 +3066,15 @@ export default function ChatWindowPage() {
         notifyStream();
       }
     }
+  }
+
+  function handleComposerPlusAction(action: 'upload' | 'scheduled_task') {
+    setComposerPlusOpen(false);
+    if (action === 'upload') {
+      fileInputRef.current?.click();
+      return;
+    }
+    void send('scheduled_task');
   }
 
   return (
@@ -3516,36 +3527,45 @@ export default function ChatWindowPage() {
                   trigger={['click']}
                   placement="topLeft"
                   overlayClassName="composer-plus-dropdown"
+                  open={composerPlusOpen}
+                  onOpenChange={setComposerPlusOpen}
                   menu={{
                     items: [
                       {
                         key: 'upload',
                         label: (
-                          <span className="composer-plus-menu-item">
+                          <button
+                            type="button"
+                            className="composer-plus-menu-item"
+                            data-composer-action="upload"
+                            onClick={(event) => {
+                              event.preventDefault();
+                              handleComposerPlusAction('upload');
+                            }}
+                          >
                             <StaffdeckIcon name="upload" />
                             <span>上传文件</span>
-                          </span>
+                          </button>
                         ),
                       },
                       {
                         key: 'scheduled_task',
                         label: (
-                          <span className="composer-plus-menu-item">
+                          <button
+                            type="button"
+                            className="composer-plus-menu-item"
+                            data-composer-action="scheduled_task"
+                            onClick={(event) => {
+                              event.preventDefault();
+                              handleComposerPlusAction('scheduled_task');
+                            }}
+                          >
                             <StaffdeckIcon name="clock" />
                             <span>定时任务</span>
-                          </span>
+                          </button>
                         ),
                       },
                     ],
-                    onClick: ({ key }) => {
-                      if (key === 'upload') {
-                        fileInputRef.current?.click();
-                        return;
-                      }
-                      if (key === 'scheduled_task') {
-                        void send('scheduled_task');
-                      }
-                    },
                   }}
                 >
                   <Button

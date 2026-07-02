@@ -5682,10 +5682,39 @@ body,
   background: #f6f6f6 !important;
 }
 
+.composer-plus-dropdown .ant-dropdown-menu {
+  padding: 8px !important;
+}
+
+.composer-plus-dropdown .ant-dropdown-menu-item {
+  padding: 0 !important;
+}
+
+.composer-plus-dropdown .ant-dropdown-menu-title-content {
+  display: block !important;
+}
+
 .composer-plus-menu-item {
-  display: inline-flex;
+  width: 100%;
+  min-width: 184px;
+  min-height: 42px;
+  padding: 0 12px;
+  display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
+  color: #111111;
+  font: inherit;
+  text-align: left;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.composer-plus-menu-item:hover,
+.composer-plus-menu-item:focus-visible {
+  background: #f5f6f8;
+  outline: none;
 }
 
 .composer-v2 .composer-plus-button.ant-btn::after {
@@ -6038,6 +6067,15 @@ body,
 :root[data-theme='dark'] .composer-v2 .composer-plus-button.ant-btn:focus-visible {
   color: #f5f7ff !important;
   background: #2b2d34 !important;
+}
+
+:root[data-theme='dark'] .composer-plus-menu-item {
+  color: #f0f2f6;
+}
+
+:root[data-theme='dark'] .composer-plus-menu-item:hover,
+:root[data-theme='dark'] .composer-plus-menu-item:focus-visible {
+  background: #2b2d34;
 }
 
 :root[data-theme='dark'] .composer-actions-row::before {
