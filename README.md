@@ -9,6 +9,11 @@ End-to-end MVP for an enterprise Skill Agent Loop service.
 - `frontend-chat`: React/Vite user chat client.
 - `docs`: API and schema notes.
 
+## Tutorial
+
+- Enterprise tutorial page: `http://127.0.0.1:5173/enterprise/tutorial`
+- Maintained tutorial source: `docs/tutorial.md`
+
 ## Quick Start
 
 Use the root dev scripts to run the app on one local port. `scripts/dev_up.sh`

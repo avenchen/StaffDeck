@@ -98,16 +98,20 @@ export default function ToolsPage() {
   }, [agentScopeLoaded, isOverallAgent, searchParams, setSearchParams]);
 
   async function remove(row: ToolRead) {
+    const title = isOverallAgent ? '删除工具？' : '从当前员工移除工具？';
+    const content = isOverallAgent
+      ? `确认删除「${row.display_name || row.name}」？删除后，引用该工具的技能将无法继续调用它。`
+      : `确认从当前员工移除「${row.display_name || row.name}」？工具广场中的原始工具不会被删除。`;
     Modal.confirm({
-      title: '删除工具？',
-      content: `确认删除「${row.display_name || row.name}」？删除后，引用该工具的技能将无法继续调用它。`,
-      okText: '删除',
+      title,
+      content,
+      okText: isOverallAgent ? '删除' : '移除',
       okButtonProps: { danger: true },
       cancelText: '取消',
       onOk: async () => {
         const agentQuery = agentId ? `&agent_id=${encodeURIComponent(agentId)}` : '';
         await api.delete(`/api/enterprise/tools/${row.id}?tenant_id=${TENANT_ID}${agentQuery}`);
-        message.success('已删除');
+        message.success(isOverallAgent ? '已删除' : '已从当前员工移除');
         load();
       },
     });
@@ -138,7 +142,9 @@ export default function ToolsPage() {
         <span className="table-actions">
           <Button size="small" onClick={() => navigate(`/enterprise/tools/${row.id}/edit`)}>编辑</Button>
           <Button size="small" icon={<ExperimentOutlined />} onClick={() => navigate(`/enterprise/tools/${row.id}/test`)}>测试</Button>
-          {isOverallAgent && <Button size="small" danger icon={<DeleteOutlined />} onClick={() => void remove(row)}>删除</Button>}
+          <Button size="small" danger icon={<DeleteOutlined />} onClick={() => void remove(row)}>
+            {isOverallAgent ? '删除' : '移除'}
+          </Button>
         </span>
       ),
     },

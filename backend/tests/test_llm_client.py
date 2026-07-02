@@ -28,6 +28,22 @@ class _FakeOpenAIClient:
         self.chat = _FakeChat()
 
 
+def _completion_with_content(content):  # noqa: ANN001
+    return type(
+        "Completion",
+        (),
+        {
+            "choices": [
+                type(
+                    "Choice",
+                    (),
+                    {"message": type("Message", (), {"content": content})()},
+                )()
+            ]
+        },
+    )()
+
+
 def test_generate_text_uses_chat_completions_only():
     client = object.__new__(LLMClient)
     client.client = _FakeOpenAIClient()
@@ -45,6 +61,24 @@ def test_generate_text_uses_chat_completions_only():
         {"role": "user", "content": '{"hello": "world"}'},
     ]
     assert call["max_tokens"] == 256
+
+
+def test_generate_text_retries_empty_response():
+    client = object.__new__(LLMClient)
+    client.client = _FakeOpenAIClient()
+    client.model = "demo-model"
+    client.temperature = 0.2
+    client.max_output_tokens = 256
+    contents = iter(["", None, "ok"])
+
+    def fake_create(**kwargs):  # noqa: ANN003
+        client.client.chat.completions.calls.append(kwargs)
+        return _completion_with_content(next(contents))
+
+    client.client.chat.completions.create = fake_create
+
+    assert client.generate_text("system prompt", {"hello": "world"}) == "ok"
+    assert len(client.client.chat.completions.calls) == 3
 
 
 def test_generate_text_projects_conversation_context_messages():
@@ -149,6 +183,26 @@ def test_generate_json_falls_back_when_json_object_mode_is_unsupported():
     assert client.generate_json("prompt", {}) == {"ok": True}
     assert "response_format" in client.client.chat.completions.calls[0]
     assert "response_format" not in client.client.chat.completions.calls[1]
+
+
+def test_generate_json_falls_back_when_json_object_mode_returns_empty():
+    client = object.__new__(LLMClient)
+    client.client = _FakeOpenAIClient()
+    client.model = "demo-model"
+    client.temperature = 0.2
+    client.max_output_tokens = 256
+
+    def fake_create(**kwargs):  # noqa: ANN003
+        client.client.chat.completions.calls.append(kwargs)
+        if "response_format" in kwargs:
+            return _completion_with_content("")
+        return _completion_with_content('{"ok": true}')
+
+    client.client.chat.completions.create = fake_create
+
+    assert client.generate_json("prompt", {}) == {"ok": True}
+    assert all("response_format" in call for call in client.client.chat.completions.calls[:3])
+    assert "response_format" not in client.client.chat.completions.calls[3]
 
 
 def test_generate_json_retries_invalid_json(monkeypatch):

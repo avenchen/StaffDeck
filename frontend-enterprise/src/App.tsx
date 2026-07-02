@@ -34,6 +34,7 @@ import OpenPlatformPage from './pages/OpenPlatformPage';
 import SkillsPage from './pages/SkillsPage';
 import ScheduledTasksPage, { ScheduledTaskEditPage, ScheduledTaskNewPage } from './pages/ScheduledTasksPage';
 import ToolsPage, { ToolEditPage, ToolNewPage, ToolTestPage } from './pages/ToolsPage';
+import TutorialPage from './pages/TutorialPage';
 import { ThemeToggleButton, useThemeController, type EffectiveTheme } from './theme';
 import type { AgentProfileRead } from './types';
 import type { MenuProps } from 'antd';
@@ -691,6 +692,32 @@ function EnterpriseLogin({
   );
 }
 
+function AppRoutes({
+  auth,
+  effectiveTheme,
+  onLogin,
+  onLogout,
+}: {
+  auth: EnterpriseAuthSession | null;
+  effectiveTheme: EffectiveTheme;
+  onLogin: (session: EnterpriseAuthSession) => void;
+  onLogout: () => void;
+}) {
+  return (
+    <Routes>
+      <Route path="/enterprise/tutorial" element={<TutorialPage />} />
+      <Route
+        path="*"
+        element={auth ? (
+          <Shell effectiveTheme={effectiveTheme} auth={auth} onLogout={onLogout} />
+        ) : (
+          <EnterpriseLogin onLogin={onLogin} />
+        )}
+      />
+    </Routes>
+  );
+}
+
 export default function App() {
   const { effectiveTheme } = useThemeController();
   const isDark = effectiveTheme === 'dark';
@@ -723,11 +750,7 @@ export default function App() {
       }}
     >
       <BrowserRouter>
-        {auth ? (
-          <Shell effectiveTheme={effectiveTheme} auth={auth} onLogout={logout} />
-        ) : (
-          <EnterpriseLogin onLogin={setAuth} />
-        )}
+        <AppRoutes auth={auth} effectiveTheme={effectiveTheme} onLogin={setAuth} onLogout={logout} />
       </BrowserRouter>
     </ConfigProvider>
   );

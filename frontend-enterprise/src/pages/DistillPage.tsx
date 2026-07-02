@@ -141,6 +141,15 @@ const CONDITION_PRESET_TEXT: Record<string, string> = {
   user_rejected: '用户明确拒绝后进入',
 };
 
+const RETRY_STRATEGY_OPTIONS: SelectOption[] = [
+  { value: 'ask_user', label: '继续追问用户' },
+  { value: 'reflect', label: '反思并修正' },
+  { value: 'retry_tool', label: '重新调用工具' },
+  { value: 'handoff_human', label: '转人工处理' },
+  { value: 'skip', label: '跳过当前节点' },
+  { value: 'stop', label: '停止流程' },
+];
+
 const CONDITION_FIELD_LABELS: Record<string, string> = {
   message_content: '用户消息内容',
   product_name: '商品名称',
@@ -1301,17 +1310,29 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
         });
       });
       if (!activeDraft) return;
-      message.success(`已确认 ${acceptedSuggestions.length} 个工具，正在统一更新技能`);
-      confirmPendingChange(false);
-      await rewriteSelectedTarget(
-        buildToolIntegrationInstruction(acceptedSuggestions),
+      const toolNames = acceptedSuggestions.map((item) => item.display_name || item.name).join('、');
+      const nextDraft = integrateToolSuggestionsIntoDraft(
         activeDraft,
-        allTargetPaths(activeDraft),
-        [
-          `已新增工具：${acceptedSuggestions.map((item) => item.display_name || item.name).join('、')}`,
-          '正在统一判断这些工具应接入哪些节点',
-        ],
+        acceptedSuggestions,
+        pendingChange?.changedPaths?.length ? pendingChange.changedPaths : selectedPaths,
       );
+      const changedPaths = diffTargetPaths(activeDraft, nextDraft, allTargetPaths(nextDraft));
+      confirmPendingChange(false);
+      clearAnimationTimers();
+      setDraft(nextDraft);
+      setPendingChange(null);
+      setUpdatingPaths([]);
+      setTextDiffs([]);
+      if (changedPaths.length > 0) {
+        setHighlightedPaths((current) => mergePaths(current, changedPaths));
+        setDirtyPaths((current) => mergePaths(current, changedPaths));
+        appendOperationToMessage(messageId, {
+          kind: 'skill_change',
+          label: `接入工具：${toolNames}`,
+          skillId: nextDraft.skill_id,
+        });
+      }
+      message.success(`已确认 ${acceptedSuggestions.length} 个工具，当前草稿已局部更新`);
     } catch (error) {
       message.error(error instanceof Error ? error.message : '新增工具或更新技能失败');
     }
@@ -2324,7 +2345,7 @@ function SkillSource({
     onEdit(next, 'basic');
   }
 
-  function editStep(index: number, field: string, value: string | string[] | boolean) {
+  function editStep(index: number, field: string, value: string | string[] | boolean | Record<string, unknown>) {
     const next = cloneSkill(skill);
     const listValue = field === 'expected_user_info' || field === 'allowed_actions'
       ? Array.isArray(value)
@@ -2413,12 +2434,12 @@ function SkillSource({
   function insertNodeBetween(index: number) {
     const next = cloneSkill(skill);
     const nodes = normalizeSkillNodes(next);
-    if (index < 0 || index >= nodes.length - 1) return;
-    const sourceNode = nodes[index];
-    const targetNode = nodes[index + 1];
-    const sourceId = String(sourceNode.node_id || sourceNode.step_id || `node_${index + 1}`);
-    const targetId = String(targetNode.node_id || targetNode.step_id || `node_${index + 2}`);
-    const newNodeId = uniqueNodeId(nodes, `node_${index + 2}`);
+    const insertAt = nodes.length === 0 ? 0 : Math.max(0, Math.min(index + 1, nodes.length));
+    const sourceNode = insertAt > 0 ? nodes[insertAt - 1] : null;
+    const targetNode = insertAt < nodes.length ? nodes[insertAt] : null;
+    const sourceId = sourceNode ? String(sourceNode.node_id || sourceNode.step_id || `node_${insertAt}`) : '';
+    const targetId = targetNode ? String(targetNode.node_id || targetNode.step_id || `node_${insertAt + 1}`) : '';
+    const newNodeId = uniqueNodeId(nodes, `node_${insertAt + 1}`);
     const newNode = {
       node_id: newNodeId,
       type: 'collect_info',
@@ -2432,32 +2453,61 @@ function SkillSource({
       retry_policy: {},
       metadata: {},
     };
-    nodes.splice(index + 1, 0, newNode);
+    nodes.splice(insertAt, 0, newNode);
     next.nodes = nodes;
 
     const edges = normalizeSkillEdges(next);
-    const directEdgeIndexes = edges
-      .map((edge, edgeIndex) => ({ edge, edgeIndex }))
-      .filter(({ edge }) => String(edge.source_node_id || '') === sourceId && String(edge.next_node_id || '') === targetId)
-      .map(({ edgeIndex }) => edgeIndex);
-    if (directEdgeIndexes.length > 0) {
-      directEdgeIndexes.forEach((edgeIndex) => {
-        edges[edgeIndex] = {
-          ...edges[edgeIndex],
+    if (sourceId && targetId) {
+      const directEdgeIndexes = edges
+        .map((edge, edgeIndex) => ({ edge, edgeIndex }))
+        .filter(({ edge }) => String(edge.source_node_id || '') === sourceId && String(edge.next_node_id || '') === targetId)
+        .map(({ edgeIndex }) => edgeIndex);
+      if (directEdgeIndexes.length > 0) {
+        directEdgeIndexes.forEach((edgeIndex) => {
+          edges[edgeIndex] = {
+            ...edges[edgeIndex],
+            next_node_id: newNodeId,
+            label: String(edges[edgeIndex].label || '').trim() || '进入新增节点',
+          };
+        });
+        const maxPriority = Math.max(...directEdgeIndexes.map((edgeIndex, localIndex) => edgePriority(edges[edgeIndex], localIndex)));
+        edges.push({
+          source_node_id: newNodeId,
+          next_node_id: targetId,
+          condition: '',
+          priority: maxPriority + 1,
+          label: `继续到 ${String(targetNode?.name || targetId)}`,
+        });
+      } else {
+        const sourcePriority = edges
+          .filter((edge) => String(edge.source_node_id || '') === sourceId)
+          .reduce((max, edge, sourceIndex) => Math.max(max, edgePriority(edge, sourceIndex)), 0) + 1;
+        edges.push({
+          source_node_id: sourceId,
           next_node_id: newNodeId,
-          label: String(edges[edgeIndex].label || '').trim() || '进入新增节点',
-        };
-      });
-      const maxPriority = Math.max(...directEdgeIndexes.map((edgeIndex, localIndex) => edgePriority(edges[edgeIndex], localIndex)));
+          condition: '',
+          priority: sourcePriority,
+          label: '进入新增节点',
+        });
+        edges.push({
+          source_node_id: newNodeId,
+          next_node_id: targetId,
+          condition: '',
+          priority: 1,
+          label: `继续到 ${String(targetNode?.name || targetId)}`,
+        });
+      }
+    } else if (!sourceId && targetId) {
       edges.push({
         source_node_id: newNodeId,
         next_node_id: targetId,
         condition: '',
-        priority: maxPriority + 1,
-        label: `继续到 ${String(targetNode.name || targetId)}`,
+        priority: 1,
+        label: `继续到 ${String(targetNode?.name || targetId)}`,
       });
-    } else {
-      const sourcePriority = normalizeSkillEdges(next)
+      next.start_node_id = newNodeId;
+    } else if (sourceId && !targetId) {
+      const sourcePriority = edges
         .filter((edge) => String(edge.source_node_id || '') === sourceId)
         .reduce((max, edge, sourceIndex) => Math.max(max, edgePriority(edge, sourceIndex)), 0) + 1;
       edges.push({
@@ -2467,20 +2517,20 @@ function SkillSource({
         priority: sourcePriority,
         label: '进入新增节点',
       });
-      edges.push({
-        source_node_id: newNodeId,
-        next_node_id: targetId,
-        condition: '',
-        priority: 1,
-        label: `继续到 ${String(targetNode.name || targetId)}`,
-      });
+      const previousTerminalIds = asStringList(next.terminal_node_ids);
+      next.terminal_node_ids = previousTerminalIds.length > 0
+        ? [...previousTerminalIds.filter((terminalId) => terminalId !== sourceId), newNodeId]
+        : [newNodeId];
+    } else {
+      next.start_node_id = newNodeId;
+      next.terminal_node_ids = [newNodeId];
     }
     next.edges = edges;
     if (!next.start_node_id) next.start_node_id = String(nodes[0]?.node_id || '');
     if (asStringList(next.terminal_node_ids).length === 0 && nodes.length > 0) {
       next.terminal_node_ids = [String(nodes[nodes.length - 1].node_id || '')];
     }
-    onEdit(next, stepTargetPath(index + 1));
+    onEdit(next, stepTargetPath(insertAt));
   }
 
   function confirmDeleteNode(index: number) {
@@ -2580,6 +2630,11 @@ function SkillSource({
       </SelectableTarget>
       <div className="skill-source-group-title">详细节点</div>
       <div className="skill-source-steps">
+        <div className="skill-node-insert-row edge">
+          <Button size="small" icon={<PlusOutlined />} onClick={() => insertNodeBetween(-1)}>
+            {steps.length > 0 ? '在最前新增节点' : '新增第一个节点'}
+          </Button>
+        </div>
         {steps.map((step, index) => {
           const stepId = String(step.node_id || step.step_id || `node_${index + 1}`);
           const path = stepTargetPath(index);
@@ -2653,13 +2708,23 @@ function SkillSource({
                       onDelete={(edgeIndex) => deleteEdge(index, edgeIndex)}
                     />
                     <SourceJsonLine label="知识范围" value={step.knowledge_scope} />
-                    <SourceJsonLine label="重试策略" value={step.retry_policy} />
+                    <EditableRetryPolicyLine
+                      value={step.retry_policy}
+                      onChange={(value) => editStep(index, 'retry_policy', value)}
+                    />
                   </div>
                 </div>
               </SelectableTarget>
             </div>
           );
         })}
+        {steps.length > 0 && (
+          <div className="skill-node-insert-row edge">
+            <Button size="small" icon={<PlusOutlined />} onClick={() => insertNodeBetween(steps.length - 1)}>
+              在最后新增节点
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -3207,7 +3272,13 @@ function buildSkillFlowLayout(skill: SkillCard, nodes: Array<Record<string, unkn
     reachable.add(nodeId);
     (edgeMap[nodeId] || [])
       .slice()
-      .sort((a, b) => Number(a.priority || 0) - Number(b.priority || 0))
+      .sort((a, b) => {
+        const priorityDelta = Number(a.priority || 0) - Number(b.priority || 0);
+        if (priorityDelta !== 0) return priorityDelta;
+        const aIndex = byId.get(String(a.next_node_id || ''))?.index ?? Number.MAX_SAFE_INTEGER;
+        const bIndex = byId.get(String(b.next_node_id || ''))?.index ?? Number.MAX_SAFE_INTEGER;
+        return aIndex - bIndex;
+      })
       .forEach((edge) => {
         const nextId = String(edge.next_node_id || '');
         if (nextId && byId.has(nextId) && !reachable.has(nextId)) queue.push(nextId);
@@ -3222,6 +3293,10 @@ function buildSkillFlowLayout(skill: SkillCard, nodes: Array<Record<string, unkn
       const sourceId = String(edge.source_node_id || '');
       const targetId = String(edge.next_node_id || '');
       if (!reachable.has(sourceId) || !reachable.has(targetId)) return;
+      const sourceMeta = byId.get(sourceId);
+      const targetMeta = byId.get(targetId);
+      if (!sourceMeta || !targetMeta) return;
+      if (targetMeta.index <= sourceMeta.index) return;
       const sourceRank = ranks.get(sourceId);
       if (sourceRank === undefined) return;
       const nextRank = sourceRank + 1;
@@ -3242,14 +3317,14 @@ function buildSkillFlowLayout(skill: SkillCard, nodes: Array<Record<string, unkn
     }))
     .filter((item) => reachable.has(item.nodeId));
   orderedReachable.forEach((item) => {
-    const rank = ranks.get(item.nodeId) ?? 0;
+    const rank = Math.max(0, Math.min(ranks.get(item.nodeId) ?? item.index, item.index));
     if (!layerMap.has(rank)) layerMap.set(rank, []);
     layerMap.get(rank)?.push(item);
   });
 
   const layers = Array.from(layerMap.entries())
     .sort(([a], [b]) => a - b)
-    .map(([, layer]) => layer);
+    .map(([, layer]) => layer.sort((a, b) => a.index - b.index));
 
   const remainder = nodes
     .map((node, index) => ({
@@ -3906,6 +3981,103 @@ function SourceJsonLine({ label, value }: { label: string; value: unknown }) {
   );
 }
 
+function EditableRetryPolicyLine({
+  value,
+  onChange,
+}: {
+  value: unknown;
+  onChange: (value: Record<string, unknown>) => void;
+}) {
+  const policy = isRecord(value) ? value : {};
+  const attemptKey = Object.prototype.hasOwnProperty.call(policy, 'max_retries') ? 'max_retries' : 'max_attempts';
+  const strategyKey = Object.prototype.hasOwnProperty.call(policy, 'strategy') ? 'strategy' : 'on_failure';
+  const messageKey = Object.prototype.hasOwnProperty.call(policy, 'message') ? 'message' : 'retry_message';
+  const maxAttempts = retryPolicyNumber(policy.max_retries ?? policy.max_attempts);
+  const strategy = retryPolicyString(policy.strategy ?? policy.on_failure);
+  const retryMessage = retryPolicyString(policy.retry_message ?? policy.message);
+  const strategyOptions = mergeSelectOptions(
+    RETRY_STRATEGY_OPTIONS,
+    strategy ? [{ value: strategy, label: retryStrategyLabel(strategy) }] : [],
+  );
+
+  function commit(patch: Record<string, unknown>) {
+    const next = { ...policy, ...patch };
+    Object.keys(next).forEach((key) => {
+      if (next[key] === '' || next[key] === null || next[key] === undefined) delete next[key];
+    });
+    onChange(next);
+  }
+
+  function updateAttempts(nextValue: number | string | null) {
+    const nextNumber = Number(nextValue);
+    commit(Number.isFinite(nextNumber) && nextNumber > 0
+      ? { [attemptKey]: Math.floor(nextNumber) }
+      : { max_attempts: undefined, max_retries: undefined });
+  }
+
+  function updateStrategy(nextValue?: string) {
+    commit(nextValue ? { [strategyKey]: nextValue } : { on_failure: undefined, strategy: undefined });
+  }
+
+  function updateMessage(nextValue: string) {
+    commit(nextValue.trim() ? { [messageKey]: nextValue } : { retry_message: undefined, message: undefined });
+  }
+
+  return (
+    <div className="skill-source-line skill-retry-policy-line">
+      <span className="skill-source-key">重试策略</span>
+      <span className="skill-source-value">
+        <EditableSourceField>
+          <div className="skill-retry-policy-editor">
+            <label className="skill-retry-policy-field attempts">
+              <span>最多重试</span>
+              <InputNumber
+                min={0}
+                precision={0}
+                value={maxAttempts}
+                placeholder="不限制"
+                onChange={updateAttempts}
+              />
+            </label>
+            <label className="skill-retry-policy-field strategy">
+              <span>失败后</span>
+              <Select
+                allowClear
+                value={strategy || undefined}
+                options={strategyOptions}
+                placeholder="选择处理方式"
+                popupMatchSelectWidth={240}
+                onChange={(nextValue) => updateStrategy(nextValue)}
+              />
+            </label>
+            <label className="skill-retry-policy-field message">
+              <span>追问文案</span>
+              <Input
+                value={retryMessage}
+                placeholder="例如：请补充需要校验的报文内容。"
+                onChange={(event) => updateMessage(event.target.value)}
+              />
+            </label>
+          </div>
+        </EditableSourceField>
+      </span>
+    </div>
+  );
+}
+
+function retryPolicyNumber(value: unknown): number | null {
+  const numberValue = Number(value);
+  return Number.isFinite(numberValue) && numberValue > 0 ? Math.floor(numberValue) : null;
+}
+
+function retryPolicyString(value: unknown): string {
+  return typeof value === 'string' ? value : '';
+}
+
+function retryStrategyLabel(value: string): string {
+  return RETRY_STRATEGY_OPTIONS.find((item) => item.value === value)?.label || value;
+}
+
 function hasReadableSourceObject(value: unknown): boolean {
   if (!isRecord(value)) return false;
   return Object.keys(value).length > 0;
@@ -4090,7 +4262,7 @@ function EditableFlowRulesLine({
               <div className="skill-flow-rule-list">
                 {orderedEdges.map(({ edge, index }) => (
                   <div className="skill-flow-rule-item" key={`${String(edge.next_node_id)}_${index}`}>
-                    <label className="skill-flow-rule-field">
+                    <label className="skill-flow-rule-field target">
                       <span>目标 Node</span>
                       <Select
                         className="skill-flow-rule-target"
@@ -4101,7 +4273,7 @@ function EditableFlowRulesLine({
                         onChange={(value) => onUpdate(index, { next_node_id: value })}
                       />
                     </label>
-                    <label className="skill-flow-rule-field">
+                    <label className="skill-flow-rule-field label">
                       <span>规则名称</span>
                       <Input
                         className="skill-flow-rule-label-input"
@@ -5179,6 +5351,68 @@ function removeToolActionFromSkill(skill: SkillCard, toolName: string): SkillCar
   return next;
 }
 
+function integrateToolSuggestionsIntoDraft(
+  skill: SkillCard,
+  suggestions: ToolSuggestionItem[],
+  fallbackPaths: string[] = [],
+): SkillCard {
+  const next = cloneSkill(skill);
+  const nodes = normalizeSkillNodes(next);
+  const fallbackIndexes = fallbackPaths
+    .map(stepIndexFromPath)
+    .filter((index): index is number => index !== null && index >= 0 && index < nodes.length);
+
+  suggestions.forEach((suggestion) => {
+    const toolName = suggestion.name.trim();
+    if (!toolName) return;
+    const action = `call_tool:${toolName}`;
+    const existingIndexes = nodes
+      .map((node, index) => (asStringList(node.allowed_actions).includes(action) ? index : -1))
+      .filter((index) => index >= 0);
+    const targetIndexes = existingIndexes.length > 0
+      ? existingIndexes
+      : toolSuggestionTargetIndexes(nodes, suggestion, fallbackIndexes);
+
+    targetIndexes.forEach((nodeIndex) => {
+      const node = nodes[nodeIndex];
+      const actions = asStringList(node.allowed_actions);
+      if (actions.includes(action)) return;
+      node.allowed_actions = [...actions, action];
+    });
+  });
+
+  next.nodes = nodes;
+  return next;
+}
+
+function toolSuggestionTargetIndexes(
+  nodes: Array<Record<string, unknown>>,
+  suggestion: ToolSuggestionItem,
+  fallbackIndexes: number[],
+): number[] {
+  const uniqueFallbacks = Array.from(new Set(fallbackIndexes));
+  if (uniqueFallbacks.length === 1) return uniqueFallbacks;
+  const suggestionText = [
+    suggestion.name,
+    suggestion.display_name,
+    suggestion.reason,
+    suggestion.description,
+    suggestion.source_excerpt,
+  ].filter(Boolean).join(' ').toLowerCase();
+  const matchedIndexes = nodes
+    .map((node, index) => {
+      const nodeName = String(node.name || node.node_id || node.step_id || '').toLowerCase();
+      return nodeName && suggestionText.includes(nodeName) ? index : -1;
+    })
+    .filter((index) => index >= 0);
+  if (matchedIndexes.length > 0) return Array.from(new Set(matchedIndexes));
+  const toolNodeIndexes = nodes
+    .map((node, index) => (String(node.type || '') === 'tool_call' ? index : -1))
+    .filter((index) => index >= 0);
+  if (toolNodeIndexes.length === 1) return toolNodeIndexes;
+  return [];
+}
+
 function cloneSkillRead(skill: SkillRead): SkillRead {
   return JSON.parse(JSON.stringify(skill)) as SkillRead;
 }
@@ -5467,31 +5701,6 @@ function upsertToolRead(current: ToolRead[], nextTool: ToolRead): ToolRead[] {
   return exists
     ? current.map((tool) => (tool.name === nextTool.name ? { ...tool, ...nextTool, id: nextTool.id || tool.id } : tool))
     : [...current, nextTool];
-}
-
-function buildToolIntegrationInstruction(suggestions: ToolSuggestionItem | ToolSuggestionItem[]): string {
-  const items = Array.isArray(suggestions) ? suggestions : [suggestions];
-  const toolDetails = items.map((suggestion) => {
-    const displayName = suggestion.display_name || suggestion.name;
-    return {
-      name: suggestion.name,
-      display_name: displayName,
-      description: suggestion.description || '',
-      method: suggestion.method || 'POST',
-      url: suggestion.url || '',
-      input_schema: suggestion.input_schema || {},
-      output_schema: suggestion.probe_result?.success && suggestion.probe_result.inferred_output_schema
-        ? suggestion.probe_result.inferred_output_schema
-        : suggestion.output_schema || {},
-      sample_arguments: suggestion.sample_arguments || {},
-    };
-  });
-  return [
-    '以下工具已经新增到工具配置。',
-    '请更新当前技能：统一判断这些工具分别应接入哪些节点，并只在确实需要调用工具的节点中加入对应 allowed_actions。',
-    '同步改写对应节点说明，使模型在参数满足时调用工具，并根据工具结果继续推进或给出最终回复；不要修改无关字段。',
-    `工具详情：${JSON.stringify(toolDetails, null, 2)}`,
-  ].join('\n');
 }
 
 function fieldLabel(field: string): string {

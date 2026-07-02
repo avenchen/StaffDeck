@@ -18,6 +18,8 @@ class LLMError(Exception):
 
 
 JSON_REPAIR_ATTEMPTS = 3
+EMPTY_RESPONSE_RETRIES = 2
+EMPTY_RESPONSE_MESSAGE = "Model returned an empty response"
 
 
 class LLMClient:
@@ -51,13 +53,17 @@ class LLMClient:
             }
             if response_format:
                 request["response_format"] = response_format
-            completion = self.client.chat.completions.create(
-                **request,
-            )
-            content = completion.choices[0].message.content
-            if not content:
-                raise LLMError("Model returned an empty response")
-            return content
+            for attempt in range(EMPTY_RESPONSE_RETRIES + 1):
+                completion = self.client.chat.completions.create(
+                    **request,
+                )
+                content = _completion_message_content(completion)
+                if content.strip():
+                    return content
+                if attempt >= EMPTY_RESPONSE_RETRIES:
+                    raise LLMError(
+                        f"{EMPTY_RESPONSE_MESSAGE} after {EMPTY_RESPONSE_RETRIES + 1} attempts"
+                    )
         except Exception as exc:
             if isinstance(exc, LLMError):
                 raise
@@ -141,7 +147,29 @@ class LLMClient:
             message = str(exc)
             if _response_format_unsupported(message):
                 return message
+            if _empty_response(message):
+                return self.generate_text(system_prompt, user_payload)
             raise
+
+
+def _completion_message_content(completion: Any) -> str:
+    try:
+        choice = completion.choices[0]
+        message = getattr(choice, "message", None)
+        content = getattr(message, "content", None)
+    except (IndexError, TypeError, AttributeError):
+        return ""
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts: list[str] = []
+        for item in content:
+            if isinstance(item, str):
+                parts.append(item)
+            elif isinstance(item, dict) and isinstance(item.get("text"), str):
+                parts.append(item["text"])
+        return "".join(parts)
+    return ""
 
 
 def _extract_json(text: str) -> str:
@@ -263,6 +291,10 @@ def _response_format_unsupported(message: str) -> bool:
             "invalid parameter",
         )
     )
+
+
+def _empty_response(message: str) -> bool:
+    return EMPTY_RESPONSE_MESSAGE.lower() in message.lower()
 
 
 def _project_context_messages(user_payload: dict[str, Any]) -> tuple[list[dict[str, str]], dict[str, Any]]:
