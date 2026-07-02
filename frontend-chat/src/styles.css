@@ -3009,12 +3009,12 @@ textarea,
   max-width: min(180px, 44vw);
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
   padding: 0 8px;
   border: 0;
   border-radius: 7px;
   color: var(--muted);
-  background: color-mix(in srgb, var(--surface-muted) 86%, transparent);
+  background: transparent;
   font: inherit;
   font-size: 12px;
   line-height: 1;
@@ -3024,9 +3024,9 @@ textarea,
 
 .composer-intent-icon {
   position: relative;
-  width: 13px;
-  height: 13px;
-  flex: 0 0 13px;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -3038,19 +3038,24 @@ textarea,
   transition: opacity 0.14s ease, transform 0.14s ease;
 }
 
+.composer-intent-icon::before,
 .composer-intent-icon::after {
-  content: "×";
+  content: "";
   position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
+  left: 50%;
+  top: 50%;
+  width: 10px;
+  height: 2px;
+  border-radius: 999px;
+  background: currentColor;
   opacity: 0;
-  color: currentColor;
-  font-size: 16px;
-  font-weight: 500;
-  line-height: 1;
-  transform: scale(0.72);
+  transform-origin: center;
+  transform: translate(-50%, -50%) rotate(45deg) scale(0.72);
   transition: opacity 0.14s ease, transform 0.14s ease;
+}
+
+.composer-intent-icon::after {
+  transform: translate(-50%, -50%) rotate(-45deg) scale(0.72);
 }
 
 .composer-intent-chip span {
@@ -3061,23 +3066,34 @@ textarea,
 }
 
 .composer-intent-chip:hover,
-.composer-intent-chip:focus {
+.composer-intent-chip:focus-visible {
   color: var(--foreground);
-  background: color-mix(in srgb, var(--surface-muted) 68%, var(--accent-soft));
+  background: color-mix(in srgb, var(--surface-muted) 92%, transparent);
 }
 
 .composer-intent-chip:hover .composer-intent-icon .anticon,
-.composer-intent-chip:focus .composer-intent-icon .anticon,
+.composer-intent-chip:focus-visible .composer-intent-icon .anticon,
 .composer-intent-chip:hover .composer-intent-icon .sd1-icon,
-.composer-intent-chip:focus .composer-intent-icon .sd1-icon {
+.composer-intent-chip:focus-visible .composer-intent-icon .sd1-icon {
   opacity: 0;
   transform: scale(0.72);
 }
 
+.composer-intent-chip:hover .composer-intent-icon::before,
 .composer-intent-chip:hover .composer-intent-icon::after,
-.composer-intent-chip:focus .composer-intent-icon::after {
+.composer-intent-chip:focus-visible .composer-intent-icon::before,
+.composer-intent-chip:focus-visible .composer-intent-icon::after {
   opacity: 0.9;
-  transform: scale(1);
+}
+
+.composer-intent-chip:hover .composer-intent-icon::before,
+.composer-intent-chip:focus-visible .composer-intent-icon::before {
+  transform: translate(-50%, -50%) rotate(45deg) scale(1);
+}
+
+.composer-intent-chip:hover .composer-intent-icon::after,
+.composer-intent-chip:focus-visible .composer-intent-icon::after {
+  transform: translate(-50%, -50%) rotate(-45deg) scale(1);
 }
 
 .composer-hint {
@@ -4142,12 +4158,23 @@ body,
 }
 
 .message-mode-chip,
-.citation-chip,
-.composer-intent-chip {
+.citation-chip {
   border-radius: 7px;
   color: #111111;
   background: #f3f4f6;
   border-color: #e5e7eb;
+}
+
+.composer-intent-chip {
+  border-radius: 7px;
+  color: #111111;
+  background: transparent;
+  border-color: transparent;
+}
+
+.composer-intent-chip:hover,
+.composer-intent-chip:focus-visible {
+  background: #f3f4f6;
 }
 
 .message-feedback .ant-btn {
@@ -6068,6 +6095,18 @@ body,
 
 :root[data-theme='dark'] .composer-v2 .composer-plus-button.ant-btn:hover,
 :root[data-theme='dark'] .composer-v2 .composer-plus-button.ant-btn:focus-visible {
+  color: #f5f7ff !important;
+  background: #2b2d34 !important;
+}
+
+:root[data-theme='dark'] .composer-intent-chip {
+  color: #d8dcef !important;
+  background: transparent !important;
+  border-color: transparent !important;
+}
+
+:root[data-theme='dark'] .composer-intent-chip:hover,
+:root[data-theme='dark'] .composer-intent-chip:focus-visible {
   color: #f5f7ff !important;
   background: #2b2d34 !important;
 }
