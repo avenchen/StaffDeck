@@ -101,6 +101,7 @@ type ComposerAttachment = ChatAttachmentRead & {
 type ComposerInteractionMode = 'normal' | 'scheduled_task';
 const MODEL_CONFIG_STORAGE_PREFIX = 'skill_agent_selected_model_config';
 const SESSION_READ_STORAGE_PREFIX = 'skill_agent_session_read_at';
+const RUNNING_EVENT_RECOVERY_WINDOW_MS = 5 * 60 * 1000;
 
 function sessionReadStorageKey(userId: string): string {
   return `${SESSION_READ_STORAGE_PREFIX}:${userId || 'anonymous'}`;
@@ -2529,6 +2530,7 @@ export default function ChatWindowPage() {
   const hydrateRunningSessionFromEvents = useCallback((id: string, events: ChatSessionEventRead[]) => {
     if (locallyCancelledSessionIdsRef.current.has(id)) return false;
     const slot = getSlot(id);
+    if (slot.serverMessages.length === 0) return false;
     const latestUserTime = Math.max(
       0,
       ...slot.serverMessages
@@ -2566,6 +2568,14 @@ export default function ChatWindowPage() {
     const runId = runningGroup[0].run_id;
     const turnId = scheduledTurnId(id, runId);
     const latestRunningEventTime = eventTime(runningGroup[runningGroup.length - 1]);
+    if (
+      latestRunningEventTime <= 0
+      || Date.now() - latestRunningEventTime > RUNNING_EVENT_RECOVERY_WINDOW_MS
+      || latestRunningEventTime <= latestUserTime
+    ) {
+      clearStreamSlot(id, true);
+      return false;
+    }
     const hasAssistantAfterRunningGroup = slot.serverMessages.some((messageItem) => (
       messageItem.role === 'assistant'
       && latestRunningEventTime > 0
@@ -2624,8 +2634,25 @@ export default function ChatWindowPage() {
       .then((events) => {
         if (!events.length) return;
         hydrateRunningSessionFromEvents(id, events);
+        const slot = getSlot(id);
+        if (slot.serverMessages.length === 0) return;
+        const latestLoadedMessageTime = Math.max(
+          0,
+          ...slot.serverMessages.map((messageItem) => parseMessageTime(messageItem.created_at)),
+        );
+        const now = Date.now();
         const stream = getStreamSlot(id);
-        const unseenEvents = events.filter((event) => !scheduledEventIdsRef.current.has(event.id));
+        const unseenEvents = events.filter((event) => {
+          if (scheduledEventIdsRef.current.has(event.id)) return false;
+          const timestamp = eventTime(event);
+          return (
+            timestamp > 0
+            && (
+              timestamp >= latestLoadedMessageTime
+              || now - timestamp <= RUNNING_EVENT_RECOVERY_WINDOW_MS
+            )
+          );
+        });
         if (!unseenEvents.length) return;
         const sessionRow = sessions.find((item) => item.id === id);
         const hasTerminalEvent = unseenEvents.some((event) => isTerminalEvent(event));
