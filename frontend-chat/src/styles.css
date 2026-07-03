@@ -4338,13 +4338,13 @@ body,
 
 .employee-gallery-tabs button {
   position: relative;
-  width: 120px;
+  /* width: 140px; */
   height: 31px;
-  padding: 0;
+  padding: 0 24px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 4px;
   color: #77829b;
   font: 700 14px/1 var(--font-body);
   background: transparent;
