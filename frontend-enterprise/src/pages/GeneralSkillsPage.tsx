@@ -78,16 +78,18 @@ const STATUS_BADGE: Record<GeneralSkillRead['status'], { tone: BadgeTone; text: 
   archived: { tone: 'gray', text: '已停用' },
 };
 
-const DEFAULT_MARKDOWN = `# 技能说明
+const EMPTY_SKILL_MARKDOWN = `# 技能说明
 
-这里粘贴任意格式的技能文档。系统不会从文档中自动抽取名称、Slug 或描述；这些信息由上方表单维护。`;
+在这里编写技能文档。名称、Slug 和描述由上方表单维护，系统不会从文档中自动抽取。`;
 
-const DEFAULT_GENERAL_META = {
-  name: '中国城市天气',
-  slug: 'weather-zh',
-  description: '中国城市天气查询工具',
-  homepage: 'https://www.weather.com.cn/',
-};
+const EDITOR_CARD_CLASS =
+  'rounded-[14px] border border-[#eceef1] bg-white dark:border-white/10 dark:bg-[#26272d]';
+const EDITOR_CARD_TITLE_CLASS = 'mb-[16px] text-[14px] font-medium text-[#18181a] dark:text-white';
+const EDITOR_FIELD_LABEL_CLASS = 'text-[13px] font-medium text-[#18181a] dark:text-white';
+const EDITOR_ACTION_OUTLINE_CLASS =
+  'h-8 gap-1 rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-5 text-[12px] font-normal text-[#757f9c] hover:border-[#cbd3e6] hover:bg-white hover:text-[#18181a] dark:border-border dark:bg-(--surface) dark:text-muted-foreground dark:hover:bg-(--surface)';
+const EDITOR_ACTION_PRIMARY_CLASS =
+  'h-8 gap-1 rounded-[10px] bg-[#18181a] px-5 text-[12px] font-normal text-white hover:bg-[#303030]';
 const ENTERPRISE_AGENT_STORAGE_KEY = 'ultrarag_enterprise_agent_scope';
 const GENERAL_SKILL_RUN_TIMEOUT_MS = 120_000;
 const FOLDER_INPUT_PROPS = {
@@ -1022,28 +1024,35 @@ function EditorCard({
   );
 }
 
+function LabeledField({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <label className="flex flex-col gap-[6px]">
+      <span className={EDITOR_FIELD_LABEL_CLASS}>{label}</span>
+      {children}
+    </label>
+  );
+}
+
 function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' | 'edit' } & GeneralSkillPageProps) {
   const navigate = useNavigate();
   const { slug: routeSlug } = useParams();
   const [rows, setRows] = useState<GeneralSkillRead[]>([]);
-  const [markdown, setMarkdown] = useState(DEFAULT_MARKDOWN);
-  const [skillName, setSkillName] = useState(DEFAULT_GENERAL_META.name);
-  const [skillSlug, setSkillSlug] = useState(DEFAULT_GENERAL_META.slug);
-  const [skillDescription, setSkillDescription] = useState(DEFAULT_GENERAL_META.description);
-  const [skillHomepage, setSkillHomepage] = useState(DEFAULT_GENERAL_META.homepage);
+  const [markdown, setMarkdown] = useState(EMPTY_SKILL_MARKDOWN);
+  const [skillName, setSkillName] = useState('');
+  const [skillSlug, setSkillSlug] = useState('');
+  const [skillDescription, setSkillDescription] = useState('');
+  const [skillHomepage, setSkillHomepage] = useState('');
   const [skillFiles, setSkillFiles] = useState<GeneralSkillFile[]>([
-    { path: 'SKILL.md', content: DEFAULT_MARKDOWN, size: DEFAULT_MARKDOWN.length, mime_type: 'text/markdown' },
+    { path: 'SKILL.md', content: EMPTY_SKILL_MARKDOWN, size: EMPTY_SKILL_MARKDOWN.length, mime_type: 'text/markdown' },
   ]);
   const [selectedSlug, setSelectedSlug] = useState<string>();
   const [editingSlug, setEditingSlug] = useState<string | null>(null);
-  const [query, setQuery] = useState('北京今天天气怎么样');
+  const [query, setQuery] = useState('');
   const [runResult, setRunResult] = useState<GeneralSkillRunResponse | null>(null);
   const [liveResult, setLiveResult] = useState<Partial<GeneralSkillRunResponse> | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [dragActive, setDragActive] = useState(false);
-  const [searchText, setSearchText] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | GeneralSkillRead['status']>('all');
   const [selectedFilePath, setSelectedFilePath] = useState('SKILL.md');
   const [editorScroll, setEditorScroll] = useState({ top: 0, left: 0 });
   const [clawhubModalOpen, setClawhubModalOpen] = useState(false);
@@ -1078,15 +1087,15 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
     [skillFiles, selectedFilePath],
   );
   const selectedFileLanguage = useMemo(() => languageFromFilePath(selectedFile?.path), [selectedFile?.path]);
-  const filteredRows = useMemo(() => {
-    const keyword = searchText.trim().toLowerCase();
-    return rows.filter((row) => {
-      const matchesStatus = statusFilter === 'all' || row.status === statusFilter;
-      const haystack = [row.name, row.slug, row.description, row.homepage].filter(Boolean).join(' ').toLowerCase();
-      const matchesKeyword = !keyword || haystack.includes(keyword);
-      return matchesStatus && matchesKeyword;
-    });
-  }, [rows, searchText, statusFilter]);
+  const isNew = mode === 'new';
+  const pageTitle = isNew ? '新建空白技能' : '编辑技能';
+  const pageDescription = isOverallAgent
+    ? (isNew
+      ? '填写技能基本信息并编辑 SKILL.md，保存后可在右侧运行测试。'
+      : '维护技能广场中的技能定义、文件包和运行测试。')
+    : (isNew
+      ? '为当前数字员工创建技能，填写基本信息并编辑技能文件。'
+      : '维护当前数字员工技能的定义、文件包和运行测试。');
 
   const load = () => {
     const agentSuffix = agentId ? `&agent_id=${encodeURIComponent(agentId)}` : '';
@@ -1209,15 +1218,18 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
   }
 
   function newSkill() {
-    setMarkdown(DEFAULT_MARKDOWN);
+    setMarkdown(EMPTY_SKILL_MARKDOWN);
     setSkillName('');
     setSkillSlug('');
     setSkillDescription('');
     setSkillHomepage('');
-    setSkillFiles([{ path: 'SKILL.md', content: DEFAULT_MARKDOWN, size: DEFAULT_MARKDOWN.length, mime_type: 'text/markdown' }]);
+    setSkillFiles([{ path: 'SKILL.md', content: EMPTY_SKILL_MARKDOWN, size: EMPTY_SKILL_MARKDOWN.length, mime_type: 'text/markdown' }]);
     setSelectedFilePath('SKILL.md');
     setEditingSlug(null);
+    setSelectedSlug(undefined);
+    setQuery('');
     setRunResult(null);
+    setLiveResult(null);
   }
 
   function editSkill(row: GeneralSkillRead) {
@@ -1785,40 +1797,105 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
   }
 
   const isLiveRunning = loading && !runResult;
-  const editorTitle = editingSlug ? `编辑技能：${editingSlug}` : '新增技能';
+
+  const importMenu = (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <UIButton variant="outline" className={EDITOR_ACTION_OUTLINE_CLASS}>
+          <UploadOutlined />
+          导入
+          <IconChevronDown className="size-[12px]" />
+        </UIButton>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className={MENU_CONTENT_CLASS}>
+        <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={() => requestImport('file')}>选择文件</DropdownMenuItem>
+        <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={() => requestImport('folder')}>选择文件夹</DropdownMenuItem>
+        {!isOverallAgent && (
+          <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={() => requestAgentImport('plaza')}>
+            <UploadOutlined />
+            从广场复制
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={() => requestClawHubImport()}>
+          <GithubOutlined />
+          从开源平台导入
+        </DropdownMenuItem>
+        {!isOverallAgent && (
+          <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={() => requestAgentImport('employee')}>
+            <TeamOutlined />
+            从数字员工复制技能
+          </DropdownMenuItem>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 
   return (
-    <div className="min-h-full box-border px-[48px] pt-[32px] pb-[43px] max-[900px]:px-[16px]">
+    <div
+      className="min-h-full box-border px-[48px] pt-[32px] pb-[43px] max-[900px]:px-[16px]"
+      aria-busy={loading || saving}
+    >
       <AppHeader
         onLogout={onLogout}
         userName={currentUser?.username}
-        left={(
-          <div>
-            <h3 className="mb-[4px] text-[18px] font-semibold text-foreground">{mode === 'new' ? '新建技能' : '编辑技能'}</h3>
-            <span className="text-[13px] text-muted-foreground">
-              {isOverallAgent
-                ? '维护技能广场中的技能定义、文件包和运行测试。'
-                : '维护当前数字员工技能的技能定义、文件包和运行测试。'}
-            </span>
-          </div>
-        )}
+        title={pageTitle}
+        description={pageDescription}
       />
-      <div className="page-title mt-1" style={{ justifyContent: 'flex-end' }}>
-        <div className="flex items-center gap-[8px]">
-          <UIButton variant="outline" onClick={() => navigate('/enterprise/general-skills')}>
-            <ArrowLeftOutlined />
-            返回列表
+
+      <div className="mt-[20px] mb-[16px] flex flex-wrap items-center justify-end gap-[8px]">
+        <UIButton variant="outline" className={EDITOR_ACTION_OUTLINE_CLASS} onClick={() => navigate('/enterprise/general-skills')}>
+          <ArrowLeftOutlined />
+          返回列表
+        </UIButton>
+        {!isNew && (
+          <UIButton variant="outline" className={EDITOR_ACTION_OUTLINE_CLASS} onClick={() => navigate('/enterprise/general-skills/new')}>
+            <PlusOutlined />
+            新建技能
           </UIButton>
-          {mode === 'edit' && (
-            <UIButton variant="outline" onClick={() => navigate('/enterprise/general-skills/new')}>
-              <PlusOutlined />
-              新建技能
-            </UIButton>
-          )}
-        </div>
+        )}
+        {importMenu}
+        <UIButton disabled={saving} className={EDITOR_ACTION_PRIMARY_CLASS} onClick={() => void importSkill()}>
+          <CloudOutlined />
+          保存并发布
+        </UIButton>
       </div>
-      <div className="general-skill-workbench general-skill-editor-page">
-        <div className="general-skill-main flex flex-col gap-[16px]">
+
+      <div className="grid-2">
+        <div className="flex flex-col gap-[16px]">
+          <section className={cn(EDITOR_CARD_CLASS, 'p-[20px]')}>
+            <h3 className={EDITOR_CARD_TITLE_CLASS}>基本信息</h3>
+            <div className="grid grid-cols-1 gap-[16px] md:grid-cols-2">
+              <LabeledField label="技能名称">
+                <Input
+                  value={skillName}
+                  onChange={(event) => setSkillName(event.target.value)}
+                  placeholder="例如 天气查询、代码审查"
+                />
+              </LabeledField>
+              <LabeledField label="Slug">
+                <Input
+                  value={skillSlug}
+                  onChange={(event) => setSkillSlug(event.target.value)}
+                  placeholder="用于路由和接口路径，例如 weather-zh"
+                />
+              </LabeledField>
+              <LabeledField label="描述">
+                <Input
+                  value={skillDescription}
+                  onChange={(event) => setSkillDescription(event.target.value)}
+                  placeholder="用于员工选择技能时的说明"
+                />
+              </LabeledField>
+              <LabeledField label="主页链接">
+                <Input
+                  value={skillHomepage}
+                  onChange={(event) => setSkillHomepage(event.target.value)}
+                  placeholder="可选，参考文档或项目主页"
+                />
+              </LabeledField>
+            </div>
+          </section>
+
           <EditorCard
             className={`editor-card general-skill-editor ${dragActive ? 'drag-active' : ''}`}
             onDragEnter={handleDragEnter}
@@ -1828,45 +1905,8 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
             title={(
               <span className="flex items-center gap-[8px]">
                 <FileTextOutlined />
-                <span>{editorTitle}</span>
+                <span>技能文件</span>
               </span>
-            )}
-            extra={(
-              <div className="flex flex-wrap items-center gap-[8px]">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <UIButton variant="outline">
-                      <UploadOutlined />
-                      导入
-                      <IconChevronDown className="size-[12px]" />
-                    </UIButton>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className={MENU_CONTENT_CLASS}>
-                    <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={() => requestImport('file')}>选择文件</DropdownMenuItem>
-                    <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={() => requestImport('folder')}>选择文件夹</DropdownMenuItem>
-                    {!isOverallAgent && (
-                      <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={() => requestAgentImport('plaza')}>
-                        <UploadOutlined />
-                        从广场复制
-                      </DropdownMenuItem>
-                    )}
-                    <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={() => requestClawHubImport()}>
-                      <GithubOutlined />
-                      从开源平台导入
-                    </DropdownMenuItem>
-                    {!isOverallAgent && (
-                      <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={() => requestAgentImport('employee')}>
-                        <TeamOutlined />
-                        从数字员工复制技能
-                      </DropdownMenuItem>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                <UIButton disabled={saving} onClick={() => void importSkill()}>
-                  <CloudOutlined />
-                  保存并发布
-                </UIButton>
-              </div>
             )}
           >
             <input
@@ -1896,28 +1936,6 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
                 <span>释放以导入 SKILL.md、zip 技能包或完整技能文件夹</span>
               </div>
             )}
-            <div className="general-skill-meta-form">
-              <Input
-                value={skillName}
-                onChange={(event) => setSkillName(event.target.value)}
-                placeholder="技能名称，由用户填写"
-              />
-              <Input
-                value={skillSlug}
-                onChange={(event) => setSkillSlug(event.target.value)}
-                placeholder="Slug，由用户填写，用于路由和接口路径"
-              />
-              <Input
-                value={skillDescription}
-                onChange={(event) => setSkillDescription(event.target.value)}
-                placeholder="描述，用于员工选择技能"
-              />
-              <Input
-                value={skillHomepage}
-                onChange={(event) => setSkillHomepage(event.target.value)}
-                placeholder="主页或参考链接，可选"
-              />
-            </div>
             <div className="general-skill-file-editor">
               <aside className="general-skill-file-tree">
                 <div className="general-skill-file-tree-title">
@@ -1990,29 +2008,40 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
               </section>
             </div>
           </EditorCard>
+        </div>
+
+        <div className="flex flex-col gap-[16px]">
           <EditorCard
             className="editor-card general-skill-run-card"
             bodyClassName="p-[18px]"
             title="运行测试"
             extra={(
-              <UIButton disabled={loading} onClick={() => void runSkill()}>
+              <UIButton disabled={loading || !selectedSkill?.slug} className={EDITOR_ACTION_PRIMARY_CLASS} onClick={() => void runSkill()}>
                 <ExperimentOutlined />
                 运行
               </UIButton>
             )}
           >
-            <div className="general-run-form">
-              <UISelect value={selectedSkill?.slug} onValueChange={setSelectedSlug}>
-                <SelectTrigger className={cn(SELECT_TRIGGER_CLASS, 'w-full')}>
-                  <SelectValue placeholder="选择技能" />
-                </SelectTrigger>
-                <SelectContent>
-                  {rows.map((row) => (
-                    <SelectItem key={row.slug} value={row.slug}>{`${row.name} / ${row.slug}`}</SelectItem>
-                  ))}
-                </SelectContent>
-              </UISelect>
-              <Input value={query} onChange={(event) => setQuery(event.target.value)} />
+            <div className="flex flex-col gap-[12px]">
+              <LabeledField label="选择技能">
+                <UISelect value={selectedSkill?.slug} onValueChange={setSelectedSlug}>
+                  <SelectTrigger className={cn(SELECT_TRIGGER_CLASS, 'w-full')}>
+                    <SelectValue placeholder={isNew && !selectedSkill ? '保存后可选择并测试' : '选择技能'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {rows.map((row) => (
+                      <SelectItem key={row.slug} value={row.slug}>{`${row.name} / ${row.slug}`}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </UISelect>
+              </LabeledField>
+              <LabeledField label="测试问题">
+                <Input
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="输入要测试的问题"
+                />
+              </LabeledField>
             </div>
           </EditorCard>
           <EditorCard
@@ -2185,12 +2214,14 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
         open={importPrepareOpen}
         onOpenChange={(open) => { if (!open) { setImportPrepareOpen(false); importPrepareActionRef.current = null; } }}
       >
-        <DialogContent aria-describedby={undefined} className="flex w-[calc(100%-2rem)] flex-col gap-[12px] rounded-[14px] px-[20px] py-[16px] sm:max-w-[460px]">
-          <DialogTitle className="text-[15px] font-medium text-[#18181a] dark:text-white">导入新技能前是否保存当前技能？</DialogTitle>
-          <p className="text-[13px] leading-[20px] text-[#4f5669] dark:text-muted-foreground">
+        <DialogContent aria-describedby={undefined} className="flex w-[calc(100%-2rem)] flex-col gap-0 overflow-hidden rounded-[16px] p-0 sm:max-w-[460px]">
+          <DialogTitle className="border-b border-border px-[24px] py-[16px] text-[16px] font-semibold text-foreground">
+            导入新技能前是否保存当前技能？
+          </DialogTitle>
+          <p className="px-[24px] py-[16px] text-[13px] leading-[20px] text-[#4f5669] dark:text-muted-foreground">
             你正在编辑现有技能。导入会进入新建状态，不会覆盖当前技能。
           </p>
-          <div className="mt-[4px] flex items-center justify-end gap-[8px]">
+          <div className="flex items-center justify-end gap-[8px] bg-background px-[24px] py-[12px]">
             <UIButton
               variant="outline"
               onClick={() => { setImportPrepareOpen(false); importPrepareActionRef.current = null; }}
@@ -2216,9 +2247,11 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
       </Dialog>
 
       <Dialog open={Boolean(renameTarget)} onOpenChange={(open) => { if (!open) setRenameTarget(null); }}>
-        <DialogContent aria-describedby={undefined} className="flex w-[calc(100%-2rem)] flex-col gap-[16px] rounded-[14px] px-[20px] py-[16px] sm:max-w-[420px]">
-          <DialogTitle className="px-[12px] text-[14px] font-normal leading-none text-[#757f9c] dark:text-muted-foreground">重命名文件</DialogTitle>
-          <div className="px-[12px]">
+        <DialogContent aria-describedby={undefined} className="flex w-[calc(100%-2rem)] flex-col gap-0 overflow-hidden rounded-[16px] p-0 sm:max-w-[420px]">
+          <DialogTitle className="border-b border-border px-[24px] py-[16px] text-[16px] font-semibold text-foreground">
+            重命名文件
+          </DialogTitle>
+          <div className="px-[24px] py-[16px]">
             <Input
               autoFocus
               value={renameValue}
@@ -2231,7 +2264,7 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
               }}
             />
           </div>
-          <div className="flex items-center justify-end gap-[8px] px-[12px]">
+          <div className="flex items-center justify-end gap-[8px] bg-background px-[24px] py-[12px]">
             <UIButton
               variant="outline"
               onClick={() => setRenameTarget(null)}

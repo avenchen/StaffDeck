@@ -24,6 +24,18 @@ export const SELECT_TRIGGER_CLASS =
 export const MOBILE_CARD_CLASS =
   'min-w-0 rounded-[8px] border border-[#eceef1] bg-white p-[14px] dark:border-white/10 dark:bg-[#26272d]';
 
+/** Dialog footer bar — white background, top border, right-aligned actions. */
+export const DIALOG_FOOTER_CLASS =
+  'flex items-center justify-end gap-[8px] bg-white px-[24px] py-[12px] dark:bg-[#26272d]';
+
+/** Standard dialog cancel button. */
+export const DIALOG_CANCEL_BUTTON_CLASS =
+  'h-[32px] min-w-[80px] rounded-[10px] border-[#e3e7f1] bg-white px-[12px] text-[14px] font-normal text-[#464c5e] hover:border-[#e3e7f1] hover:bg-[#f6f6f6] hover:text-[#18181a] dark:border-border dark:bg-transparent dark:text-muted-foreground dark:hover:bg-input/50 dark:hover:text-white';
+
+/** Standard dialog primary confirm button. */
+export const DIALOG_PRIMARY_BUTTON_CLASS =
+  'h-[32px] min-w-[80px] rounded-[10px] bg-[#18181a] px-[12px] text-[14px] font-normal text-white hover:bg-[#303030]';
+
 /** Format a backend timestamp as a localized `zh-CN` date-time, or `-` when empty/invalid. */
 export function formatDateTime(value?: string): string {
   if (!value) return '-';

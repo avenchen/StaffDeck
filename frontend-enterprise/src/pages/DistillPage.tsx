@@ -2441,7 +2441,7 @@ function KDialog({
         )}
         <div className="px-[24px] py-[20px]">{children}</div>
         {footer != null && (
-          <DialogFooter className="border-t border-border px-[24px] py-[12px] sm:justify-end">{footer}</DialogFooter>
+          <DialogFooter>{footer}</DialogFooter>
         )}
       </DialogContent>
     </Dialog>
