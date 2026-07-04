@@ -1,5 +1,5 @@
 import { CheckOutlined, UploadOutlined } from '../icons';
-import { Button, Modal, Typography, message } from 'antd';
+import { Button as UIButton, Dialog, DialogContent, DialogTitle, notify } from '@/components/ui';
 import { useEffect, useRef, useState } from 'react';
 import { api, TENANT_ID } from '../api/client';
 import {
@@ -65,7 +65,7 @@ export default function EmployeeAvatarEditor({
       setUploadedImage(dataUrl);
       setMode('upload');
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '头像读取失败');
+      notify.error(error instanceof Error ? error.message : '头像读取失败');
     } finally {
       if (inputRef.current) inputRef.current.value = '';
     }
@@ -90,46 +90,43 @@ export default function EmployeeAvatarEditor({
         tenant_id: TENANT_ID,
         metadata,
       });
-      message.success('员工头像已更新');
+      notify.success('员工头像已更新');
       onSaved?.(saved);
       onClose();
       window.dispatchEvent(new Event('ultrarag-enterprise-agent-scope-refresh'));
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '保存头像失败');
+      notify.error(error instanceof Error ? error.message : '保存头像失败');
     } finally {
       setSaving(false);
     }
   }
 
   return (
-    <Modal
-      className="employee-avatar-modal"
-      title={agent ? `设置头像：${employeeDisplayName(agent)}` : '设置头像'}
-      open={open}
-      onCancel={onClose}
-      onOk={() => void save()}
-      okText="保存头像"
-      cancelText="取消"
-      confirmLoading={saving}
-      width={680}
-      destroyOnClose
-    >
-      <div className="employee-avatar-editor">
-        <div className="employee-avatar-preview">
-          <EmployeeAvatar profile={profile} size={104} />
-          <div>
-            <Typography.Text strong>{mode === 'upload' ? '自定义头像' : selected.label}</Typography.Text>
-            <Typography.Paragraph type="secondary">
-              头像会显示在我的数字员工、数字员工档案页和对话端的员工选择中。
-            </Typography.Paragraph>
-          </div>
-        </div>
+    <Dialog open={open} onOpenChange={(next) => { if (!next && !saving) onClose(); }}>
+      <DialogContent
+        aria-describedby={undefined}
+        className="employee-avatar-modal flex max-h-[calc(100dvh-4rem)] w-[calc(100%-2rem)] flex-col gap-[16px] overflow-hidden rounded-[14px] px-[20px] py-[16px] sm:max-w-[680px]"
+      >
+        <DialogTitle className="px-[12px] text-[14px] font-normal leading-none text-[#757f9c] dark:text-muted-foreground">
+          {agent ? `设置头像：${employeeDisplayName(agent)}` : '设置头像'}
+        </DialogTitle>
+        <div className="min-h-0 flex-1 overflow-y-auto px-[12px]">
+          <div className="employee-avatar-editor">
+            <div className="employee-avatar-preview">
+              <EmployeeAvatar profile={profile} size={104} />
+              <div>
+                <strong className="m-0 block text-[14px] text-[#18181a] dark:text-white">{mode === 'upload' ? '自定义头像' : selected.label}</strong>
+                <p className="m-0 mt-[4px] text-[12px] text-muted-foreground">
+                  头像会显示在我的数字员工、数字员工档案页和对话端的员工选择中。
+                </p>
+              </div>
+            </div>
 
-        <div className="employee-avatar-section">
-          <div className="employee-avatar-section-head">
-            <Typography.Text strong>默认头像</Typography.Text>
-            <Typography.Text type="secondary">选择一个适合岗位的默认头像。</Typography.Text>
-          </div>
+            <div className="employee-avatar-section">
+              <div className="employee-avatar-section-head">
+                <strong className="text-[13px] text-[#18181a] dark:text-white">默认头像</strong>
+                <span className="text-[12px] text-muted-foreground">选择一个适合岗位的默认头像。</span>
+              </div>
           <div className="employee-avatar-preset-grid">
             {EMPLOYEE_AVATAR_PRESETS.map((preset) => {
               const active = mode === 'preset' && selectedPreset === preset.key;
@@ -161,20 +158,41 @@ export default function EmployeeAvatarEditor({
           </div>
         </div>
 
-        <div className="employee-avatar-upload">
-          <input
-            ref={inputRef}
-            type="file"
-            accept="image/*"
-            onChange={(event) => void handleUpload(event.target.files?.[0])}
-          />
-          <Button icon={<UploadOutlined />} onClick={() => inputRef.current?.click()}>
-            上传自定义头像
-          </Button>
-          <Typography.Text type="secondary">支持常见图片格式，会自动裁剪为方形头像。</Typography.Text>
+            <div className="employee-avatar-upload">
+              <input
+                ref={inputRef}
+                type="file"
+                accept="image/*"
+                onChange={(event) => void handleUpload(event.target.files?.[0])}
+              />
+              <UIButton variant="outline" onClick={() => inputRef.current?.click()}>
+                <UploadOutlined />
+                上传自定义头像
+              </UIButton>
+              <span className="text-[12px] text-muted-foreground">支持常见图片格式，会自动裁剪为方形头像。</span>
+            </div>
+          </div>
         </div>
-      </div>
-    </Modal>
+
+        <div className="flex items-center justify-end gap-[8px] px-[12px]">
+          <UIButton
+            variant="outline"
+            disabled={saving}
+            onClick={onClose}
+            className="h-[32px] w-[92px] rounded-[10px] border-[#e3e7f1] bg-white px-[12px] text-[14px] font-normal text-[#464c5e] hover:border-[#e3e7f1] hover:bg-[#f6f6f6] hover:text-[#18181a] dark:border-border dark:bg-transparent dark:text-muted-foreground dark:hover:bg-input/50 dark:hover:text-white"
+          >
+            取消
+          </UIButton>
+          <UIButton
+            disabled={saving}
+            onClick={() => void save()}
+            className="h-[32px] w-[92px] rounded-[10px] bg-[#18181a] px-[12px] text-[14px] font-normal text-white hover:bg-[#303030]"
+          >
+            保存头像
+          </UIButton>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 

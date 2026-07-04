@@ -1,6 +1,18 @@
 import { SendOutlined } from '../icons';
-import { Button, Card, Collapse, Input, Space, Typography, message } from 'antd';
 import { useState } from 'react';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Input,
+  notify,
+} from '@/components/ui';
 import { api, TENANT_ID } from '../api/client';
 import type { ChatTurnResponse } from '../types';
 
@@ -32,7 +44,7 @@ export default function DebugPage() {
       setLastTurn(result);
       setMessages((items) => [...items, { role: 'assistant', content: result.reply }]);
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '发送失败');
+      notify.error(error instanceof Error ? error.message : '发送失败');
     } finally {
       setLoading(false);
     }
@@ -41,9 +53,9 @@ export default function DebugPage() {
   return (
     <>
       <div className="page-title">
-        <Typography.Title level={3}>Agent 调试</Typography.Title>
+        <h3>Agent 调试</h3>
         <Input
-          className="page-field"
+          className="page-field w-[240px]"
           value={sessionId}
           onChange={(event) => setSessionId(event.target.value)}
           placeholder="Session ID"
@@ -51,30 +63,59 @@ export default function DebugPage() {
       </div>
       <div className="grid-2">
         <Card>
-          <div className="chat-panel">
-            <div className="messages">
-              {messages.map((item, index) => (
-                <div key={`${item.role}-${index}`} className={`message-row ${item.role}`}>
-                  <div className="bubble">{item.content}</div>
-                </div>
-              ))}
+          <CardContent>
+            <div className="chat-panel">
+              <div className="messages">
+                {messages.map((item, index) => (
+                  <div key={`${item.role}-${index}`} className={`message-row ${item.role}`}>
+                    <div className="bubble">{item.content}</div>
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-[8px]">
+                <Input
+                  value={input}
+                  onChange={(event) => setInput(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' && !event.nativeEvent.isComposing) {
+                      event.preventDefault();
+                      void send();
+                    }
+                  }}
+                  placeholder="输入调试消息"
+                />
+                <Button disabled={loading} onClick={() => void send()}>
+                  <SendOutlined />
+                  发送
+                </Button>
+              </div>
             </div>
-            <Space.Compact>
-              <Input value={input} onChange={(event) => setInput(event.target.value)} onPressEnter={send} placeholder="输入调试消息" />
-              <Button type="primary" icon={<SendOutlined />} loading={loading} onClick={send}>发送</Button>
-            </Space.Compact>
-          </div>
+          </CardContent>
         </Card>
-        <Card title="Trace Snapshot">
-          <Collapse
-            defaultActiveKey={['router', 'session']}
-            items={[
-              { key: 'router', label: 'Router Decision', children: <pre>{JSON.stringify(lastTurn?.router_decision, null, 2)}</pre> },
-              { key: 'step', label: 'Step Agent', children: <pre>{JSON.stringify(lastTurn?.step_result, null, 2)}</pre> },
-              { key: 'tool', label: 'Tool Result', children: <pre>{JSON.stringify(lastTurn?.tool_result, null, 2)}</pre> },
-              { key: 'session', label: 'Session State', children: <pre>{JSON.stringify(lastTurn?.session_state, null, 2)}</pre> },
-            ]}
-          />
+        <Card>
+          <CardHeader>
+            <CardTitle>Trace Snapshot</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Accordion type="multiple" defaultValue={['router', 'session']}>
+              <AccordionItem value="router">
+                <AccordionTrigger>Router Decision</AccordionTrigger>
+                <AccordionContent><pre>{JSON.stringify(lastTurn?.router_decision, null, 2)}</pre></AccordionContent>
+              </AccordionItem>
+              <AccordionItem value="step">
+                <AccordionTrigger>Step Agent</AccordionTrigger>
+                <AccordionContent><pre>{JSON.stringify(lastTurn?.step_result, null, 2)}</pre></AccordionContent>
+              </AccordionItem>
+              <AccordionItem value="tool">
+                <AccordionTrigger>Tool Result</AccordionTrigger>
+                <AccordionContent><pre>{JSON.stringify(lastTurn?.tool_result, null, 2)}</pre></AccordionContent>
+              </AccordionItem>
+              <AccordionItem value="session">
+                <AccordionTrigger>Session State</AccordionTrigger>
+                <AccordionContent><pre>{JSON.stringify(lastTurn?.session_state, null, 2)}</pre></AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </CardContent>
         </Card>
       </div>
     </>

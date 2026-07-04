@@ -1,3 +1,9 @@
+export {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from './accordion';
 export { Alert, AlertDescription, AlertTitle } from './alert';
 export { notify, type AppToastOptions } from './app-toast';
 export {
@@ -54,6 +60,7 @@ export {
   PaginationPrevious,
 } from './pagination';
 export { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from './popover';
+export { Progress } from './progress';
 export { RadioGroup, RadioGroupItem } from './radio-group';
 export { ScrollArea, ScrollBar } from './scroll-area';
 export {

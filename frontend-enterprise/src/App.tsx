@@ -1,5 +1,3 @@
-import { ConfigProvider, Input, Layout, Modal, Radio, Select, message, theme as antdTheme } from 'antd';
-import zhCN from 'antd/locale/zh_CN';
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { api, TENANT_ID } from './api/client';
@@ -37,12 +35,27 @@ import SkillsPage from './pages/SkillsPage';
 import ScheduledTasksPage, { ScheduledTaskEditPage, ScheduledTaskNewPage } from './pages/ScheduledTasksPage';
 import ToolsPage, { ToolEditPage, ToolNewPage, ToolTestPage } from './pages/ToolsPage';
 import { useIsMobile } from './hooks/use-mobile';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogTitle,
+  Input,
+  Select as UISelect,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Textarea,
+} from '@/components/ui';
+import { Button as UIButton } from '@/components/ui/button';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { notify } from '@/components/ui/app-toast';
+import { cn } from '@/lib/utils';
+import { SELECT_TRIGGER_CLASS } from '@/lib/enterprise-ui';
 import type { AgentProfileRead } from './types';
 
-const { Header, Sider, Content } = Layout;
 const ENTERPRISE_AGENT_STORAGE_KEY = 'ultrarag_enterprise_agent_scope';
 const ENTERPRISE_SIDEBAR_STORAGE_KEY = 'ultrarag_enterprise_sidebar_expanded';
 type AgentCreateMode = 'copy' | 'blank';
@@ -207,7 +220,7 @@ function Shell({
   async function saveAgentCreateModal() {
     const name = agentForm.name.trim();
     if (!name) {
-      message.error('请填写数字员工姓名');
+      notify.error('请填写数字员工姓名');
       return;
     }
     const isBlankOnboarding = agentForm.sourceMode === 'blank';
@@ -273,8 +286,8 @@ function Shell({
           window.location.href = '/chat/';
         }}
       />
-      <Layout className="min-w-0">
-        <Content className={`content ${selected === '/enterprise/dashboard' ? 'sd1-dashboard-content' : ''} ${selected !== '/enterprise/dashboard' && !isDistillRoute ? 'sd1-management-content' : ''}`}>
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <div className={`content flex-1 ${selected === '/enterprise/dashboard' ? 'sd1-dashboard-content' : ''} ${selected !== '/enterprise/dashboard' && !isDistillRoute ? 'sd1-management-content' : ''}`}>
           <div className={isDistillRoute ? 'persistent-distill active' : 'persistent-distill hidden'}>
             <DistillPage active={isDistillRoute} searchParamsOverride={distillSearchParams} />
           </div>
@@ -306,93 +319,110 @@ function Shell({
               <Route path="*" element={<Navigate to="/enterprise/dashboard" replace />} />
             </Routes>
           )}
-        </Content>
-      </Layout>
-      <Modal
-        title="新建数字员工"
-        open={agentCreateOpen}
-        onCancel={() => setAgentCreateOpen(false)}
-        onOk={saveAgentCreateModal}
-        okText="创建"
-        cancelText="取消"
-      >
-        <div className="agent-editor-form">
-          <label>
-            创建方式
-            <Radio.Group
-              className="agent-create-mode"
-              value={agentForm.sourceMode}
-              onChange={(event) => {
-                const sourceMode = event.target.value as AgentCreateFormState['sourceMode'];
-                setAgentForm((prev) => ({
-                  ...prev,
-                  sourceMode,
-                  copyFromAgentId: sourceMode === 'blank' ? '' : prev.copyFromAgentId,
-                }));
-              }}
-              optionType="button"
-              buttonStyle="solid"
-              options={[
-                { label: '从广场复制', value: 'copy' },
-                { label: '从空白开始', value: 'blank' },
-              ]}
-            />
-          </label>
-          <label>
-            职位
-            <Input
-              value={agentForm.roleName}
-              onChange={(event) => setAgentForm((prev) => ({ ...prev, roleName: event.target.value }))}
-              placeholder="例如 研发员工、财务员工"
-            />
-          </label>
-          {agentForm.sourceMode === 'copy' && (
+        </div>
+      </div>
+      <Dialog open={agentCreateOpen} onOpenChange={setAgentCreateOpen}>
+        <DialogContent className="gap-0 overflow-hidden rounded-[16px] p-0 sm:max-w-[520px]">
+          <DialogTitle className="border-b border-border px-[24px] py-[16px] text-[16px] font-semibold text-foreground">
+            新建数字员工
+          </DialogTitle>
+          <div className="agent-editor-form px-[24px] py-[20px]">
             <label>
-              复制来源
-              <Select
-                value={agentForm.copyFromAgentId || undefined}
-                placeholder="选择复制来源"
-                options={sourceAgents.map((agent) => ({
-                  value: agent.id,
-                  label: agent.is_overall
-                    ? '开放广场'
-                    : `${employeeDisplayName(agent)} · ${employeeProfile(agent).roleName}${isGalleryEmployee(agent) ? ' · 广场' : ''}`,
-                }))}
-                onChange={(value) => setAgentForm((prev) => {
-                  const nextSource = sourceAgents.find((item) => item.id === value);
-                  return {
-                    ...prev,
-                    copyFromAgentId: value,
-                    roleName: prev.roleName || (nextSource && !nextSource.is_overall ? employeeProfile(nextSource).roleName : ''),
-                  };
-                })}
+              创建方式
+              <div className="agent-create-mode inline-flex rounded-[10px] border border-border p-[2px]">
+                {([
+                  { label: '从广场复制', value: 'copy' as const },
+                  { label: '从空白开始', value: 'blank' as const },
+                ]).map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    className={cn(
+                      'rounded-[8px] px-[14px] py-[5px] text-[13px] font-medium transition-colors',
+                      agentForm.sourceMode === option.value
+                        ? 'bg-[#18181a] text-white dark:bg-white dark:text-[#18181a]'
+                        : 'text-[#5b6273] hover:text-foreground dark:text-muted-foreground',
+                    )}
+                    onClick={() =>
+                      setAgentForm((prev) => ({
+                        ...prev,
+                        sourceMode: option.value,
+                        copyFromAgentId: option.value === 'blank' ? '' : prev.copyFromAgentId,
+                      }))
+                    }
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </label>
+            <label>
+              职位
+              <Input
+                value={agentForm.roleName}
+                onChange={(event) => setAgentForm((prev) => ({ ...prev, roleName: event.target.value }))}
+                placeholder="例如 研发员工、财务员工"
               />
             </label>
-          )}
-          {agentForm.sourceMode === 'blank' && (
-            <div className="agent-definition-note">从空白开始创建，不继承任何已有配置。</div>
-          )}
-          <label>
-            数字员工姓名
-            <Input value={agentForm.name} onChange={(event) => setAgentForm((prev) => ({ ...prev, name: event.target.value }))} />
-          </label>
-          <label>
-            岗位描述
-            <Input.TextArea
-              rows={3}
-              value={agentForm.description}
-              onChange={(event) => setAgentForm((prev) => ({ ...prev, description: event.target.value }))}
-              placeholder="概括这个数字员工的岗位边界、服务风格和执行重点"
-            />
-          </label>
-        </div>
-      </Modal>
+            {agentForm.sourceMode === 'copy' && (
+              <label>
+                复制来源
+                <UISelect
+                  value={agentForm.copyFromAgentId || undefined}
+                  onValueChange={(value) =>
+                    setAgentForm((prev) => {
+                      const nextSource = sourceAgents.find((item) => item.id === value);
+                      return {
+                        ...prev,
+                        copyFromAgentId: value,
+                        roleName: prev.roleName || (nextSource && !nextSource.is_overall ? employeeProfile(nextSource).roleName : ''),
+                      };
+                    })
+                  }
+                >
+                  <SelectTrigger className={cn(SELECT_TRIGGER_CLASS, 'w-full')}>
+                    <SelectValue placeholder="选择复制来源" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sourceAgents.map((agent) => (
+                      <SelectItem key={agent.id} value={agent.id}>
+                        {agent.is_overall
+                          ? '开放广场'
+                          : `${employeeDisplayName(agent)} · ${employeeProfile(agent).roleName}${isGalleryEmployee(agent) ? ' · 广场' : ''}`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </UISelect>
+              </label>
+            )}
+            {agentForm.sourceMode === 'blank' && (
+              <div className="agent-definition-note">从空白开始创建，不继承任何已有配置。</div>
+            )}
+            <label>
+              数字员工姓名
+              <Input value={agentForm.name} onChange={(event) => setAgentForm((prev) => ({ ...prev, name: event.target.value }))} />
+            </label>
+            <label>
+              岗位描述
+              <Textarea
+                rows={3}
+                value={agentForm.description}
+                onChange={(event) => setAgentForm((prev) => ({ ...prev, description: event.target.value }))}
+                placeholder="概括这个数字员工的岗位边界、服务风格和执行重点"
+              />
+            </label>
+          </div>
+          <DialogFooter className="border-t border-border px-[24px] py-[12px] sm:justify-end">
+            <UIButton variant="outline" onClick={() => setAgentCreateOpen(false)}>取消</UIButton>
+            <UIButton onClick={() => void saveAgentCreateModal()}>创建</UIButton>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </SidebarProvider>
   );
 }
 
 export default function App() {
-  const isDark = false;
   const [auth, setAuth] = useState<EnterpriseAuthSession | null>(() => getEnterpriseAuthSession());
 
   // Force light theme app-wide (theme switching has been removed).
@@ -412,36 +442,15 @@ export default function App() {
   }
 
   return (
-    <ConfigProvider
-      locale={zhCN}
-      button={{ autoInsertSpace: false }}
-      theme={{
-        algorithm: isDark ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
-        token: {
-          colorPrimary: isDark ? '#f4f4f5' : '#111111',
-          borderRadius: 6,
-          colorBgBase: isDark ? '#111111' : '#f7f8fa',
-          colorBgContainer: isDark ? '#111827' : '#ffffff',
-          colorBgElevated: isDark ? '#1e293b' : '#ffffff',
-          colorFillSecondary: isDark ? 'rgba(255, 255, 255, 0.1)' : '#f3f4f6',
-          colorText: isDark ? '#f8fafc' : '#111111',
-          colorTextSecondary: isDark ? '#a1a1aa' : '#6b7280',
-          colorBorder: isDark ? 'rgba(255, 255, 255, 0.14)' : '#e5e7eb',
-          fontFamily:
-            '"Inter", "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif',
-        },
-      }}
-    >
-      <TooltipProvider>
-        <BrowserRouter>
-          {auth ? (
-            <Shell auth={auth} onLogout={logout} />
-          ) : (
-            <LoginPage onLogin={setAuth} />
-          )}
-        </BrowserRouter>
-        <Toaster richColors closeButton position="top-center" />
-      </TooltipProvider>
-    </ConfigProvider>
+    <TooltipProvider>
+      <BrowserRouter>
+        {auth ? (
+          <Shell auth={auth} onLogout={logout} />
+        ) : (
+          <LoginPage onLogin={setAuth} />
+        )}
+      </BrowserRouter>
+      <Toaster richColors closeButton position="top-center" />
+    </TooltipProvider>
   );
 }

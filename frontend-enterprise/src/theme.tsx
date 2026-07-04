@@ -1,5 +1,5 @@
 import { MoonOutlined, SunOutlined } from './icons';
-import { Button } from 'antd';
+import { Button } from '@/components/ui/button';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 export type ThemeMode = 'system' | 'light' | 'dark';
@@ -104,13 +104,14 @@ export function ThemeToggleButton() {
   }, [effectiveTheme]);
   return (
     <Button
-      type="text"
+      variant="ghost"
       className="theme-toggle-button"
       data-mode={mode}
       data-effective-theme={effectiveTheme}
-      icon={<span key={`${mode}-${effectiveTheme}`} className="theme-toggle-icon">{icon}</span>}
       aria-label="切换主题"
       onClick={cycleMode}
-    />
+    >
+      <span key={`${mode}-${effectiveTheme}`} className="theme-toggle-icon">{icon}</span>
+    </Button>
   );
 }

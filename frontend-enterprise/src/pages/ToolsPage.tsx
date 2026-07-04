@@ -1,6 +1,5 @@
 import { ArrowLeftOutlined, ExperimentOutlined, SaveOutlined, ToolOutlined } from '../icons';
-import { AutoComplete, Button, Card, Form, Input, Select, Space, Switch, Tag, Typography, message } from 'antd';
-import type { FormInstance } from 'antd';
+import type { HTMLAttributes, ReactNode } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { FlaskConical } from 'lucide-react';
@@ -18,11 +17,14 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  Input,
   Select as UISelect,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
+  Switch,
+  Textarea,
 } from '@/components/ui';
 import { Button as UIButton } from '@/components/ui/button';
 import { notify } from '@/components/ui/app-toast';
@@ -468,7 +470,7 @@ export function ToolEditPage(props: ToolPageProps = {}) {
 }
 
 function ToolEditorPage({ mode, currentUser, onLogout }: { mode: 'new' | 'edit' } & ToolPageProps) {
-  const [form] = Form.useForm<ToolFormValues>();
+  const [values, setValues] = useState<ToolFormValues>({ ...TOOL_FORM_INITIAL_VALUES });
   const [tool, setTool] = useState<ToolRead | null>(null);
   const [loading, setLoading] = useState(false);
   const [bucketOptions, setBucketOptions] = useState<{ value: string; label: string }[]>([{ value: '未分桶', label: '未分桶' }]);
@@ -476,13 +478,16 @@ function ToolEditorPage({ mode, currentUser, onLogout }: { mode: 'new' | 'edit' 
   const { toolId } = useParams();
   const isEdit = mode === 'edit';
 
+  const setField = <K extends keyof ToolFormValues>(name: K, value: ToolFormValues[K]) =>
+    setValues((prev) => ({ ...prev, [name]: value }));
+
   useEffect(() => {
     void loadBucketOptions().then(setBucketOptions);
   }, []);
 
   useEffect(() => {
     if (!isEdit) {
-      form.setFieldsValue(TOOL_FORM_INITIAL_VALUES);
+      setValues({ ...TOOL_FORM_INITIAL_VALUES });
       setTool(null);
       return;
     }
@@ -493,17 +498,23 @@ function ToolEditorPage({ mode, currentUser, onLogout }: { mode: 'new' | 'edit' 
       .get<ToolRead>(`/api/enterprise/tools/${toolId}?tenant_id=${TENANT_ID}${agentQuery}`)
       .then((row) => {
         setTool(row);
-        form.setFieldsValue(toolToFormValues(row));
+        setValues(toolToFormValues(row));
       })
-      .catch((error) => message.error(error instanceof Error ? error.message : '加载工具失败'))
+      .catch((error) => notify.error(error instanceof Error ? error.message : '加载工具失败'))
       .finally(() => setLoading(false));
-  }, [form, isEdit, toolId]);
+  }, [isEdit, toolId]);
 
   async function save() {
-    let values: ToolFormValues;
-    try {
-      values = await form.validateFields();
-    } catch {
+    if (!String(values.name || '').trim()) {
+      notify.error('请填写工具名称');
+      return;
+    }
+    if (!String(values.url || '').trim()) {
+      notify.error(values.tool_type === 'mcp' ? '请填写 MCP URL 标记' : '请填写 URL');
+      return;
+    }
+    if (values.tool_type === 'mcp' && !String(values.mcp_config || '').trim()) {
+      notify.error('请填写 MCP Config JSON');
       return;
     }
     const payload = buildToolPayload(values);
@@ -514,14 +525,14 @@ function ToolEditorPage({ mode, currentUser, onLogout }: { mode: 'new' | 'edit' 
       const saved = isEdit && toolId
         ? await api.put<ToolRead>(`/api/enterprise/tools/${toolId}${agentQuery ? `?${agentQuery.slice(1)}` : ''}`, payload)
         : await api.post<ToolRead>(`/api/enterprise/tools${agentQuery ? `?${agentQuery.slice(1)}` : ''}`, payload);
-      message.success('已保存');
+      notify.success('已保存');
       setTool(saved);
-      form.setFieldsValue(toolToFormValues(saved));
+      setValues(toolToFormValues(saved));
       if (!isEdit) {
         navigate(`/enterprise/tools/${saved.id}/edit`, { replace: true });
       }
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '保存失败');
+      notify.error(error instanceof Error ? error.message : '保存失败');
     } finally {
       setLoading(false);
     }
@@ -534,34 +545,87 @@ function ToolEditorPage({ mode, currentUser, onLogout }: { mode: 'new' | 'edit' 
         userName={currentUser?.username}
         left={(
           <div>
-            <Typography.Title level={3} style={{ marginBottom: 4 }}>{isEdit ? '编辑工具' : '新建空白工具'}</Typography.Title>
-            <Typography.Text type="secondary">
+            <h3 className="mb-[4px] text-[18px] font-semibold text-foreground">{isEdit ? '编辑工具' : '新建空白工具'}</h3>
+            <span className="text-[13px] text-muted-foreground">
               {isEdit ? '修改工具定义，并在右侧验证当前配置或已保存版本。' : '填写工具定义后，可先用右侧探测区测试请求与返回结构。'}
-            </Typography.Text>
+            </span>
           </div>
         )}
       />
       <div className="page-title mt-1" style={{ justifyContent: 'flex-end' }}>
-        <Space>
-          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/enterprise/tools')}>返回工具</Button>
+        <div className="flex flex-wrap items-center gap-[8px]">
+          <UIButton variant="outline" onClick={() => navigate('/enterprise/tools')}>
+            <ArrowLeftOutlined />
+            返回工具
+          </UIButton>
           {isEdit && tool && (
-            <Button icon={<ExperimentOutlined />} onClick={() => navigate(`/enterprise/tools/${tool.id}/test`)}>
+            <UIButton variant="outline" onClick={() => navigate(`/enterprise/tools/${tool.id}/test`)}>
+              <ExperimentOutlined />
               打开测试页
-            </Button>
+            </UIButton>
           )}
-          <Button type="primary" icon={<SaveOutlined />} loading={loading} onClick={() => void save()}>保存</Button>
-        </Space>
+          <UIButton disabled={loading} onClick={() => void save()}>
+            <SaveOutlined />
+            保存
+          </UIButton>
+        </div>
       </div>
       <div className="grid-2">
-        <Card className="editor-card" title="工具定义" loading={loading && isEdit && !tool}>
-          <ToolFormFields form={form} bucketOptions={bucketOptions} />
-        </Card>
-        <Space direction="vertical" size={16} style={{ width: '100%' }}>
-          <ToolProbeCard form={form} />
+        <EditorCard className="editor-card" bodyClassName="p-[18px]" title="工具定义" loading={loading && isEdit && !tool}>
+          <ToolFormFields values={values} setField={setField} bucketOptions={bucketOptions} />
+        </EditorCard>
+        <div className="flex w-full flex-col gap-[16px]">
+          <ToolProbeCard values={values} />
           {isEdit && tool && <SavedToolTestCard tool={tool} />}
-        </Space>
+        </div>
       </div>
     </div>
+  );
+}
+
+function EditorCard({
+  className,
+  bodyClassName,
+  title,
+  extra,
+  loading,
+  children,
+  ...rest
+}: {
+  className?: string;
+  bodyClassName?: string;
+  title?: ReactNode;
+  extra?: ReactNode;
+  loading?: boolean;
+  children?: ReactNode;
+} & Omit<HTMLAttributes<HTMLDivElement>, 'title'>) {
+  return (
+    <div className={cn('ant-card', className)} {...rest}>
+      {(title || extra) && (
+        <div className="ant-card-head border-b border-border">
+          <div className="ant-card-head-wrapper flex min-h-[46px] items-center justify-between gap-[12px] px-[16px]">
+            <div className="ant-card-head-title min-w-0">{title}</div>
+            {extra ? <div className="ant-card-extra min-w-0">{extra}</div> : null}
+          </div>
+        </div>
+      )}
+      <div className={cn('ant-card-body', bodyClassName)}>
+        {loading ? (
+          <div className="py-[24px] text-center text-[13px] text-[#858b9c] dark:text-muted-foreground">加载中…</div>
+        ) : (
+          children
+        )}
+      </div>
+    </div>
+  );
+}
+
+function LabeledField({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <label className="flex flex-col gap-[6px]">
+      <span className="text-[12px] font-medium text-[#464c5e] dark:text-muted-foreground">{label}</span>
+      {children}
+    </label>
   );
 }
 
@@ -578,7 +642,7 @@ export function ToolTestPage({ currentUser, onLogout }: ToolPageProps = {}) {
     api
       .get<ToolRead>(`/api/enterprise/tools/${toolId}?tenant_id=${TENANT_ID}${agentQuery}`)
       .then(setTool)
-      .catch((error) => message.error(error instanceof Error ? error.message : '加载工具失败'))
+      .catch((error) => notify.error(error instanceof Error ? error.message : '加载工具失败'))
       .finally(() => setLoading(false));
   }, [toolId]);
 
@@ -589,21 +653,28 @@ export function ToolTestPage({ currentUser, onLogout }: ToolPageProps = {}) {
         userName={currentUser?.username}
         left={(
           <div>
-            <Typography.Title level={3} style={{ marginBottom: 4 }}>工具测试</Typography.Title>
-            <Typography.Text type="secondary">
+            <h3 className="mb-[4px] text-[18px] font-semibold text-foreground">工具测试</h3>
+            <span className="text-[13px] text-muted-foreground">
               用测试参数直接调用已保存工具，检查员工后续调用时的实际返回。
-            </Typography.Text>
+            </span>
           </div>
         )}
       />
       <div className="page-title mt-1" style={{ justifyContent: 'flex-end' }}>
-        <Space>
-          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/enterprise/tools')}>返回工具</Button>
-          {tool && <Button onClick={() => navigate(`/enterprise/tools/${tool.id}/edit`)}>编辑工具</Button>}
-        </Space>
+        <div className="flex flex-wrap items-center gap-[8px]">
+          <UIButton variant="outline" onClick={() => navigate('/enterprise/tools')}>
+            <ArrowLeftOutlined />
+            返回工具
+          </UIButton>
+          {tool && (
+            <UIButton variant="outline" onClick={() => navigate(`/enterprise/tools/${tool.id}/edit`)}>
+              编辑工具
+            </UIButton>
+          )}
+        </div>
       </div>
       <div className="tool-test-layout">
-        <Card className="tool-test-overview-card" title="工具信息" loading={loading && !tool}>
+        <EditorCard className="tool-test-overview-card" title="工具信息" loading={loading && !tool}>
           {tool && (
             <div className="tool-test-overview">
               <div className="tool-test-hero">
@@ -611,14 +682,14 @@ export function ToolTestPage({ currentUser, onLogout }: ToolPageProps = {}) {
                   <ToolOutlined />
                 </div>
                 <div className="tool-test-hero-main">
-                  <Typography.Text className="tool-test-eyebrow">{tool.bucket || '未分桶'}</Typography.Text>
-                  <Typography.Title level={4}>{tool.display_name || tool.name}</Typography.Title>
-                  <Typography.Paragraph type="secondary">{tool.description || '暂无描述'}</Typography.Paragraph>
-                  <Space wrap>
-                    <Tag color={tool.tool_type === 'mcp' ? 'geekblue' : undefined}>{toolTypeLabel(tool)}</Tag>
-                    <Tag color={tool.enabled ? 'green' : 'default'}>{tool.enabled ? '已启用' : '已停用'}</Tag>
-                    <Tag>{tool.method}</Tag>
-                  </Space>
+                  <span className="tool-test-eyebrow">{tool.bucket || '未分桶'}</span>
+                  <h4 className="m-0 text-[18px] font-semibold text-foreground">{tool.display_name || tool.name}</h4>
+                  <p className="mt-[4px] mb-0 text-[13px] text-[#858b9c] dark:text-muted-foreground">{tool.description || '暂无描述'}</p>
+                  <div className="mt-[10px] flex flex-wrap items-center gap-[6px]">
+                    <ToolTag tone={tool.tool_type === 'mcp' ? 'blue' : 'gray'}>{toolTypeLabel(tool)}</ToolTag>
+                    <ToolTag tone={tool.enabled ? 'green' : 'gray'}>{tool.enabled ? '已启用' : '已停用'}</ToolTag>
+                    <ToolTag tone="gray">{tool.method}</ToolTag>
+                  </div>
                 </div>
               </div>
               <div className="tool-test-meta-grid">
@@ -655,7 +726,7 @@ export function ToolTestPage({ currentUser, onLogout }: ToolPageProps = {}) {
               </div>
             </div>
           )}
-        </Card>
+        </EditorCard>
         {tool && <SavedToolTestCard tool={tool} standalone />}
       </div>
     </div>
@@ -663,67 +734,126 @@ export function ToolTestPage({ currentUser, onLogout }: ToolPageProps = {}) {
 }
 
 function ToolFormFields({
-  form,
+  values,
+  setField,
   bucketOptions,
 }: {
-  form: FormInstance<ToolFormValues>;
+  values: ToolFormValues;
+  setField: <K extends keyof ToolFormValues>(name: K, value: ToolFormValues[K]) => void;
   bucketOptions: { value: string; label: string }[];
 }) {
-  const toolType = Form.useWatch('tool_type', form) || 'http';
+  const toolType = values.tool_type || 'http';
   return (
-    <Form form={form} layout="vertical" initialValues={TOOL_FORM_INITIAL_VALUES}>
-      <Form.Item name="name" label="工具名称" rules={[{ required: true }]}>
-        <Input prefix={<ToolOutlined />} />
-      </Form.Item>
-      <Form.Item name="display_name" label="展示名称"><Input /></Form.Item>
-      <Form.Item name="tool_type" label="工具类型" rules={[{ required: true }]}>
-        <Select
-          options={[
-            { value: 'http', label: 'HTTP 接口' },
-            { value: 'mcp', label: 'MCP 服务' },
-          ]}
+    <div className="flex flex-col gap-[14px]">
+      <LabeledField label="工具名称">
+        <div className="relative">
+          <ToolOutlined className="pointer-events-none absolute left-[10px] top-1/2 -translate-y-1/2 text-[#858b9c]" />
+          <Input className="pl-[30px]" value={values.name || ''} onChange={(event) => setField('name', event.target.value)} />
+        </div>
+      </LabeledField>
+      <LabeledField label="展示名称">
+        <Input value={values.display_name || ''} onChange={(event) => setField('display_name', event.target.value)} />
+      </LabeledField>
+      <LabeledField label="工具类型">
+        <UISelect value={toolType} onValueChange={(value) => setField('tool_type', value)}>
+          <SelectTrigger className={cn(SELECT_TRIGGER_CLASS, 'w-full')}>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="http">HTTP 接口</SelectItem>
+            <SelectItem value="mcp">MCP 服务</SelectItem>
+          </SelectContent>
+        </UISelect>
+      </LabeledField>
+      <LabeledField label="工具分桶">
+        <Input
+          list="tool-bucket-options"
+          placeholder="选择或输入分桶"
+          value={values.bucket || ''}
+          onChange={(event) => setField('bucket', event.target.value)}
         />
-      </Form.Item>
-      <Form.Item name="bucket" label="工具分桶">
-        <AutoComplete placeholder="选择或输入分桶" options={bucketOptions} />
-      </Form.Item>
-      <Form.Item name="description" label="描述"><Input.TextArea rows={2} /></Form.Item>
-      <Form.Item name="method" label={toolType === 'mcp' ? 'Method 标记' : 'HTTP Method'}>
-        <Select options={['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].map((value) => ({ value, label: value }))} />
-      </Form.Item>
-      <Form.Item name="url" label={toolType === 'mcp' ? 'MCP URL 标记' : 'URL'} rules={[{ required: true }]}>
-        <Input placeholder={toolType === 'mcp' ? 'mcp://builtin.demo/echo' : '/api/mock/order/query'} />
-      </Form.Item>
+        <datalist id="tool-bucket-options">
+          {bucketOptions.map((item) => (
+            <option key={item.value} value={item.value} />
+          ))}
+        </datalist>
+      </LabeledField>
+      <LabeledField label="描述">
+        <Textarea rows={2} value={values.description || ''} onChange={(event) => setField('description', event.target.value)} />
+      </LabeledField>
+      <LabeledField label={toolType === 'mcp' ? 'Method 标记' : 'HTTP Method'}>
+        <UISelect value={values.method} onValueChange={(value) => setField('method', value)}>
+          <SelectTrigger className={cn(SELECT_TRIGGER_CLASS, 'w-full')}>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].map((value) => (
+              <SelectItem key={value} value={value}>{value}</SelectItem>
+            ))}
+          </SelectContent>
+        </UISelect>
+      </LabeledField>
+      <LabeledField label={toolType === 'mcp' ? 'MCP URL 标记' : 'URL'}>
+        <Input
+          placeholder={toolType === 'mcp' ? 'mcp://builtin.demo/echo' : '/api/mock/order/query'}
+          value={values.url || ''}
+          onChange={(event) => setField('url', event.target.value)}
+        />
+      </LabeledField>
       {toolType === 'mcp' ? (
-        <Form.Item name="mcp_config" label="MCP Config JSON" rules={[{ required: true }]}>
-          <Input.TextArea rows={4} placeholder={'{\n  "server": "builtin.demo",\n  "tool": "echo"\n}'} />
-        </Form.Item>
+        <LabeledField label="MCP Config JSON">
+          <Textarea
+            rows={4}
+            placeholder={'{\n  "server": "builtin.demo",\n  "tool": "echo"\n}'}
+            value={values.mcp_config}
+            onChange={(event) => setField('mcp_config', event.target.value)}
+          />
+        </LabeledField>
       ) : (
         <>
-          <Form.Item name="headers" label="Headers JSON"><Input.TextArea rows={4} /></Form.Item>
-          <Form.Item name="auth" label="Auth JSON"><Input.TextArea rows={3} /></Form.Item>
+          <LabeledField label="Headers JSON">
+            <Textarea rows={4} value={values.headers} onChange={(event) => setField('headers', event.target.value)} />
+          </LabeledField>
+          <LabeledField label="Auth JSON">
+            <Textarea rows={3} value={values.auth} onChange={(event) => setField('auth', event.target.value)} />
+          </LabeledField>
         </>
       )}
-      <Form.Item name="input_schema" label="Input Schema"><Input.TextArea rows={5} /></Form.Item>
-      <Form.Item name="output_schema" label="Output Schema"><Input.TextArea rows={5} /></Form.Item>
-      <Form.Item name="allowed_skills" label="Allowed Skills"><Input placeholder="skill_id_1,skill_id_2" /></Form.Item>
-      <Form.Item name="enabled" label="启用" valuePropName="checked"><Switch /></Form.Item>
-    </Form>
+      <LabeledField label="Input Schema">
+        <Textarea rows={5} value={values.input_schema} onChange={(event) => setField('input_schema', event.target.value)} />
+      </LabeledField>
+      <LabeledField label="Output Schema">
+        <Textarea rows={5} value={values.output_schema} onChange={(event) => setField('output_schema', event.target.value)} />
+      </LabeledField>
+      <LabeledField label="Allowed Skills">
+        <Input
+          placeholder="skill_id_1,skill_id_2"
+          value={values.allowed_skills || ''}
+          onChange={(event) => setField('allowed_skills', event.target.value)}
+        />
+      </LabeledField>
+      <label className="flex cursor-pointer items-center gap-[8px]">
+        <Switch checked={values.enabled} onCheckedChange={(next) => setField('enabled', next)} />
+        <span className="text-[12px] font-medium text-[#464c5e] dark:text-muted-foreground">启用</span>
+      </label>
+    </div>
   );
 }
 
-function ToolProbeCard({ form }: { form: FormInstance<ToolFormValues> }) {
+function ToolProbeCard({ values }: { values: ToolFormValues }) {
   const [sampleJson, setSampleJson] = useState('{}');
   const [result, setResult] = useState('');
   const [loading, setLoading] = useState(false);
-  const method = Form.useWatch('method', form) || 'POST';
+  const method = values.method || 'POST';
   const isGetMethod = method === 'GET';
 
   async function probe() {
-    let values: ToolFormValues;
-    try {
-      values = await form.validateFields();
-    } catch {
+    if (!String(values.name || '').trim()) {
+      notify.error('请填写工具名称');
+      return;
+    }
+    if (!String(values.url || '').trim()) {
+      notify.error(values.tool_type === 'mcp' ? '请填写 MCP URL 标记' : '请填写 URL');
       return;
     }
     const payload = buildToolPayload(values);
@@ -732,7 +862,7 @@ function ToolProbeCard({ form }: { form: FormInstance<ToolFormValues> }) {
     try {
       sampleArguments = parseJson(sampleJson, {});
     } catch {
-      message.error('测试参数不是合法 JSON');
+      notify.error('测试参数不是合法 JSON');
       return;
     }
     if (
@@ -741,7 +871,7 @@ function ToolProbeCard({ form }: { form: FormInstance<ToolFormValues> }) {
       && payload.url.includes('?')
       && Object.keys(sampleArguments).length === 0
     ) {
-      message.error('URL 已包含查询参数时请把 HTTP Method 切换为 GET；POST 会把测试参数作为 JSON Body 发送。');
+      notify.error('URL 已包含查询参数时请把 HTTP Method 切换为 GET；POST 会把测试参数作为 JSON Body 发送。');
       return;
     }
     setLoading(true);
@@ -764,33 +894,39 @@ function ToolProbeCard({ form }: { form: FormInstance<ToolFormValues> }) {
       });
       setResult(JSON.stringify(response, null, 2));
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '探测失败');
+      notify.error(error instanceof Error ? error.message : '探测失败');
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <Card
+    <EditorCard
       className="editor-card"
+      bodyClassName="p-[18px]"
       title="配置探测"
-      extra={<Button icon={<ExperimentOutlined />} loading={loading} onClick={() => void probe()}>探测</Button>}
+      extra={(
+        <UIButton variant="outline" disabled={loading} onClick={() => void probe()}>
+          <ExperimentOutlined />
+          探测
+        </UIButton>
+      )}
     >
-      <Typography.Paragraph type="secondary">
+      <p className="mb-[8px] text-[13px] text-[#858b9c] dark:text-muted-foreground">
         无需保存，直接用当前配置测试连接。
-      </Typography.Paragraph>
+      </p>
       <div className="tool-test-section-title">
         {isGetMethod ? '测试参数 JSON（拼到 URL Query）' : '测试参数 JSON（作为请求 Body）'}
       </div>
-      <Typography.Paragraph type="secondary" className="tool-probe-hint">
+      <p className="tool-probe-hint mb-[8px] text-[13px] text-[#858b9c] dark:text-muted-foreground">
         {isGetMethod
           ? 'GET 会把这里的字段作为查询参数追加到 URL；参数值填写未编码原文，例如 timezone 用 Asia/Shanghai。'
           : '非 GET 请求会把这里的 JSON 作为请求体发送；仅 URL 查询串不会变成请求 Body。'}
-      </Typography.Paragraph>
-      <Input.TextArea rows={5} value={sampleJson} onChange={(event) => setSampleJson(event.target.value)} />
+      </p>
+      <Textarea rows={5} value={sampleJson} onChange={(event) => setSampleJson(event.target.value)} />
       <div className="tool-test-section-title tool-test-result-label">探测结果</div>
-      <Input.TextArea rows={8} value={result} readOnly style={{ marginTop: 12 }} />
-    </Card>
+      <Textarea className="mt-[12px]" rows={8} value={result} readOnly />
+    </EditorCard>
   );
 }
 
@@ -809,7 +945,7 @@ function SavedToolTestCard({ tool, standalone = false }: { tool: ToolRead; stand
     try {
       argumentsJson = parseJson(testJson, {});
     } catch {
-      message.error('测试参数不是合法 JSON');
+      notify.error('测试参数不是合法 JSON');
       return;
     }
     setLoading(true);
@@ -821,14 +957,14 @@ function SavedToolTestCard({ tool, standalone = false }: { tool: ToolRead; stand
       });
       setTestResult(JSON.stringify(response, null, 2));
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '调用失败');
+      notify.error(error instanceof Error ? error.message : '调用失败');
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <Card
+    <EditorCard
       className="tool-test-console-card"
       title={(
         <span className="tool-test-card-title">
@@ -836,19 +972,24 @@ function SavedToolTestCard({ tool, standalone = false }: { tool: ToolRead; stand
           {standalone ? '调用测试' : '已保存工具测试'}
         </span>
       )}
-      extra={<Button type="primary" icon={<ExperimentOutlined />} loading={loading} onClick={() => void test()}>调用</Button>}
+      extra={(
+        <UIButton disabled={loading} onClick={() => void test()}>
+          <ExperimentOutlined />
+          调用
+        </UIButton>
+      )}
     >
       <div className="tool-test-console-intro">
-        <Typography.Text type="secondary">
+        <span className="text-[13px] text-[#858b9c] dark:text-muted-foreground">
           调用已保存的「{tool.display_name || tool.name}」，用于验证员工实际可用的工具返回。
-        </Typography.Text>
-        <Tag>{toolTypeLabel(tool)}</Tag>
+        </span>
+        <ToolTag tone="gray">{toolTypeLabel(tool)}</ToolTag>
       </div>
       <div className="tool-test-editor-block">
         <div className="tool-test-section-title">测试参数</div>
-        <Input.TextArea
+        <Textarea
           className="tool-test-json-input"
-          autoSize={{ minRows: 6, maxRows: 12 }}
+          rows={8}
           value={testJson}
           onChange={(event) => setTestJson(event.target.value)}
         />
@@ -856,7 +997,7 @@ function SavedToolTestCard({ tool, standalone = false }: { tool: ToolRead; stand
       <div className="tool-test-editor-block">
         <div className="tool-test-result-head">
           <div className="tool-test-section-title">调用结果</div>
-          <Tag color={testResult ? 'green' : 'default'}>{testResult ? '已返回' : '等待调用'}</Tag>
+          <ToolTag tone={testResult ? 'green' : 'gray'}>{testResult ? '已返回' : '等待调用'}</ToolTag>
         </div>
         {testResult ? (
           <CodeBlock className="tool-test-result-code" code={testResult} language="json" />
@@ -864,7 +1005,20 @@ function SavedToolTestCard({ tool, standalone = false }: { tool: ToolRead; stand
           <div className="tool-test-empty-result">点击调用后，这里会显示工具返回、错误信息和原始 data。</div>
         )}
       </div>
-    </Card>
+    </EditorCard>
+  );
+}
+
+function ToolTag({ tone = 'gray', children }: { tone?: 'gray' | 'blue' | 'green'; children: ReactNode }) {
+  const toneClass = {
+    gray: 'bg-[#f2f3f5] text-[#5b6273] dark:bg-white/10 dark:text-muted-foreground',
+    blue: 'bg-[#e6f0ff] text-[#1a71ff] dark:bg-[#1a71ff]/20 dark:text-[#7fb0ff]',
+    green: 'bg-[#eafbf0] text-[#018434] dark:bg-[#018434]/20 dark:text-[#4bd07f]',
+  }[tone];
+  return (
+    <span className={cn('inline-flex items-center rounded-[6px] px-[8px] py-[2px] text-[12px] font-medium leading-[18px]', toneClass)}>
+      {children}
+    </span>
   );
 }
 
@@ -914,7 +1068,7 @@ function buildToolPayload(values: ToolFormValues) {
       enabled: values.enabled,
     };
   } catch {
-    message.error('JSON 配置格式不正确，请检查 Headers、Auth、Schema 或 MCP Config');
+    notify.error('JSON 配置格式不正确，请检查 Headers、Auth、Schema 或 MCP Config');
     return null;
   }
 }

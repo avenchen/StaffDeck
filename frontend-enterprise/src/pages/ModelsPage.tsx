@@ -1,6 +1,4 @@
-import { ApiOutlined, SaveOutlined } from '../icons';
-import { Button, Card, Form, Input, InputNumber, Switch } from 'antd';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Check, FlaskConical } from 'lucide-react';
 
 import { api, TENANT_ID } from '../api/client';
@@ -10,10 +8,15 @@ import { DataTable, type DataTableColumn } from '@/components/DataTable';
 import { Paginator } from '@/components/Paginator';
 import { StatCard } from '@/components/StatCard';
 import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  Input,
+  Switch,
 } from '@/components/ui';
 import { Button as UIButton } from '@/components/ui/button';
 import { notify } from '@/components/ui/app-toast';
@@ -32,6 +35,30 @@ import type { ModelConfigRead } from '../types';
 
 const MODEL_PAGE_SIZE = 8;
 
+type ModelForm = {
+  name: string;
+  provider: string;
+  base_url: string;
+  model: string;
+  api_key: string;
+  temperature: string;
+  max_output_tokens: string;
+  is_default: boolean;
+  enabled: boolean;
+};
+
+const BLANK_MODEL_FORM: ModelForm = {
+  name: '',
+  provider: 'openai_compatible',
+  base_url: '',
+  model: '',
+  api_key: '',
+  temperature: '0.2',
+  max_output_tokens: '2048',
+  is_default: false,
+  enabled: true,
+};
+
 export default function ModelsPage({
   currentUser,
   onLogout,
@@ -43,7 +70,12 @@ export default function ModelsPage({
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [selected, setSelected] = useState<ModelConfigRead | null>(null);
-  const [form] = Form.useForm();
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState<ModelForm>(BLANK_MODEL_FORM);
+
+  const updateForm = <K extends keyof ModelForm>(key: K, value: ModelForm[K]) =>
+    setForm((prev) => ({ ...prev, [key]: value }));
 
   const load = () => {
     setLoading(true);
@@ -76,26 +108,59 @@ export default function ModelsPage({
 
   function edit(row: ModelConfigRead) {
     setSelected(row);
-    form.setFieldsValue({ ...row, api_key: '' });
-    if (typeof window !== 'undefined') {
-      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-    }
+    setForm({
+      name: row.name,
+      provider: row.provider,
+      base_url: row.base_url || '',
+      model: row.model,
+      api_key: '',
+      temperature: String(row.temperature),
+      max_output_tokens: String(row.max_output_tokens),
+      is_default: row.is_default,
+      enabled: row.enabled,
+    });
+    setEditorOpen(true);
   }
 
   function createBlank() {
     setSelected(null);
-    form.resetFields();
-    form.setFieldsValue({ provider: 'openai_compatible', temperature: 0.2, max_output_tokens: 2048, enabled: true });
+    setForm(BLANK_MODEL_FORM);
+    setEditorOpen(true);
+  }
+
+  function closeEditor() {
+    if (saving) return;
+    setEditorOpen(false);
+    setSelected(null);
   }
 
   async function save() {
-    let values: Record<string, unknown>;
-    try {
-      values = await form.validateFields();
-    } catch {
+    const name = form.name.trim();
+    const provider = form.provider.trim();
+    const model = form.model.trim();
+    if (!name || !provider || !model) {
+      notify.error('请填写名称、Provider 和 Model');
       return;
     }
-    const payload = { ...values, tenant_id: TENANT_ID, api_key: values.api_key || undefined };
+    const temperature = Number(form.temperature);
+    const maxOutputTokens = Number(form.max_output_tokens);
+    if (Number.isNaN(temperature) || Number.isNaN(maxOutputTokens)) {
+      notify.error('Temperature 与 Max Tokens 必须是数字');
+      return;
+    }
+    const payload = {
+      tenant_id: TENANT_ID,
+      name,
+      provider,
+      base_url: form.base_url.trim() || undefined,
+      model,
+      temperature,
+      max_output_tokens: maxOutputTokens,
+      is_default: form.is_default,
+      enabled: form.enabled,
+      api_key: form.api_key || undefined,
+    };
+    setSaving(true);
     try {
       if (selected) {
         await api.put(`/api/enterprise/model-configs/${selected.id}`, payload);
@@ -103,11 +168,14 @@ export default function ModelsPage({
         await api.post('/api/enterprise/model-configs', payload);
       }
       notify.success('已保存');
+      setEditorOpen(false);
       setSelected(null);
-      form.resetFields();
+      setForm(BLANK_MODEL_FORM);
       await load();
     } catch (error) {
       notify.error(error instanceof Error ? error.message : '保存失败');
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -315,29 +383,102 @@ export default function ModelsPage({
         </div>
       </div>
 
-      <Card className="editor-card model-editor-card mt-[20px]" title={selected ? `编辑模型：${selected.name}` : '新建模型'}>
-        <Form form={form} layout="vertical" initialValues={{ provider: 'openai_compatible', temperature: 0.2, max_output_tokens: 2048, enabled: true }}>
-          <div className="model-form-grid">
-            <Form.Item name="name" label="名称" rules={[{ required: true }]}><Input prefix={<ApiOutlined />} /></Form.Item>
-            <Form.Item name="provider" label="Provider" rules={[{ required: true }]}><Input /></Form.Item>
-            <Form.Item name="base_url" label="Base URL"><Input /></Form.Item>
-            <Form.Item name="model" label="Model" rules={[{ required: true }]}><Input /></Form.Item>
-            <Form.Item name="api_key" label="API Key"><Input.Password placeholder={selected ? '不修改请留空' : undefined} /></Form.Item>
-            <div className="form-number-row model-number-row">
-              <Form.Item name="temperature" label="Temperature"><InputNumber min={0} max={2} step={0.1} /></Form.Item>
-              <Form.Item name="max_output_tokens" label="Max Tokens"><InputNumber min={128} max={32000} /></Form.Item>
+      <Dialog open={editorOpen} onOpenChange={(next) => !next && closeEditor()}>
+        <DialogContent
+          aria-describedby={undefined}
+          className="flex max-h-[calc(100dvh-4rem)] w-[calc(100%-2rem)] flex-col gap-[16px] overflow-hidden rounded-[14px] px-[20px] py-[16px] sm:max-w-[640px]"
+        >
+          <div className="flex items-center gap-[6px] px-[12px] text-[#757f9c] dark:text-muted-foreground">
+            <IconModels className="size-[14px] shrink-0" />
+            <DialogTitle className="min-w-0 truncate text-[14px] font-normal leading-none text-[#757f9c] dark:text-muted-foreground">
+              {selected ? `编辑模型：${selected.name}` : '新建模型'}
+            </DialogTitle>
+          </div>
+
+          <div className="min-h-0 flex-1 overflow-y-auto px-[12px]">
+            <div className="grid grid-cols-1 gap-[14px] sm:grid-cols-2">
+              <LabeledField label="名称">
+                <Input value={form.name} placeholder="例如 GPT-4o" onChange={(event) => updateForm('name', event.target.value)} />
+              </LabeledField>
+              <LabeledField label="Provider">
+                <Input value={form.provider} placeholder="例如 openai_compatible" onChange={(event) => updateForm('provider', event.target.value)} />
+              </LabeledField>
+              <LabeledField label="Base URL">
+                <Input value={form.base_url} placeholder="https://api.openai.com/v1" onChange={(event) => updateForm('base_url', event.target.value)} />
+              </LabeledField>
+              <LabeledField label="Model">
+                <Input value={form.model} placeholder="例如 gpt-4o" onChange={(event) => updateForm('model', event.target.value)} />
+              </LabeledField>
+              <LabeledField label="API Key">
+                <Input
+                  type="password"
+                  value={form.api_key}
+                  placeholder={selected ? '不修改请留空' : 'sk-...'}
+                  onChange={(event) => updateForm('api_key', event.target.value)}
+                />
+              </LabeledField>
+              <div className="grid grid-cols-2 gap-[14px]">
+                <LabeledField label="Temperature">
+                  <Input
+                    type="number"
+                    min={0}
+                    max={2}
+                    step={0.1}
+                    value={form.temperature}
+                    onChange={(event) => updateForm('temperature', event.target.value)}
+                  />
+                </LabeledField>
+                <LabeledField label="Max Tokens">
+                  <Input
+                    type="number"
+                    min={128}
+                    max={32000}
+                    value={form.max_output_tokens}
+                    onChange={(event) => updateForm('max_output_tokens', event.target.value)}
+                  />
+                </LabeledField>
+              </div>
+            </div>
+            <div className="mt-[16px] flex flex-wrap items-center gap-[24px]">
+              <label className="flex cursor-pointer items-center gap-[8px]">
+                <Switch checked={form.is_default} onCheckedChange={(next) => updateForm('is_default', next)} />
+                <span className="text-[12px] font-medium text-[#464c5e] dark:text-muted-foreground">设为默认</span>
+              </label>
+              <label className="flex cursor-pointer items-center gap-[8px]">
+                <Switch checked={form.enabled} onCheckedChange={(next) => updateForm('enabled', next)} />
+                <span className="text-[12px] font-medium text-[#464c5e] dark:text-muted-foreground">启用</span>
+              </label>
             </div>
           </div>
-          <div className="model-switch-row">
-            <Form.Item name="is_default" label="设为默认" valuePropName="checked"><Switch /></Form.Item>
-            <Form.Item name="enabled" label="启用" valuePropName="checked"><Switch /></Form.Item>
+
+          <div className="flex items-center justify-end gap-[8px] px-[12px]">
+            <UIButton
+              variant="outline"
+              disabled={saving}
+              onClick={closeEditor}
+              className="h-[32px] w-[80px] rounded-[10px] border-[#e3e7f1] bg-white px-[12px] text-[14px] font-normal text-[#464c5e] hover:border-[#e3e7f1] hover:bg-[#f6f6f6] hover:text-[#18181a] dark:border-border dark:bg-transparent dark:text-muted-foreground dark:hover:bg-input/50 dark:hover:text-white"
+            >
+              取消
+            </UIButton>
+            <UIButton
+              disabled={saving}
+              onClick={() => void save()}
+              className="h-[32px] w-[80px] rounded-[10px] bg-[#18181a] px-[12px] text-[14px] font-normal text-white hover:bg-[#303030]"
+            >
+              保存
+            </UIButton>
           </div>
-          <div className="form-actions">
-            <Button type="primary" icon={<SaveOutlined />} onClick={() => void save()}>保存</Button>
-            <Button onClick={createBlank}>清空</Button>
-          </div>
-        </Form>
-      </Card>
+        </DialogContent>
+      </Dialog>
     </div>
+  );
+}
+
+function LabeledField({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <label className="flex flex-col gap-[6px]">
+      <span className="text-[12px] font-medium text-[#464c5e] dark:text-muted-foreground">{label}</span>
+      {children}
+    </label>
   );
 }

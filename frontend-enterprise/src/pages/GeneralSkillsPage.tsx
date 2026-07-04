@@ -13,13 +13,12 @@ import {
   PlusOutlined,
   TeamOutlined,
   UploadOutlined,
-  DownOutlined,
 } from '../icons';
-import { Button, Card, Dropdown, Empty, Input, Modal, Select, Space, Tag, Typography, message } from 'antd';
-import type { ChangeEvent, DragEvent } from 'react';
+import type { ChangeEvent, DragEvent, HTMLAttributes, ReactNode } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Ban, CircleCheck, Copy, Users } from 'lucide-react';
+import { ContextMenu } from 'radix-ui';
 
 import { api, streamPost, TENANT_ID } from '../api/client';
 import type { EnterpriseAuthUser } from '../auth';
@@ -36,6 +35,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  Input,
   Select as UISelect,
   SelectContent,
   SelectItem,
@@ -993,6 +993,35 @@ function normalizedSkillFiles(files: GeneralSkillFile[] = []): string {
   );
 }
 
+function EditorCard({
+  className,
+  bodyClassName,
+  title,
+  extra,
+  children,
+  ...rest
+}: {
+  className?: string;
+  bodyClassName?: string;
+  title?: ReactNode;
+  extra?: ReactNode;
+  children?: ReactNode;
+} & Omit<HTMLAttributes<HTMLDivElement>, 'title'>) {
+  return (
+    <div className={cn('ant-card', className)} {...rest}>
+      {(title || extra) && (
+        <div className="ant-card-head border-b border-border">
+          <div className="ant-card-head-wrapper flex min-h-[46px] items-center justify-between gap-[12px] px-[16px]">
+            <div className="ant-card-head-title min-w-0">{title}</div>
+            {extra ? <div className="ant-card-extra min-w-0">{extra}</div> : null}
+          </div>
+        </div>
+      )}
+      <div className={cn('ant-card-body', bodyClassName)}>{children}</div>
+    </div>
+  );
+}
+
 function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' | 'edit' } & GeneralSkillPageProps) {
   const navigate = useNavigate();
   const { slug: routeSlug } = useParams();
@@ -1029,9 +1058,15 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
   const [agentImportSelectedSkillIds, setAgentImportSelectedSkillIds] = useState<string[]>([]);
   const [agentId, setAgentId] = useState(() => window.localStorage.getItem(ENTERPRISE_AGENT_STORAGE_KEY) || '');
   const [isOverallAgent, setIsOverallAgent] = useState(true);
+  const [deleteSkillTarget, setDeleteSkillTarget] = useState<GeneralSkillRead | null>(null);
+  const [deleteFileTarget, setDeleteFileTarget] = useState<GeneralSkillFile | null>(null);
+  const [renameTarget, setRenameTarget] = useState<GeneralSkillFile | null>(null);
+  const [renameValue, setRenameValue] = useState('');
+  const [importPrepareOpen, setImportPrepareOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const folderInputRef = useRef<HTMLInputElement | null>(null);
   const clawhubAbortRef = useRef<AbortController | null>(null);
+  const importPrepareActionRef = useRef<null | (() => void | Promise<void>)>(null);
 
   const selectedSkill = useMemo(
     () => rows.find((row) => row.slug === selectedSlug),
@@ -1064,11 +1099,11 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
           if (target) {
             editSkill(target);
           } else if (routeSlug) {
-            message.error('未找到要编辑的技能');
+            notify.error('未找到要编辑的技能');
           }
         }
       })
-      .catch((error) => message.error(error.message));
+      .catch((error) => notify.error(error.message));
   };
 
   useEffect(() => {
@@ -1131,7 +1166,7 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
 
   async function importSkill(): Promise<GeneralSkillRead | null> {
     if (!markdown.trim()) {
-      message.warning('请先粘贴或上传 SKILL.md');
+      notify.warning('请先粘贴或上传 SKILL.md');
       return null;
     }
     setSaving(true);
@@ -1148,7 +1183,7 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
         status: 'published',
         original_slug: editingSlug || undefined,
       });
-      message.success(editingSlug ? `已保存 ${row.name}` : `已新增 ${row.name}`);
+      notify.success(editingSlug ? `已保存 ${row.name}` : `已新增 ${row.name}`);
       setSelectedSlug(row.slug);
       setEditingSlug(row.slug);
       setMarkdown(row.skill_markdown);
@@ -1166,7 +1201,7 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
       void load();
       return row;
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '保存技能失败');
+      notify.error(error instanceof Error ? error.message : '保存技能失败');
       return null;
     } finally {
       setSaving(false);
@@ -1218,44 +1253,37 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
         `/api/enterprise/general-skills/${row.slug}/${published ? 'publish' : 'archive'}?tenant_id=${TENANT_ID}${agentSuffix}`,
       );
       replaceRow(next);
-      message.success(published ? '已启用技能' : '已停用技能');
+      notify.success(published ? '已启用技能' : '已停用技能');
     } catch (error) {
-      message.error(error instanceof Error ? error.message : published ? '发布失败' : '下线失败');
+      notify.error(error instanceof Error ? error.message : published ? '发布失败' : '下线失败');
     }
   }
 
-  function confirmDeleteSkill(row: GeneralSkillRead) {
+  async function runDeleteSkill() {
+    const row = deleteSkillTarget;
+    if (!row) return;
     const branchMode = !isOverallAgent;
-    Modal.confirm({
-      title: branchMode ? `移除技能：${row.name}` : `删除技能：${row.name}`,
-      content: branchMode
-        ? '这只会在当前数字员工中隐藏该技能；开放广场和其他数字员工仍然保留。'
-        : '删除后该技能不会再出现在组织技能库中，此操作不可撤销。',
-      okText: branchMode ? '移除' : '删除',
-      okButtonProps: { danger: true },
-      cancelText: '取消',
-      async onOk() {
-        try {
-          const agentSuffix = agentId ? `&agent_id=${encodeURIComponent(agentId)}` : '';
-          await api.delete(`/api/enterprise/general-skills/${row.slug}?tenant_id=${TENANT_ID}${agentSuffix}`);
-          const nextRows = rows.filter((item) => item.id !== row.id);
-          setRows(nextRows);
-          if (selectedSlug === row.slug || editingSlug === row.slug) {
-            const next = nextRows[0];
-            if (next) {
-              setSelectedSlug(next.slug);
-              editSkill(next);
-            } else {
-              setSelectedSlug(undefined);
-              newSkill();
-            }
-          }
-          message.success(branchMode ? '已移除技能' : '已删除技能');
-        } catch (error) {
-          message.error(error instanceof Error ? error.message : '删除失败');
+    try {
+      const agentSuffix = agentId ? `&agent_id=${encodeURIComponent(agentId)}` : '';
+      await api.delete(`/api/enterprise/general-skills/${row.slug}?tenant_id=${TENANT_ID}${agentSuffix}`);
+      const nextRows = rows.filter((item) => item.id !== row.id);
+      setRows(nextRows);
+      if (selectedSlug === row.slug || editingSlug === row.slug) {
+        const next = nextRows[0];
+        if (next) {
+          setSelectedSlug(next.slug);
+          editSkill(next);
+        } else {
+          setSelectedSlug(undefined);
+          newSkill();
         }
-      },
-    });
+      }
+      notify.success(branchMode ? '已移除技能' : '已删除技能');
+    } catch (error) {
+      notify.error(error instanceof Error ? error.message : '删除失败');
+    } finally {
+      setDeleteSkillTarget(null);
+    }
   }
 
   function startImportedDraft() {
@@ -1270,20 +1298,23 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
       await importAction();
       return;
     }
+    importPrepareActionRef.current = importAction;
+    setImportPrepareOpen(true);
+  }
 
-    Modal.confirm({
-      title: '导入新技能前是否保存当前技能？',
-      content: '你正在编辑现有技能。导入会进入新建状态，不会覆盖当前技能。',
-      okText: '保存并发布',
-      cancelText: '不保存，继续导入',
-      async onOk() {
-        const saved = await importSkill();
-        if (saved) await importAction();
-      },
-      async onCancel() {
-        await importAction();
-      },
-    });
+  async function confirmImportPrepareSave() {
+    const action = importPrepareActionRef.current;
+    setImportPrepareOpen(false);
+    const saved = await importSkill();
+    if (saved && action) await action();
+    importPrepareActionRef.current = null;
+  }
+
+  async function confirmImportPrepareSkip() {
+    const action = importPrepareActionRef.current;
+    setImportPrepareOpen(false);
+    importPrepareActionRef.current = null;
+    if (action) await action();
   }
 
   function requestImport(kind: 'file' | 'folder') {
@@ -1332,7 +1363,7 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
           setAgentImportSourceSkills([]);
         }
       } catch (error) {
-        message.error(error instanceof Error ? error.message : '加载员工列表失败');
+        notify.error(error instanceof Error ? error.message : '加载员工列表失败');
       }
     });
   }
@@ -1348,21 +1379,21 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
       const existingIds = new Set(rows.map((item) => item.id));
       setAgentImportSourceSkills(sourceRows.filter((item) => item.status === 'published' && !existingIds.has(item.id)));
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '加载来源技能失败');
+      notify.error(error instanceof Error ? error.message : '加载来源技能失败');
     }
   }
 
   async function submitAgentImportSkills() {
     if (!agentId) {
-      message.warning('请先选择一个数字员工');
+      notify.warning('请先选择一个数字员工');
       return;
     }
     if (!agentImportSourceAgentId) {
-      message.warning(agentImportMode === 'plaza' ? '请选择技能广场' : '请选择复制来源');
+      notify.warning(agentImportMode === 'plaza' ? '请选择技能广场' : '请选择复制来源');
       return;
     }
     if (!agentImportSelectedSkillIds.length) {
-      message.warning('请选择要复制的技能');
+      notify.warning('请选择要复制的技能');
       return;
     }
     setAgentImportLoading(true);
@@ -1373,11 +1404,11 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
         resource_type: 'general_skill',
         resource_ids: agentImportSelectedSkillIds,
       });
-      message.success(`已复制 ${agentImportSelectedSkillIds.length} 个技能`);
+      notify.success(`已复制 ${agentImportSelectedSkillIds.length} 个技能`);
       setAgentImportOpen(false);
       await load();
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '复制技能失败');
+      notify.error(error instanceof Error ? error.message : '复制技能失败');
     } finally {
       setAgentImportLoading(false);
     }
@@ -1385,7 +1416,7 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
 
   async function importClawHubSource() {
     if (!clawhubSource.trim()) {
-      message.warning('请输入开源平台地址、GitHub 仓库或 SKILL.md 链接');
+      notify.warning('请输入开源平台地址、GitHub 仓库或 SKILL.md 链接');
       return;
     }
     const controller = new AbortController();
@@ -1400,7 +1431,7 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
         status: 'published',
       }, controller.signal);
       if (controller.signal.aborted) return;
-      message.success(`已新增 ${row.name}`);
+      notify.success(`已新增 ${row.name}`);
       setRows((current) => [row, ...current.filter((item) => item.id !== row.id && item.slug !== row.slug)]);
       setSelectedSlug(row.slug);
       editSkill(row);
@@ -1408,10 +1439,10 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
       void load();
     } catch (error) {
       if (isAbortError(error)) {
-        message.info('已取消导入');
+        notify.info('已取消导入');
         return;
       }
-      message.error(error instanceof Error ? error.message : '从开源平台导入失败');
+      notify.error(error instanceof Error ? error.message : '从开源平台导入失败');
     } finally {
       if (clawhubAbortRef.current === controller) {
         clawhubAbortRef.current = null;
@@ -1436,7 +1467,7 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
         status: 'published',
       }, controller.signal);
       if (controller.signal.aborted) return;
-      message.success(`已上传 ${row.name}`);
+      notify.success(`已上传 ${row.name}`);
       setRows((current) => [row, ...current.filter((item) => item.id !== row.id && item.slug !== row.slug)]);
       setSelectedSlug(row.slug);
       editSkill(row);
@@ -1444,10 +1475,10 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
       void load();
     } catch (error) {
       if (isAbortError(error)) {
-        message.info('已取消导入');
+        notify.info('已取消导入');
         return;
       }
-      message.error(error instanceof Error ? error.message : '上传技能包失败');
+      notify.error(error instanceof Error ? error.message : '上传技能包失败');
     } finally {
       if (clawhubAbortRef.current === controller) {
         clawhubAbortRef.current = null;
@@ -1487,46 +1518,42 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
 
   function deleteSkillFile(target: GeneralSkillFile) {
     if (target.path.split('/').pop()?.toLowerCase() === 'skill.md') {
-      message.warning('SKILL.md 是技能入口，不能删除');
+      notify.warning('SKILL.md 是技能入口，不能删除');
       return;
     }
-    Modal.confirm({
-      title: `删除文件：${target.path}`,
-      content: '删除后需要重新导入或手动新建该文件。',
-      okText: '删除',
-      okButtonProps: { danger: true },
-      cancelText: '取消',
-      onOk() {
-        setSkillFiles((current) => current.filter((file) => file.path !== target.path));
-      },
-    });
+    setDeleteFileTarget(target);
+  }
+
+  function runDeleteFile() {
+    const target = deleteFileTarget;
+    if (!target) return;
+    setSkillFiles((current) => current.filter((file) => file.path !== target.path));
+    setDeleteFileTarget(null);
   }
 
   function renameSkillFile(target: GeneralSkillFile) {
-    let nextPath = target.path;
-    Modal.confirm({
-      title: '重命名文件',
-      content: (
-        <Input
-          autoFocus
-          defaultValue={target.path}
-          onChange={(event) => {
-            nextPath = event.target.value;
-          }}
-        />
-      ),
-      okText: '重命名',
-      cancelText: '取消',
-      onOk() {
+    setRenameTarget(target);
+    setRenameValue(target.path);
+  }
+
+  function runRenameFile() {
+    const target = renameTarget;
+    if (!target) return;
+    {
+      const nextPath = renameValue;
+      {
         const normalized = normalizeSkillFilePath(nextPath);
         if (!normalized) {
-          message.error('文件名不能为空');
-          return Promise.reject();
+          notify.error('文件名不能为空');
+          return;
         }
-        if (normalized === target.path) return undefined;
+        if (normalized === target.path) {
+          setRenameTarget(null);
+          return;
+        }
         if (skillFiles.some((file) => file.path === normalized)) {
-          message.error('已存在同名文件');
-          return Promise.reject();
+          notify.error('已存在同名文件');
+          return;
         }
         setSkillFiles((current) => current.map((file) => (
           file.path === target.path
@@ -1536,19 +1563,19 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
         if (selectedFilePath === target.path) {
           setSelectedFilePath(normalized);
         }
-        return undefined;
-      },
-    });
+        setRenameTarget(null);
+      }
+    }
   }
 
   async function runSkill() {
     const slug = selectedSkill?.slug;
     if (!slug) {
-      message.warning('请先导入技能');
+      notify.warning('请先导入技能');
       return;
     }
     if (!query.trim()) {
-      message.warning('请输入测试问题');
+      notify.warning('请输入测试问题');
       return;
     }
     setLoading(true);
@@ -1611,7 +1638,7 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
             completed = true;
             setRunResult(result);
             setLiveResult(null);
-            message.success('运行完成');
+            notify.success('运行完成');
           }
           if (item.event === 'error') {
             const text = typeof item.data.message === 'string' ? item.data.message : '运行失败';
@@ -1622,13 +1649,13 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
               structured_result: { success: false, error: text },
               reply: '运行失败',
             }));
-            message.error(text);
+            notify.error(text);
           }
         },
         controller.signal,
       );
       if (!completed) {
-        message.warning('运行流已结束，但未收到最终结果');
+        notify.warning('运行流已结束，但未收到最终结果');
       }
     } catch (error) {
       const text = timedOut
@@ -1640,7 +1667,7 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
         structured_result: { success: false, error: text },
         reply: '运行失败',
       }));
-      message.error(text);
+      notify.error(text);
     } finally {
       window.clearTimeout(timeoutId);
       setLoading(false);
@@ -1655,7 +1682,7 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
     setSelectedFilePath('SKILL.md');
     setMarkdown(text);
     applyMetadata(text, { setSkillName, setSkillSlug, setSkillDescription, setSkillHomepage });
-    message.success(`已读取 ${target.name}`);
+    notify.success(`已读取 ${target.name}`);
   }
 
   async function importSkillPackage(targets: DroppedSkillFile[]) {
@@ -1676,7 +1703,7 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
       }
     }
     if (!nextFiles.length) {
-      message.error('没有读取到可导入的技能文件');
+      notify.error('没有读取到可导入的技能文件');
       return;
     }
     nextFiles.sort((a, b) => a.path.localeCompare(b.path));
@@ -1687,10 +1714,10 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
       setMarkdown(skillFile.content);
       setSelectedFilePath(skillFile.path);
       applyMetadata(skillFile.content, { setSkillName, setSkillSlug, setSkillDescription, setSkillHomepage });
-      message.success(`已读取 ${nextFiles.length} 个文件${failedCount ? `，跳过 ${failedCount} 个无法读取文件` : ''}`);
+      notify.success(`已读取 ${nextFiles.length} 个文件${failedCount ? `，跳过 ${failedCount} 个无法读取文件` : ''}`);
     } else {
       setSelectedFilePath(nextFiles[0]?.path || 'SKILL.md');
-      message.warning('文件夹中没有找到 SKILL.md');
+      notify.warning('文件夹中没有找到 SKILL.md');
     }
   }
 
@@ -1767,70 +1794,79 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
         userName={currentUser?.username}
         left={(
           <div>
-            <Typography.Title level={3} style={{ marginBottom: 4 }}>{mode === 'new' ? '新建技能' : '编辑技能'}</Typography.Title>
-            <Typography.Text type="secondary">
+            <h3 className="mb-[4px] text-[18px] font-semibold text-foreground">{mode === 'new' ? '新建技能' : '编辑技能'}</h3>
+            <span className="text-[13px] text-muted-foreground">
               {isOverallAgent
                 ? '维护技能广场中的技能定义、文件包和运行测试。'
                 : '维护当前数字员工技能的技能定义、文件包和运行测试。'}
-            </Typography.Text>
+            </span>
           </div>
         )}
       />
       <div className="page-title mt-1" style={{ justifyContent: 'flex-end' }}>
-        <Space>
-          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/enterprise/general-skills')}>返回列表</Button>
-          {mode === 'edit' && <Button icon={<PlusOutlined />} onClick={() => navigate('/enterprise/general-skills/new')}>新建技能</Button>}
-        </Space>
+        <div className="flex items-center gap-[8px]">
+          <UIButton variant="outline" onClick={() => navigate('/enterprise/general-skills')}>
+            <ArrowLeftOutlined />
+            返回列表
+          </UIButton>
+          {mode === 'edit' && (
+            <UIButton variant="outline" onClick={() => navigate('/enterprise/general-skills/new')}>
+              <PlusOutlined />
+              新建技能
+            </UIButton>
+          )}
+        </div>
       </div>
       <div className="general-skill-workbench general-skill-editor-page">
-        <Space direction="vertical" size={16} className="general-skill-main">
-          <Card
+        <div className="general-skill-main flex flex-col gap-[16px]">
+          <EditorCard
             className={`editor-card general-skill-editor ${dragActive ? 'drag-active' : ''}`}
             onDragEnter={handleDragEnter}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
             title={(
-              <Space>
+              <span className="flex items-center gap-[8px]">
                 <FileTextOutlined />
                 <span>{editorTitle}</span>
-              </Space>
+              </span>
             )}
             extra={(
-              <Space wrap>
-                <Dropdown
-                  trigger={['click']}
-                  menu={{
-                    items: [
-                      { key: 'file', label: '选择文件' },
-                      { key: 'folder', label: '选择文件夹' },
-                      ...(!isOverallAgent ? [{ key: 'plaza', icon: <UploadOutlined />, label: '从广场复制' }] : []),
-                      { key: 'opensource', icon: <GithubOutlined />, label: '从开源平台导入' },
-                      ...(!isOverallAgent ? [{ key: 'agent', icon: <TeamOutlined />, label: '从数字员工复制技能' }] : []),
-                    ],
-                    onClick: ({ key }) => {
-                      if (key === 'opensource') {
-                        requestClawHubImport();
-                        return;
-                      }
-                      if (key === 'plaza') {
-                        requestAgentImport('plaza');
-                        return;
-                      }
-                      if (key === 'agent') {
-                        requestAgentImport('employee');
-                        return;
-                      }
-                      requestImport(key === 'folder' ? 'folder' : 'file');
-                    },
-                  }}
-                >
-                  <Button icon={<UploadOutlined />}>
-                    导入 <DownOutlined />
-                  </Button>
-                </Dropdown>
-                <Button type="primary" loading={saving} icon={<CloudOutlined />} onClick={importSkill}>保存并发布</Button>
-              </Space>
+              <div className="flex flex-wrap items-center gap-[8px]">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <UIButton variant="outline">
+                      <UploadOutlined />
+                      导入
+                      <IconChevronDown className="size-[12px]" />
+                    </UIButton>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className={MENU_CONTENT_CLASS}>
+                    <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={() => requestImport('file')}>选择文件</DropdownMenuItem>
+                    <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={() => requestImport('folder')}>选择文件夹</DropdownMenuItem>
+                    {!isOverallAgent && (
+                      <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={() => requestAgentImport('plaza')}>
+                        <UploadOutlined />
+                        从广场复制
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={() => requestClawHubImport()}>
+                      <GithubOutlined />
+                      从开源平台导入
+                    </DropdownMenuItem>
+                    {!isOverallAgent && (
+                      <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={() => requestAgentImport('employee')}>
+                        <TeamOutlined />
+                        从数字员工复制技能
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <UIButton disabled={saving} onClick={() => void importSkill()}>
+                  <CloudOutlined />
+                  保存并发布
+                </UIButton>
+              </div>
             )}
           >
             <input
@@ -1890,39 +1926,39 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
                 </div>
                 <div className="general-skill-file-tree-list">
                   {skillFiles.map((file) => (
-                    <Dropdown
-                      key={file.path}
-                      trigger={['contextMenu']}
-                      menu={{
-                        items: [
-                          { key: 'rename', icon: <EditOutlined />, label: '重命名' },
-                          { key: 'delete', icon: <DeleteOutlined />, label: '删除', danger: true },
-                        ],
-                        onClick: ({ key }) => {
-                          if (key === 'rename') {
-                            renameSkillFile(file);
-                            return;
-                          }
-                          deleteSkillFile(file);
-                        },
-                      }}
-                    >
-                      <button
-                        type="button"
-                        className={`general-skill-file-node ${file.path === selectedFile?.path ? 'active' : ''}`}
-                        onClick={() => setSelectedFilePath(file.path)}
-                        onContextMenu={() => setSelectedFilePath(file.path)}
-                        title={file.path}
-                      >
-                        <FileTextOutlined />
-                        <span>{file.path}</span>
-                      </button>
-                    </Dropdown>
+                    <ContextMenu.Root key={file.path}>
+                      <ContextMenu.Trigger asChild>
+                        <button
+                          type="button"
+                          className={`general-skill-file-node ${file.path === selectedFile?.path ? 'active' : ''}`}
+                          onClick={() => setSelectedFilePath(file.path)}
+                          onContextMenu={() => setSelectedFilePath(file.path)}
+                          title={file.path}
+                        >
+                          <FileTextOutlined />
+                          <span>{file.path}</span>
+                        </button>
+                      </ContextMenu.Trigger>
+                      <ContextMenu.Portal>
+                        <ContextMenu.Content className={MENU_CONTENT_CLASS}>
+                          <ContextMenu.Item className={MENU_ITEM_CLASS} onSelect={() => renameSkillFile(file)}>
+                            <EditOutlined />
+                            重命名
+                          </ContextMenu.Item>
+                          <ContextMenu.Item className={MENU_ITEM_DANGER_CLASS} onSelect={() => deleteSkillFile(file)}>
+                            <DeleteOutlined />
+                            删除
+                          </ContextMenu.Item>
+                        </ContextMenu.Content>
+                      </ContextMenu.Portal>
+                    </ContextMenu.Root>
                   ))}
                 </div>
                 <div className="general-skill-file-actions">
-                  <Button size="small" onClick={addSkillFile}>新建文件</Button>
-                  <Button size="small" icon={<DeleteOutlined />} onClick={deleteSelectedFile} />
+                  <UIButton variant="outline" size="sm" onClick={addSkillFile}>新建文件</UIButton>
+                  <UIButton variant="outline" size="sm" onClick={deleteSelectedFile}>
+                    <DeleteOutlined />
+                  </UIButton>
                 </div>
               </aside>
               <section className="general-skill-file-pane">
@@ -1953,36 +1989,46 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
                 </div>
               </section>
             </div>
-          </Card>
-          <Card
+          </EditorCard>
+          <EditorCard
             className="editor-card general-skill-run-card"
+            bodyClassName="p-[18px]"
             title="运行测试"
-            extra={<Button type="primary" loading={loading} icon={<ExperimentOutlined />} onClick={runSkill}>运行</Button>}
+            extra={(
+              <UIButton disabled={loading} onClick={() => void runSkill()}>
+                <ExperimentOutlined />
+                运行
+              </UIButton>
+            )}
           >
             <div className="general-run-form">
-              <Select
-                value={selectedSkill?.slug}
-                placeholder="选择技能"
-                options={rows.map((row) => ({ value: row.slug, label: `${row.name} / ${row.slug}` }))}
-                onChange={setSelectedSlug}
-              />
+              <UISelect value={selectedSkill?.slug} onValueChange={setSelectedSlug}>
+                <SelectTrigger className={cn(SELECT_TRIGGER_CLASS, 'w-full')}>
+                  <SelectValue placeholder="选择技能" />
+                </SelectTrigger>
+                <SelectContent>
+                  {rows.map((row) => (
+                    <SelectItem key={row.slug} value={row.slug}>{`${row.name} / ${row.slug}`}</SelectItem>
+                  ))}
+                </SelectContent>
+              </UISelect>
               <Input value={query} onChange={(event) => setQuery(event.target.value)} />
             </div>
-          </Card>
-          <Card
+          </EditorCard>
+          <EditorCard
             className="editor-card general-result-card"
             title={(
-              <Space>
+              <span className="flex items-center gap-[8px]">
                 <PlayCircleOutlined />
                 <span>运行结果</span>
                 {activeResult && (
                   isLiveRunning
-                    ? <Tag color="processing">运行中</Tag>
+                    ? <span className="inline-flex items-center gap-[4px] rounded-full bg-[#e6f4ff] px-[8px] py-px text-[12px] font-bold text-[#0958d9]">运行中</span>
                     : resultSucceeded(activeResult)
-                    ? <Tag color="green" icon={<CheckCircleOutlined />}>成功</Tag>
-                    : <Tag color="red" icon={<CloseCircleOutlined />}>失败</Tag>
+                    ? <span className="inline-flex items-center gap-[4px] rounded-full bg-[#eafbf0] px-[8px] py-px text-[12px] font-bold text-[#018434]"><CheckCircleOutlined />成功</span>
+                    : <span className="inline-flex items-center gap-[4px] rounded-full bg-[#fce7e7] px-[8px] py-px text-[12px] font-bold text-[#d20b0b]"><CloseCircleOutlined />失败</span>
                 )}
-              </Space>
+              </span>
             )}
           >
             {activeResult ? (
@@ -1997,9 +2043,9 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
                     <>
                 <section className="general-reply-panel">
                   <div className="general-section-label">最终回复</div>
-                  <Typography.Paragraph className="result-reply">
+                  <p className="result-reply">
                     {activeResult.reply || (loading ? '正在运行技能...' : '暂无回复')}
-                  </Typography.Paragraph>
+                  </p>
                 </section>
 
                 <section>
@@ -2065,74 +2111,143 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
                 })()}
               </div>
             ) : (
-              <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="运行后将在这里显示回复、执行流程、代码和输出" />
+              <div className="flex flex-col items-center gap-[8px] py-[40px] text-center text-[13px] text-muted-foreground">
+                运行后将在这里显示回复、执行流程、代码和输出
+              </div>
             )}
-          </Card>
-        </Space>
+          </EditorCard>
+        </div>
       </div>
-      <Modal
-        title="从开源平台导入技能"
+      <ClawHubDialog
         open={clawhubModalOpen}
-        onOk={importClawHubSource}
-        confirmLoading={clawhubLoading}
-        onCancel={cancelClawHubImport}
-        okText="新增"
-        cancelText="取消"
-      >
-        <Space direction="vertical" size={10} style={{ width: '100%' }}>
-          <Typography.Text type="secondary">
-            支持开源平台地址、GitHub repo/tree/raw SKILL.md 或 owner/repo 形式。本地 zip 或 Markdown 文件请使用“导入 &gt; 选择文件”。
-          </Typography.Text>
-          <Input
-            value={clawhubSource}
-            onChange={(event) => setClawhubSource(event.target.value)}
-            placeholder="例如 alchaincyf/nuwa-skill 或 https://github.com/owner/repo/tree/main/skill"
-          />
-        </Space>
-      </Modal>
-      <Modal
-        title={agentImportMode === 'plaza' ? '从广场复制技能' : '从数字员工复制技能'}
+        loading={clawhubLoading}
+        source={clawhubSource}
+        onSourceChange={setClawhubSource}
+        onClose={cancelClawHubImport}
+        onSubmit={() => void importClawHubSource()}
+      />
+      <ResourceImportDialog
         open={agentImportOpen}
-        okText="复制"
-        cancelText="取消"
-        confirmLoading={agentImportLoading}
-        onOk={() => void submitAgentImportSkills()}
-        onCancel={() => setAgentImportOpen(false)}
+        loading={agentImportLoading}
+        icon={<IconSkill className="size-[14px] shrink-0" />}
+        title={agentImportMode === 'plaza' ? '从广场复制技能' : '从数字员工复制技能'}
+        sourcePlaceholder={agentImportMode === 'plaza' ? '选择技能广场' : '选择复制来源'}
+        sources={agentImportAgents.map((item) => ({
+          value: item.id,
+          label: item.is_overall ? '技能广场' : item.name,
+        }))}
+        sourceId={agentImportSourceAgentId}
+        itemsLabel="选择技能"
+        items={agentImportSourceSkills.map((item) => ({
+          id: item.id,
+          label: (
+            <>
+              {item.name}
+              <span className="text-[#858b9c]"> · {item.slug}</span>
+            </>
+          ),
+        }))}
+        selectedIds={agentImportSelectedSkillIds}
+        emptyText="没有可复制的技能"
+        note={agentImportMode === 'plaza'
+          ? '从广场复制可用技能；不会覆盖当前编辑区内容。'
+          : '从数字员工复制可用技能；不会覆盖当前编辑区内容。'}
+        onSourceChange={(value) => {
+          setAgentImportSourceAgentId(value);
+          void loadAgentImportSourceSkills(value);
+        }}
+        onSelectedChange={setAgentImportSelectedSkillIds}
+        onClose={() => setAgentImportOpen(false)}
+        onSubmit={() => void submitAgentImportSkills()}
+      />
+
+      <ConfirmDialog
+        open={Boolean(deleteSkillTarget)}
+        onOpenChange={(open) => !open && setDeleteSkillTarget(null)}
+        title={deleteSkillTarget ? `${isOverallAgent ? '删除' : '移除'}技能「${deleteSkillTarget.name}」？` : ''}
+        description={isOverallAgent
+          ? '删除后该技能不会再出现在组织技能库中，此操作不可撤销。'
+          : '这只会在当前数字员工中隐藏该技能；开放广场和其他数字员工仍然保留。'}
+        confirmText={isOverallAgent ? '删除' : '移除'}
+        onConfirm={() => void runDeleteSkill()}
+      />
+
+      <ConfirmDialog
+        open={Boolean(deleteFileTarget)}
+        onOpenChange={(open) => !open && setDeleteFileTarget(null)}
+        title={deleteFileTarget ? `删除文件「${deleteFileTarget.path}」？` : ''}
+        description="删除后需要重新导入或手动新建该文件。"
+        confirmText="删除"
+        onConfirm={runDeleteFile}
+      />
+
+      <Dialog
+        open={importPrepareOpen}
+        onOpenChange={(open) => { if (!open) { setImportPrepareOpen(false); importPrepareActionRef.current = null; } }}
       >
-        <Space direction="vertical" size={14} style={{ width: '100%' }}>
-          <Typography.Text type="secondary">
-            {agentImportMode === 'plaza'
-              ? '从广场复制可用技能；不会覆盖当前编辑区内容。'
-              : '从数字员工复制可用技能；不会覆盖当前编辑区内容。'}
-          </Typography.Text>
-          <Select
-            value={agentImportSourceAgentId || undefined}
-            placeholder={agentImportMode === 'plaza' ? '选择技能广场' : '选择复制来源'}
-            onChange={(value) => {
-              setAgentImportSourceAgentId(value);
-              void loadAgentImportSourceSkills(value);
-            }}
-            options={agentImportAgents.map((item) => ({
-              value: item.id,
-              label: item.is_overall ? '技能广场' : item.name,
-            }))}
-            style={{ width: '100%' }}
-          />
-          <Select
-            mode="multiple"
-            value={agentImportSelectedSkillIds}
-            placeholder="选择一个或多个技能"
-            onChange={setAgentImportSelectedSkillIds}
-            options={agentImportSourceSkills.map((item) => ({
-              value: item.id,
-              label: `${item.name} · ${item.slug}`,
-            }))}
-            optionFilterProp="label"
-            notFoundContent={agentImportSourceAgentId ? '没有可复制的技能' : '请先选择复制来源'}
-            style={{ width: '100%' }}
-          />
-        </Space>
-      </Modal>
+        <DialogContent aria-describedby={undefined} className="flex w-[calc(100%-2rem)] flex-col gap-[12px] rounded-[14px] px-[20px] py-[16px] sm:max-w-[460px]">
+          <DialogTitle className="text-[15px] font-medium text-[#18181a] dark:text-white">导入新技能前是否保存当前技能？</DialogTitle>
+          <p className="text-[13px] leading-[20px] text-[#4f5669] dark:text-muted-foreground">
+            你正在编辑现有技能。导入会进入新建状态，不会覆盖当前技能。
+          </p>
+          <div className="mt-[4px] flex items-center justify-end gap-[8px]">
+            <UIButton
+              variant="outline"
+              onClick={() => { setImportPrepareOpen(false); importPrepareActionRef.current = null; }}
+              className="h-[32px] rounded-[10px] border-[#e3e7f1] bg-white px-[14px] text-[14px] font-normal text-[#464c5e] hover:border-[#e3e7f1] hover:bg-[#f6f6f6] hover:text-[#18181a] dark:border-border dark:bg-transparent dark:text-muted-foreground dark:hover:bg-input/50 dark:hover:text-white"
+            >
+              取消
+            </UIButton>
+            <UIButton
+              variant="outline"
+              onClick={() => void confirmImportPrepareSkip()}
+              className="h-[32px] rounded-[10px] border-[#e3e7f1] bg-white px-[14px] text-[14px] font-normal text-[#464c5e] hover:border-[#e3e7f1] hover:bg-[#f6f6f6] hover:text-[#18181a] dark:border-border dark:bg-transparent dark:text-muted-foreground dark:hover:bg-input/50 dark:hover:text-white"
+            >
+              不保存，继续导入
+            </UIButton>
+            <UIButton
+              onClick={() => void confirmImportPrepareSave()}
+              className="h-[32px] rounded-[10px] bg-[#18181a] px-[14px] text-[14px] font-normal text-white hover:bg-[#303030]"
+            >
+              保存并发布
+            </UIButton>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(renameTarget)} onOpenChange={(open) => { if (!open) setRenameTarget(null); }}>
+        <DialogContent aria-describedby={undefined} className="flex w-[calc(100%-2rem)] flex-col gap-[16px] rounded-[14px] px-[20px] py-[16px] sm:max-w-[420px]">
+          <DialogTitle className="px-[12px] text-[14px] font-normal leading-none text-[#757f9c] dark:text-muted-foreground">重命名文件</DialogTitle>
+          <div className="px-[12px]">
+            <Input
+              autoFocus
+              value={renameValue}
+              onChange={(event) => setRenameValue(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  event.preventDefault();
+                  runRenameFile();
+                }
+              }}
+            />
+          </div>
+          <div className="flex items-center justify-end gap-[8px] px-[12px]">
+            <UIButton
+              variant="outline"
+              onClick={() => setRenameTarget(null)}
+              className="h-[32px] w-[80px] rounded-[10px] border-[#e3e7f1] bg-white px-[12px] text-[14px] font-normal text-[#464c5e] hover:border-[#e3e7f1] hover:bg-[#f6f6f6] hover:text-[#18181a] dark:border-border dark:bg-transparent dark:text-muted-foreground dark:hover:bg-input/50 dark:hover:text-white"
+            >
+              取消
+            </UIButton>
+            <UIButton
+              onClick={runRenameFile}
+              className="h-[32px] w-[80px] rounded-[10px] bg-[#18181a] px-[12px] text-[14px] font-normal text-white hover:bg-[#303030]"
+            >
+              重命名
+            </UIButton>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

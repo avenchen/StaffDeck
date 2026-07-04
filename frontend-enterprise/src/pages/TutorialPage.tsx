@@ -1,4 +1,3 @@
-import { Tag, Typography } from 'antd';
 import { useEffect } from 'react';
 import StaffdeckIcon, { type StaffdeckIconName } from '../components/StaffdeckIcon';
 
@@ -218,12 +217,12 @@ export default function TutorialPage() {
     <main className="tutorial-doc-page">
       <section className="tutorial-doc-hero" id="intro">
         <div className="tutorial-doc-hero-copy">
-          <Typography.Text className="tutorial-doc-eyebrow">UltraRAG4 Docs</Typography.Text>
-          <Typography.Title level={1}>企业数字员工运行时，从配置到持续运营</Typography.Title>
-          <Typography.Paragraph>
+          <span className="ant-typography tutorial-doc-eyebrow">UltraRAG4 Docs</span>
+          <h1 className="ant-typography">企业数字员工运行时，从配置到持续运营</h1>
+          <p className="ant-typography">
             UltraRAG4 把模型、数字员工、知识库、技能、SOP、工具、记忆、定时任务和 Trace 放到一条链路里，
             让企业拥有可配置、可验证、可复盘的业务流程对话系统。
-          </Typography.Paragraph>
+          </p>
           <div className="tutorial-doc-actions">
             <a className="tutorial-doc-primary-action" href="#quickstart">快速开始</a>
             <a className="tutorial-doc-secondary-action" href="#core-features">查看核心功能</a>
@@ -274,12 +273,12 @@ export default function TutorialPage() {
 
       <section className="tutorial-doc-section tutorial-doc-intro-panel">
         <div>
-          <Typography.Text className="tutorial-doc-eyebrow">项目简介</Typography.Text>
-          <Typography.Title level={2}>不是通用 Agent 框架，而是面向业务流程的企业对话运行时</Typography.Title>
-          <Typography.Paragraph>
+          <span className="ant-typography tutorial-doc-eyebrow">项目简介</span>
+          <h2 className="ant-typography">不是通用 Agent 框架，而是面向业务流程的企业对话运行时</h2>
+          <p className="ant-typography">
             UltraRAG4 的核心不是“能聊天”，而是让一个真实岗位拥有自己的配置、资源、执行规则和运营记录。
             每个员工都可以有独立知识、SOP、工具和记忆；每次对话都能回看路由、工具调用、回复和反馈。
-          </Typography.Paragraph>
+          </p>
         </div>
         <div className="tutorial-doc-pain-grid">
           <span>流程靠人盯</span>
@@ -330,8 +329,8 @@ export default function TutorialPage() {
             <article key={step.title} className="tutorial-doc-step">
               <em>{String(index + 1).padStart(2, '0')}</em>
               <div>
-                <Typography.Title level={3}>{step.title}</Typography.Title>
-                <Typography.Paragraph>{step.body}</Typography.Paragraph>
+                <h3 className="ant-typography">{step.title}</h3>
+                <p className="ant-typography">{step.body}</p>
               </div>
               <strong>{step.outcome}</strong>
             </article>
@@ -454,11 +453,11 @@ export default function TutorialPage() {
         <div className="tutorial-doc-showcase-grid">
           {SCENARIOS.map((scenario) => (
             <article key={scenario.title}>
-              <Typography.Title level={3}>{scenario.title}</Typography.Title>
-              <Typography.Paragraph>{scenario.body}</Typography.Paragraph>
+              <h3 className="ant-typography">{scenario.title}</h3>
+              <p className="ant-typography">{scenario.body}</p>
               <code>{scenario.stack}</code>
               <div>
-                {scenario.tags.map((tag) => <Tag key={tag}>{tag}</Tag>)}
+                {scenario.tags.map((tag) => <span key={tag} className="ant-tag">{tag}</span>)}
               </div>
             </article>
           ))}
@@ -499,9 +498,9 @@ export default function TutorialPage() {
 function SectionHeading({ eyebrow, title, body }: { eyebrow: string; title: string; body: string }) {
   return (
     <div className="tutorial-doc-section-heading">
-      <Typography.Text className="tutorial-doc-eyebrow">{eyebrow}</Typography.Text>
-      <Typography.Title level={2}>{title}</Typography.Title>
-      <Typography.Paragraph>{body}</Typography.Paragraph>
+      <span className="ant-typography tutorial-doc-eyebrow">{eyebrow}</span>
+      <h2 className="ant-typography">{title}</h2>
+      <p className="ant-typography">{body}</p>
     </div>
   );
 }

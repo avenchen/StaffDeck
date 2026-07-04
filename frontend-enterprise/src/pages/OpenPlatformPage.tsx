@@ -7,7 +7,8 @@ import {
   ToolOutlined,
   UsergroupAddOutlined,
 } from '../icons';
-import { Button, Card, Drawer, Empty, Modal, Tag, Typography, message } from 'antd';
+import { Button as UIButton, Sheet, SheetContent, notify } from '@/components/ui';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import type { ComponentType, ReactNode, SVGProps } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -175,6 +176,7 @@ export default function OpenPlatformPage({
   const [deletingItemKey, setDeletingItemKey] = useState('');
   const [agentId, setAgentId] = useState(() => window.localStorage.getItem(ENTERPRISE_AGENT_STORAGE_KEY) || '');
   const [detailItem, setDetailItem] = useState<{ kind: PlatformKind; item: PlatformItem } | null>(null);
+  const [confirmTarget, setConfirmTarget] = useState<{ kind: PlatformKind; item: PlatformItem } | null>(null);
 
   useEffect(() => {
     const onScopeChange = (event: Event) => {
@@ -207,7 +209,7 @@ export default function OpenPlatformPage({
       setSkills(skillRows);
       setTools(toolRows);
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '加载开放广场失败');
+      notify.error(error instanceof Error ? error.message : '加载开放广场失败');
     } finally {
       setLoading(false);
     }
@@ -294,7 +296,7 @@ export default function OpenPlatformPage({
 
   function ensureTargetEmployee(): boolean {
     if (!targetEmployee) {
-      message.warning('请先选择一个员工，再从广场复制资源。');
+      notify.warning('请先选择一个员工，再从广场复制资源。');
       return false;
     }
     if (targetEmployee.id !== agentId) {
@@ -309,7 +311,7 @@ export default function OpenPlatformPage({
     if (platformKind === 'agents') {
       const agent = visibleAgents.find((item) => item.id === itemId) || visibleAgents[0];
       if (!agent) {
-        message.warning('广场暂无可用数字员工');
+        notify.warning('广场暂无可用数字员工');
         return;
       }
       window.localStorage.setItem(ENTERPRISE_AGENT_STORAGE_KEY, agent.id);
@@ -339,34 +341,24 @@ export default function OpenPlatformPage({
     return `/api/enterprise/tools/${resourceKey}?tenant_id=${TENANT_ID}${overallSuffix}`;
   }
 
-  function deletePlatformItem(platformKind: PlatformKind, item: PlatformItem) {
-    const config = PLATFORM_BY_KIND.get(platformKind) || PLATFORM_CONFIGS[0];
+  async function runDelete() {
+    if (!confirmTarget) return;
+    const { kind: platformKind, item } = confirmTarget;
     const key = platformItemDeleteKey(platformKind, item);
-    Modal.confirm({
-      title: `删除${config.metricLabel}「${item.title}」？`,
-      content: platformKind === 'agents'
-        ? '删除后该数字员工会从广场和员工列表移除，相关资源绑定也会一并清理。'
-        : '删除后该广场内容会从开放平台移除，已复制到员工侧的引用可能不再可同步。',
-      okText: '删除',
-      okButtonProps: { danger: true },
-      cancelText: '取消',
-      onOk: async () => {
-        setDeletingItemKey(key);
-        try {
-          await api.delete(platformDeleteUrl(platformKind, item));
-          message.success('已删除广场内容');
-          setDetailItem((current) => (
-            current && current.kind === platformKind && current.item.id === item.id ? null : current
-          ));
-          await loadPlatformData();
-        } catch (error) {
-          message.error(error instanceof Error ? error.message : '删除失败');
-          throw error;
-        } finally {
-          setDeletingItemKey('');
-        }
-      },
-    });
+    setDeletingItemKey(key);
+    try {
+      await api.delete(platformDeleteUrl(platformKind, item));
+      notify.success('已删除广场内容');
+      setDetailItem((current) => (
+        current && current.kind === platformKind && current.item.id === item.id ? null : current
+      ));
+      setConfirmTarget(null);
+      await loadPlatformData();
+    } catch (error) {
+      notify.error(error instanceof Error ? error.message : '删除失败');
+    } finally {
+      setDeletingItemKey('');
+    }
   }
 
   function renderItemDrawer() {
@@ -375,63 +367,79 @@ export default function OpenPlatformPage({
     const { item } = detailItem;
     const deleteKey = platformItemDeleteKey(detailItem.kind, item);
     return (
-      <Drawer
-        className="open-platform-item-drawer"
-        title={null}
-        width={560}
-        open
-        onClose={() => setDetailItem(null)}
-        footer={(
-          <div className="open-platform-drawer-footer">
+      <Sheet open onOpenChange={(next) => { if (!next) setDetailItem(null); }}>
+        <SheetContent
+          side="right"
+          className="open-platform-item-drawer flex w-[560px] flex-col gap-0 p-0 sm:max-w-[560px]"
+        >
+          <div className="grid min-h-0 flex-1 content-start gap-[18px] overflow-auto p-[24px]">
+            <div className="open-platform-drawer-hero">
+              {item.agent ? <EmployeeAvatar agent={item.agent} size={64} /> : <span className="open-platform-resource-icon">{config.icon}</span>}
+              <div>
+                <span className="ant-typography block text-[12px] text-muted-foreground">{config.title}</span>
+                <h3 className="ant-typography text-[18px] font-semibold text-foreground">{item.title}</h3>
+                <p className="ant-typography text-[13px] text-muted-foreground">{item.description}</p>
+              </div>
+            </div>
+            <div className="open-platform-drawer-meta-grid">
+              <div>
+                <span>来源</span>
+                <strong>{config.title}</strong>
+              </div>
+              <div>
+                <span>分类</span>
+                <strong>{item.meta}</strong>
+              </div>
+            </div>
+            <div className="open-platform-drawer-tags">
+              {item.tags.map((tag) => <PlatformTag key={tag}>{tag}</PlatformTag>)}
+            </div>
+            <div className="open-platform-drawer-summary">
+              <span className="ant-typography">说明</span>
+              <p>{config.detail}</p>
+            </div>
+          </div>
+          <div className="flex justify-end gap-[10px] border-t border-border bg-(--surface) px-[20px] py-[14px]">
             {canManagePlatform && (
-              <Button
-                danger
-                icon={<DeleteOutlined />}
-                loading={deletingItemKey === deleteKey}
-                onClick={() => deletePlatformItem(detailItem.kind, item)}
+              <UIButton
+                variant="outline"
+                disabled={deletingItemKey === deleteKey}
+                onClick={() => setConfirmTarget({ kind: detailItem.kind, item })}
+                className="rounded-[10px] border-[#f3b6b6] bg-white text-[#d20b0b] hover:border-[#d20b0b] hover:bg-[#fce7e7] hover:text-[#d20b0b] dark:border-[#d20b0b]/40 dark:bg-transparent dark:text-[#ff6b6b] dark:hover:bg-[#d20b0b]/20"
               >
+                <DeleteOutlined />
                 删除
-              </Button>
+              </UIButton>
             )}
-            <Button onClick={() => setDetailItem(null)}>关闭</Button>
-            <Button
-              type="primary"
+            <UIButton variant="outline" className="rounded-[10px]" onClick={() => setDetailItem(null)}>关闭</UIButton>
+            <UIButton
+              className="rounded-[10px]"
               onClick={() => {
                 setDetailItem(null);
                 usePlatformItem(detailItem.kind, item.id);
               }}
             >
               {config.useLabel}
-            </Button>
+            </UIButton>
           </div>
-        )}
-      >
-        <div className="open-platform-drawer-hero">
-          {item.agent ? <EmployeeAvatar agent={item.agent} size={64} /> : <span className="open-platform-resource-icon">{config.icon}</span>}
-          <div>
-            <Typography.Text type="secondary">{config.title}</Typography.Text>
-            <Typography.Title level={3}>{item.title}</Typography.Title>
-            <Typography.Paragraph>{item.description}</Typography.Paragraph>
-          </div>
-        </div>
-        <div className="open-platform-drawer-meta-grid">
-          <div>
-            <span>来源</span>
-            <strong>{config.title}</strong>
-          </div>
-          <div>
-            <span>分类</span>
-            <strong>{item.meta}</strong>
-          </div>
-        </div>
-        <div className="open-platform-drawer-tags">
-          {item.tags.map((tag) => <Tag key={tag}>{tag}</Tag>)}
-        </div>
-        <div className="open-platform-drawer-summary">
-          <Typography.Text type="secondary">说明</Typography.Text>
-          <p>{config.detail}</p>
-        </div>
-      </Drawer>
+        </SheetContent>
+      </Sheet>
+    );
+  }
+
+  function renderConfirm() {
+    const config = confirmTarget ? PLATFORM_BY_KIND.get(confirmTarget.kind) || PLATFORM_CONFIGS[0] : null;
+    return (
+      <ConfirmDialog
+        open={Boolean(confirmTarget)}
+        onOpenChange={(next) => { if (!next) setConfirmTarget(null); }}
+        title={confirmTarget && config ? `删除${config.metricLabel}「${confirmTarget.item.title}」？` : ''}
+        description={confirmTarget?.kind === 'agents'
+          ? '删除后该数字员工会从广场和员工列表移除，相关资源绑定也会一并清理。'
+          : '删除后该广场内容会从开放平台移除，已复制到员工侧的引用可能不再可同步。'}
+        loading={Boolean(confirmTarget) && deletingItemKey === (confirmTarget ? platformItemDeleteKey(confirmTarget.kind, confirmTarget.item) : '')}
+        onConfirm={() => void runDelete()}
+      />
     );
   }
 
@@ -442,41 +450,46 @@ export default function OpenPlatformPage({
       <div className="page open-platform-page">
         <div className="open-platform-detail-hero">
           <div>
-            <Typography.Text type="secondary">开放广场 / {config.title}</Typography.Text>
-            <Typography.Title level={2}>{config.title}</Typography.Title>
-            <Typography.Paragraph type="secondary">{config.detail}</Typography.Paragraph>
+            <span className="ant-typography block text-[12px] text-muted-foreground">开放广场 / {config.title}</span>
+            <h2 className="ant-typography text-[22px] font-semibold text-foreground">{config.title}</h2>
+            <p className="ant-typography text-[13px] text-muted-foreground">{config.detail}</p>
           </div>
-          <Button onClick={() => navigate('/enterprise/platform')}>返回平台</Button>
+          <UIButton variant="outline" onClick={() => navigate('/enterprise/platform')}>返回平台</UIButton>
         </div>
-        <Card className="open-platform-detail-card" loading={loading}>
-          {items.length === 0 ? (
-            <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无开放内容" />
-          ) : (
-            <div className="open-platform-resource-grid">
-              {items.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  className={`open-platform-resource-card${item.agent ? ' is-agent' : ''}`}
-                  onClick={() => setDetailItem({ kind: selectedKind, item })}
-                >
-                  {item.agent && <EmployeeAvatar agent={item.agent} size={48} />}
-                  {!item.agent && <span className="open-platform-resource-icon">{config.icon}</span>}
-                  <span className="open-platform-resource-copy">
-                    <strong>{item.title}</strong>
-                    <em>{item.meta}</em>
-                    <span>{item.description}</span>
-                    <span className="open-platform-tags">
-                      {item.tags.slice(0, 3).map((tag) => <Tag key={tag}>{tag}</Tag>)}
+        <div className="open-platform-detail-card">
+          <div className="ant-card-body">
+            {loading ? (
+              <div className="py-[40px] text-center text-[13px] text-muted-foreground">加载中…</div>
+            ) : items.length === 0 ? (
+              <div className="py-[40px] text-center text-[13px] text-muted-foreground">暂无开放内容</div>
+            ) : (
+              <div className="open-platform-resource-grid">
+                {items.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className={`open-platform-resource-card${item.agent ? ' is-agent' : ''}`}
+                    onClick={() => setDetailItem({ kind: selectedKind, item })}
+                  >
+                    {item.agent && <EmployeeAvatar agent={item.agent} size={48} />}
+                    {!item.agent && <span className="open-platform-resource-icon">{config.icon}</span>}
+                    <span className="open-platform-resource-copy">
+                      <strong>{item.title}</strong>
+                      <em>{item.meta}</em>
+                      <span>{item.description}</span>
+                      <span className="open-platform-tags">
+                        {item.tags.slice(0, 3).map((tag) => <PlatformTag key={tag}>{tag}</PlatformTag>)}
+                      </span>
                     </span>
-                  </span>
-                  <span className="open-platform-use">查看详情 <RightOutlined /></span>
-                </button>
-              ))}
-            </div>
-          )}
-        </Card>
+                    <span className="open-platform-use">查看详情 <RightOutlined /></span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
         {renderItemDrawer()}
+        {renderConfirm()}
       </div>
     );
   }
@@ -548,7 +561,16 @@ export default function OpenPlatformPage({
         })}
       </div>
       {renderItemDrawer()}
+      {renderConfirm()}
     </div>
+  );
+}
+
+function PlatformTag({ children }: { children: ReactNode }) {
+  return (
+    <span className="inline-flex items-center rounded-full border border-[#e3e7f1] bg-[#fafafa] px-[8px] py-px text-[12px] font-bold text-[#464c5e] dark:border-border dark:bg-white/5 dark:text-muted-foreground">
+      {children}
+    </span>
   );
 }
 

@@ -1,10 +1,43 @@
 import { SaveOutlined, UserOutlined } from '../icons';
-import { Button, Card, Form, Input, InputNumber, Switch, Typography, message } from 'antd';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
+import {
+  Button as UIButton,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Input,
+  Switch,
+  Textarea,
+  notify,
+} from '@/components/ui';
 import { api, TENANT_ID } from '../api/client';
 import type { AgentProfileRead, PersonaRead, UIConfigRead } from '../types';
 
 const ENTERPRISE_AGENT_STORAGE_KEY = 'ultrarag_enterprise_agent_scope';
+
+type PersonaForm = {
+  agent_name: string;
+  agent_description: string;
+  system_prompt: string;
+};
+
+type UiConfigForm = {
+  show_thinking_trace: boolean;
+  show_skill_trace: boolean;
+  show_tool_trace: boolean;
+  reflection_max_rounds: string;
+  agent_loop_max_actions: string;
+};
+
+const BLANK_PERSONA: PersonaForm = { agent_name: '', agent_description: '', system_prompt: '' };
+const DEFAULT_UI_CONFIG: UiConfigForm = {
+  show_thinking_trace: true,
+  show_skill_trace: true,
+  show_tool_trace: true,
+  reflection_max_rounds: '1',
+  agent_loop_max_actions: '6',
+};
 
 function formatDateOnly(value: string): string {
   const normalized = /(?:z|[+-]\d{2}:?\d{2})$/i.test(value) ? value : `${value}Z`;
@@ -16,8 +49,8 @@ function formatDateOnly(value: string): string {
 }
 
 export default function PersonaPage() {
-  const [form] = Form.useForm();
-  const [uiForm] = Form.useForm();
+  const [form, setForm] = useState<PersonaForm>(BLANK_PERSONA);
+  const [uiForm, setUiForm] = useState<UiConfigForm>(DEFAULT_UI_CONFIG);
   const [loading, setLoading] = useState(false);
   const [uiLoading, setUiLoading] = useState(false);
   const [updatedAt, setUpdatedAt] = useState('');
@@ -27,16 +60,25 @@ export default function PersonaPage() {
   const selectedAgent = agents.find((agent) => agent.id === selectedAgentId) || null;
   const isOverallPersona = !selectedAgent || selectedAgent.is_overall;
 
+  const updatePersona = (patch: Partial<PersonaForm>) => setForm((prev) => ({ ...prev, ...patch }));
+  const updateUiConfig = (patch: Partial<UiConfigForm>) => setUiForm((prev) => ({ ...prev, ...patch }));
+
   useEffect(() => {
     void loadPersonaScope();
     api
       .get<UIConfigRead>(`/api/enterprise/ui-config?tenant_id=${TENANT_ID}`)
       .then((row) => {
-        uiForm.setFieldsValue(row);
+        setUiForm({
+          show_thinking_trace: row.show_thinking_trace,
+          show_skill_trace: row.show_skill_trace,
+          show_tool_trace: row.show_tool_trace,
+          reflection_max_rounds: String(row.reflection_max_rounds),
+          agent_loop_max_actions: String(row.agent_loop_max_actions),
+        });
         setUiUpdatedAt(row.updated_at);
       })
-      .catch((error) => message.error(error.message));
-  }, [uiForm]);
+      .catch((error) => notify.error(error.message));
+  }, []);
 
   useEffect(() => {
     const onScopeChange = (event: Event) => {
@@ -54,17 +96,17 @@ export default function PersonaPage() {
         api
           .get<PersonaRead>(`/api/enterprise/persona?tenant_id=${TENANT_ID}`)
           .then((row) => {
-            form.setFieldsValue({
+            setForm({
               agent_name: agent.name,
               agent_description: agent.description || '',
               system_prompt: agent.persona_prompt || row.system_prompt,
             });
             setUpdatedAt(agent.updated_at || row.updated_at);
           })
-          .catch((error) => message.error(error.message));
+          .catch((error) => notify.error(error.message));
         return;
       }
-      form.setFieldsValue({
+      setForm({
         agent_name: agent.name,
         agent_description: agent.description || '',
         system_prompt: agent.persona_prompt || '',
@@ -75,11 +117,11 @@ export default function PersonaPage() {
     api
       .get<PersonaRead>(`/api/enterprise/persona?tenant_id=${TENANT_ID}`)
       .then((row) => {
-        form.setFieldsValue({ system_prompt: row.system_prompt });
+        setForm((prev) => ({ ...prev, system_prompt: row.system_prompt }));
         setUpdatedAt(row.updated_at);
       })
-      .catch((error) => message.error(error.message));
-  }, [agents, form, selectedAgentId]);
+      .catch((error) => notify.error(error.message));
+  }, [agents, selectedAgentId]);
 
   async function loadPersonaScope() {
     try {
@@ -92,20 +134,23 @@ export default function PersonaPage() {
         return rows.find((agent) => agent.is_overall)?.id || rows[0]?.id || '';
       });
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '加载员工域失败');
+      notify.error(error instanceof Error ? error.message : '加载员工域失败');
     }
   }
 
   async function save() {
+    if (!form.system_prompt.trim() || (selectedAgent && !form.agent_name.trim())) {
+      notify.error('请填写必填项');
+      return;
+    }
     setLoading(true);
     try {
-      const values = await form.validateFields();
       if (selectedAgent) {
         const row = await api.put<AgentProfileRead>(`/api/enterprise/agents/${selectedAgent.id}`, {
           tenant_id: TENANT_ID,
-          name: values.agent_name,
-          description: values.agent_description,
-          persona_prompt: values.system_prompt,
+          name: form.agent_name,
+          description: form.agent_description,
+          persona_prompt: form.system_prompt,
           status: selectedAgent.status,
         });
         setAgents((prev) => prev.map((item) => (item.id === row.id ? { ...row, resources: item.resources } : item)));
@@ -113,42 +158,47 @@ export default function PersonaPage() {
         if (row.is_overall) {
           await api.put<PersonaRead>('/api/enterprise/persona', {
             tenant_id: TENANT_ID,
-            system_prompt: values.system_prompt,
+            system_prompt: form.system_prompt,
           });
         }
         window.dispatchEvent(new CustomEvent('ultrarag-enterprise-agent-scope-change', { detail: { agentId: row.id } }));
-        message.success('岗位人设已保存');
+        notify.success('岗位人设已保存');
       } else {
         const row = await api.put<PersonaRead>('/api/enterprise/persona', {
           tenant_id: TENANT_ID,
-          system_prompt: values.system_prompt,
+          system_prompt: form.system_prompt,
         });
         setUpdatedAt(row.updated_at);
-        message.success('组织默认岗位人设已保存');
+        notify.success('组织默认岗位人设已保存');
       }
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '保存失败');
+      notify.error(error instanceof Error ? error.message : '保存失败');
     } finally {
       setLoading(false);
     }
   }
 
   async function saveUiConfig() {
+    const reflectionMaxRounds = Number(uiForm.reflection_max_rounds);
+    const agentLoopMaxActions = Number(uiForm.agent_loop_max_actions);
+    if (Number.isNaN(reflectionMaxRounds) || Number.isNaN(agentLoopMaxActions)) {
+      notify.error('反思轮数与单轮最大动作数必须是数字');
+      return;
+    }
     setUiLoading(true);
     try {
-      const values = await uiForm.validateFields();
       const row = await api.put<UIConfigRead>('/api/enterprise/ui-config', {
         tenant_id: TENANT_ID,
-        show_thinking_trace: values.show_thinking_trace,
-        show_skill_trace: values.show_skill_trace,
-        show_tool_trace: values.show_tool_trace,
-        reflection_max_rounds: values.reflection_max_rounds,
-        agent_loop_max_actions: values.agent_loop_max_actions,
+        show_thinking_trace: uiForm.show_thinking_trace,
+        show_skill_trace: uiForm.show_skill_trace,
+        show_tool_trace: uiForm.show_tool_trace,
+        reflection_max_rounds: reflectionMaxRounds,
+        agent_loop_max_actions: agentLoopMaxActions,
       });
       setUiUpdatedAt(row.updated_at);
-      message.success('展示设置已保存');
+      notify.success('展示设置已保存');
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '保存失败');
+      notify.error(error instanceof Error ? error.message : '保存失败');
     } finally {
       setUiLoading(false);
     }
@@ -158,83 +208,90 @@ export default function PersonaPage() {
     <>
       <div className="page-title">
         <div>
-          <Typography.Title level={3}>岗位人设</Typography.Title>
+          <h3>岗位人设</h3>
         </div>
-        <Button type="primary" icon={<SaveOutlined />} loading={loading} onClick={save}>保存</Button>
+        <UIButton disabled={loading} onClick={() => void save()}>
+          <SaveOutlined />
+          保存
+        </UIButton>
       </div>
-      <Card className="editor-card" title={<><UserOutlined /> 岗位人设</>}>
-        <Form form={form} layout="vertical">
-          <Form.Item name="agent_name" label="名称" rules={[{ required: true }]}>
-            <Input placeholder="数字员工姓名" />
-          </Form.Item>
-          <Form.Item name="agent_description" label="描述">
-            <Input.TextArea rows={2} placeholder="员工岗位描述" />
-          </Form.Item>
-          <Form.Item name="system_prompt" label="岗位 Prompt" rules={[{ required: true }]}>
-            <Input.TextArea
+      <Card className="editor-card">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-[6px]"><UserOutlined /> 岗位人设</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-[14px]">
+          <LabeledField label="名称">
+            <Input value={form.agent_name} placeholder="数字员工姓名" onChange={(event) => updatePersona({ agent_name: event.target.value })} />
+          </LabeledField>
+          <LabeledField label="描述">
+            <Textarea rows={2} value={form.agent_description} placeholder="员工岗位描述" onChange={(event) => updatePersona({ agent_description: event.target.value })} />
+          </LabeledField>
+          <LabeledField label="岗位 Prompt">
+            <Textarea
               className="persona-editor"
               rows={12}
+              value={form.system_prompt}
               placeholder={isOverallPersona ? '输入组织默认岗位人设' : '输入仅当前员工可见的岗位人设'}
+              onChange={(event) => updatePersona({ system_prompt: event.target.value })}
             />
-          </Form.Item>
-        </Form>
-        {updatedAt && <Typography.Text type="secondary">最后更新：{formatDateOnly(updatedAt)}</Typography.Text>}
+          </LabeledField>
+          {updatedAt && <span className="text-[12px] text-muted-foreground">最后更新：{formatDateOnly(updatedAt)}</span>}
+        </CardContent>
       </Card>
-      <Card className="editor-card settings-card" title="执行记录与展示设置">
-        <Form
-          form={uiForm}
-          layout="vertical"
-          initialValues={{
-            show_thinking_trace: true,
-            show_skill_trace: true,
-            show_tool_trace: true,
-            reflection_max_rounds: 1,
-            agent_loop_max_actions: 6,
-          }}
-        >
-          <Form.Item
-            name="show_thinking_trace"
-            label="展示思考状态"
-            valuePropName="checked"
-          >
-            <Switch />
-          </Form.Item>
-          <Form.Item
-            name="show_skill_trace"
-            label="展示执行技能"
-            valuePropName="checked"
-          >
-            <Switch />
-          </Form.Item>
-          <Form.Item
-            name="show_tool_trace"
-            label="展示工具调用"
-            valuePropName="checked"
-          >
-            <Switch />
-          </Form.Item>
-          <Form.Item
-            name="reflection_max_rounds"
-            label="反思轮数"
-            tooltip="设为 0 时关闭反思；每轮允许模型检查当前技能和工具结果，并决定是否重试其他技能或工具。"
-            rules={[{ required: true, type: 'number', min: 0, max: 5 }]}
-          >
-            <InputNumber min={0} max={5} step={1} precision={0} />
-          </Form.Item>
-          <Form.Item
-            name="agent_loop_max_actions"
-            label="单轮最大动作数"
-            tooltip="控制一次用户输入内员工可连续决策和调用工具的最大次数，用于避免无限循环。"
-            rules={[{ required: true, type: 'number', min: 1, max: 20 }]}
-          >
-            <InputNumber min={1} max={20} step={1} precision={0} />
-          </Form.Item>
-          <Button type="primary" icon={<SaveOutlined />} loading={uiLoading} onClick={saveUiConfig}>
+      <Card className="editor-card settings-card">
+        <CardHeader>
+          <CardTitle>执行记录与展示设置</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-[16px]">
+          <SwitchRow label="展示思考状态" checked={uiForm.show_thinking_trace} onChange={(next) => updateUiConfig({ show_thinking_trace: next })} />
+          <SwitchRow label="展示执行技能" checked={uiForm.show_skill_trace} onChange={(next) => updateUiConfig({ show_skill_trace: next })} />
+          <SwitchRow label="展示工具调用" checked={uiForm.show_tool_trace} onChange={(next) => updateUiConfig({ show_tool_trace: next })} />
+          <LabeledField label="反思轮数" hint="设为 0 时关闭反思；每轮允许模型检查当前技能和工具结果，并决定是否重试其他技能或工具。">
+            <Input
+              type="number"
+              min={0}
+              max={5}
+              step={1}
+              value={uiForm.reflection_max_rounds}
+              onChange={(event) => updateUiConfig({ reflection_max_rounds: event.target.value })}
+            />
+          </LabeledField>
+          <LabeledField label="单轮最大动作数" hint="控制一次用户输入内员工可连续决策和调用工具的最大次数，用于避免无限循环。">
+            <Input
+              type="number"
+              min={1}
+              max={20}
+              step={1}
+              value={uiForm.agent_loop_max_actions}
+              onChange={(event) => updateUiConfig({ agent_loop_max_actions: event.target.value })}
+            />
+          </LabeledField>
+          <UIButton className="self-start" disabled={uiLoading} onClick={() => void saveUiConfig()}>
+            <SaveOutlined />
             保存设置
-          </Button>
-        </Form>
-        {uiUpdatedAt && <Typography.Text type="secondary">最后更新：{formatDateOnly(uiUpdatedAt)}</Typography.Text>}
+          </UIButton>
+          {uiUpdatedAt && <span className="text-[12px] text-muted-foreground">最后更新：{formatDateOnly(uiUpdatedAt)}</span>}
+        </CardContent>
       </Card>
     </>
+  );
+}
+
+function LabeledField({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
+  return (
+    <label className="flex flex-col gap-[6px]">
+      <span className="text-[12px] font-medium text-[#464c5e] dark:text-muted-foreground">{label}</span>
+      {hint && <span className="text-[11px] leading-[16px] text-muted-foreground">{hint}</span>}
+      {children}
+    </label>
+  );
+}
+
+function SwitchRow({ label, checked, onChange }: { label: string; checked: boolean; onChange: (next: boolean) => void }) {
+  return (
+    <label className="flex items-center justify-between gap-[16px]">
+      <span className="text-[12px] font-medium text-[#464c5e] dark:text-muted-foreground">{label}</span>
+      <Switch checked={checked} onCheckedChange={onChange} />
+    </label>
   );
 }

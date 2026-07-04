@@ -5,7 +5,6 @@ import {
   DatabaseOutlined,
   DeleteOutlined,
   DownloadOutlined,
-  DownOutlined,
   EditOutlined,
   FileAddOutlined,
   FileMarkdownOutlined,
@@ -16,15 +15,44 @@ import {
   PlayCircleOutlined,
   ReloadOutlined,
   RightOutlined,
-  SaveOutlined,
   TeamOutlined,
 } from '../icons';
-import { Button, Card, Col, Collapse, Dropdown, Empty, Input, Modal, Progress, Row, Select, Space, Table, Tag, Typography, Upload, message } from 'antd';
-import { useEffect, useMemo, useState } from 'react';
+import type { HTMLAttributes, ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api, TENANT_ID } from '../api/client';
 import type { EnterpriseAuthUser } from '../auth';
 import AppHeader from '@/components/AppHeader';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { DataTable, type DataTableColumn } from '@/components/DataTable';
+import { ResourceImportDialog } from '@/components/ResourceImportDialog';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  Input,
+  Progress,
+  Select as UISelect,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Textarea,
+} from '@/components/ui';
+import { Button as UIButton } from '@/components/ui/button';
+import { notify } from '@/components/ui/app-toast';
+import { cn } from '@/lib/utils';
+import { MENU_CONTENT_CLASS, MENU_ITEM_CLASS, MENU_ITEM_DANGER_CLASS, SELECT_TRIGGER_CLASS } from '@/lib/enterprise-ui';
+import IconChevronDown from '../assets/icons/chevron-down.svg?react';
 import type {
   KnowledgeBaseRead,
   KnowledgeBucketRead,
@@ -37,7 +65,6 @@ import type {
   AgentProfileRead,
 } from '../types';
 
-const { Dragger } = Upload;
 const ENTERPRISE_AGENT_STORAGE_KEY = 'ultrarag_enterprise_agent_scope';
 
 type KnowledgeBaseVersionRead = {
@@ -103,6 +130,7 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
   const [importSelectedKnowledgeBaseIds, setImportSelectedKnowledgeBaseIds] = useState<string[]>([]);
   const [importLoading, setImportLoading] = useState(false);
   const [editingKnowledgeBase, setEditingKnowledgeBase] = useState<KnowledgeBaseRead | null>(null);
+  const [deleteKbTarget, setDeleteKbTarget] = useState<KnowledgeBaseRead | null>(null);
   const [knowledgeBaseDraft, setKnowledgeBaseDraft] = useState({ name: '', description: '', status: 'active' });
   const [versionKnowledgeBase, setVersionKnowledgeBase] = useState<KnowledgeBaseRead | null>(null);
   const [knowledgeBaseVersions, setKnowledgeBaseVersions] = useState<KnowledgeBaseVersionRead[]>([]);
@@ -183,7 +211,7 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
     if (agents.length === 0) return;
     const resourceId = searchParams.get('resourceId') || undefined;
     if (isOverallAgent) {
-      message.warning('请先选择一个数字员工，再从广场复制知识库');
+      notify.warning('请先选择一个数字员工，再从广场复制知识库');
     } else {
       void openImportKnowledgeBases('plaza', resourceId);
     }
@@ -237,7 +265,7 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
         await loadOkfConcepts(fallbackKnowledgeBaseId, false);
       }
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '刷新知识库失败');
+      notify.error(error instanceof Error ? error.message : '刷新知识库失败');
     } finally {
       setLoading(false);
     }
@@ -253,7 +281,7 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
       ]);
       setBuckets(rows);
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '加载内部索引失败');
+      notify.error(error instanceof Error ? error.message : '加载内部索引失败');
     }
   }
 
@@ -277,7 +305,7 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
         setOkfLintIssues([]);
         return;
       }
-      message.error(error instanceof Error ? error.message : '加载知识图谱失败');
+      notify.error(error instanceof Error ? error.message : '加载知识图谱失败');
     } finally {
       if (showLoading) setOkfLoading(false);
     }
@@ -302,7 +330,7 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
   async function runKnowledgeSearch() {
     const query = searchQuery.trim();
     if (!query) {
-      message.warning('请输入要调试的知识问题');
+      notify.warning('请输入要调试的知识问题');
       return;
     }
     setSearchLoading(true);
@@ -323,7 +351,7 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
       });
       setSearchResult(response);
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '知识检索失败');
+      notify.error(error instanceof Error ? error.message : '知识检索失败');
     } finally {
       setSearchLoading(false);
     }
@@ -350,7 +378,7 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
         setImportSourceKnowledgeBases([]);
       }
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '加载员工失败');
+      notify.error(error instanceof Error ? error.message : '加载员工失败');
     }
   }
 
@@ -366,22 +394,22 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
       setImportSourceKnowledgeBases(activeRows);
       return activeRows;
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '加载来源知识库失败');
+      notify.error(error instanceof Error ? error.message : '加载来源知识库失败');
       return [];
     }
   }
 
   async function submitImportKnowledgeBases() {
     if (!agentId) {
-      message.warning('请先选择一个数字员工');
+      notify.warning('请先选择一个数字员工');
       return;
     }
     if (!importSourceAgentId) {
-      message.warning(importMode === 'plaza' ? '请选择知识库广场' : '请选择来源员工');
+      notify.warning(importMode === 'plaza' ? '请选择知识库广场' : '请选择来源员工');
       return;
     }
     if (importSelectedKnowledgeBaseIds.length === 0) {
-      message.warning('请选择要复制的知识库');
+      notify.warning('请选择要复制的知识库');
       return;
     }
     setImportLoading(true);
@@ -397,11 +425,11 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
       );
       const importedCount = result.imported?.length || 0;
       const missingCount = result.missing?.length || 0;
-      message.success(`已复制 ${importedCount} 个知识库${missingCount ? `，${missingCount} 个未复制` : ''}`);
+      notify.success(`已复制 ${importedCount} 个知识库${missingCount ? `，${missingCount} 个未复制` : ''}`);
       setImportOpen(false);
       await refresh();
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '复制知识库失败');
+      notify.error(error instanceof Error ? error.message : '复制知识库失败');
     } finally {
       setImportLoading(false);
     }
@@ -436,11 +464,11 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
         filename: file.name,
         content_base64: contentBase64,
       });
-      message.success('已导入知识库备份包');
+      notify.success('已导入知识库备份包');
       setOkfImportOpen(false);
       await refresh();
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '导入知识库备份包失败');
+      notify.error(error instanceof Error ? error.message : '导入知识库备份包失败');
     } finally {
       setOkfImporting(false);
     }
@@ -448,7 +476,7 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
 
   async function exportOkfBundle(targetKnowledgeBase = selectedKnowledgeBase) {
     if (!targetKnowledgeBase) {
-      message.warning('请先选择知识库');
+      notify.warning('请先选择知识库');
       return;
     }
     const suffix = effectiveAgentId ? `&agent_id=${encodeURIComponent(effectiveAgentId)}` : '';
@@ -464,15 +492,15 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
-      message.success('已导出知识库备份包');
+      notify.success('已导出知识库备份包');
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '导出知识库备份包失败');
+      notify.error(error instanceof Error ? error.message : '导出知识库备份包失败');
     }
   }
 
   async function lintOkfBundle(targetKnowledgeBase = selectedKnowledgeBase) {
     if (!targetKnowledgeBase) {
-      message.warning('请先选择知识库');
+      notify.warning('请先选择知识库');
       return;
     }
     if (targetKnowledgeBase.id !== selectedKnowledgeBase?.id) {
@@ -487,9 +515,9 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
       setOkfLintIssues(result.issues || []);
       setOkfLintKnowledgeBase(targetKnowledgeBase);
       setOkfLintReportOpen(true);
-      message.success(result.issue_count ? `发现 ${result.issue_count} 个待处理建议` : '知识图谱检查通过');
+      notify.success(result.issue_count ? `发现 ${result.issue_count} 个待处理建议` : '知识图谱检查通过');
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '知识图谱检查失败');
+      notify.error(error instanceof Error ? error.message : '知识图谱检查失败');
     } finally {
       setOkfLoading(false);
     }
@@ -526,10 +554,10 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
       );
       setOkfConcepts((current) => current.map((item) => (item.id === next.id ? next : item)));
       setEditingConcept(null);
-      message.success('已保存知识图谱');
+      notify.success('已保存知识图谱');
       await loadOkfConcepts(selectedKnowledgeBase.id, false);
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '保存知识图谱失败');
+      notify.error(error instanceof Error ? error.message : '保存知识图谱失败');
     }
   }
 
@@ -554,10 +582,10 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
       });
       setKnowledgeBases((current) => current.map((item) => (item.id === next.id ? next : item)));
       setEditingKnowledgeBase(null);
-      message.success('已保存知识库');
+      notify.success('已保存知识库');
       await refresh();
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '保存知识库失败');
+      notify.error(error instanceof Error ? error.message : '保存知识库失败');
     }
   }
 
@@ -569,34 +597,30 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
         status: active ? 'active' : 'archived',
       });
       setKnowledgeBases((current) => current.map((item) => (item.id === next.id ? next : item)));
-      message.success(active ? '已上线知识库' : '已下线知识库');
+      notify.success(active ? '已上线知识库' : '已下线知识库');
       await refresh();
     } catch (error) {
-      message.error(error instanceof Error ? error.message : active ? '上线失败' : '下线失败');
+      notify.error(error instanceof Error ? error.message : active ? '上线失败' : '下线失败');
     }
   }
 
   function deleteKnowledgeBase(row: KnowledgeBaseRead) {
+    setDeleteKbTarget(row);
+  }
+
+  async function runDeleteKnowledgeBase() {
+    const row = deleteKbTarget;
+    if (!row) return;
     const branchMode = !isOverallAgent;
-    Modal.confirm({
-      title: branchMode ? `移除知识库：${row.name}` : `删除知识库：${row.name}`,
-      content: branchMode
-        ? '这只会在当前数字员工中隐藏该知识库；开放广场和其他数字员工仍然保留。'
-        : '开放广场会永久删除该知识库及其文档、内部索引、引用来源和版本记录。',
-      okText: branchMode ? '移除' : '删除',
-      okButtonProps: { danger: true },
-      cancelText: '取消',
-      async onOk() {
-        const suffix = effectiveAgentId ? `&agent_id=${encodeURIComponent(effectiveAgentId)}` : '';
-        try {
-          await api.delete(`/api/enterprise/knowledge-bases/${row.id}?tenant_id=${TENANT_ID}${suffix}`);
-          message.success(branchMode ? '已移除知识库' : '已删除知识库');
-          await refresh();
-        } catch (error) {
-          message.error(error instanceof Error ? error.message : '删除失败');
-        }
-      },
-    });
+    const suffix = effectiveAgentId ? `&agent_id=${encodeURIComponent(effectiveAgentId)}` : '';
+    try {
+      await api.delete(`/api/enterprise/knowledge-bases/${row.id}?tenant_id=${TENANT_ID}${suffix}`);
+      notify.success(branchMode ? '已移除知识库' : '已删除知识库');
+      setDeleteKbTarget(null);
+      await refresh();
+    } catch (error) {
+      notify.error(error instanceof Error ? error.message : '删除失败');
+    }
   }
 
   async function openKnowledgeBaseVersions(row: KnowledgeBaseRead) {
@@ -608,35 +632,35 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
       setVersionKnowledgeBase(row);
       setKnowledgeBaseVersions(versions);
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '加载版本失败');
+      notify.error(error instanceof Error ? error.message : '加载版本失败');
     }
   }
 
   async function syncKnowledgeBaseFromOverall(row: KnowledgeBaseRead) {
     if (!agentId) {
-      message.warning('请先选择员工');
+      notify.warning('请先选择员工');
       return;
     }
     try {
       await api.post(`/api/enterprise/knowledge-bases/${row.id}/sync-from-overall?tenant_id=${TENANT_ID}&agent_id=${encodeURIComponent(agentId)}`);
-      message.success('已从广场同步');
+      notify.success('已从广场同步');
       await refresh();
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '同步失败');
+      notify.error(error instanceof Error ? error.message : '同步失败');
     }
   }
 
   async function promoteKnowledgeBaseToOverall(row: KnowledgeBaseRead) {
     if (!agentId) {
-      message.warning('请先选择员工');
+      notify.warning('请先选择员工');
       return;
     }
     try {
       await api.post(`/api/enterprise/knowledge-bases/${row.id}/promote-to-overall?tenant_id=${TENANT_ID}&agent_id=${encodeURIComponent(agentId)}`);
-      message.success('已发布到广场');
+      notify.success('已发布到广场');
       await refresh();
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '推送失败');
+      notify.error(error instanceof Error ? error.message : '推送失败');
     }
   }
 
@@ -648,11 +672,11 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
         agent_id: effectiveAgentId,
         version: version.version,
       });
-      message.success(`已回滚到 ${version.version}`);
+      notify.success(`已回滚到 ${version.version}`);
       await openKnowledgeBaseVersions(versionKnowledgeBase);
       await refresh();
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '回滚失败');
+      notify.error(error instanceof Error ? error.message : '回滚失败');
     }
   }
 
@@ -675,9 +699,9 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
       setDocuments((current) => current.map((item) => (item.id === next.id ? next : item)));
       setSelectedDocument((current) => (current?.id === next.id ? next : current));
       setEditingDocument(null);
-      message.success('已保存文档');
+      notify.success('已保存文档');
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '保存文档失败');
+      notify.error(error instanceof Error ? error.message : '保存文档失败');
     }
   }
 
@@ -691,7 +715,7 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
         Object.fromEntries(chunks.map((chunk) => [chunk.id, { content: chunk.content, summary: chunk.summary || '' }])),
       );
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '加载引用来源失败');
+      notify.error(error instanceof Error ? error.message : '加载引用来源失败');
     }
   }
 
@@ -713,11 +737,11 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
           }),
         ),
       );
-      message.success('已保存知识内容');
+      notify.success('已保存知识内容');
       setEditingBucket(null);
       if (selectedDocument) await loadBuckets(selectedDocument, false);
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '保存知识内容失败');
+      notify.error(error instanceof Error ? error.message : '保存知识内容失败');
     } finally {
       setContentSaving(false);
     }
@@ -728,49 +752,63 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
       <AppHeader
         onLogout={onLogout}
         userName={currentUser?.username}
-        left={<Typography.Title level={3} style={{ marginBottom: 0 }}>{isOverallAgent ? '知识库广场' : '知识库'}</Typography.Title>}
+        left={<h3 className="m-0 text-[18px] font-semibold text-foreground">{isOverallAgent ? '知识库广场' : '知识库'}</h3>}
       />
       <div className="page-title mt-1" style={{ justifyContent: 'flex-end' }}>
-        <Space className="page-actions">
-          <Button icon={<ReloadOutlined />} onClick={() => refresh()} loading={loading}>刷新</Button>
-          <Dropdown
-            trigger={['click']}
-            menu={{
-              items: [
-                { key: 'blank', icon: <FileAddOutlined />, label: '新建知识库' },
-                { key: 'okf', icon: <FileMarkdownOutlined />, label: '导入知识库备份包' },
-                ...(!isOverallAgent ? [{ key: 'plaza', icon: <DownloadOutlined />, label: '从广场复制' }] : []),
-                ...(!isOverallAgent ? [{ key: 'employee', icon: <TeamOutlined />, label: '从数字员工复制' }] : []),
-              ],
-              onClick: ({ key }) => handleCreateAction(key),
-            }}
-          >
-            <Button type="primary" className="create-dropdown-button">
-              新增 <DownOutlined />
-            </Button>
-          </Dropdown>
-        </Space>
+        <div className="page-actions flex flex-wrap items-center gap-[8px]">
+          <UIButton variant="outline" onClick={() => void refresh()} disabled={loading}>
+            <ReloadOutlined />
+            刷新
+          </UIButton>
+          <DropdownMenu>
+            <DropdownMenuTrigger className="flex h-[34px] items-center gap-[4px] rounded-[10px] bg-[#18181a] px-[20px] text-[12px] font-normal text-white outline-none transition-colors hover:bg-[#303030] dark:bg-white dark:text-[#18181a] dark:hover:bg-white/90">
+              新增
+              <IconChevronDown className="size-[12px]" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className={MENU_CONTENT_CLASS}>
+              <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={() => handleCreateAction('blank')}>
+                <FileAddOutlined />
+                新建知识库
+              </DropdownMenuItem>
+              <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={() => handleCreateAction('okf')}>
+                <FileMarkdownOutlined />
+                导入知识库备份包
+              </DropdownMenuItem>
+              {!isOverallAgent && (
+                <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={() => handleCreateAction('plaza')}>
+                  <DownloadOutlined />
+                  从广场复制
+                </DropdownMenuItem>
+              )}
+              {!isOverallAgent && (
+                <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={() => handleCreateAction('employee')}>
+                  <TeamOutlined />
+                  从数字员工复制
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
-      <Row className="knowledge-structure-row" gutter={[18, 18]} align="stretch">
-        <Col xs={24} xl={8}>
-          <Card
+      <div className="knowledge-structure-row grid grid-cols-1 items-stretch gap-[18px] xl:grid-cols-3">
+        <div className="xl:col-span-1">
+          <KCard
             className="knowledge-card knowledge-card-solid knowledge-library-card"
             title="知识库"
             extra={<DatabaseOutlined />}
           >
             <div className="knowledge-management-toolbar">
-              <Input.Search
-                allowClear
+              <Input
                 value={documentSearch}
                 onChange={(event) => setDocumentSearch(event.target.value)}
                 placeholder="搜索知识库、状态或版本"
               />
             </div>
             {visibleKnowledgeBases.length === 0 ? (
-              <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无知识库" />
+              <EmptyState description="暂无知识库" />
             ) : filteredKnowledgeBases.length === 0 ? (
-              <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="没有匹配的知识库" />
+              <EmptyState description="没有匹配的知识库" />
             ) : (
               <div className="knowledge-base-grid">
                 {filteredKnowledgeBases.map((item) => (
@@ -789,73 +827,92 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
                   >
                     <div className="knowledge-base-card-head">
                       <div>
-                        <Typography.Text strong>{item.name}</Typography.Text>
-                        <Typography.Paragraph type="secondary" ellipsis={{ rows: 2 }}>
+                        <strong className="text-[14px] font-semibold text-foreground">{item.name}</strong>
+                        <p className="mt-[4px] mb-0 line-clamp-2 text-[13px] text-[#858b9c] dark:text-muted-foreground">
                           {item.description || '未填写描述'}
-                        </Typography.Paragraph>
+                        </p>
                       </div>
                       <span
                         onClick={(event) => event.stopPropagation()}
                         onKeyDown={(event) => event.stopPropagation()}
                       >
-                        <Dropdown
-                          trigger={['click']}
-                          menu={{
-                            items: [
-                              { key: 'edit', icon: <EditOutlined />, label: '详情' },
-                              { key: 'versions', icon: <HistoryOutlined />, label: '版本管理' },
-                              { key: 'okf-export', icon: <DownloadOutlined />, label: '导出知识库备份包' },
-                              { key: 'okf-lint', icon: <AuditOutlined />, label: '知识图谱检查', disabled: okfLoading },
-                              !isOverallAgent ? { key: 'sync', label: '从广场同步' } : null,
-                              !isOverallAgent ? { key: 'promote', label: '发布到广场' } : null,
-                              item.status === 'archived'
-                                ? { key: 'publish', icon: <PlayCircleOutlined />, label: '上线' }
-                                : { key: 'archive', icon: <PauseCircleOutlined />, label: '下线' },
-                              {
-                                key: 'delete',
-                                icon: <DeleteOutlined />,
-                                label: isOverallAgent ? '删除' : '移除',
-                                danger: true,
-                              },
-                            ].filter(Boolean),
-                            onClick: ({ key }) => {
-                              if (key === 'edit') openEditKnowledgeBase(item);
-                              if (key === 'versions') void openKnowledgeBaseVersions(item);
-                              if (key === 'okf-export') void exportOkfBundle(item);
-                              if (key === 'okf-lint') void lintOkfBundle(item);
-                              if (key === 'sync') void syncKnowledgeBaseFromOverall(item);
-                              if (key === 'promote') void promoteKnowledgeBaseToOverall(item);
-                              if (key === 'publish') void setKnowledgeBaseStatus(item, true);
-                              if (key === 'archive') void setKnowledgeBaseStatus(item, false);
-                              if (key === 'delete') deleteKnowledgeBase(item);
-                            },
-                          }}
-                        >
-                          <Button type="text" size="small" icon={<MoreOutlined />} />
-                        </Dropdown>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger
+                            aria-label="知识库操作"
+                            className="grid size-7 place-items-center rounded-[8px] text-[#858b9c] transition-colors outline-none hover:bg-black/5 hover:text-[#18181a] dark:hover:bg-white/10 dark:hover:text-white"
+                          >
+                            <MoreOutlined />
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className={MENU_CONTENT_CLASS}>
+                            <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={() => openEditKnowledgeBase(item)}>
+                              <EditOutlined />
+                              详情
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={() => void openKnowledgeBaseVersions(item)}>
+                              <HistoryOutlined />
+                              版本管理
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={() => void exportOkfBundle(item)}>
+                              <DownloadOutlined />
+                              导出知识库备份包
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className={MENU_ITEM_CLASS} disabled={okfLoading} onSelect={() => void lintOkfBundle(item)}>
+                              <AuditOutlined />
+                              知识图谱检查
+                            </DropdownMenuItem>
+                            {!isOverallAgent && (
+                              <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={() => void syncKnowledgeBaseFromOverall(item)}>
+                                从广场同步
+                              </DropdownMenuItem>
+                            )}
+                            {!isOverallAgent && (
+                              <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={() => void promoteKnowledgeBaseToOverall(item)}>
+                                发布到广场
+                              </DropdownMenuItem>
+                            )}
+                            {item.status === 'archived' ? (
+                              <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={() => void setKnowledgeBaseStatus(item, true)}>
+                                <PlayCircleOutlined />
+                                上线
+                              </DropdownMenuItem>
+                            ) : (
+                              <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={() => void setKnowledgeBaseStatus(item, false)}>
+                                <PauseCircleOutlined />
+                                下线
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuSeparator className="my-[2px] bg-[#eef0f4] dark:bg-white/10" />
+                            <DropdownMenuItem variant="destructive" className={MENU_ITEM_DANGER_CLASS} onSelect={() => deleteKnowledgeBase(item)}>
+                              <DeleteOutlined />
+                              {isOverallAgent ? '删除' : '移除'}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </span>
                     </div>
-                    <Space size={6} wrap>
+                    <div className="flex flex-wrap items-center gap-[6px]">
                       {statusTag(item.status)}
-                      {item.version && <Tag>v{item.version}</Tag>}
-                      {item.branch_sync_state && <Tag color={item.branch_sync_state === 'diverged' ? 'gold' : 'green'}>
-              {item.branch_sync_state === 'diverged' ? '本地修改' : '已同步'}
-                      </Tag>}
-                      <Tag>{item.document_count} 文档</Tag>
-                      <Tag>{item.bucket_count} 目录</Tag>
-                      <Tag>{item.chunk_count} 引用</Tag>
-                    </Space>
+                      {item.version && <KTag>v{item.version}</KTag>}
+                      {item.branch_sync_state && (
+                        <KTag color={item.branch_sync_state === 'diverged' ? 'gold' : 'green'}>
+                          {item.branch_sync_state === 'diverged' ? '本地修改' : '已同步'}
+                        </KTag>
+                      )}
+                      <KTag>{item.document_count} 文档</KTag>
+                      <KTag>{item.bucket_count} 目录</KTag>
+                      <KTag>{item.chunk_count} 引用</KTag>
+                    </div>
                   </div>
                 ))}
               </div>
             )}
-          </Card>
-        </Col>
-        <Col xs={24} xl={16}>
+          </KCard>
+        </div>
+        <div className="xl:col-span-2">
           <div className="knowledge-structure-card-frame">
-            <Card className="knowledge-card knowledge-card-solid knowledge-structure-card" title="知识图谱">
+            <KCard className="knowledge-card knowledge-card-solid knowledge-structure-card" title="知识图谱">
               {!selectedDocument ? (
-                <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="选择知识库后查看文档卡片、知识索引和知识图谱" />
+                <EmptyState description="选择知识库后查看文档卡片、知识索引和知识图谱" />
               ) : (
                 <目录索引Overview
                   document={selectedDocument}
@@ -867,112 +924,97 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
                   onEditConcept={openConceptEditor}
                 />
               )}
-            </Card>
+            </KCard>
           </div>
-        </Col>
-      </Row>
+        </div>
+      </div>
 
-      <Card className="knowledge-card knowledge-card-solid knowledge-card-compact" title="渐进检索调试">
-        <Space className="knowledge-debug-stack" direction="vertical" size={14} style={{ width: '100%' }}>
-          <Input.Search
-            value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
-            onSearch={() => void runKnowledgeSearch()}
-            loading={searchLoading}
-            placeholder="输入知识问题"
-            enterButton="检索"
-          />
+      <KCard className="knowledge-card knowledge-card-solid knowledge-card-compact" title="渐进检索调试">
+        <div className="knowledge-debug-stack flex w-full flex-col gap-[14px]">
+          <div className="flex items-center gap-[8px]">
+            <Input
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  event.preventDefault();
+                  void runKnowledgeSearch();
+                }
+              }}
+              placeholder="输入知识问题"
+            />
+            <UIButton disabled={searchLoading} onClick={() => void runKnowledgeSearch()}>检索</UIButton>
+          </div>
           <KnowledgeSearchDebug result={searchResult} loading={searchLoading} />
-        </Space>
-      </Card>
+        </div>
+      </KCard>
 
-      <Modal
+      <ResourceImportDialog
         open={importOpen}
+        loading={importLoading}
+        icon={<DatabaseOutlined />}
         title={importMode === 'plaza' ? '从广场复制知识库' : '从数字员工复制知识库'}
-        width={720}
-        okText="复制"
-        cancelText="取消"
-        confirmLoading={importLoading}
-        onOk={() => void submitImportKnowledgeBases()}
-        onCancel={() => setImportOpen(false)}
-      >
-        <Space direction="vertical" size={16} style={{ width: '100%' }}>
-          <Select
-            value={importSourceAgentId || undefined}
-            placeholder={importMode === 'plaza' ? '选择知识库广场' : '选择来源员工'}
-            onChange={(value) => {
-              setImportSourceAgentId(value);
-              void loadImportSourceKnowledgeBases(value);
-            }}
-            options={agents
-              .filter((item) => item.id !== agentId && (importMode === 'plaza' ? item.is_overall : !item.is_overall))
-              .map((item) => ({
-                value: item.id,
-                label: item.is_overall ? '知识库广场' : item.name,
-              }))}
-            style={{ width: '100%' }}
-          />
-          <Select
-            mode="multiple"
-            value={importSelectedKnowledgeBaseIds}
-            placeholder="选择一个或多个知识库"
-            onChange={setImportSelectedKnowledgeBaseIds}
-            options={importSourceKnowledgeBases.map((item) => ({
-              value: item.id,
-              label: `${item.name} · ${item.version || '1.0.0'}`,
-            }))}
-            optionFilterProp="label"
-            notFoundContent={importSourceAgentId ? '没有可复制的知识库' : '请先选择复制来源'}
-            style={{ width: '100%' }}
-          />
-          <Typography.Text type="secondary">
-            {importMode === 'plaza'
-              ? '从知识库广场复制可用知识库；不可复制内容不会出现在列表。'
-              : '从数字员工复制可用知识库；不可见内容不会出现在列表。'}
-          </Typography.Text>
-        </Space>
-      </Modal>
-      <Modal
-        open={okfImportOpen}
-        title="导入知识库备份包"
-        footer={null}
-        onCancel={() => setOkfImportOpen(false)}
-      >
-        <Dragger
+        sourcePlaceholder={importMode === 'plaza' ? '选择知识库广场' : '选择来源员工'}
+        sources={agents
+          .filter((item) => item.id !== agentId && (importMode === 'plaza' ? item.is_overall : !item.is_overall))
+          .map((item) => ({
+            value: item.id,
+            label: item.is_overall ? '知识库广场' : item.name,
+          }))}
+        sourceId={importSourceAgentId}
+        itemsLabel="选择知识库"
+        items={importSourceKnowledgeBases.map((item) => ({
+          id: item.id,
+          label: (
+            <>
+              {item.name}
+              <span className="text-[#858b9c]"> · {item.version || '1.0.0'}</span>
+            </>
+          ),
+        }))}
+        selectedIds={importSelectedKnowledgeBaseIds}
+        emptyText="没有可复制的知识库"
+        note={importMode === 'plaza'
+          ? '从知识库广场复制可用知识库；不可复制内容不会出现在列表。'
+          : '从数字员工复制可用知识库；不可见内容不会出现在列表。'}
+        submitText="复制"
+        onSourceChange={(value) => {
+          setImportSourceAgentId(value);
+          void loadImportSourceKnowledgeBases(value);
+        }}
+        onSelectedChange={setImportSelectedKnowledgeBaseIds}
+        onClose={() => setImportOpen(false)}
+        onSubmit={() => void submitImportKnowledgeBases()}
+      />
+      <KDialog open={okfImportOpen} title="导入知识库备份包" onClose={() => setOkfImportOpen(false)}>
+        <FileDropzone
           accept=".zip,.md,.markdown"
-          multiple={false}
-          showUploadList={false}
           disabled={okfImporting}
-          beforeUpload={(file) => {
-            void importOkfFile(file);
-            return false;
-          }}
+          onFiles={(files) => files[0] && void importOkfFile(files[0])}
         >
-          <p className="ant-upload-drag-icon">
-            <FileMarkdownOutlined />
-          </p>
-          <p className="ant-upload-text">选择或拖入知识库备份包（.zip）</p>
-          <p className="ant-upload-hint">导入后会生成知识图谱、知识索引和引用来源。</p>
-        </Dragger>
-      </Modal>
-      <Modal
+          <FileMarkdownOutlined className="mb-[8px] text-[28px] text-[#1a71ff]" />
+          <p className="m-0 text-[14px] font-medium text-foreground">选择或拖入知识库备份包（.zip）</p>
+          <p className="mt-[4px] mb-0 text-[12px] text-[#858b9c] dark:text-muted-foreground">导入后会生成知识图谱、知识索引和引用来源。</p>
+        </FileDropzone>
+      </KDialog>
+      <KDialog
         open={okfLintReportOpen}
         title={okfLintKnowledgeBase ? `知识图谱检查：${okfLintKnowledgeBase.name}` : '知识图谱检查'}
-        footer={<Button onClick={() => setOkfLintReportOpen(false)}>关闭</Button>}
         width={820}
-        onCancel={() => setOkfLintReportOpen(false)}
+        onClose={() => setOkfLintReportOpen(false)}
+        footer={<UIButton variant="outline" onClick={() => setOkfLintReportOpen(false)}>关闭</UIButton>}
       >
         <div className="knowledge-lint-report">
-          <Typography.Paragraph type="secondary">
+          <p className="mb-[12px] text-[13px] text-[#858b9c] dark:text-muted-foreground">
             用于检查当前知识库的知识图谱结构，发现断链、孤立页、重复主题等问题。检查结果仅作参考，不会自动修改数据。
-          </Typography.Paragraph>
+          </p>
           {okfLintIssues.length === 0 ? (
-            <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="知识图谱检查通过" />
+            <EmptyState description="知识图谱检查通过" />
           ) : (
             <div className="knowledge-lint-grid">
               {okfLintIssues.map((issue, index) => (
                 <div className="knowledge-lint-item" key={`${issue.issue_type || 'issue'}-${issue.concept_id || index}`}>
-                  <Tag color="gold">{issue.issue_type || 'warning'}</Tag>
+                  <KTag color="gold">{issue.issue_type || 'warning'}</KTag>
                   <strong>{issue.title || issue.concept_id || '知识图谱检查'}</strong>
                   <span>{issue.message || '待处理'}</span>
                   {issue.concept_id ? <small>{issue.concept_id}</small> : null}
@@ -981,25 +1023,26 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
             </div>
           )}
         </div>
-      </Modal>
-      <Modal
+      </KDialog>
+      <KDialog
         open={Boolean(viewingConcept)}
         title={viewingConcept ? <WikiViewerTitle concept={viewingConcept} /> : '知识图谱'}
-        footer={
-          <Space>
-            <Button onClick={() => setViewingConcept(null)}>关闭</Button>
-            <Button type="primary" icon={<EditOutlined />} onClick={editViewingConcept}>
-              编辑知识图谱
-            </Button>
-          </Space>
-        }
         width="min(1040px, calc(100vw - 48px))"
         className="okf-viewer-modal"
-        onCancel={() => setViewingConcept(null)}
+        onClose={() => setViewingConcept(null)}
+        footer={(
+          <>
+            <UIButton variant="outline" onClick={() => setViewingConcept(null)}>关闭</UIButton>
+            <UIButton onClick={editViewingConcept}>
+              <EditOutlined />
+              编辑知识图谱
+            </UIButton>
+          </>
+        )}
       >
         {viewingConcept && <WikiConceptViewer concept={viewingConcept} />}
-      </Modal>
-      <Modal
+      </KDialog>
+      <KDialog
         open={Boolean(editingConcept)}
         title={
           editingConcept ? (
@@ -1013,10 +1056,13 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
         }
         width="min(1120px, calc(100vw - 48px))"
         className="okf-editor-modal"
-        okText="保存"
-        cancelText="取消"
-        onOk={() => void saveConcept()}
-        onCancel={() => setEditingConcept(null)}
+        onClose={() => setEditingConcept(null)}
+        footer={(
+          <>
+            <UIButton variant="outline" onClick={() => setEditingConcept(null)}>取消</UIButton>
+            <UIButton onClick={() => void saveConcept()}>保存</UIButton>
+          </>
+        )}
       >
         {editingConcept && (
           <div className="okf-editor-shell">
@@ -1053,15 +1099,23 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
                 </label>
                 <label>
                   <span>页面类型</span>
-                  <Select
+                  <UISelect
                     value={conceptEditorType}
-                    onChange={(value) => setConceptDraft((prev) => updateOkfFrontmatterValue(prev, 'type', value))}
-                    options={Array.from(CONCEPT_TYPE_LABELS.entries()).map(([value, label]) => ({ value, label }))}
-                  />
+                    onValueChange={(value) => setConceptDraft((prev) => updateOkfFrontmatterValue(prev, 'type', value))}
+                  >
+                    <SelectTrigger className={cn(SELECT_TRIGGER_CLASS, 'w-full')}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from(CONCEPT_TYPE_LABELS.entries()).map(([value, label]) => (
+                        <SelectItem key={value} value={value}>{label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </UISelect>
                 </label>
                 <label className="okf-editor-field-wide">
                   <span>页面摘要</span>
-                  <Input.TextArea
+                  <Textarea
                     value={conceptEditorDescription}
                     rows={3}
                     onChange={(event) =>
@@ -1073,7 +1127,7 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
               </div>
               <label className="okf-editor-source">
                 <span>知识图谱源码</span>
-                <Input.TextArea
+                <Textarea
                   className="okf-markdown-editor"
                   value={conceptDraft}
                   rows={18}
@@ -1084,112 +1138,129 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
             </section>
           </div>
         )}
-      </Modal>
-      <Modal
+      </KDialog>
+      <KDialog
         open={Boolean(editingKnowledgeBase)}
         title="知识库详情"
-        okText="保存"
-        cancelText="取消"
-        onOk={() => void saveKnowledgeBase()}
-        onCancel={() => setEditingKnowledgeBase(null)}
+        onClose={() => setEditingKnowledgeBase(null)}
+        footer={(
+          <>
+            <UIButton variant="outline" onClick={() => setEditingKnowledgeBase(null)}>取消</UIButton>
+            <UIButton onClick={() => void saveKnowledgeBase()}>保存</UIButton>
+          </>
+        )}
       >
-        <Space direction="vertical" size={12} style={{ width: '100%' }}>
+        <div className="flex w-full flex-col gap-[12px]">
           <Input
             value={knowledgeBaseDraft.name}
             onChange={(event) => setKnowledgeBaseDraft((prev) => ({ ...prev, name: event.target.value }))}
             placeholder="知识库名称"
           />
-          <Input.TextArea
+          <Textarea
             rows={4}
             value={knowledgeBaseDraft.description}
             onChange={(event) => setKnowledgeBaseDraft((prev) => ({ ...prev, description: event.target.value }))}
             placeholder="知识库描述"
           />
-          <Select
+          <UISelect
             value={knowledgeBaseDraft.status}
-            onChange={(value) => setKnowledgeBaseDraft((prev) => ({ ...prev, status: value }))}
-            options={[
-              { value: 'active', label: '上线' },
-              { value: 'archived', label: '下线' },
-            ]}
-          />
-        </Space>
-      </Modal>
-      <Modal
+            onValueChange={(value) => setKnowledgeBaseDraft((prev) => ({ ...prev, status: value }))}
+          >
+            <SelectTrigger className={cn(SELECT_TRIGGER_CLASS, 'w-full')}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="active">上线</SelectItem>
+              <SelectItem value="archived">下线</SelectItem>
+            </SelectContent>
+          </UISelect>
+        </div>
+      </KDialog>
+      <KDialog
         open={Boolean(versionKnowledgeBase)}
         title={versionKnowledgeBase ? `版本管理：${versionKnowledgeBase.name}` : '版本管理'}
         width={840}
-        footer={<Button onClick={() => setVersionKnowledgeBase(null)}>关闭</Button>}
-        onCancel={() => setVersionKnowledgeBase(null)}
+        onClose={() => setVersionKnowledgeBase(null)}
+        footer={<UIButton variant="outline" onClick={() => setVersionKnowledgeBase(null)}>关闭</UIButton>}
       >
-        <Table
-          rowKey="id"
-          size="small"
-          pagination={false}
-          dataSource={knowledgeBaseVersions}
+        <DataTable
+          aria-label="版本列表"
+          rowKey={(row) => row.id}
+          data={knowledgeBaseVersions}
+          emptyText="暂无版本记录"
           columns={[
-            { title: '版本', dataIndex: 'version' },
-            { title: '名称', dataIndex: 'name' },
-            { title: '状态', dataIndex: 'status', render: (value) => statusTag(String(value)) },
-            { title: 'Head', dataIndex: 'is_head', render: (value) => (value ? <Tag color="green">当前</Tag> : null) },
-            { title: '更新时间', dataIndex: 'updated_at', render: (value) => String(value).slice(0, 10) },
+            { key: 'version', title: '版本', render: (row) => row.version },
+            { key: 'name', title: '名称', render: (row) => row.name },
+            { key: 'status', title: '状态', render: (row) => statusTag(String(row.status)) },
+            { key: 'is_head', title: 'Head', render: (row) => (row.is_head ? <KTag color="green">当前</KTag> : null) },
+            { key: 'updated_at', title: '更新时间', render: (row) => String(row.updated_at).slice(0, 10) },
             {
+              key: 'actions',
               title: '操作',
               width: 96,
-              render: (_value, row) =>
+              render: (row) =>
                 !isOverallAgent && !row.is_head ? (
-                  <Button size="small" onClick={() => void rollbackKnowledgeBaseVersion(row)}>
+                  <UIButton variant="outline" size="sm" onClick={() => void rollbackKnowledgeBaseVersion(row)}>
                     回滚
-                  </Button>
+                  </UIButton>
                 ) : null,
             },
-          ]}
+          ] as DataTableColumn<KnowledgeBaseVersionRead>[]}
         />
-      </Modal>
-      <Modal
+      </KDialog>
+      <KDialog
         open={Boolean(editingDocument)}
         title="编辑文档"
-        okText="保存"
-        cancelText="取消"
-        onOk={() => void saveDocument()}
-        onCancel={() => setEditingDocument(null)}
+        onClose={() => setEditingDocument(null)}
+        footer={(
+          <>
+            <UIButton variant="outline" onClick={() => setEditingDocument(null)}>取消</UIButton>
+            <UIButton onClick={() => void saveDocument()}>保存</UIButton>
+          </>
+        )}
       >
-        <Space direction="vertical" size={12} style={{ width: '100%' }}>
+        <div className="flex w-full flex-col gap-[12px]">
           <Input
             value={documentDraft.title}
             onChange={(event) => setDocumentDraft((prev) => ({ ...prev, title: event.target.value }))}
             placeholder="文档标题"
           />
-          <Select
+          <UISelect
             value={documentDraft.status}
-            onChange={(value) => setDocumentDraft((prev) => ({ ...prev, status: value }))}
-            options={[
-              { value: 'ready', label: '可用' },
-              { value: 'processing', label: '处理中' },
-              { value: 'failed', label: '失败' },
-              { value: 'archived', label: '下线' },
-            ]}
-          />
-        </Space>
-      </Modal>
-      <Modal
+            onValueChange={(value) => setDocumentDraft((prev) => ({ ...prev, status: value }))}
+          >
+            <SelectTrigger className={cn(SELECT_TRIGGER_CLASS, 'w-full')}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ready">可用</SelectItem>
+              <SelectItem value="processing">处理中</SelectItem>
+              <SelectItem value="failed">失败</SelectItem>
+              <SelectItem value="archived">下线</SelectItem>
+            </SelectContent>
+          </UISelect>
+        </div>
+      </KDialog>
+      <KDialog
         className="knowledge-editor-modal"
         open={Boolean(editingBucket)}
         title="编辑内部索引与引用来源"
         width={920}
-        okText="保存"
-        cancelText="取消"
-        confirmLoading={contentSaving}
-        onOk={() => void saveBucketAndChunks()}
-        onCancel={() => setEditingBucket(null)}
+        onClose={() => setEditingBucket(null)}
+        footer={(
+          <>
+            <UIButton variant="outline" disabled={contentSaving} onClick={() => setEditingBucket(null)}>取消</UIButton>
+            <UIButton disabled={contentSaving} onClick={() => void saveBucketAndChunks()}>保存</UIButton>
+          </>
+        )}
       >
-        <Space direction="vertical" size={14} style={{ width: '100%' }}>
+        <div className="flex w-full flex-col gap-[14px]">
           <Input
             value={bucketDraft.title}
             onChange={(event) => setBucketDraft((prev) => ({ ...prev, title: event.target.value }))}
             placeholder="内部索引标题"
           />
-          <Input.TextArea
+          <Textarea
             rows={4}
             value={bucketDraft.summary}
             onChange={(event) => setBucketDraft((prev) => ({ ...prev, summary: event.target.value }))}
@@ -1199,10 +1270,10 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
             {bucketChunks.map((chunk) => (
               <div className="knowledge-chunk-editor" key={chunk.id}>
                 <div className="knowledge-chunk-editor-head">
-                  <Typography.Text strong>引用来源 {chunk.chunk_index + 1}</Typography.Text>
-                  <Tag>{chunk.source_ref || 'chunk'}</Tag>
+                  <strong className="text-[13px] font-semibold text-foreground">引用来源 {chunk.chunk_index + 1}</strong>
+                  <KTag>{chunk.source_ref || 'chunk'}</KTag>
                 </div>
-                <Input.TextArea
+                <Textarea
                   rows={2}
                   value={chunkDrafts[chunk.id]?.summary || ''}
                   onChange={(event) =>
@@ -1213,7 +1284,7 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
                   }
                   placeholder="引用来源摘要"
                 />
-                <Input.TextArea
+                <Textarea
                   rows={6}
                   value={chunkDrafts[chunk.id]?.content || ''}
                   onChange={(event) =>
@@ -1227,8 +1298,19 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
               </div>
             ))}
           </div>
-        </Space>
-      </Modal>
+        </div>
+      </KDialog>
+
+      <ConfirmDialog
+        open={Boolean(deleteKbTarget)}
+        onOpenChange={(open) => !open && setDeleteKbTarget(null)}
+        title={deleteKbTarget ? `${isOverallAgent ? '删除' : '移除'}知识库：${deleteKbTarget.name}` : ''}
+        description={!isOverallAgent
+          ? '这只会在当前数字员工中隐藏该知识库；开放广场和其他数字员工仍然保留。'
+          : '开放广场会永久删除该知识库及其文档、内部索引、引用来源和版本记录。'}
+        confirmText={isOverallAgent ? '删除' : '移除'}
+        onConfirm={() => void runDeleteKnowledgeBase()}
+      />
     </div>
   );
 }
@@ -1290,7 +1372,7 @@ export function KnowledgeAddPage() {
       const rows = await api.get<KnowledgeBaseRead[]>(`/api/enterprise/knowledge-bases?tenant_id=${TENANT_ID}${suffix}`);
       setKnowledgeBases(rows);
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '加载知识库失败');
+      notify.error(error instanceof Error ? error.message : '加载知识库失败');
     }
   }
 
@@ -1318,9 +1400,9 @@ export function KnowledgeAddPage() {
       });
       setJobs((prev) => ({ ...prev, [job.id]: job }));
       await refreshKnowledgeBases();
-      message.success('已创建知识库和入库任务');
+      notify.success('已创建知识库和入库任务');
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '上传失败');
+      notify.error(error instanceof Error ? error.message : '上传失败');
     }
   }
 
@@ -1343,28 +1425,28 @@ export function KnowledgeAddPage() {
       });
       setDiscoveryModalOpen(true);
     } catch (error) {
-      message.warning(error instanceof Error ? error.message : '加载知识发现建议失败');
+      notify.warning(error instanceof Error ? error.message : '加载知识发现建议失败');
     }
   }
 
   async function confirmDiscovery(item: KnowledgeDiscoveryRead) {
     try {
       await api.post(`/api/enterprise/knowledge/discoveries/${item.id}/confirm?tenant_id=${TENANT_ID}`);
-      message.success('已确认建议');
+      notify.success('已确认建议');
       setPendingDiscoveries((current) => current.filter((entry) => entry.id !== item.id));
       await refreshKnowledgeBases();
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '确认失败');
+      notify.error(error instanceof Error ? error.message : '确认失败');
     }
   }
 
   async function rejectDiscovery(item: KnowledgeDiscoveryRead) {
     try {
       await api.post(`/api/enterprise/knowledge/discoveries/${item.id}/reject?tenant_id=${TENANT_ID}`);
-      message.success('已拒绝建议');
+      notify.success('已拒绝建议');
       setPendingDiscoveries((current) => current.filter((entry) => entry.id !== item.id));
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '拒绝失败');
+      notify.error(error instanceof Error ? error.message : '拒绝失败');
     }
   }
 
@@ -1373,20 +1455,23 @@ export function KnowledgeAddPage() {
       <div className="knowledge-floating-shell">
         <div className="knowledge-floating-head">
           <div>
-            <Typography.Text className="section-kicker">知识库 / 新建</Typography.Text>
-            <Typography.Title level={3}>新建知识库</Typography.Title>
-            <Typography.Text type="secondary">上传业务文档后，系统会先生成知识图谱，再刷新目录索引、引用来源与自发现建议。</Typography.Text>
+            <span className="section-kicker">知识库 / 新建</span>
+            <h3 className="my-[4px] text-[20px] font-semibold text-foreground">新建知识库</h3>
+            <span className="text-[13px] text-[#858b9c] dark:text-muted-foreground">上传业务文档后，系统会先生成知识图谱，再刷新目录索引、引用来源与自发现建议。</span>
           </div>
-            <Button icon={<RightOutlined />} onClick={() => navigate('/enterprise/knowledge')}>返回</Button>
+            <UIButton variant="outline" onClick={() => navigate('/enterprise/knowledge')}>
+              <RightOutlined />
+              返回
+            </UIButton>
         </div>
 
-        <Card className="knowledge-card knowledge-upload-card">
+        <KCard className="knowledge-card knowledge-upload-card">
           <div className="knowledge-upload-controls">
             <div>
-              <Typography.Text strong>上传文档即创建知识库</Typography.Text>
-              <Typography.Text type="secondary">一个文件对应一份独立知识库；回到知识库后可查看文档卡片、知识索引和知识图谱。</Typography.Text>
+              <strong className="block text-[14px] font-semibold text-foreground">上传文档即创建知识库</strong>
+              <span className="text-[13px] text-[#858b9c] dark:text-muted-foreground">一个文件对应一份独立知识库；回到知识库后可查看文档卡片、知识索引和知识图谱。</span>
             </div>
-            <Button onClick={() => navigate('/enterprise/knowledge')}>管理已有知识库</Button>
+            <UIButton variant="outline" onClick={() => navigate('/enterprise/knowledge')}>管理已有知识库</UIButton>
           </div>
         {visibleKnowledgeBases.length > 0 && (
           <div className="knowledge-base-target-strip">
@@ -1403,14 +1488,10 @@ export function KnowledgeAddPage() {
             ))}
           </div>
         )}
-        <Dragger
+        <FileDropzone
           multiple
-          showUploadList={false}
-          beforeUpload={(file) => {
-            void uploadFile(file);
-            return false;
-          }}
           accept=".doc,.docx,.txt,.md,.markdown,.html,.htm,.pdf"
+          onFiles={(files) => files.forEach((file) => void uploadFile(file))}
         >
           <div className="knowledge-upload-inner">
             <InboxOutlined />
@@ -1419,12 +1500,12 @@ export function KnowledgeAddPage() {
               <span>支持 doc/docx/txt/md/html/pdf；旧版 doc 会提示转换为 docx。</span>
             </div>
           </div>
-        </Dragger>
-        </Card>
+        </FileDropzone>
+        </KCard>
 
-        <Card className="knowledge-card knowledge-card-solid" title="入库任务">
+        <KCard className="knowledge-card knowledge-card-solid" title="入库任务">
           {Object.values(jobs).length === 0 ? (
-            <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="上传后这里会显示原始资料、知识图谱和引用来源入库进度" />
+            <EmptyState description="上传后这里会显示原始资料、知识图谱和引用来源入库进度" />
           ) : (
             <div className="knowledge-jobs">
               {Object.values(jobs).map((job) => (
@@ -1432,16 +1513,15 @@ export function KnowledgeAddPage() {
               ))}
             </div>
           )}
-        </Card>
+        </KCard>
       </div>
 
-      <Modal
+      <KDialog
         open={discoveryModalOpen && pendingDiscoveries.length > 0}
         title="发现可新增资源"
-        footer={null}
         width={820}
         className="knowledge-discovery-modal"
-        onCancel={() => setDiscoveryModalOpen(false)}
+        onClose={() => setDiscoveryModalOpen(false)}
       >
         <DiscoveryColumn
           title="可确认建议"
@@ -1450,7 +1530,7 @@ export function KnowledgeAddPage() {
           onConfirm={confirmDiscovery}
           onReject={rejectDiscovery}
         />
-      </Modal>
+      </KDialog>
     </div>
   );
 }
@@ -1463,8 +1543,8 @@ function KnowledgeJobCard({ job }: { job: KnowledgeIngestJobRead }) {
     <div className="knowledge-job">
       <div className="knowledge-job-head">
         <div>
-          <Typography.Text strong>{job.filename}</Typography.Text>
-          <Typography.Text type="secondary"> · {stageLabel}</Typography.Text>
+          <strong className="text-[14px] font-semibold text-foreground">{job.filename}</strong>
+          <span className="text-[13px] text-[#858b9c] dark:text-muted-foreground"> · {stageLabel}</span>
         </div>
         {statusTag(job.status)}
       </div>
@@ -1477,8 +1557,8 @@ function KnowledgeJobCard({ job }: { job: KnowledgeIngestJobRead }) {
           </div>
         ))}
       </div>
-      {stageDetail && <Typography.Text className="knowledge-job-detail">{stageDetail}</Typography.Text>}
-      {job.error && <Typography.Text type="danger">{job.error}</Typography.Text>}
+      {stageDetail && <span className="knowledge-job-detail text-[13px] text-[#858b9c] dark:text-muted-foreground">{stageDetail}</span>}
+      {job.error && <span className="text-[13px] text-[#d20b0b]">{job.error}</span>}
     </div>
   );
 }
@@ -1499,12 +1579,18 @@ function SmoothProgress({ job }: { job: KnowledgeIngestJobRead }) {
     return () => window.clearInterval(timer);
   }, [target]);
 
+  const failed = job.status === 'failed';
   return (
-    <Progress
-      percent={displayProgress}
-      status={job.status === 'failed' ? 'exception' : undefined}
-      strokeColor={job.status === 'failed' ? undefined : { '0%': '#0f7f74', '100%': '#16a34a' }}
-    />
+    <div className="flex items-center gap-[10px]">
+      <Progress
+        value={displayProgress}
+        className="h-[8px] flex-1"
+        indicatorClassName={failed ? 'bg-[#d20b0b]' : 'bg-gradient-to-r from-[#0f7f74] to-[#16a34a]'}
+      />
+      <span className={cn('text-[12px] tabular-nums', failed ? 'text-[#d20b0b]' : 'text-[#858b9c] dark:text-muted-foreground')}>
+        {displayProgress}%
+      </span>
+    </div>
   );
 }
 
@@ -1647,14 +1733,15 @@ function 目录索引Overview({
     <div className="knowledge-pageindex">
       <div className="knowledge-pageindex-card">
         <div className="knowledge-document-card-body">
-          <Typography.Text type="secondary">文档卡片</Typography.Text>
-          <Typography.Title level={5}>{documentTitle}</Typography.Title>
-          <Typography.Paragraph ellipsis={{ rows: 3 }}>{documentSummary}</Typography.Paragraph>
+          <span className="text-[13px] text-[#858b9c] dark:text-muted-foreground">文档卡片</span>
+          <h5 className="my-[4px] text-[15px] font-semibold text-foreground">{documentTitle}</h5>
+          <p className="m-0 line-clamp-3 text-[13px] text-foreground">{documentSummary}</p>
         </div>
         <div className="knowledge-pageindex-actions">
-          <Button size="small" icon={<EditOutlined />} onClick={() => openDetail('document')}>
+          <UIButton variant="outline" size="sm" onClick={() => openDetail('document')}>
+            <EditOutlined />
             详情
-          </Button>
+          </UIButton>
         </div>
         <div className="knowledge-document-meta">
           <button type="button" className="knowledge-stat-pill" onClick={() => openDetail('document')}>
@@ -1688,12 +1775,16 @@ function 目录索引Overview({
             <strong>{activeContent.title}</strong>
             <small>{activeContent.description}</small>
           </span>
-          <Space size={8}>
-            <Tag>{activeContent.count}</Tag>
-            <Button size="small" type="link" onClick={() => openContentDetail(activeContentView)}>
+          <div className="flex items-center gap-[8px]">
+            <KTag>{activeContent.count}</KTag>
+            <button
+              type="button"
+              className="text-[13px] text-[#1a71ff] transition-colors hover:text-[#4a8dff]"
+              onClick={() => openContentDetail(activeContentView)}
+            >
               查看全部
-            </Button>
-          </Space>
+            </button>
+          </div>
         </div>
         {activeContentView === 'sections' && (
           <div className="knowledge-layer-explain" aria-label="知识层级说明">
@@ -1743,25 +1834,25 @@ function 目录索引Overview({
         </div>
       </div>
 
-      <Modal
+      <KDialog
         open={Boolean(detailView)}
         title={knowledgeDetailTitle(detailView)}
-        footer={null}
         width={detailView === 'sections' ? 'min(1240px, calc(100vw - 56px))' : 920}
         className={`knowledge-detail-modal${detailView === 'sections' ? ' knowledge-detail-modal-sections' : ''}`}
-        onCancel={() => setDetailView(null)}
+        onClose={() => setDetailView(null)}
       >
         {detailView === 'document' && (
           <div className="knowledge-detail-stack">
             <div className="knowledge-detail-header">
               <div>
-                <Typography.Text type="secondary">文档卡片</Typography.Text>
-                <Typography.Title level={4}>{documentTitle}</Typography.Title>
-                <Typography.Paragraph>{documentSummary}</Typography.Paragraph>
+                <span className="text-[13px] text-[#858b9c] dark:text-muted-foreground">文档卡片</span>
+                <h4 className="my-[4px] text-[16px] font-semibold text-foreground">{documentTitle}</h4>
+                <p className="m-0 text-[13px] text-foreground">{documentSummary}</p>
               </div>
-              <Button icon={<EditOutlined />} onClick={() => onEditDocument(document)}>
+              <UIButton variant="outline" onClick={() => onEditDocument(document)}>
+                <EditOutlined />
                 修改
-              </Button>
+              </UIButton>
             </div>
             <div className="knowledge-evidence-stat is-inline">
               <strong>{document.file_type || 'unknown'}</strong>
@@ -1783,7 +1874,7 @@ function 目录索引Overview({
         {detailView === 'sections' && (
           <div className="knowledge-wiki-map">
             {wikiIndexGroups.length === 0 ? (
-              <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无 目录索引 目录" />
+              <EmptyState description="暂无 目录索引 目录" />
             ) : (
               wikiIndexGroups.map((group) => (
                 <section
@@ -1793,11 +1884,11 @@ function 目录索引Overview({
                 >
                   <div className="knowledge-index-group-head">
                     <div>
-                      <Tag color="green">目录索引</Tag>
+                      <KTag color="green">目录索引</KTag>
                       <strong>{group.title}</strong>
                       <small>{group.description}</small>
                     </div>
-                    <Tag>{group.concepts.length} 页</Tag>
+                    <KTag>{group.concepts.length} 页</KTag>
                   </div>
                   <div className="knowledge-index-page-list">
                     {group.concepts.slice(0, 8).map((concept) => (
@@ -1816,7 +1907,7 @@ function 目录索引Overview({
         {detailView === 'wiki' && (
           <div className="knowledge-concept-list">
             {okfConcepts.length === 0 ? (
-              <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无知识图谱" />
+              <EmptyState description="暂无知识图谱" />
             ) : (
               okfConcepts.map((concept) => (
                 <div
@@ -1835,37 +1926,38 @@ function 目录索引Overview({
                 >
                   <div className="knowledge-concept-card-head">
                     <div>
-                      <Space size={8} wrap>
-                        <Tag color={conceptTypeColor(concept.concept_type)}>{conceptTypeLabel(concept.concept_type)}</Tag>
+                      <div className="flex flex-wrap items-center gap-[8px]">
+                        <KTag color={conceptTypeColor(concept.concept_type)}>{conceptTypeLabel(concept.concept_type)}</KTag>
                         {statusTag(concept.status)}
-                      </Space>
-                      <Typography.Title level={5}>{concept.title || concept.concept_id}</Typography.Title>
+                      </div>
+                      <h5 className="mt-[6px] mb-0 text-[15px] font-semibold text-foreground">{concept.title || concept.concept_id}</h5>
                     </div>
-                    <Button
-                      size="small"
-                      icon={<EditOutlined />}
+                    <UIButton
+                      variant="outline"
+                      size="sm"
                       onClick={(event) => {
                         event.stopPropagation();
                         onEditConcept(concept);
                       }}
                     >
+                      <EditOutlined />
                       编辑
-                    </Button>
+                    </UIButton>
                   </div>
-                  <Typography.Paragraph type="secondary">{concept.description || conceptSummary(concept)}</Typography.Paragraph>
-                  <Space size={6} wrap>
-                    <Tag>{concept.concept_id}</Tag>
-                    <Tag>{concept.links.length} 个链接</Tag>
-                    <Tag>{concept.citations.length} 个引用</Tag>
-                    {concept.document_id ? <Tag>来源文档 {concept.document_id}</Tag> : null}
-                  </Space>
+                  <p className="my-[6px] text-[13px] text-[#858b9c] dark:text-muted-foreground">{concept.description || conceptSummary(concept)}</p>
+                  <div className="flex flex-wrap items-center gap-[6px]">
+                    <KTag>{concept.concept_id}</KTag>
+                    <KTag>{concept.links.length} 个链接</KTag>
+                    <KTag>{concept.citations.length} 个引用</KTag>
+                    {concept.document_id ? <KTag>来源文档 {concept.document_id}</KTag> : null}
+                  </div>
                 </div>
               ))
             )}
           </div>
         )}
 
-      </Modal>
+      </KDialog>
     </div>
   );
 }
@@ -1889,15 +1981,15 @@ function WikiConceptViewer({ concept }: { concept: KnowledgeConceptRead }) {
   return (
     <div className="okf-wiki-page">
       <section className="okf-wiki-hero">
-        <Space size={8} wrap>
-          <Tag color={conceptTypeColor(concept.concept_type)}>{conceptTypeLabel(concept.concept_type)}</Tag>
+        <div className="flex flex-wrap items-center gap-[8px]">
+          <KTag color={conceptTypeColor(concept.concept_type)}>{conceptTypeLabel(concept.concept_type)}</KTag>
           {statusTag(concept.status)}
           {tags.slice(0, 5).map((tag) => (
-            <Tag key={String(tag)}>{String(tag)}</Tag>
+            <KTag key={String(tag)}>{String(tag)}</KTag>
           ))}
-        </Space>
-        <Typography.Title level={3}>{concept.title || concept.concept_id}</Typography.Title>
-        <Typography.Paragraph>{concept.description || conceptSummary(concept)}</Typography.Paragraph>
+        </div>
+        <h3 className="my-[8px] text-[20px] font-semibold text-foreground">{concept.title || concept.concept_id}</h3>
+        <p className="m-0 text-[14px] text-foreground">{concept.description || conceptSummary(concept)}</p>
       </section>
 
       <section className="okf-wiki-meta-grid" aria-label="知识图谱元信息">
@@ -1930,7 +2022,7 @@ function WikiConceptViewer({ concept }: { concept: KnowledgeConceptRead }) {
               <strong>关联页面</strong>
               <div className="okf-wiki-token-list">
                 {links.slice(0, 12).map((item, index) => (
-                  <Tag key={`link-${index}`}>{recordLabel(item, ['target', 'concept_id', 'id'])}</Tag>
+                  <KTag key={`link-${index}`}>{recordLabel(item, ['target', 'concept_id', 'id'])}</KTag>
                 ))}
               </div>
             </div>
@@ -1940,7 +2032,7 @@ function WikiConceptViewer({ concept }: { concept: KnowledgeConceptRead }) {
               <strong>引用</strong>
               <div className="okf-wiki-token-list">
                 {citations.slice(0, 12).map((item, index) => (
-                  <Tag key={`citation-${index}`}>{recordLabel(item, ['label', 'source', 'uri', 'id'])}</Tag>
+                  <KTag key={`citation-${index}`}>{recordLabel(item, ['label', 'source', 'uri', 'id'])}</KTag>
                 ))}
               </div>
             </div>
@@ -1950,7 +2042,7 @@ function WikiConceptViewer({ concept }: { concept: KnowledgeConceptRead }) {
               <strong>来源</strong>
               <div className="okf-wiki-token-list">
                 {sourceRefs.slice(0, 12).map((item, index) => (
-                  <Tag key={`source-${index}`}>{recordLabel(item, ['document_id', 'section_id', 'source', 'id'])}</Tag>
+                  <KTag key={`source-${index}`}>{recordLabel(item, ['document_id', 'section_id', 'source', 'id'])}</KTag>
                 ))}
               </div>
             </div>
@@ -1968,11 +2060,12 @@ function MarkdownPreview({ markdown }: { markdown: string }) {
       {blocks.map((block, index) => {
         const heading = block.match(/^(#{1,6})\s+(.+)$/);
         if (heading) {
-          const level = Math.min(4, Math.max(3, heading[1].length + 2)) as 3 | 4;
+          const level = Math.min(4, Math.max(3, heading[1].length + 2));
+          const HeadingTag = (level === 3 ? 'h3' : 'h4') as 'h3' | 'h4';
           return (
-            <Typography.Title level={level} key={`heading-${index}`}>
+            <HeadingTag className="font-semibold text-foreground" key={`heading-${index}`}>
               {heading[2]}
-            </Typography.Title>
+            </HeadingTag>
           );
         }
         if (block.startsWith('```')) {
@@ -2008,9 +2101,9 @@ function MarkdownPreview({ markdown }: { markdown: string }) {
           );
         }
         return (
-          <Typography.Paragraph key={`paragraph-${index}`}>
+          <p key={`paragraph-${index}`}>
             {block}
-          </Typography.Paragraph>
+          </p>
         );
       })}
     </div>
@@ -2045,22 +2138,22 @@ function KnowledgeBucketLinks({ bucket, evidenceOnly = false }: { bucket: Knowle
     <div className="knowledge-bucket-link-grid">
       {!evidenceOnly && (
         <>
-          <Typography.Text type="secondary">覆盖来源</Typography.Text>
+          <span className="text-[13px] text-[#858b9c] dark:text-muted-foreground">覆盖来源</span>
           <div>
             {sourceSections.length === 0 ? (
-              <Tag>暂无来源路径</Tag>
+              <KTag>暂无来源路径</KTag>
             ) : (
-              sourceSections.map((section) => <Tag key={String(section)}>{String(section)}</Tag>)
+              sourceSections.map((section) => <KTag key={String(section)}>{String(section)}</KTag>)
             )}
           </div>
         </>
       )}
-      <Typography.Text type="secondary">{evidenceOnly ? '引用来源' : '代表引用'}</Typography.Text>
+      <span className="text-[13px] text-[#858b9c] dark:text-muted-foreground">{evidenceOnly ? '引用来源' : '代表引用'}</span>
       <div className="knowledge-evidence-token-list">
         {representativeChunks.length === 0 ? (
-          bucket.chunk_count > 0 ? <Tag>{bucket.chunk_count} 个引用来源</Tag> : <Tag>暂无可读代表来源</Tag>
+          bucket.chunk_count > 0 ? <KTag>{bucket.chunk_count} 个引用来源</KTag> : <KTag>暂无可读代表来源</KTag>
         ) : (
-          representativeChunks.map((chunkId) => <Tag key={String(chunkId)}>{String(chunkId)}</Tag>)
+          representativeChunks.map((chunkId) => <KTag key={String(chunkId)}>{String(chunkId)}</KTag>)
         )}
       </div>
     </div>
@@ -2150,10 +2243,10 @@ function KnowledgeSearchDebug({
   compact?: boolean;
 }) {
   if (loading) {
-    return <Typography.Text type="secondary">正在按目录索引和知识图谱检索，并整理引用来源...</Typography.Text>;
+    return <span className="text-[13px] text-[#858b9c] dark:text-muted-foreground">正在按目录索引和知识图谱检索，并整理引用来源...</span>;
   }
   if (!result) {
-    return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="尚未运行检索" />;
+    return <EmptyState description="尚未运行检索" />;
   }
   const selectedConcepts = result.selected_concepts || [];
   const okfCitations = result.okf_citations || [];
@@ -2170,46 +2263,46 @@ function KnowledgeSearchDebug({
           </div>
         ))}
       </div>
-      <Collapse
-        size="small"
-        items={[
-          {
-            key: 'concepts',
-            label: `知识图谱 ${selectedConcepts.length}`,
-            children: <pre className="knowledge-json">{JSON.stringify(selectedConcepts, null, 2)}</pre>,
-          },
-          {
-            key: 'okf-citations',
-            label: `知识图谱引用 ${okfCitations.length}`,
-            children: <pre className="knowledge-json">{JSON.stringify(okfCitations, null, 2)}</pre>,
-          },
-          {
-            key: 'documents',
-            label: `文档 ${result.selected_documents.length}`,
-            children: <pre className="knowledge-json">{JSON.stringify(result.selected_documents, null, 2)}</pre>,
-          },
-          {
-            key: 'sections',
-            label: `展开来源 ${result.expanded_sections.length}`,
-            children: <pre className="knowledge-json">{JSON.stringify(result.expanded_sections, null, 2)}</pre>,
-          },
-          {
-            key: 'evidence',
-            label: `引用来源包 ${result.evidence_pack.length}`,
-            children: (
-              <div className="knowledge-evidence-list">
-                {result.evidence_pack.map((item) => (
-                  <div className="knowledge-evidence-item" key={item.chunk_id}>
-                    <Typography.Text strong>{item.section_path || item.source_path || item.chunk_id}</Typography.Text>
-                    <Typography.Paragraph>{item.excerpt}</Typography.Paragraph>
-                    <Typography.Text type="secondary">{item.confidence_reason}</Typography.Text>
-                  </div>
-                ))}
-              </div>
-            ),
-          },
-        ]}
-      />
+      <Accordion type="multiple" className="flex flex-col gap-[6px]">
+        <AccordionItem value="concepts">
+          <AccordionTrigger>{`知识图谱 ${selectedConcepts.length}`}</AccordionTrigger>
+          <AccordionContent>
+            <pre className="knowledge-json">{JSON.stringify(selectedConcepts, null, 2)}</pre>
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem value="okf-citations">
+          <AccordionTrigger>{`知识图谱引用 ${okfCitations.length}`}</AccordionTrigger>
+          <AccordionContent>
+            <pre className="knowledge-json">{JSON.stringify(okfCitations, null, 2)}</pre>
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem value="documents">
+          <AccordionTrigger>{`文档 ${result.selected_documents.length}`}</AccordionTrigger>
+          <AccordionContent>
+            <pre className="knowledge-json">{JSON.stringify(result.selected_documents, null, 2)}</pre>
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem value="sections">
+          <AccordionTrigger>{`展开来源 ${result.expanded_sections.length}`}</AccordionTrigger>
+          <AccordionContent>
+            <pre className="knowledge-json">{JSON.stringify(result.expanded_sections, null, 2)}</pre>
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem value="evidence">
+          <AccordionTrigger>{`引用来源包 ${result.evidence_pack.length}`}</AccordionTrigger>
+          <AccordionContent>
+            <div className="knowledge-evidence-list">
+              {result.evidence_pack.map((item) => (
+                <div className="knowledge-evidence-item" key={item.chunk_id}>
+                  <strong className="text-[13px] font-semibold text-foreground">{item.section_path || item.source_path || item.chunk_id}</strong>
+                  <p className="m-0 text-[13px] text-foreground">{item.excerpt}</p>
+                  <span className="text-[13px] text-[#858b9c] dark:text-muted-foreground">{item.confidence_reason}</span>
+                </div>
+              ))}
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
     </div>
   );
 }
@@ -2236,41 +2329,43 @@ function DiscoveryColumn({
           <strong>{title}</strong>
           <span>{description}</span>
         </div>
-        <Tag>{items.length}</Tag>
+        <KTag>{items.length}</KTag>
       </div>
       {items.length === 0 ? (
-        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无内容" />
+        <EmptyState description="暂无内容" />
       ) : (
-        <Space direction="vertical" size={12} className="knowledge-discovery-list">
+        <div className="knowledge-discovery-list flex flex-col gap-[12px]">
           {items.map((item) => (
             <div className={`knowledge-discovery ${item.suggestion_type}`} key={item.id}>
               <div className="knowledge-discovery-header">
-                <Space size={8} wrap>
-                  <Typography.Text strong>{item.title}</Typography.Text>
-                  <Tag>{typeLabel(item.suggestion_type)}</Tag>
+                <div className="flex flex-wrap items-center gap-[8px]">
+                  <strong className="text-[14px] font-semibold text-foreground">{item.title}</strong>
+                  <KTag>{typeLabel(item.suggestion_type)}</KTag>
                   {statusTag(item.status)}
-                </Space>
+                </div>
                 {!readonly && item.status === 'pending' && (
-                  <Space size={8}>
-                    <Button size="small" shape="circle" icon={<CheckOutlined />} onClick={() => void onConfirm(item)} />
-                    <Button size="small" shape="circle" icon={<CloseOutlined />} onClick={() => void onReject(item)} />
-                  </Space>
+                  <div className="flex items-center gap-[8px]">
+                    <UIButton variant="outline" size="icon" className="size-8 rounded-full" onClick={() => void onConfirm(item)}>
+                      <CheckOutlined />
+                    </UIButton>
+                    <UIButton variant="outline" size="icon" className="size-8 rounded-full" onClick={() => void onReject(item)}>
+                      <CloseOutlined />
+                    </UIButton>
+                  </div>
                 )}
               </div>
-              {item.reason && <Typography.Paragraph type="secondary">{item.reason}</Typography.Paragraph>}
-              <Collapse
-                ghost
-                items={[
-                  {
-                    key: 'payload',
-                    label: '查看详情',
-                    children: <pre className="knowledge-json">{JSON.stringify(item.payload, null, 2)}</pre>,
-                  },
-                ]}
-              />
+              {item.reason && <p className="my-[6px] text-[13px] text-[#858b9c] dark:text-muted-foreground">{item.reason}</p>}
+              <Accordion type="single" collapsible>
+                <AccordionItem value="payload" className="border-b-0">
+                  <AccordionTrigger className="py-[6px]">查看详情</AccordionTrigger>
+                  <AccordionContent>
+                    <pre className="knowledge-json">{JSON.stringify(item.payload, null, 2)}</pre>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
             </div>
           ))}
-        </Space>
+        </div>
       )}
     </div>
   );
@@ -2325,12 +2420,178 @@ function statusTag(status: string) {
     queued: { color: 'gold', label: '排队中' },
   };
   const item = map[status] || { color: 'gold', label: status };
-  return <Tag color={item.color}>{item.label}</Tag>;
+  return <KTag color={item.color}>{item.label}</KTag>;
 }
 
 function bucketStatusTag(bucket: KnowledgeBucketRead) {
-  if (bucket.status === 'ready') return <Tag color="green">达标</Tag>;
-  return <Tag color="gold">待补足</Tag>;
+  if (bucket.status === 'ready') return <KTag color="green">达标</KTag>;
+  return <KTag color="gold">待补足</KTag>;
+}
+
+const KTAG_TONE_CLASS: Record<string, string> = {
+  green: 'bg-[#eafbf0] text-[#018434] dark:bg-[#018434]/20 dark:text-[#4bd07f]',
+  red: 'bg-[#fce7e7] text-[#d20b0b] dark:bg-[#d20b0b]/20 dark:text-[#ff8080]',
+  gold: 'bg-[#fff4e0] text-[#c47d09] dark:bg-[#c47d09]/20 dark:text-[#ffcf7a]',
+  processing: 'bg-[#e6f0ff] text-[#1a71ff] dark:bg-[#1a71ff]/20 dark:text-[#7fb0ff]',
+  blue: 'bg-[#e6f0ff] text-[#1a71ff] dark:bg-[#1a71ff]/20 dark:text-[#7fb0ff]',
+  geekblue: 'bg-[#eceaffe6] text-[#3538cd] dark:bg-[#3538cd]/25 dark:text-[#a5a8ff]',
+  cyan: 'bg-[#e0fbff] text-[#0891a5] dark:bg-[#0891a5]/20 dark:text-[#6be0f0]',
+  purple: 'bg-[#f2e9ff] text-[#7a35cd] dark:bg-[#7a35cd]/20 dark:text-[#c79bff]',
+  magenta: 'bg-[#ffe9f4] text-[#c41d7f] dark:bg-[#c41d7f]/20 dark:text-[#ff97cf]',
+  default: 'bg-[#f2f3f5] text-[#5b6273] dark:bg-white/10 dark:text-muted-foreground',
+};
+
+function KTag({ color = 'default', children }: { color?: string; children: ReactNode }) {
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center gap-[4px] rounded-[6px] px-[8px] py-px text-[12px] font-medium leading-[18px]',
+        KTAG_TONE_CLASS[color] || KTAG_TONE_CLASS.default,
+      )}
+    >
+      {children}
+    </span>
+  );
+}
+
+function KCard({
+  className,
+  bodyClassName,
+  title,
+  extra,
+  children,
+  ...rest
+}: {
+  className?: string;
+  bodyClassName?: string;
+  title?: ReactNode;
+  extra?: ReactNode;
+  children?: ReactNode;
+} & Omit<HTMLAttributes<HTMLDivElement>, 'title'>) {
+  return (
+    <div className={cn('ant-card', className)} {...rest}>
+      {(title || extra) && (
+        <div className="ant-card-head border-b border-border">
+          <div className="ant-card-head-wrapper flex min-h-[46px] items-center justify-between gap-[12px] px-[16px]">
+            <div className="ant-card-head-title min-w-0">{title}</div>
+            {extra ? <div className="ant-card-extra min-w-0 text-[#858b9c]">{extra}</div> : null}
+          </div>
+        </div>
+      )}
+      <div className={cn('ant-card-body p-[18px]', bodyClassName)}>{children}</div>
+    </div>
+  );
+}
+
+function KDialog({
+  open,
+  title,
+  width,
+  className,
+  footer,
+  onClose,
+  children,
+}: {
+  open: boolean;
+  title: ReactNode;
+  width?: number | string;
+  className?: string;
+  footer?: ReactNode;
+  onClose: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
+      <DialogContent
+        aria-describedby={undefined}
+        style={width ? { maxWidth: typeof width === 'number' ? `${width}px` : width } : undefined}
+        className={cn(
+          'flex max-h-[calc(100dvh-4rem)] w-[calc(100%-2rem)] flex-col gap-[16px] overflow-hidden rounded-[14px] px-[20px] py-[16px] sm:max-w-[560px]',
+          className,
+        )}
+      >
+        <DialogTitle className="px-[12px] text-[14px] font-medium text-foreground" asChild={typeof title !== 'string'}>
+          {typeof title === 'string' ? title : <div>{title}</div>}
+        </DialogTitle>
+        <div className="min-h-0 flex-1 overflow-y-auto px-[12px]">{children}</div>
+        {footer ? <div className="flex items-center justify-end gap-[8px] px-[12px]">{footer}</div> : null}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function EmptyState({ description }: { description: ReactNode }) {
+  return (
+    <div className="flex flex-col items-center justify-center gap-[6px] py-[36px] text-center text-[13px] text-[#858b9c] dark:text-muted-foreground">
+      {description}
+    </div>
+  );
+}
+
+function FileDropzone({
+  accept,
+  multiple = false,
+  disabled = false,
+  onFiles,
+  children,
+}: {
+  accept?: string;
+  multiple?: boolean;
+  disabled?: boolean;
+  onFiles: (files: File[]) => void;
+  children: ReactNode;
+}) {
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const [dragActive, setDragActive] = useState(false);
+  const emit = (fileList: FileList | null) => {
+    if (!fileList || fileList.length === 0) return;
+    const files = Array.from(fileList);
+    onFiles(multiple ? files : files.slice(0, 1));
+  };
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      aria-disabled={disabled}
+      className={cn(
+        'flex cursor-pointer flex-col items-center justify-center rounded-[12px] border border-dashed border-border bg-(--surface-subtle) px-[16px] py-[28px] text-center transition-colors',
+        dragActive && 'border-[#1a71ff] bg-[#1a71ff]/5',
+        disabled && 'cursor-not-allowed opacity-60',
+      )}
+      onClick={() => !disabled && inputRef.current?.click()}
+      onKeyDown={(event) => {
+        if (disabled) return;
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          inputRef.current?.click();
+        }
+      }}
+      onDragOver={(event) => {
+        event.preventDefault();
+        if (!disabled) setDragActive(true);
+      }}
+      onDragLeave={() => setDragActive(false)}
+      onDrop={(event) => {
+        event.preventDefault();
+        setDragActive(false);
+        if (!disabled) emit(event.dataTransfer.files);
+      }}
+    >
+      <input
+        ref={inputRef}
+        type="file"
+        accept={accept}
+        multiple={multiple}
+        disabled={disabled}
+        className="hidden"
+        onChange={(event) => {
+          emit(event.target.files);
+          event.target.value = '';
+        }}
+      />
+      {children}
+    </div>
+  );
 }
 
 function conceptPath(conceptId: string) {

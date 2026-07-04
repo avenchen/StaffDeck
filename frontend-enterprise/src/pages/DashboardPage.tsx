@@ -1,8 +1,7 @@
-import { Button, Card, Space, Typography, message } from 'antd';
 import { useEffect, useMemo, useState } from 'react';
 import type { ComponentType, ReactNode, SVGProps } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Badge, Button as UiButton, Tabs, TabsList, TabsTrigger } from '@/components/ui';
+import { Badge, Button as UiButton, Tabs, TabsList, TabsTrigger, notify } from '@/components/ui';
 import { EnterpriseRoute } from '../enums/routes';
 import IconChat from '../assets/icons/chat.svg?react';
 import IconEdit from '../assets/icons/edit.svg?react';
@@ -171,7 +170,7 @@ export default function DashboardPage({
           }
         }
       })
-      .catch((error) => message.error(error instanceof Error ? error.message : '加载数字员工档案失败'));
+      .catch((error) => notify.error(error instanceof Error ? error.message : '加载数字员工档案失败'));
   }, [agentId, currentUser, forceOverall, isAdmin]);
 
   const selectedAgent = (forceOverall ? agents.find((item) => item.is_overall) : agents.find((item) => item.id === agentId))
@@ -223,16 +222,16 @@ export default function DashboardPage({
   if (!selectedAgent && !isAdmin) {
     return (
       <div className="page dashboard-page">
-        <Card className="empty-workspace-card">
-          <Typography.Title level={3}>还没有数字员工</Typography.Title>
-          <Typography.Paragraph type="secondary">
+        <div className="empty-workspace-card p-[24px]">
+          <h3 className="m-0 text-[20px] font-semibold text-foreground">还没有数字员工</h3>
+          <p className="mt-[8px] text-[14px] text-muted-foreground">
             点击左下角「新建数字员工」开始创建，或前往员工广场选择已发布的员工。
-          </Typography.Paragraph>
-          <Space>
-            <Button type="primary" onClick={() => navigate('/enterprise/agents')}>查看我的数字员工</Button>
-            <Button onClick={() => navigate('/enterprise/feedback')}>查看对话日志</Button>
-          </Space>
-        </Card>
+          </p>
+          <div className="mt-[16px] flex gap-[8px]">
+            <UiButton onClick={() => navigate('/enterprise/agents')}>查看我的数字员工</UiButton>
+            <UiButton variant="outline" onClick={() => navigate('/enterprise/feedback')}>查看对话日志</UiButton>
+          </div>
+        </div>
       </div>
     );
   }
@@ -241,15 +240,15 @@ export default function DashboardPage({
     return (
       <div className="page dashboard-page">
         <div className="page-title">
-          <Typography.Title level={3}>开放广场</Typography.Title>
+          <h3>开放广场</h3>
         </div>
         <section className="employee-hero org-hero">
           <div>
             <span className="section-kicker">开放广场</span>
-            <Typography.Title level={2}>开放广场</Typography.Title>
-            <Typography.Paragraph>
+            <h2 className="ant-typography">开放广场</h2>
+            <p className="ant-typography">
               汇集所有可共享的 SOP、知识库、技能和工具，新建数字员工时可以从这里复制配置作为起点。
-            </Typography.Paragraph>
+            </p>
           </div>
           <div className="employee-hero-metrics">
             <MetricTile label="员工" value={agents.filter((item) => !item.is_overall).length} />
@@ -265,9 +264,13 @@ export default function DashboardPage({
           <DashboardStat title="SOP 调用" value={totalCalls} icon={<StaffdeckIcon name="chat" />} />
           <DashboardStat title="好评" value={positiveFeedback || feedbackSummary?.up_count || 0} icon={<StaffdeckIcon name="chat" />} />
           <DashboardStat title="差评" value={negativeFeedback || feedbackSummary?.down_count || 0} icon={<StaffdeckIcon name="chat" />} />
-          <Card className="org-dashboard-card" title="默认模型">
-            <Typography.Text>{defaultModel ? `${defaultModel.name} / ${defaultModel.model}` : '未配置'}</Typography.Text>
-          </Card>
+          <div className="org-dashboard-card">
+            <div className="ant-card-body p-[24px]">
+              <span className="org-dashboard-icon"><StaffdeckIcon name="model" /></span>
+              <span className="text-[13px] text-muted-foreground">默认模型</span>
+              <span className="text-[15px] text-foreground">{defaultModel ? `${defaultModel.name} / ${defaultModel.model}` : '未配置'}</span>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -548,11 +551,13 @@ export default function DashboardPage({
 
 function DashboardStat({ title, value, icon }: { title: string; value: number; icon: ReactNode }) {
   return (
-    <Card className="org-dashboard-card">
-      <span className="org-dashboard-icon">{icon}</span>
-      <Typography.Text type="secondary">{title}</Typography.Text>
-      <strong>{value}</strong>
-    </Card>
+    <div className="org-dashboard-card">
+      <div className="ant-card-body p-[24px]">
+        <span className="org-dashboard-icon">{icon}</span>
+        <span className="text-[13px] text-muted-foreground">{title}</span>
+        <strong>{value}</strong>
+      </div>
+    </div>
   );
 }
 

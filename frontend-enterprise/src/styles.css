@@ -802,6 +802,34 @@ body.skill-distill-fixed .content {
   box-shadow: var(--shadow-soft);
 }
 
+/*
+ * Compatibility base styles for the few `ant-*` class hooks that remain on plain
+ * HTML elements after the Ant Design removal. Ant Design used to inject these at
+ * runtime; more specific page/component rules still override them.
+ */
+.ant-card {
+  border-width: 1px;
+  border-style: solid;
+}
+
+.ant-input,
+textarea.ant-input {
+  color: var(--foreground);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 5px 11px;
+  font-size: 14px;
+  line-height: 1.5;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ant-input:focus,
+textarea.ant-input:focus {
+  border-color: var(--foreground);
+}
+
 .ant-card-body {
   min-width: 0;
 }

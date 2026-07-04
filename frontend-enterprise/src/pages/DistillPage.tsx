@@ -20,21 +20,51 @@ import {
   UploadOutlined,
   WarningOutlined,
 } from '../icons';
-import { Button, Card, Dropdown, Empty, Input, InputNumber, Modal, Select, Space, Tag, Tooltip, Typography, Upload, message } from 'antd';
 import {
   useEffect,
   useMemo,
   useRef,
   useState,
+  type ChangeEventHandler,
   type ClipboardEvent,
   type CSSProperties,
   type DragEvent,
+  type HTMLAttributes,
   type KeyboardEvent,
   type MouseEvent,
   type ReactNode,
   type RefObject,
 } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogTitle,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  Input,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+  Select as UISelect,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Textarea,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui';
+import { Button as UIButton } from '@/components/ui/button';
+import { notify } from '@/components/ui/app-toast';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { cn } from '@/lib/utils';
+import { MENU_CONTENT_CLASS, MENU_ITEM_CLASS, SELECT_TRIGGER_CLASS } from '@/lib/enterprise-ui';
 import { api, streamGet, streamPost, TENANT_ID } from '../api/client';
 import type { ModelConfigRead, SkillCard, SkillRead, ToolProbeResponse, ToolRead, ToolSuggestion } from '../types';
 
@@ -288,6 +318,14 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
   const [saveVersion, setSaveVersion] = useState('');
   const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
   const [clearAfterSave, setClearAfterSave] = useState(false);
+  const [clearNewConfirm, setClearNewConfirm] = useState<{ title: string; description: string } | null>(null);
+  const [rerunConfirm, setRerunConfirm] = useState<{
+    index: number;
+    snapshot: DistillHistorySnapshot;
+    rollbackOperations: DistillHistoryOperation[];
+    text: string;
+    outgoingText: string;
+  } | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('source');
   const [loading, setLoading] = useState(false);
   const [attachments, setAttachments] = useState<UploadAttachment[]>([]);
@@ -410,7 +448,7 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
         setCacheReady(true);
       })
       .catch((error) => {
-        message.error(error instanceof Error ? error.message : '加载技能失败');
+        notify.error(error instanceof Error ? error.message : '加载技能失败');
         setHydratedCacheKey(cacheKey);
         setCacheReady(true);
       });
@@ -485,7 +523,7 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
       .catch((error) => {
         if (controller.signal.aborted) return;
         updateMessage(activeJob.assistantId, '生成连接已断开，后端任务仍可继续。', { thinking: 'done' });
-        message.error(error instanceof Error ? error.message : '恢复生成失败');
+        notify.error(error instanceof Error ? error.message : '恢复生成失败');
       })
       .finally(() => finishStream(controller));
   }, [activeJob, cacheKey, cacheReady, hydratedCacheKey]);
@@ -540,24 +578,6 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
   const uploadingFile = attachments.some((item) => item.status === 'uploading');
   const readyAttachments = attachments.filter((item) => item.status === 'ready' && item.text?.trim());
   const selectedRewriteModel = modelConfigs.find((item) => item.id === selectedRewriteModelId) || null;
-  const rewriteModelMenuItems = modelConfigs.length
-    ? modelConfigs.map((item) => ({
-      key: item.id,
-      label: (
-        <span className="skill-rewrite-model-menu-item">
-          <span>
-            <strong>{item.name || item.model}</strong>
-            <em>{item.is_default ? `${item.model} · 默认` : item.model}</em>
-          </span>
-          {selectedRewriteModelId === item.id && <CheckOutlined />}
-        </span>
-      ),
-    }))
-    : [{
-      key: 'empty',
-      disabled: true,
-      label: <span className="skill-rewrite-model-menu-empty">暂无可用模型</span>,
-    }];
   const allSelected = draft ? selectedPaths.length > 0 && allPaths.every((path) => selectedPaths.includes(path)) : false;
   const toolDescriptions = useMemo(() => buildToolDescriptionMap(tools, messages), [messages, tools]);
   const toolStatuses = useMemo(() => buildToolStatusMap(tools, messages), [messages, tools]);
@@ -709,9 +729,9 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
       appendThinkingDetail(assistantId, '生成失败，已保留当前草稿');
       updateMessage(assistantId, '生成失败，当前草稿未变更。', { thinking: 'done' });
       if (controller.signal.aborted) {
-        message.info('已停止生成');
+        notify.info('已停止生成');
       } else {
-        message.error(error instanceof Error ? error.message : '生成失败');
+        notify.error(error instanceof Error ? error.message : '生成失败');
       }
     } finally {
       finishStream(controller);
@@ -836,9 +856,9 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
       appendThinkingDetail(assistantId, '改写失败，已保留当前草稿');
       updateMessage(assistantId, '改写失败，当前草稿未变更。', { thinking: 'done' });
       if (controller.signal.aborted) {
-        message.info('已停止改写');
+        notify.info('已停止改写');
       } else {
-        message.error(error instanceof Error ? error.message : '改写失败');
+        notify.error(error instanceof Error ? error.message : '改写失败');
       }
     } finally {
       finishStream(controller);
@@ -849,7 +869,7 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
     const targetDraft = pendingChange?.nextDraft || draft;
     if (!targetDraft) return;
     if (!hasSkillContentChanges(targetDraft, lastSavedDraft)) {
-      message.info('当前没有内容变化，无需保存草稿。');
+      notify.info('当前没有内容变化，无需保存草稿。');
       return;
     }
     confirmPendingChange(false);
@@ -864,7 +884,7 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
   async function saveDraft() {
     if (!saveReviewDraft) return;
     if (!hasSkillContentChanges(saveReviewDraft, lastSavedDraft)) {
-      message.info('当前没有内容变化，无需保存草稿。');
+      notify.info('当前没有内容变化，无需保存草稿。');
       return;
     }
     let finalDraft: SkillCard = saveReviewDraft;
@@ -906,12 +926,12 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
       if (clearAfterSave) {
         setClearAfterSave(false);
         clearDistillWorkspace();
-        message.success('草稿已保存，当前改写已清空');
+        notify.success('草稿已保存，当前改写已清空');
       } else {
-        message.success(renamedSkillId ? `SOP ID 已存在，已另存为 ${renamedSkillId}` : '草稿已保存');
+        notify.success(renamedSkillId ? `SOP ID 已存在，已另存为 ${renamedSkillId}` : '草稿已保存');
       }
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '保存失败');
+      notify.error(error instanceof Error ? error.message : '保存失败');
     }
   }
 
@@ -1043,7 +1063,7 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
     if (loading) return;
     const suffix = file.name.toLowerCase().split('.').pop() || '';
     if (!['md', 'txt', 'doc', 'docx'].includes(suffix)) {
-      message.error('仅支持 .md、.doc、.docx、.txt 文件');
+      notify.error('仅支持 .md、.doc、.docx、.txt 文件');
       return;
     }
     const id = `file_${Date.now()}_${Math.random().toString(16).slice(2)}`;
@@ -1182,7 +1202,7 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
     if ((!options.allowWhileLoading && loading) || suggestion.probeStatus === 'probing') return null;
     const args = options.sampleArguments || suggestion.sample_arguments || {};
     if (Object.keys(args).length === 0) {
-      if (!options.silent) message.warning('缺少样例参数，无法测试接口');
+      if (!options.silent) notify.warning('缺少样例参数，无法测试接口');
       const result: ToolProbeResponse = {
         success: false,
         inferred_output_schema: {},
@@ -1208,9 +1228,9 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
         output_schema: nextOutputSchema || {},
       });
       if (result.success) {
-        if (!options.silent) message.success('接口测试成功');
+        if (!options.silent) notify.success('接口测试成功');
       } else {
-        if (!options.silent) message.error(result.error?.message || '接口测试失败');
+        if (!options.silent) notify.error(result.error?.message || '接口测试失败');
       }
       return result;
     } catch (error) {
@@ -1223,7 +1243,7 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
         probeStatus: 'error',
         probe_result: result,
       });
-      if (!options.silent) message.error(result.error?.message || '接口测试失败');
+      if (!options.silent) notify.error(result.error?.message || '接口测试失败');
       return result;
     }
   }
@@ -1232,19 +1252,19 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
     if (!toolDetail || !toolDetailMessageId) return;
     const parsed = parseJsonObject(probeArgsText);
     if (!parsed) {
-      message.error('样例参数必须是 JSON 对象');
+      notify.error('样例参数必须是 JSON 对象');
       return;
     }
     setToolSuggestionPatch(toolDetailMessageId, toolDetail.name, { sample_arguments: parsed });
     setToolDetail({ ...toolDetail, sample_arguments: parsed });
-    message.success('样例参数已更新');
+    notify.success('样例参数已更新');
   }
 
   function probeToolDetail() {
     if (!toolDetail || !toolDetailMessageId) return;
     const parsed = parseJsonObject(probeArgsText);
     if (!parsed) {
-      message.error('样例参数必须是 JSON 对象');
+      notify.error('样例参数必须是 JSON 对象');
       return;
     }
     void probeToolSuggestion(toolDetailMessageId, { ...toolDetail, sample_arguments: parsed }, { sampleArguments: parsed });
@@ -1253,18 +1273,18 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
   async function confirmToolSuggestion(messageId: string, suggestion: ToolSuggestionItem) {
     if (loading) return;
     if (toolSuggestionResolution(suggestion) !== 'new_candidate') {
-      message.warning('该工具不是可新增候选');
+      notify.warning('该工具不是可新增候选');
       return;
     }
     if (!suggestion.probe_result?.success) {
-      message.warning('请先测试接口成功后再新增工具');
+      notify.warning('请先测试接口成功后再新增工具');
       return;
     }
     const nextSuggestions = nextToolSuggestionsWithPatch(messageId, suggestion.name, { status: 'accepted' });
     setToolSuggestionStatus(messageId, suggestion.name, 'accepted');
     const shouldCommit = toolSuggestionSelectionsComplete(nextSuggestions);
     if (!shouldCommit) {
-      message.success('已确认，等待其他工具建议处理完成后统一更新技能');
+      notify.success('已确认，等待其他工具建议处理完成后统一更新技能');
       return;
     }
     await commitToolSuggestionSelections(messageId, nextSuggestions);
@@ -1276,7 +1296,7 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
       (item) => toolSuggestionResolution(item) === 'new_candidate' && item.status === 'accepted',
     );
     if (acceptedSuggestions.length === 0) {
-      message.info('所有工具建议已拒绝，技能草稿未变更');
+      notify.info('所有工具建议已拒绝，技能草稿未变更');
       return;
     }
     try {
@@ -1332,9 +1352,9 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
           skillId: nextDraft.skill_id,
         });
       }
-      message.success(`已确认 ${acceptedSuggestions.length} 个工具，当前草稿已局部更新`);
+      notify.success(`已确认 ${acceptedSuggestions.length} 个工具，当前草稿已局部更新`);
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '新增工具或更新技能失败');
+      notify.error(error instanceof Error ? error.message : '新增工具或更新技能失败');
     }
   }
 
@@ -1399,14 +1419,11 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
   function handleClearClick() {
     if (loading) return;
     if (!hasUnsavedSkillChanges()) {
-      Modal.confirm({
+      setClearNewConfirm({
         title: skillId ? '清空并新建 SOP？' : '清空当前改写？',
-        content: skillId
+        description: skillId
           ? '清空只会进入一个新的 SOP 草稿工作台，不会删除或替换当前正在编辑的 SOP。'
           : '当前技能没有未保存变更，确认清空当前改写内容和对话记录？',
-        okText: '清空',
-        cancelText: '取消',
-        onOk: clearDistillWorkspace,
       });
       return;
     }
@@ -1601,7 +1618,7 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
     setTextDiffs([]);
     updateMessage(pendingChange.assistantId, undefined, { actionState: 'confirmed' });
     setPendingChange(null);
-    if (showToast) message.success('已确认改写');
+    if (showToast) notify.success('已确认改写');
   }
 
   function rejectPendingChange() {
@@ -1613,7 +1630,7 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
     setTextDiffs([]);
     updateMessage(pendingChange.assistantId, undefined, { actionState: 'rejected' });
     setPendingChange(null);
-    message.info('已拒绝改写并还原');
+    notify.info('已拒绝改写并还原');
   }
 
   function requestEditHistoryMessage(item: ChatItem, index: number) {
@@ -1625,9 +1642,9 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
     const text = visibleChatContent(item);
     try {
       await navigator.clipboard.writeText(text);
-      message.success('已复制');
+      notify.success('已复制');
     } catch {
-      message.error('复制失败');
+      notify.error('复制失败');
     }
   }
 
@@ -1657,26 +1674,7 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
       void rerunEditedMessage(index, snapshot, rollbackOperations, text, outgoingText);
       return;
     }
-    Modal.confirm({
-      title: '重新编辑这条消息？',
-      content: (
-        <div>
-          <Typography.Paragraph>
-            重新编辑会回到这条消息发送前的技能草稿，并截断之后的推理记录。
-          </Typography.Paragraph>
-          <div className="rollback-operation-list">
-            {rollbackOperations.map((operation, operationIndex) => (
-              <Tag key={`${operation.kind}_${operationIndex}`}>{operation.label}</Tag>
-            ))}
-          </div>
-        </div>
-      ),
-      okText: '确认回退',
-      cancelText: '取消',
-      onOk: () => {
-        void rerunEditedMessage(index, snapshot, rollbackOperations, text, outgoingText);
-      },
-    });
+    setRerunConfirm({ index, snapshot, rollbackOperations, text, outgoingText });
   }
 
   async function rerunEditedMessage(
@@ -1714,7 +1712,7 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
       }
       await rewriteSelectedTarget(outgoingText, confirmedDraft, undefined, undefined, nextMessages);
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '回退失败');
+      notify.error(error instanceof Error ? error.message : '回退失败');
     }
   }
 
@@ -1814,16 +1812,17 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
     <div className="skill-distill-page">
       <div className="page-title">
         <div>
-          <Typography.Title level={3}>编辑 SOP</Typography.Title>
+          <h3>编辑 SOP</h3>
         </div>
-        <Space>
-          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/enterprise/skills')}>
+        <div className="flex items-center gap-[8px]">
+          <UIButton variant="outline" onClick={() => navigate('/enterprise/skills')}>
+            <ArrowLeftOutlined />
             返回
-          </Button>
-        </Space>
+          </UIButton>
+        </div>
       </div>
       <div className="skill-workbench">
-        <Card
+        <EditorCard
           className={`skill-chat-card ${dragActive ? 'dragging' : ''}`}
           onDragEnter={handleDragEnter}
           onDragOver={handleDragOver}
@@ -1879,23 +1878,23 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
                     )}
                     {item.role === 'user' && editingMessage?.id === item.id ? (
                       <div className="skill-chat-edit-panel">
-                        <Input.TextArea
+                        <Textarea
                           value={editingMessage.text}
-                          autoSize={{ minRows: 2, maxRows: 8 }}
+                          rows={3}
                           autoFocus
                           onChange={(event) => setEditingMessage({ id: item.id, text: event.target.value })}
-                          onPressEnter={(event) => {
-                            if (!event.shiftKey && !event.nativeEvent.isComposing) {
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
                               event.preventDefault();
                               submitEditingMessage();
                             }
                           }}
                         />
                         <div className="skill-chat-edit-actions">
-                          <Button onClick={cancelEditingMessage}>取消</Button>
-                          <Button type="primary" onClick={submitEditingMessage} disabled={!(editingMessage?.text || '').trim()}>
+                          <UIButton variant="outline" onClick={cancelEditingMessage}>取消</UIButton>
+                          <UIButton onClick={submitEditingMessage} disabled={!(editingMessage?.text || '').trim()}>
                             发送
-                          </Button>
+                          </UIButton>
                         </div>
                       </div>
                     ) : (
@@ -1967,37 +1966,40 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
                               </div>
                               <div className="skill-tool-suggestion-actions top">
                                 <span className="skill-tool-action-group detail">
-                                  <Tooltip title="查看详情">
-                                    <Button
+                                  <SimpleTooltip title="查看详情">
+                                    <UIButton
                                       className="skill-tool-action"
-                                      size="small"
-                                      type="text"
-                                      icon={<InfoCircleOutlined />}
+                                      variant="ghost"
+                                      size="icon"
                                       onClick={() => openToolDetail(item.id, suggestion)}
-                                    />
-                                  </Tooltip>
+                                    >
+                                      <InfoCircleOutlined />
+                                    </UIButton>
+                                  </SimpleTooltip>
                                 </span>
                                 {canResolveSuggestion && (
                                   <span className="skill-tool-action-group decision">
-                                    <Tooltip title="确认新增">
-                                      <Button
+                                    <SimpleTooltip title="确认新增">
+                                      <UIButton
                                         className="skill-tool-action confirm"
-                                        size="small"
-                                        type="text"
+                                        variant="ghost"
+                                        size="icon"
                                         disabled={!suggestion.probe_result?.success}
-                                        icon={<CheckCircleOutlined />}
                                         onClick={() => void confirmToolSuggestion(item.id, suggestion)}
-                                      />
-                                    </Tooltip>
-                                    <Tooltip title="拒绝">
-                                      <Button
+                                      >
+                                        <CheckCircleOutlined />
+                                      </UIButton>
+                                    </SimpleTooltip>
+                                    <SimpleTooltip title="拒绝">
+                                      <UIButton
                                         className="skill-tool-action reject"
-                                        size="small"
-                                        type="text"
-                                        icon={<CloseCircleOutlined />}
+                                        variant="ghost"
+                                        size="icon"
                                         onClick={() => rejectToolSuggestion(item.id, suggestion.name)}
-                                      />
-                                    </Tooltip>
+                                      >
+                                        <CloseCircleOutlined />
+                                      </UIButton>
+                                    </SimpleTooltip>
                                   </span>
                                 )}
                               </div>
@@ -2008,12 +2010,12 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
                     )}
                     {item.actionState === 'pending' && (
                       <div className="skill-chat-confirm">
-                        <Button size="small" type="primary" onClick={() => confirmPendingChange()}>
+                        <UIButton size="sm" onClick={() => confirmPendingChange()}>
                           确认
-                        </Button>
-                        <Button size="small" onClick={rejectPendingChange}>
+                        </UIButton>
+                        <UIButton size="sm" variant="outline" onClick={rejectPendingChange}>
                           拒绝
-                        </Button>
+                        </UIButton>
                       </div>
                     )}
                     {item.actionState === 'confirmed' && <div className="skill-chat-decision">已确认</div>}
@@ -2036,22 +2038,23 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
                         {attachment.status === 'ready' && '已读取'}
                         {attachment.status === 'error' && (attachment.error || '读取失败')}
                       </span>
-                      <Button
-                        size="small"
-                        type="text"
-                        icon={<CloseOutlined />}
+                      <UIButton
+                        size="icon"
+                        variant="ghost"
                         onClick={() => cancelAttachment(attachment.id)}
-                      />
+                      >
+                        <CloseOutlined />
+                      </UIButton>
                     </div>
                   ))}
                 </div>
               )}
-              <Input.TextArea
+              <Textarea
                 value={input}
                 onChange={(event) => setInput(event.target.value)}
                 onPaste={handleComposerPaste}
-                onPressEnter={(event) => {
-                  if (!event.shiftKey && !event.nativeEvent.isComposing) {
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
                     event.preventDefault();
                     void send();
                   }
@@ -2064,91 +2067,117 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
                 }
               />
               <div className="skill-chat-actions">
-                <Typography.Text type="secondary">{streamStatus}</Typography.Text>
-                <Space>
-                  <Upload
-                    accept=".md,.txt,.doc,.docx"
-                    multiple
-                    showUploadList={false}
-                    beforeUpload={(file) => {
-                      void stageFileUpload(file as File);
-                      return false;
-                    }}
-                  >
-                    <Button icon={<UploadOutlined />} loading={uploadingFile} disabled={loading}>
-                      上传文件
-                    </Button>
-                  </Upload>
+                <span className="text-[13px] text-[#858b9c] dark:text-muted-foreground">{streamStatus}</span>
+                <div className="flex items-center gap-[8px]">
+                  <label>
+                    <input
+                      type="file"
+                      accept=".md,.txt,.doc,.docx"
+                      multiple
+                      className="hidden"
+                      disabled={loading}
+                      onChange={(event) => {
+                        const files = event.target.files ? Array.from(event.target.files) : [];
+                        files.forEach((file) => void stageFileUpload(file));
+                        event.target.value = '';
+                      }}
+                    />
+                    <UIButton asChild variant="outline" disabled={uploadingFile || loading}>
+                      <span>
+                        <UploadOutlined />
+                        上传文件
+                      </span>
+                    </UIButton>
+                  </label>
                   {loading && (
-                    <Button icon={<StopOutlined />} onClick={stopStream}>
+                    <UIButton variant="outline" onClick={stopStream}>
+                      <StopOutlined />
                       停止
-                    </Button>
+                    </UIButton>
                   )}
-                  <Dropdown
-                    trigger={['click']}
-                    menu={{
-                      items: rewriteModelMenuItems,
-                      selectable: false,
-                      onClick: ({ key }) => {
-                        if (key === 'empty') return;
-                        setSelectedRewriteModelId(String(key));
-                        window.localStorage.setItem(`${DISTILL_REWRITE_MODEL_STORAGE_KEY}:${TENANT_ID}`, String(key));
-                      },
-                    }}
-                  >
-                    <Button
-                      className="skill-rewrite-model-button"
-                      disabled={loading || modelConfigs.length === 0}
-                    >
-                      <span>{selectedRewriteModel?.name || selectedRewriteModel?.model || '默认模型'}</span>
-                      <DownOutlined />
-                    </Button>
-                  </Dropdown>
-                  <Button
-                    type="primary"
-                    icon={<SendOutlined />}
-                    loading={loading}
-                    disabled={uploadingFile || (!input.trim() && readyAttachments.length === 0)}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <UIButton
+                        variant="outline"
+                        className="skill-rewrite-model-button"
+                        disabled={loading || modelConfigs.length === 0}
+                      >
+                        <span>{selectedRewriteModel?.name || selectedRewriteModel?.model || '默认模型'}</span>
+                        <DownOutlined />
+                      </UIButton>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className={MENU_CONTENT_CLASS}>
+                      {modelConfigs.length === 0 ? (
+                        <DropdownMenuItem disabled className={MENU_ITEM_CLASS}>
+                          暂无可用模型
+                        </DropdownMenuItem>
+                      ) : (
+                        modelConfigs.map((model) => (
+                          <DropdownMenuItem
+                            key={model.id}
+                            className={MENU_ITEM_CLASS}
+                            onSelect={() => {
+                              setSelectedRewriteModelId(String(model.id));
+                              window.localStorage.setItem(`${DISTILL_REWRITE_MODEL_STORAGE_KEY}:${TENANT_ID}`, String(model.id));
+                            }}
+                          >
+                            <span className="flex min-w-0 flex-1 flex-col">
+                              <strong className="text-[13px] text-foreground">{model.name || model.model}</strong>
+                              <em className="text-[11px] not-italic text-[#858b9c] dark:text-muted-foreground">
+                                {model.is_default ? `${model.model} · 默认` : model.model}
+                              </em>
+                            </span>
+                            {selectedRewriteModelId === model.id && <CheckOutlined />}
+                          </DropdownMenuItem>
+                        ))
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  <UIButton
+                    disabled={loading || uploadingFile || (!input.trim() && readyAttachments.length === 0)}
                     onClick={() => void send()}
                   >
+                    {loading ? <LoadingOutlined className="animate-spin" /> : <SendOutlined />}
                     发送
-                  </Button>
-                </Space>
+                  </UIButton>
+                </div>
               </div>
             </div>
           </div>
-        </Card>
-        <Card
+        </EditorCard>
+        <EditorCard
           className="skill-source-card"
           title={viewMode === 'source' ? '源码' : '流程图'}
           extra={
-            <Space>
-              <Button disabled={loading} onClick={handleClearClick}>
+            <div className="flex flex-wrap justify-end gap-[8px]">
+              <UIButton variant="outline" disabled={loading} onClick={handleClearClick}>
                 清空
-              </Button>
-              <Tooltip title={draft && !hasSaveableDraftChanges ? '当前没有内容变化' : ''}>
-                <Button disabled={!draft || loading || !hasSaveableDraftChanges} icon={<SaveOutlined />} onClick={() => openSaveReview()}>
+              </UIButton>
+              <SimpleTooltip title={draft && !hasSaveableDraftChanges ? '当前没有内容变化' : ''}>
+                <UIButton variant="outline" disabled={!draft || loading || !hasSaveableDraftChanges} onClick={() => openSaveReview()}>
+                  <SaveOutlined />
                   保存草稿
-                </Button>
-              </Tooltip>
-            </Space>
+                </UIButton>
+              </SimpleTooltip>
+            </div>
           }
         >
           <div className="skill-source-toolbar">
-            <Space>
-              <Button
-                icon={viewMode === 'source' ? <BranchesOutlined /> : <CodeOutlined />}
+            <div className="flex items-center gap-[8px]">
+              <UIButton
+                variant="outline"
                 onClick={() => setViewMode(viewMode === 'source' ? 'flow' : 'source')}
               >
+                {viewMode === 'source' ? <BranchesOutlined /> : <CodeOutlined />}
                 {viewMode === 'source' ? '显示流程' : '显示源码'}
-              </Button>
-              <Button disabled={!draft} onClick={toggleAllTargets}>
+              </UIButton>
+              <UIButton variant="outline" disabled={!draft} onClick={toggleAllTargets}>
                 {allSelected ? '清空选择' : '全选'}
-              </Button>
-            </Space>
+              </UIButton>
+            </div>
           </div>
           {!draft ? (
-            <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无技能草稿" />
+            <EmptyState description="暂无技能草稿" />
           ) : viewMode === 'source' ? (
             <SkillSource
               skill={draft}
@@ -2177,49 +2206,51 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
               onToggle={toggleTarget}
             />
           )}
-        </Card>
+        </EditorCard>
       </div>
-      <Modal
+      <KDialog
         open={clearConfirmOpen}
+        onOpenChange={(open) => !open && setClearConfirmOpen(false)}
         title="清空前是否保存？"
         width={520}
-        onCancel={() => setClearConfirmOpen(false)}
         footer={
-          <Space>
-            <Button onClick={() => setClearConfirmOpen(false)}>取消</Button>
-            <Button
+          <div className="flex flex-wrap justify-end gap-[8px]">
+            <UIButton variant="outline" onClick={() => setClearConfirmOpen(false)}>取消</UIButton>
+            <UIButton
+              variant="outline"
               onClick={() => {
                 setClearConfirmOpen(false);
                 clearDistillWorkspace();
               }}
             >
               不保存清空
-            </Button>
-            <Button
-              type="primary"
+            </UIButton>
+            <UIButton
               onClick={() => {
                 setClearConfirmOpen(false);
                 openSaveReview({ clearAfterSave: true });
               }}
             >
               保存并清空
-            </Button>
-          </Space>
+            </UIButton>
+          </div>
         }
       >
-        <Typography.Paragraph>
+        <p className="m-0 text-[14px] leading-[22px] text-foreground">
           检测到当前 SOP 有未保存变更。你可以先保存当前内容；清空后会进入新的 SOP 草稿工作台，不会把原 SOP 替换为空。
-        </Typography.Paragraph>
-      </Modal>
-      <Modal
+        </p>
+      </KDialog>
+      <KDialog
         open={saveReviewOpen}
+        onOpenChange={(open) => !open && closeSaveReview()}
         title="保存技能版本"
-        okText="保存"
-        cancelText="取消"
         width={820}
-        okButtonProps={{ disabled: !saveReviewHasContentChanges }}
-        onOk={() => void saveDraft()}
-        onCancel={closeSaveReview}
+        footer={
+          <div className="flex flex-wrap justify-end gap-[8px]">
+            <UIButton variant="outline" onClick={closeSaveReview}>取消</UIButton>
+            <UIButton disabled={!saveReviewHasContentChanges} onClick={() => void saveDraft()}>保存</UIButton>
+          </div>
+        }
       >
         <div className="save-review-form">
           <label>
@@ -2236,9 +2267,9 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
           </label>
         </div>
         <div className="save-review-diff">
-          <Typography.Text strong>本轮修改 diff</Typography.Text>
+          <strong className="text-[13px] font-semibold text-foreground">本轮修改 diff</strong>
           {saveReviewDiffs.length === 0 ? (
-            <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无结构差异" />
+            <EmptyState description="暂无结构差异" />
           ) : (
             saveReviewDiffs.map((diff) => (
               <div key={diff.key} className="save-review-diff-row">
@@ -2248,30 +2279,29 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
             ))
           )}
         </div>
-      </Modal>
-      <Modal
+      </KDialog>
+      <KDialog
         open={Boolean(toolDetail)}
+        onOpenChange={(open) => !open && setToolDetail(null)}
         title="工具详情"
+        width={1040}
         footer={
-          <Space className="tool-suggestion-detail-footer">
-            <Button onClick={() => setToolDetail(null)}>关闭</Button>
+          <div className="tool-suggestion-detail-footer flex flex-wrap justify-end gap-[8px]">
+            <UIButton variant="outline" onClick={() => setToolDetail(null)}>关闭</UIButton>
             {toolDetail && toolSuggestionResolution(toolDetail) === 'new_candidate' && (
               <>
-                <Button onClick={applyProbeArgumentsFromDetail}>应用样例参数</Button>
-                <Button
-                  type="primary"
-                  icon={<ApiOutlined />}
-                  loading={toolDetail?.probeStatus === 'probing'}
+                <UIButton variant="outline" onClick={applyProbeArgumentsFromDetail}>应用样例参数</UIButton>
+                <UIButton
+                  disabled={toolDetail?.probeStatus === 'probing'}
                   onClick={probeToolDetail}
                 >
+                  {toolDetail?.probeStatus === 'probing' ? <LoadingOutlined className="animate-spin" /> : <ApiOutlined />}
                   {toolDetail?.probe_result ? '再次测试' : '测试接口'}
-                </Button>
+                </UIButton>
               </>
             )}
-          </Space>
+          </div>
         }
-        width={1040}
-        onCancel={() => setToolDetail(null)}
       >
         {toolDetail && (
           <div className="tool-suggestion-detail">
@@ -2287,26 +2317,346 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
             {toolDetail.missing_reason && <div><strong>缺失原因：</strong>{toolDetail.missing_reason}</div>}
             <div><strong>原因：</strong>{toolDetail.reason || '-'}</div>
             <div><strong>来源：</strong>{toolDetail.source_excerpt || '-'}</div>
-            <Typography.Text strong>样例参数</Typography.Text>
-            <Input.TextArea
+            <strong className="text-[13px] font-semibold text-foreground">样例参数</strong>
+            <Textarea
               value={probeArgsText}
-              autoSize={{ minRows: 4, maxRows: 10 }}
+              rows={5}
               onChange={(event) => setProbeArgsText(event.target.value)}
             />
-            <Typography.Text strong>输入 Schema</Typography.Text>
+            <strong className="text-[13px] font-semibold text-foreground">输入 Schema</strong>
             <pre>{JSON.stringify(toolDetail.input_schema || {}, null, 2)}</pre>
-            <Typography.Text strong>输出 Schema</Typography.Text>
+            <strong className="text-[13px] font-semibold text-foreground">输出 Schema</strong>
             <pre>{JSON.stringify(toolDetail.output_schema || {}, null, 2)}</pre>
             {toolDetail.probe_result && (
               <>
-                <Typography.Text strong>测试结果</Typography.Text>
+                <strong className="text-[13px] font-semibold text-foreground">测试结果</strong>
                 <pre>{JSON.stringify(toolDetail.probe_result, null, 2)}</pre>
               </>
             )}
           </div>
         )}
-      </Modal>
+      </KDialog>
+      {clearNewConfirm && (
+        <ConfirmDialog
+          open
+          onOpenChange={(open) => !open && setClearNewConfirm(null)}
+          title={clearNewConfirm.title}
+          description={clearNewConfirm.description}
+          confirmText="清空"
+          destructive={false}
+          onConfirm={() => {
+            setClearNewConfirm(null);
+            clearDistillWorkspace();
+          }}
+        />
+      )}
+      {rerunConfirm && (
+        <ConfirmDialog
+          open
+          onOpenChange={(open) => !open && setRerunConfirm(null)}
+          title="重新编辑这条消息？"
+          confirmText="确认回退"
+          destructive={false}
+          description={
+            <div>
+              <p className="m-0 mb-[8px]">重新编辑会回到这条消息发送前的技能草稿，并截断之后的推理记录。</p>
+              <div className="rollback-operation-list flex flex-wrap gap-[6px]">
+                {rerunConfirm.rollbackOperations.map((operation, operationIndex) => (
+                  <DistillTag key={`${operation.kind}_${operationIndex}`}>{operation.label}</DistillTag>
+                ))}
+              </div>
+            </div>
+          }
+          onConfirm={() => {
+            const payload = rerunConfirm;
+            setRerunConfirm(null);
+            void rerunEditedMessage(
+              payload.index,
+              payload.snapshot,
+              payload.rollbackOperations,
+              payload.text,
+              payload.outgoingText,
+            );
+          }}
+        />
+      )}
     </div>
+  );
+}
+
+function EditorCard({
+  className,
+  bodyClassName,
+  title,
+  extra,
+  children,
+  ...rest
+}: {
+  className?: string;
+  bodyClassName?: string;
+  title?: ReactNode;
+  extra?: ReactNode;
+  children?: ReactNode;
+} & Omit<HTMLAttributes<HTMLDivElement>, 'title'>) {
+  return (
+    <div className={cn('ant-card border border-solid', className)} {...rest}>
+      {(title || extra) && (
+        <div className="ant-card-head">
+          <div className="ant-card-head-wrapper flex min-h-[46px] items-center justify-between gap-[12px]">
+            <div className="ant-card-head-title min-w-0">{title}</div>
+            {extra ? <div className="ant-card-extra min-w-0">{extra}</div> : null}
+          </div>
+        </div>
+      )}
+      <div className={cn('ant-card-body', bodyClassName)}>{children}</div>
+    </div>
+  );
+}
+
+function KDialog({
+  open,
+  onOpenChange,
+  title,
+  width = 520,
+  footer,
+  children,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  title?: ReactNode;
+  width?: number;
+  footer?: ReactNode;
+  children?: ReactNode;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent
+        className="max-h-[85vh] gap-0 overflow-y-auto rounded-[16px] p-0"
+        style={{ width: `min(${width}px, calc(100vw - 32px))`, maxWidth: 'calc(100vw - 32px)' }}
+      >
+        {title != null && (
+          <DialogTitle className="border-b border-border px-[24px] py-[16px] text-[16px] font-semibold text-foreground">
+            {title}
+          </DialogTitle>
+        )}
+        <div className="px-[24px] py-[20px]">{children}</div>
+        {footer != null && (
+          <DialogFooter className="border-t border-border px-[24px] py-[12px] sm:justify-end">{footer}</DialogFooter>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function SimpleTooltip({ title, children }: { title?: ReactNode; children: ReactNode }) {
+  if (!title) return <>{children}</>;
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>{children}</TooltipTrigger>
+        <TooltipContent>{title}</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
+function EmptyState({ description }: { description: ReactNode }) {
+  return (
+    <div className="flex flex-col items-center justify-center gap-[8px] py-[32px] text-center text-[13px] text-[#858b9c] dark:text-muted-foreground">
+      {description}
+    </div>
+  );
+}
+
+function DistillTag({ children }: { children: ReactNode }) {
+  return (
+    <span className="inline-flex items-center rounded-[6px] bg-[#f2f3f5] px-[8px] py-px text-[12px] font-medium leading-[18px] text-[#5b6273] dark:bg-white/10 dark:text-muted-foreground">
+      {children}
+    </span>
+  );
+}
+
+/**
+ * Inline text input for the SOP source editor. Rendered as a native input with
+ * the existing `ant-input` styling hooks so the bespoke source-editor CSS keeps
+ * applying after the Ant Design migration.
+ */
+function SourceInput({
+  className,
+  ...rest
+}: {
+  className?: string;
+  value?: string;
+  placeholder?: string;
+  disabled?: boolean;
+  style?: CSSProperties;
+  onChange?: ChangeEventHandler<HTMLInputElement>;
+}) {
+  return <input className={cn('ant-input', className)} {...rest} />;
+}
+
+/** Auto-growing textarea replacement for Ant Design's `Input.TextArea autoSize`. */
+function AutoGrowTextarea({
+  className,
+  minRows = 1,
+  value,
+  ...rest
+}: {
+  className?: string;
+  minRows?: number;
+  value?: string;
+  placeholder?: string;
+  disabled?: boolean;
+  style?: CSSProperties;
+  onChange?: ChangeEventHandler<HTMLTextAreaElement>;
+}) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  }, [value]);
+  return <textarea ref={ref} rows={minRows} value={value} className={cn('ant-input', className)} {...rest} />;
+}
+
+/** Native number input replacement for Ant Design's `InputNumber`. */
+function SourceNumberInput({
+  className,
+  value,
+  min,
+  placeholder,
+  onChange,
+}: {
+  className?: string;
+  value: number | null;
+  min?: number;
+  placeholder?: string;
+  onChange: (value: number | null) => void;
+}) {
+  return (
+    <input
+      type="number"
+      className={cn('ant-input', className)}
+      value={value ?? ''}
+      min={min}
+      placeholder={placeholder}
+      onChange={(event) => {
+        const raw = event.target.value;
+        onChange(raw === '' ? null : Number(raw));
+      }}
+    />
+  );
+}
+
+/**
+ * Searchable action picker (replaces Ant Design's `Select showSearch`). Renders
+ * a filterable input backed by a popover list. Committing an empty value removes
+ * the action, matching the previous `allowClear` behaviour.
+ */
+function ActionCombobox({
+  value,
+  options,
+  placeholder = '选择一个动作',
+  onSelect,
+}: {
+  value?: string;
+  options: SelectOption[];
+  placeholder?: string;
+  onSelect: (value: string) => void;
+}) {
+  const [open, setOpen] = useState(true);
+  const [query, setQuery] = useState('');
+  const normalizedQuery = query.trim().toLowerCase();
+  const filtered = normalizedQuery
+    ? options.filter(
+        (option) =>
+          option.label.toLowerCase().includes(normalizedQuery) ||
+          String(option.value).toLowerCase().includes(normalizedQuery),
+      )
+    : options;
+  return (
+    <Popover
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (!next) onSelect(value || '');
+      }}
+    >
+      <PopoverTrigger asChild>
+        <input
+          className="ant-input skill-source-action-select"
+          autoFocus
+          value={query}
+          placeholder={placeholder}
+          onChange={(event) => {
+            setQuery(event.target.value);
+            setOpen(true);
+          }}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
+              event.preventDefault();
+              if (filtered.length > 0) onSelect(String(filtered[0].value));
+            } else if (event.key === 'Escape') {
+              setOpen(false);
+            }
+          }}
+        />
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        onOpenAutoFocus={(event) => event.preventDefault()}
+        className="max-h-[280px] w-[320px] overflow-y-auto p-[4px]"
+      >
+        {filtered.length === 0 ? (
+          <div className="px-[10px] py-[12px] text-center text-[13px] text-[#858b9c] dark:text-muted-foreground">无匹配动作</div>
+        ) : (
+          filtered.map((option) => (
+            <button
+              key={String(option.value)}
+              type="button"
+              className={cn(
+                'flex w-full items-center rounded-[8px] px-[10px] py-[6px] text-left text-[13px] text-foreground hover:bg-muted',
+                option.value === value && 'bg-muted',
+              )}
+              onClick={() => onSelect(String(option.value))}
+            >
+              {option.label}
+            </button>
+          ))
+        )}
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+/** shadcn Select styled for the SOP source editor. */
+function SourceSelect({
+  className,
+  value,
+  options,
+  placeholder,
+  onChange,
+}: {
+  className?: string;
+  value?: string;
+  options: SelectOption[];
+  placeholder?: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <UISelect value={value || undefined} onValueChange={onChange}>
+      <SelectTrigger className={cn(SELECT_TRIGGER_CLASS, className)}>
+        <SelectValue placeholder={placeholder} />
+      </SelectTrigger>
+      <SelectContent>
+        {options.map((option) => (
+          <SelectItem key={String(option.value)} value={String(option.value)}>
+            {option.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </UISelect>
   );
 }
 
@@ -2335,6 +2685,8 @@ function SkillSource({
   onToggle: (target: TargetSelection) => void;
   onEdit: (nextDraft: SkillCard, path: string) => void;
 }) {
+  const [deleteNodeIndex, setDeleteNodeIndex] = useState<number | null>(null);
+
   function editBasic(field: keyof SkillCard, value: string | string[]) {
     const next = cloneSkill(skill);
     if (field === 'trigger_intents' || field === 'user_utterance_examples' || field === 'goal' || field === 'required_info' || field === 'response_rules') {
@@ -2359,14 +2711,14 @@ function SkillSource({
       const previousId = String(currentNode.node_id || currentNode.step_id || `node_${index + 1}`);
       const nextId = String(listValue || '').trim();
       if (!nextId) {
-        message.warning('节点 ID 不能为空');
+        notify.warning('节点 ID 不能为空');
         return;
       }
       const duplicated = next.nodes.some((node, nodeIndex) => (
         nodeIndex !== index && String(node?.node_id || node?.step_id || '') === nextId
       ));
       if (duplicated) {
-        message.warning(`节点 ID「${nextId}」已经存在`);
+        notify.warning(`节点 ID「${nextId}」已经存在`);
         return;
       }
       currentNode.node_id = nextId;
@@ -2536,54 +2888,74 @@ function SkillSource({
   function confirmDeleteNode(index: number) {
     const nodes = normalizeSkillNodes(skill);
     if (nodes.length <= 1) {
-      message.warning('至少需要保留一个节点');
+      notify.warning('至少需要保留一个节点');
       return;
     }
+    setDeleteNodeIndex(index);
+  }
+
+  function runDeleteNode(index: number) {
+    const nodes = normalizeSkillNodes(skill);
     const node = nodes[index];
+    if (!node) return;
+    const nodeId = String(node.node_id || node.step_id || `node_${index + 1}`);
+    const next = cloneSkill(skill);
+    const nextNodes = normalizeSkillNodes(next).filter((_node, nodeIndex) => nodeIndex !== index);
+    next.nodes = nextNodes;
+    next.edges = normalizeSkillEdges(next).filter((edge) => (
+      String(edge.source_node_id || '') !== nodeId && String(edge.next_node_id || '') !== nodeId
+    ));
+    if (next.start_node_id === nodeId) next.start_node_id = String(nextNodes[0]?.node_id || '');
+    next.terminal_node_ids = asStringList(next.terminal_node_ids).filter((terminalId) => terminalId !== nodeId);
+    if (next.terminal_node_ids.length === 0 && nextNodes.length > 0) {
+      next.terminal_node_ids = [String(nextNodes[nextNodes.length - 1].node_id || '')];
+    }
+    onEdit(next, stepTargetPath(Math.min(index, Math.max(nextNodes.length - 1, 0))));
+  }
+
+  function renderDeleteNodeConfirm() {
+    if (deleteNodeIndex === null) return null;
+    const nodes = normalizeSkillNodes(skill);
+    const index = deleteNodeIndex;
+    const node = nodes[index];
+    if (!node) return null;
     const nodeId = String(node.node_id || node.step_id || `node_${index + 1}`);
     const edges = normalizeSkillEdges(skill);
     const incomingEdges = edges.filter((edge) => String(edge.next_node_id || '') === nodeId);
     const outgoingEdges = edges.filter((edge) => String(edge.source_node_id || '') === nodeId);
-    Modal.confirm({
-      title: `确认删除 Node ${index + 1}：${String(node.name || nodeId)}？`,
-      content: (
-        <div className="skill-node-delete-confirm">
-          <p>删除后会同时移除所有连接到这个节点、或从这个节点发出的流转规则。</p>
-          <strong>将受影响的连接</strong>
-          <ul>
-            {[...incomingEdges, ...outgoingEdges].length > 0 ? (
-              [...incomingEdges, ...outgoingEdges].map((edge, edgeIndex) => (
-                <li key={`${String(edge.source_node_id)}_${String(edge.next_node_id)}_${edgeIndex}`}>
-                  {nodeDisplayNameById(nodes, String(edge.source_node_id || ''))}
-                  {' -> '}
-                  {nodeDisplayNameById(nodes, String(edge.next_node_id || ''))}
-                  {String(edge.label || edge.condition || '').trim() ? `：${String(edge.label || edge.condition)}` : ''}
-                </li>
-              ))
-            ) : (
-              <li>无直接连接关系</li>
-            )}
-          </ul>
-        </div>
-      ),
-      okText: '确认删除',
-      okButtonProps: { danger: true },
-      cancelText: '取消',
-      onOk: () => {
-        const next = cloneSkill(skill);
-        const nextNodes = normalizeSkillNodes(next).filter((_node, nodeIndex) => nodeIndex !== index);
-        next.nodes = nextNodes;
-        next.edges = normalizeSkillEdges(next).filter((edge) => (
-          String(edge.source_node_id || '') !== nodeId && String(edge.next_node_id || '') !== nodeId
-        ));
-        if (next.start_node_id === nodeId) next.start_node_id = String(nextNodes[0]?.node_id || '');
-        next.terminal_node_ids = asStringList(next.terminal_node_ids).filter((terminalId) => terminalId !== nodeId);
-        if (next.terminal_node_ids.length === 0 && nextNodes.length > 0) {
-          next.terminal_node_ids = [String(nextNodes[nextNodes.length - 1].node_id || '')];
+    const affected = [...incomingEdges, ...outgoingEdges];
+    return (
+      <ConfirmDialog
+        open
+        onOpenChange={(open) => !open && setDeleteNodeIndex(null)}
+        title={`确认删除 Node ${index + 1}：${String(node.name || nodeId)}？`}
+        confirmText="确认删除"
+        description={
+          <div className="skill-node-delete-confirm">
+            <p>删除后会同时移除所有连接到这个节点、或从这个节点发出的流转规则。</p>
+            <strong>将受影响的连接</strong>
+            <ul>
+              {affected.length > 0 ? (
+                affected.map((edge, edgeIndex) => (
+                  <li key={`${String(edge.source_node_id)}_${String(edge.next_node_id)}_${edgeIndex}`}>
+                    {nodeDisplayNameById(nodes, String(edge.source_node_id || ''))}
+                    {' -> '}
+                    {nodeDisplayNameById(nodes, String(edge.next_node_id || ''))}
+                    {String(edge.label || edge.condition || '').trim() ? `：${String(edge.label || edge.condition)}` : ''}
+                  </li>
+                ))
+              ) : (
+                <li>无直接连接关系</li>
+              )}
+            </ul>
+          </div>
         }
-        onEdit(next, stepTargetPath(Math.min(index, Math.max(nextNodes.length - 1, 0))));
-      },
-    });
+        onConfirm={() => {
+          runDeleteNode(index);
+          setDeleteNodeIndex(null);
+        }}
+      />
+    );
   }
 
   const steps = skillGraphSteps(skill);
@@ -2631,9 +3003,10 @@ function SkillSource({
       <div className="skill-source-group-title">详细节点</div>
       <div className="skill-source-steps">
         <div className="skill-node-insert-row edge">
-          <Button size="small" icon={<PlusOutlined />} onClick={() => insertNodeBetween(-1)}>
+          <UIButton variant="outline" size="sm" onClick={() => insertNodeBetween(-1)}>
+            <PlusOutlined />
             {steps.length > 0 ? '在最前新增节点' : '新增第一个节点'}
-          </Button>
+          </UIButton>
         </div>
         {steps.map((step, index) => {
           const stepId = String(step.node_id || step.step_id || `node_${index + 1}`);
@@ -2648,9 +3021,10 @@ function SkillSource({
             <div className="skill-source-step-block" key={path}>
               {index > 0 && (
                 <div className="skill-node-insert-row">
-                  <Button size="small" icon={<PlusOutlined />} onClick={() => insertNodeBetween(index - 1)}>
+                  <UIButton variant="outline" size="sm" onClick={() => insertNodeBetween(index - 1)}>
+                    <PlusOutlined />
                     在 Node {index} 和 Node {index + 1} 之间新增节点
-                  </Button>
+                  </UIButton>
                 </div>
               )}
               <SelectableTarget
@@ -2668,9 +3042,10 @@ function SkillSource({
                       onChange={(value) => editStep(index, 'name', value)}
                     />
                     <EditableSourceField>
-                      <Button danger size="small" icon={<DeleteOutlined />} onClick={() => confirmDeleteNode(index)}>
+                      <UIButton variant="destructive" size="sm" onClick={() => confirmDeleteNode(index)}>
+                        <DeleteOutlined />
                         删除节点
-                      </Button>
+                      </UIButton>
                     </EditableSourceField>
                   </div>
                   <div className="skill-source-meta-list">
@@ -2720,12 +3095,14 @@ function SkillSource({
         })}
         {steps.length > 0 && (
           <div className="skill-node-insert-row edge">
-            <Button size="small" icon={<PlusOutlined />} onClick={() => insertNodeBetween(steps.length - 1)}>
+            <UIButton variant="outline" size="sm" onClick={() => insertNodeBetween(steps.length - 1)}>
+              <PlusOutlined />
               在最后新增节点
-            </Button>
+            </UIButton>
           </div>
         )}
       </div>
+      {renderDeleteNodeConfirm()}
     </div>
   );
 }
@@ -2799,11 +3176,11 @@ function SkillFlow({
     <>
       <div className="skill-flow-zoom-toolbar" aria-label="流程图缩放">
         <span>缩放</span>
-        <Button size="small" onClick={() => updateZoom(flowZoom - 0.08)}>-</Button>
+        <UIButton variant="outline" size="sm" onClick={() => updateZoom(flowZoom - 0.08)}>-</UIButton>
         <span className="skill-flow-zoom-value">{Math.round(flowZoom * 100)}%</span>
-        <Button size="small" onClick={() => updateZoom(flowZoom + 0.08)}>+</Button>
-        <Button size="small" onClick={() => updateZoom(0.64)}>适配</Button>
-        <Button size="small" onClick={() => updateZoom(1)}>100%</Button>
+        <UIButton variant="outline" size="sm" onClick={() => updateZoom(flowZoom + 0.08)}>+</UIButton>
+        <UIButton variant="outline" size="sm" onClick={() => updateZoom(0.64)}>适配</UIButton>
+        <UIButton variant="outline" size="sm" onClick={() => updateZoom(1)}>100%</UIButton>
       </div>
       <div className="skill-flow" ref={containerRef}>
         <div
@@ -3747,7 +4124,7 @@ function previewSourceText(value: string): string {
 function EditableSourceHeading({ value, onChange }: { value: string; onChange: (value: string) => void }) {
   return (
     <EditableSourceField>
-      <Input
+      <SourceInput
         className="skill-source-title-input"
         style={compactInputStyle(value, 10, 56)}
         value={value}
@@ -3772,7 +4149,7 @@ function EditableSourceStepHeading({
     <EditableSourceField>
       <div className="skill-source-step-title-edit">
         <span>Node {index + 1}:</span>
-        <Input
+        <SourceInput
           value={value}
           placeholder={fallback}
           style={compactInputStyle(value || fallback, 10, 88)}
@@ -3827,25 +4204,25 @@ function EditableSourceTextLine({
                 </span>
               </button>
               {!collapsed && (
-                <Input.TextArea
+                <AutoGrowTextarea
                   className="skill-source-edit-input"
                   value={value}
                   style={sourceInputStyle(value, true)}
-                  autoSize={{ minRows: 3 }}
+                  minRows={3}
                   onChange={(event) => onChange(event.target.value)}
                 />
               )}
             </div>
           ) : multiline ? (
-            <Input.TextArea
+            <AutoGrowTextarea
               className="skill-source-edit-input"
               value={value}
               style={sourceInputStyle(value, true)}
-              autoSize={{ minRows: 2 }}
+              minRows={2}
               onChange={(event) => onChange(event.target.value)}
             />
           ) : (
-            <Input
+            <SourceInput
               className="skill-source-edit-input"
               value={value}
               style={sourceInputStyle(value)}
@@ -3872,11 +4249,11 @@ function EditableSourceListLine({
       <span className="skill-source-key">{label}</span>
       <span className="skill-source-value">
         <EditableSourceField>
-          <Input.TextArea
+          <AutoGrowTextarea
             className="skill-source-edit-input"
             value={values.join('\n')}
             style={sourceInputStyle(values.join('\n'), true)}
-            autoSize={{ minRows: 1 }}
+            minRows={1}
             onChange={(event) => onChange(event.target.value)}
           />
         </EditableSourceField>
@@ -3904,11 +4281,10 @@ function EditableSourceSelectLine({
       <span className="skill-source-key">{label}</span>
       <span className="skill-source-value">
         <EditableSourceField>
-          <Select
-            className="skill-source-select"
-            value={value || undefined}
+          <SourceSelect
+            className="skill-source-select w-[220px]"
+            value={value}
             options={mergedOptions}
-            popupMatchSelectWidth={260}
             onChange={onChange}
           />
         </EditableSourceField>
@@ -3932,11 +4308,10 @@ function EditableConditionLine({
       <span className="skill-source-value">
         <EditableSourceField>
           <div className="skill-condition-editor">
-            <Select
+            <SourceSelect
               className="skill-condition-preset"
               value={presetValue}
               options={CONDITION_PRESET_OPTIONS}
-              popupMatchSelectWidth={260}
               onChange={(nextValue) => {
                 if (nextValue === '__custom__') {
                   onChange(naturalValue);
@@ -3945,11 +4320,11 @@ function EditableConditionLine({
                 onChange(conditionFromPreset(nextValue));
               }}
             />
-            <Input.TextArea
+            <AutoGrowTextarea
               className="skill-source-edit-input skill-condition-input"
               value={naturalValue}
               placeholder="用一句话描述什么时候进入，例如：用户已经提供商品名称后进入"
-              autoSize={{ minRows: 1, maxRows: 4 }}
+              minRows={1}
               onChange={(event) => onChange(event.target.value)}
             />
             <span className="skill-condition-readable">{conditionReadableText(value)}</span>
@@ -4031,9 +4406,8 @@ function EditableRetryPolicyLine({
           <div className="skill-retry-policy-editor">
             <label className="skill-retry-policy-field attempts">
               <span>最多重试</span>
-              <InputNumber
+              <SourceNumberInput
                 min={0}
-                precision={0}
                 value={maxAttempts}
                 placeholder="不限制"
                 onChange={updateAttempts}
@@ -4041,18 +4415,16 @@ function EditableRetryPolicyLine({
             </label>
             <label className="skill-retry-policy-field strategy">
               <span>失败后</span>
-              <Select
-                allowClear
+              <SourceSelect
                 value={strategy || undefined}
                 options={strategyOptions}
                 placeholder="选择处理方式"
-                popupMatchSelectWidth={240}
                 onChange={(nextValue) => updateStrategy(nextValue)}
               />
             </label>
             <label className="skill-retry-policy-field message">
               <span>追问文案</span>
-              <Input
+              <SourceInput
                 value={retryMessage}
                 placeholder="例如：请补充需要校验的报文内容。"
                 onChange={(event) => updateMessage(event.target.value)}
@@ -4148,7 +4520,7 @@ function EditableActionList({
     }
     const duplicateIndex = next.findIndex((item, itemIndex) => item === nextAction && itemIndex !== index);
     if (duplicateIndex >= 0) {
-      message.info('这个动作已经添加过了');
+      notify.info('这个动作已经添加过了');
       setEditingIndex(null);
       return;
     }
@@ -4170,17 +4542,11 @@ function EditableActionList({
 
   function actionSelect(index: number, value?: string) {
     return (
-      <Select
-        autoFocus
-        showSearch
-        allowClear
-        className="skill-source-action-select"
+      <ActionCombobox
         value={value || undefined}
         options={mergedOptions}
-        optionFilterProp="label"
         placeholder="选择一个动作"
-        popupMatchSelectWidth={320}
-        onChange={(nextValue) => commitAction(index, String(nextValue || ''))}
+        onSelect={(nextValue) => commitAction(index, String(nextValue || ''))}
       />
     );
   }
@@ -4254,7 +4620,10 @@ function EditableFlowRulesLine({
           <div className="skill-flow-rule-editor">
             <div className="skill-flow-rule-head">
               <span>从 {nodeDisplayNameById(nodes, sourceNodeId)} 出发</span>
-              <Button size="small" icon={<PlusOutlined />} onClick={onAdd}>新增规则</Button>
+              <UIButton variant="outline" size="sm" onClick={onAdd}>
+                <PlusOutlined />
+                新增规则
+              </UIButton>
             </div>
             {orderedEdges.length === 0 ? (
               <div className="skill-flow-rule-empty">{terminal ? '当前节点是终止节点，默认流程结束。' : '还没有后续节点，请新增流转规则。'}</div>
@@ -4264,18 +4633,17 @@ function EditableFlowRulesLine({
                   <div className="skill-flow-rule-item" key={`${String(edge.next_node_id)}_${index}`}>
                     <label className="skill-flow-rule-field target">
                       <span>目标 Node</span>
-                      <Select
+                      <SourceSelect
                         className="skill-flow-rule-target"
                         value={String(edge.next_node_id || '') || undefined}
                         options={nodeOptions}
                         placeholder="选择目标 Node"
-                        popupMatchSelectWidth={280}
                         onChange={(value) => onUpdate(index, { next_node_id: value })}
                       />
                     </label>
                     <label className="skill-flow-rule-field label">
                       <span>规则名称</span>
-                      <Input
+                      <SourceInput
                         className="skill-flow-rule-label-input"
                         value={String(edge.label || '')}
                         placeholder="例如：信息完整后继续"
@@ -4285,11 +4653,10 @@ function EditableFlowRulesLine({
                     <div className="skill-flow-rule-field condition">
                       <span>进入条件</span>
                       <div className="skill-flow-rule-condition-controls">
-                        <Select
+                        <SourceSelect
                           className="skill-condition-preset"
                           value={conditionPresetValue(String(edge.condition || ''))}
                           options={CONDITION_PRESET_OPTIONS}
-                          popupMatchSelectWidth={260}
                           onChange={(nextValue) => {
                             if (nextValue === '__custom__') {
                               onUpdate(index, { condition: conditionNaturalText(String(edge.condition || '')) });
@@ -4298,11 +4665,11 @@ function EditableFlowRulesLine({
                             onUpdate(index, { condition: conditionFromPreset(nextValue) });
                           }}
                         />
-                        <Input.TextArea
+                        <AutoGrowTextarea
                           className="skill-flow-rule-condition-input"
                           value={conditionNaturalText(String(edge.condition || ''))}
                           placeholder="用一句话描述，例如：报文已获取后进入"
-                          autoSize={{ minRows: 1, maxRows: 3 }}
+                          minRows={1}
                           onChange={(event) => onUpdate(index, { condition: event.target.value })}
                         />
                       </div>
@@ -4310,15 +4677,16 @@ function EditableFlowRulesLine({
                     </div>
                     <label className="skill-flow-rule-field priority">
                       <span>优先级</span>
-                      <InputNumber
+                      <SourceNumberInput
                         className="skill-flow-rule-priority"
                         min={0}
-                        precision={0}
                         value={edgePriority(edge, index)}
                         onChange={(value) => onUpdate(index, { priority: Number(value ?? 0) })}
                       />
                     </label>
-                    <Button danger size="small" className="skill-flow-rule-delete" icon={<DeleteOutlined />} onClick={() => onDelete(index)} />
+                    <UIButton variant="destructive" size="icon" className="skill-flow-rule-delete" onClick={() => onDelete(index)}>
+                      <DeleteOutlined />
+                    </UIButton>
                   </div>
                 ))}
               </div>
@@ -4462,7 +4830,7 @@ function ActionChip({
       {actionLabel(action)}
     </span>
   );
-  return description ? <Tooltip title={description}>{chip}</Tooltip> : chip;
+  return chip;
 }
 
 function SaveReviewDiffValue({

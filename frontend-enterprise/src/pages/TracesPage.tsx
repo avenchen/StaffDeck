@@ -1,9 +1,24 @@
 import { ReloadOutlined } from '../icons';
-import { Button, Card, Drawer, Table, Typography, message } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
 import { useEffect, useState } from 'react';
+import {
+  Button as UIButton,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  notify,
+} from '@/components/ui';
+import { DataTable, type DataTableColumn } from '@/components/DataTable';
+import { Paginator } from '@/components/Paginator';
+import { useClientPagination } from '../hooks/useClientPagination';
 import { api, TENANT_ID } from '../api/client';
 import type { TraceSummary } from '../types';
+
+const TRACES_PAGE_SIZE = 10;
 
 export default function TracesPage() {
   const [rows, setRows] = useState<TraceSummary[]>([]);
@@ -13,47 +28,90 @@ export default function TracesPage() {
     api
       .get<TraceSummary[]>(`/api/enterprise/traces?tenant_id=${TENANT_ID}`)
       .then(setRows)
-      .catch((error) => message.error(error.message));
+      .catch((error) => notify.error(error.message));
 
   useEffect(() => {
-    load();
+    void load();
   }, []);
+
+  const pagination = useClientPagination(rows, TRACES_PAGE_SIZE);
 
   async function openDetail(row: TraceSummary) {
     const result = await api.get<Record<string, unknown>>(`/api/enterprise/traces/${row.session_id}?tenant_id=${TENANT_ID}`);
     setDetail(result);
   }
 
-  const columns: ColumnsType<TraceSummary> = [
-    { title: '会话 ID', dataIndex: 'session_id', width: 230, ellipsis: true },
-    { title: '用户 ID', dataIndex: 'user_id', width: 150, ellipsis: true },
-    { title: '当前技能', dataIndex: 'active_skill_id', width: 190, ellipsis: true },
-    { title: '当前 Step', dataIndex: 'active_step_id', width: 190, ellipsis: true },
-    { title: '工具调用', dataIndex: 'tool_call_count', width: 96 },
-    { title: '状态', dataIndex: 'status', width: 96 },
-    { title: '更新时间', dataIndex: 'updated_at', width: 210 },
-    { title: '操作', width: 96, render: (_, row) => <Button size="small" onClick={() => openDetail(row)}>查看</Button> },
+  const truncateCell = 'block truncate';
+  const columns: DataTableColumn<TraceSummary>[] = [
+    { key: 'session_id', title: '会话 ID', width: 230, render: (row) => <span className={truncateCell}>{row.session_id}</span> },
+    { key: 'user_id', title: '用户 ID', width: 150, render: (row) => <span className={truncateCell}>{row.user_id || '-'}</span> },
+    { key: 'active_skill_id', title: '当前技能', width: 190, render: (row) => <span className={truncateCell}>{row.active_skill_id || '-'}</span> },
+    { key: 'active_step_id', title: '当前 Step', width: 190, render: (row) => <span className={truncateCell}>{row.active_step_id || '-'}</span> },
+    { key: 'tool_call_count', title: '工具调用', width: 96, render: (row) => row.tool_call_count },
+    { key: 'status', title: '状态', width: 96, render: (row) => row.status },
+    { key: 'updated_at', title: '更新时间', width: 210, render: (row) => <span className={truncateCell}>{row.updated_at}</span> },
+    {
+      key: 'actions',
+      title: '操作',
+      width: 96,
+      render: (row) => (
+        <UIButton
+          variant="outline"
+          size="sm"
+          className="h-[28px] rounded-[8px] px-[12px] text-[12px]"
+          onClick={() => void openDetail(row)}
+        >
+          查看
+        </UIButton>
+      ),
+    },
   ];
 
   return (
     <>
       <div className="page-title">
-        <Typography.Title level={3}>Trace</Typography.Title>
-        <Button icon={<ReloadOutlined />} onClick={load}>刷新</Button>
+        <h3>Trace</h3>
+        <UIButton variant="outline" onClick={() => void load()}>
+          <ReloadOutlined />
+          刷新
+        </UIButton>
       </div>
-      <Card className="data-card" title="会话 Trace">
-        <Table
-          rowKey="session_id"
-          columns={columns}
-          dataSource={rows}
-          pagination={{ pageSize: 10 }}
-          scroll={{ x: 1308 }}
-          size="middle"
-        />
+      <Card className="data-card">
+        <CardHeader>
+          <CardTitle>会话 Trace</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-[16px]">
+          <div className="overflow-x-auto">
+            <DataTable
+              aria-label="会话 Trace"
+              columns={columns}
+              data={pagination.pagedItems}
+              rowKey={(row) => row.session_id}
+              className="min-w-[1308px]"
+              emptyText="暂无 Trace"
+            />
+          </div>
+          {rows.length > 0 && (
+            <Paginator
+              aria-label="Trace 分页"
+              className="mt-0"
+              page={pagination.page}
+              pageCount={pagination.pageCount}
+              onChange={pagination.setPage}
+            />
+          )}
+        </CardContent>
       </Card>
-      <Drawer title="Trace Detail" open={Boolean(detail)} width={720} onClose={() => setDetail(null)}>
-        <pre>{JSON.stringify(detail, null, 2)}</pre>
-      </Drawer>
+      <Sheet open={Boolean(detail)} onOpenChange={(next) => { if (!next) setDetail(null); }}>
+        <SheetContent side="right" className="w-[720px] sm:max-w-[720px]">
+          <SheetHeader>
+            <SheetTitle>Trace Detail</SheetTitle>
+          </SheetHeader>
+          <div className="min-h-0 flex-1 overflow-auto px-[16px] pb-[16px]">
+            <pre className="text-[12px] whitespace-pre-wrap">{JSON.stringify(detail, null, 2)}</pre>
+          </div>
+        </SheetContent>
+      </Sheet>
     </>
   );
 }
