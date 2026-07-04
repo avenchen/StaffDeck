@@ -5774,7 +5774,17 @@ class AgentLoop:
             if fallback_title:
                 chat_session.title = fallback_title
         chat_session.summary = f"最近回复：{reply[:120]}"
-        assistant_message = self._append_message(tenant_id, chat_session.id, "assistant", reply, metadata=metadata)
+        assistant_metadata = dict(metadata or {})
+        if user_message_id:
+            assistant_metadata.setdefault("user_message_id", user_message_id)
+            assistant_metadata.setdefault("turn_id", user_message_id)
+        assistant_message = self._append_message(
+            tenant_id,
+            chat_session.id,
+            "assistant",
+            reply,
+            metadata=assistant_metadata,
+        )
         event_payload: dict[str, Any] = {
             "message_id": assistant_message.id,
             "assistant_message_id": assistant_message.id,
@@ -5783,8 +5793,8 @@ class AgentLoop:
         if user_message_id:
             event_payload["user_message_id"] = user_message_id
             event_payload["turn_id"] = user_message_id
-        if metadata.get("knowledge_citations"):
-            event_payload["knowledge_citations"] = metadata["knowledge_citations"]
+        if assistant_metadata.get("knowledge_citations"):
+            event_payload["knowledge_citations"] = assistant_metadata["knowledge_citations"]
         self.events.record(
             tenant_id,
             chat_session.id,

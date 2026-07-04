@@ -117,14 +117,16 @@ def message_read(
     feedback_rating: str | None = None,
     turn_id: str | None = None,
 ) -> MessageRead:
+    metadata = row.metadata_json or {}
+    metadata_turn_id = str(metadata.get("turn_id") or metadata.get("user_message_id") or "").strip()
     return MessageRead(
         id=row.id,
         tenant_id=row.tenant_id,
         session_id=row.session_id,
         role=row.role,
         content=row.content,
-        metadata=row.metadata_json or {},
-        turn_id=turn_id,
+        metadata=metadata,
+        turn_id=turn_id or metadata_turn_id or None,
         created_at=row.created_at.isoformat(),
         feedback_rating=feedback_rating,
     )
@@ -413,7 +415,11 @@ def _maybe_handle_scheduled_task_request(
         session_id=chat_session.id,
         role="assistant",
         content=reply,
-        metadata_json={"scheduled_task_draft": draft.model_dump(mode="json")},
+        metadata_json={
+            "scheduled_task_draft": draft.model_dump(mode="json"),
+            "user_message_id": user_message.id,
+            "turn_id": user_message.id,
+        },
         created_at=assistant_time,
     )
     db.add(assistant_message)
@@ -1682,13 +1688,7 @@ def _event_trace_line(
                 "state": "running",
             }
         if phase == "responding":
-            return {
-                "id": "decision_responding",
-                "kind": "decision",
-                "text": "生成回复",
-                "detail": None,
-                "state": "running",
-            }
+            return None
         if phase and phase != "received":
             return {
                 "id": f"decision_status_{phase}",
@@ -1729,6 +1729,8 @@ def _event_trace_line(
     if event.event_type == "general_skill_trace":
         message = str(payload.get("message") or "").strip()
         phase = str(payload.get("phase") or "").strip()
+        if phase == "replying":
+            return None
         detail = _general_skill_trace_detail(payload, phase)
         output = _general_skill_trace_output(payload, phase)
         code = str(payload.get("code") or "").strip()
@@ -1919,22 +1921,13 @@ def _event_trace_line(
         }
     if event.event_type == "agent_loop_completed":
         iteration = str(payload.get("iteration") or event.id)
-        return [
-            {
-                "id": f"decision_stepping_tool_continuation_{iteration}",
-                "kind": "decision",
-                "text": "重新分析执行动作",
-                "detail": "判断无需继续调用工具",
-                "state": "completed",
-            },
-            {
-                "id": f"decision_responding_{iteration}",
-                "kind": "decision",
-                "text": "组织回复",
-                "detail": None,
-                "state": "completed",
-            },
-        ]
+        return {
+            "id": f"decision_stepping_tool_continuation_{iteration}",
+            "kind": "decision",
+            "text": "重新分析执行动作",
+            "detail": "判断无需继续调用工具",
+            "state": "completed",
+        }
     if event.event_type == "reflection_decision_created":
         needs_retry = bool(payload.get("needs_retry"))
         return {

@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from app.api.chat import _build_turn_traces, _message_turn_ids_from_events
+from app.api.chat import _build_turn_traces, _message_turn_ids_from_events, message_read
 from app.db.models import AgentEvent, Message
 
 
@@ -505,3 +505,17 @@ def test_message_turn_ids_from_events_use_ids_not_message_text() -> None:
         "msg_user_second": "msg_user_second",
         "msg_assistant_second": "msg_user_second",
     }
+
+
+def test_message_read_uses_metadata_turn_id_when_event_mapping_is_missing() -> None:
+    row = Message(
+        id="msg_assistant",
+        tenant_id="tenant_demo",
+        session_id="session_repeat",
+        role="assistant",
+        content="你好",
+        metadata_json={"turn_id": "msg_user"},
+        created_at=datetime(2026, 7, 4, 12, 0, 0),
+    )
+
+    assert message_read(row).turn_id == "msg_user"
