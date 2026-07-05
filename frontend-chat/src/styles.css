@@ -5424,20 +5424,24 @@ body,
   min-height: 20px !important;
   grid-template-columns: 14px minmax(0, 1fr) !important;
   column-gap: 10px !important;
+  align-items: start !important;
   font-size: 13px !important;
   line-height: 20px !important;
 }
 
 .assistant-trace .turn-trace-line > .trace-icon-slot,
-.assistant-trace .turn-trace-line .trace-icon-slot,
-.assistant-trace .turn-trace-line .trace-terminal-icon,
-.assistant-trace .turn-trace-line .cot-trace-icon {
-  width: 12px !important;
-  height: 12px !important;
+.assistant-trace .turn-trace-line .trace-icon-slot {
+  width: 14px !important;
+  height: 20px !important;
+  display: grid !important;
+  place-items: center !important;
+  align-self: start !important;
+  line-height: 0 !important;
 }
 
 .assistant-trace .turn-trace-line .sd1-icon,
 .assistant-trace .turn-trace-line .anticon svg,
+.assistant-trace .turn-trace-line .trace-terminal-icon,
 .assistant-trace .turn-trace-line .cot-trace-icon {
   width: 12px !important;
   height: 12px !important;
