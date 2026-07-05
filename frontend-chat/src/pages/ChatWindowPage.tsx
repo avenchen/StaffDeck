@@ -1386,7 +1386,54 @@ function citationSectionLabel(citation: KnowledgeCitation): string {
   return citationDisplayTitle({ ...citation, title: raw });
 }
 
-function extractPastedComposerFiles(clipboardData: DataTransfer): File[] {
+const MAX_PASTED_REMOTE_IMAGES = 6;
+
+type ClipboardImageItem = {
+  types: readonly string[];
+  getType: (type: string) => Promise<Blob>;
+};
+
+function clipboardContainsComposerImage(clipboardData: DataTransfer): boolean {
+  if (Array.from(clipboardData.files || []).some((file) => file.type.startsWith('image/'))) {
+    return true;
+  }
+  if (Array.from(clipboardData.items || []).some((item) => item.kind === 'file' && item.type.startsWith('image/'))) {
+    return true;
+  }
+  return extractImageSourceUrls(clipboardData.getData('text/html')).length > 0
+    || extractImageSourceUrls(clipboardData.getData('text/plain')).length > 0;
+}
+
+async function extractPastedComposerFiles(clipboardData: DataTransfer): Promise<File[]> {
+  const files = extractPastedComposerFilesSync(clipboardData);
+  const seen = new Set(files.map(pastedFileKey));
+
+  const pushFile = (file: File | null | undefined) => {
+    if (!file || file.size <= 0) return;
+    const key = pastedFileKey(file);
+    if (seen.has(key)) return;
+    seen.add(key);
+    files.push(file);
+  };
+
+  const imageSources = [
+    ...extractImageSourceUrls(clipboardData.getData('text/html')),
+    ...extractImageSourceUrls(clipboardData.getData('text/plain')),
+  ].filter((source) => !isImageDataUrl(source));
+
+  for (const [index, source] of imageSources.slice(0, MAX_PASTED_REMOTE_IMAGES).entries()) {
+    pushFile(await imageSourceToFile(source, files.length + index));
+  }
+
+  if (files.length === 0) {
+    const clipboardImages = await readClipboardImageItems();
+    clipboardImages.forEach((file) => pushFile(file));
+  }
+
+  return files;
+}
+
+function extractPastedComposerFilesSync(clipboardData: DataTransfer): File[] {
   const files: File[] = [];
   const seen = new Set<string>();
 
@@ -1431,10 +1478,14 @@ function pastedFileKey(file: File): string {
 }
 
 function extractImageDataUrls(raw: string): string[] {
+  return extractImageSourceUrls(raw).filter(isImageDataUrl);
+}
+
+function extractImageSourceUrls(raw: string): string[] {
   if (!raw) return [];
   const urls = new Set<string>();
   const text = raw.trim();
-  if (isImageDataUrl(text)) {
+  if (isImageDataUrl(text) || isLikelyImageUrl(text)) {
     urls.add(text);
   }
 
@@ -1442,7 +1493,7 @@ function extractImageDataUrls(raw: string): string[] {
     const document = new DOMParser().parseFromString(raw, 'text/html');
     Array.from(document.images).forEach((image) => {
       const src = image.getAttribute('src') || '';
-      if (isImageDataUrl(src)) urls.add(src);
+      if (isSupportedPastedImageSource(src, true)) urls.add(src.trim());
     });
   } catch {
     // DOMParser is best-effort here; the regex below still catches inline image data.
@@ -1452,11 +1503,86 @@ function extractImageDataUrls(raw: string): string[] {
   matches.forEach((url) => {
     if (isImageDataUrl(url)) urls.add(url);
   });
+  const urlMatches = raw.match(/https?:\/\/[^\s"'<>]+/gi) || [];
+  urlMatches.forEach((url) => {
+    if (isLikelyImageUrl(url)) urls.add(url);
+  });
   return Array.from(urls);
 }
 
 function isImageDataUrl(value: string): boolean {
   return /^data:image\/[a-z0-9.+-]+(?:;[^,]*)?,/i.test(value.trim());
+}
+
+function isSupportedPastedImageSource(value: string, fromImageElement = false): boolean {
+  const trimmed = value.trim();
+  if (!trimmed) return false;
+  if (isImageDataUrl(trimmed)) return true;
+  if (trimmed.startsWith('blob:')) return true;
+  if (/^https?:\/\//i.test(trimmed)) return fromImageElement || isLikelyImageUrl(trimmed);
+  if (trimmed.startsWith('//')) return fromImageElement || isLikelyImageUrl(`https:${trimmed}`);
+  return false;
+}
+
+function isLikelyImageUrl(value: string): boolean {
+  return /^https?:\/\/[^\s"'<>]+\.(?:png|jpe?g|gif|webp|bmp|svg|heic|tiff?)(?:[?#][^\s"'<>]*)?$/i.test(value.trim());
+}
+
+async function imageSourceToFile(source: string, index: number): Promise<File | null> {
+  const normalized = normalizePastedImageSource(source);
+  if (!normalized) return null;
+  if (isImageDataUrl(normalized)) {
+    return dataUrlToImageFile(normalized, index);
+  }
+  try {
+    const response = await fetch(normalized);
+    if (!response.ok) return null;
+    const blob = await response.blob();
+    if (!blob.type.startsWith('image/')) return null;
+    return blobToPastedImageFile(blob, index, pastedImageNameFromUrl(normalized));
+  } catch {
+    return null;
+  }
+}
+
+function normalizePastedImageSource(source: string): string | null {
+  const trimmed = source.trim();
+  if (!trimmed) return null;
+  if (isImageDataUrl(trimmed) || trimmed.startsWith('blob:') || /^https?:\/\//i.test(trimmed)) return trimmed;
+  if (trimmed.startsWith('//')) return `${window.location.protocol}${trimmed}`;
+  return null;
+}
+
+function pastedImageNameFromUrl(source: string): string | undefined {
+  try {
+    const pathname = new URL(source, window.location.href).pathname;
+    const name = decodeURIComponent(pathname.split('/').filter(Boolean).pop() || '');
+    return isLikelyImageFilename(name) ? name : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function isLikelyImageFilename(value: string): boolean {
+  return /\.(?:png|jpe?g|gif|webp|bmp|svg|heic|tiff?)$/i.test(value);
+}
+
+async function readClipboardImageItems(): Promise<File[]> {
+  const clipboard = navigator.clipboard as (Clipboard & { read?: () => Promise<ClipboardImageItem[]> }) | undefined;
+  if (!clipboard?.read) return [];
+  try {
+    const items = await clipboard.read();
+    const files: File[] = [];
+    for (const [index, item] of items.entries()) {
+      const imageType = item.types.find((type) => type.startsWith('image/'));
+      if (!imageType) continue;
+      const blob = await item.getType(imageType);
+      files.push(blobToPastedImageFile(blob, index));
+    }
+    return files;
+  } catch {
+    return [];
+  }
 }
 
 function dataUrlToImageFile(dataUrl: string, index: number): File | null {
@@ -1475,6 +1601,14 @@ function dataUrlToImageFile(dataUrl: string, index: number): File | null {
   } catch {
     return null;
   }
+}
+
+function blobToPastedImageFile(blob: Blob, index: number, filename?: string): File {
+  const type = blob.type || 'image/png';
+  return new File([blob], filename || `pasted-image-${Date.now()}-${index + 1}.${imageExtension(type)}`, {
+    type,
+    lastModified: Date.now(),
+  });
 }
 
 function bytesFromBase64(payload: string): Uint8Array {
@@ -1866,6 +2000,14 @@ export default function ChatWindowPage() {
         : session;
       return [nextSession, ...current.filter((item) => item.id !== session.id)];
     });
+  }, []);
+
+  const applySessionTitleSummary = useCallback((targetSessionId: string, rawTitle: unknown) => {
+    const title = typeof rawTitle === 'string' ? rawTitle.trim() : '';
+    if (!targetSessionId || !title) return;
+    setSessions((current) => current.map((item) => (
+      item.id === targetSessionId ? { ...item, title } : item
+    )));
   }, []);
 
   const upsertTraceLine = useCallback((turnId: string, line: TraceLine) => {
@@ -2582,14 +2724,14 @@ export default function ChatWindowPage() {
   function openRename(event: MouseEvent<HTMLElement>, session: ChatSession) {
     event.stopPropagation();
     setRenameSession(session);
-    setRenameTitle(session.title || session.id);
+    setRenameTitle(session.title || session.summary || session.last_agent_question || '');
   }
 
   async function saveRename() {
     if (!renameSession) return;
     const title = renameTitle.trim();
     if (!title) {
-      message.warning('请输入任务名称');
+      message.warning('请输入会话名称');
       return;
     }
     const updated = await api.put<ChatSession>(`/api/chat/sessions/${renameSession.id}`, {
@@ -2605,8 +2747,8 @@ export default function ChatWindowPage() {
   function confirmDelete(event: MouseEvent<HTMLElement>, target: ChatSession) {
     event.stopPropagation();
     Modal.confirm({
-      title: '删除历史任务',
-      content: `确定删除「${target.title || target.id}」吗？此操作会同时删除该任务的消息记录。`,
+      title: '删除会话',
+      content: `确定删除「${target.title || target.summary || target.last_agent_question || '新会话'}」吗？此操作会同时删除该会话的消息记录。`,
       okText: '删除',
       okButtonProps: { danger: true },
       cancelText: '取消',
@@ -2616,7 +2758,7 @@ export default function ChatWindowPage() {
         streamRef.current.delete(target.id);
         storeRef.current.delete(target.id);
         await api.delete(`/api/chat/sessions/${target.id}?tenant_id=${tenantId}`);
-        setSessions((items) => items.filter((item) => item.id !== target.id));
+        forgetMissingSession(target.id);
         if (target.id === sessionId) {
           navigate('/');
         }
@@ -2751,6 +2893,10 @@ export default function ChatWindowPage() {
     const eventSessionId = String(item.data.sessionId || baseSessionId);
     const traceTurnId = explicitStreamTurnId(item.data, turnId);
     if (item.event === 'session_created') {
+      return;
+    }
+    if (item.event === 'session_title_summarized') {
+      applySessionTitleSummary(eventSessionId, item.data.title);
       return;
     }
     if (item.event === 'scheduled_task_draft') {
@@ -3075,6 +3221,7 @@ export default function ChatWindowPage() {
     }
   }, [
     appendRealtime,
+    applySessionTitleSummary,
     clearStreamSlot,
     finalizeStreaming,
     finishTrace,
@@ -3341,10 +3488,15 @@ export default function ChatWindowPage() {
   }
 
   function handleComposerPaste(event: ClipboardEvent<HTMLTextAreaElement>) {
-    const files = extractPastedComposerFiles(event.clipboardData);
-    if (!files.length) return;
+    if (!clipboardContainsComposerImage(event.clipboardData)) return;
     event.preventDefault();
-    uploadComposerFiles(files);
+    void extractPastedComposerFiles(event.clipboardData).then((files) => {
+      if (files.length) {
+        uploadComposerFiles(files);
+        return;
+      }
+      message.warning('无法读取剪贴板图片，请保存后上传');
+    });
   }
 
   function handleComposerFileChange(event: ChangeEvent<HTMLInputElement>) {
@@ -3567,7 +3719,6 @@ export default function ChatWindowPage() {
         tenant_id: tenantId,
         user_id: userId,
         agent_id: sessionAgentId,
-        title: userText || '新会话',
         status: 'active',
         summary: userText || undefined,
         last_agent_question: userText || undefined,
@@ -3627,6 +3778,10 @@ export default function ChatWindowPage() {
         if (item.event === 'user_message_received') {
           const serverMessageId = typeof item.data.message_id === 'string' ? item.data.message_id : '';
           bindRealtimeUserToServerMessage(eventSessionId, turnId, serverMessageId);
+          return;
+        }
+        if (item.event === 'session_title_summarized') {
+          applySessionTitleSummary(eventSessionId, item.data.title);
           return;
         }
         if (traceTurnId && eventStream.turnId !== traceTurnId) {
@@ -4069,7 +4224,7 @@ export default function ChatWindowPage() {
           ) : visibleSidebarSessions.map((session) => {
             const sessionAgent = session.agent_id ? agents.find((agent) => agent.id === session.agent_id) || null : null;
             const profile = sessionAgent ? employeeProfile(sessionAgent) : null;
-            const title = staffdeckDisplayText(session.title || session.id);
+            const title = staffdeckDisplayText(session.title || session.summary || session.last_agent_question || '新会话');
             const summary = staffdeckDisplayText(session.summary || session.last_agent_question || '新会话');
             const hasUnread = sessionHasUnreadReply(session, sessionReadTimes, sessionId);
             const openSession = () => {
@@ -4117,7 +4272,7 @@ export default function ChatWindowPage() {
                       size="small"
                       type="text"
                       icon={<StaffdeckIcon name="edit" />}
-                      aria-label="重命名"
+                      aria-label="重命名会话"
                       onClick={(event) => openRename(event, session)}
                     />
                     <Button
@@ -4125,7 +4280,7 @@ export default function ChatWindowPage() {
                       size="small"
                       type="text"
                       icon={<StaffdeckIcon name="trash" />}
-                      aria-label="删除任务"
+                      aria-label="删除会话"
                       onClick={(event) => confirmDelete(event, session)}
                     />
                   </div>
@@ -4684,7 +4839,7 @@ export default function ChatWindowPage() {
           value={renameTitle}
           onChange={(event) => setRenameTitle(event.target.value)}
           onPressEnter={saveRename}
-          placeholder="输入任务名称"
+          placeholder="输入会话名称"
         />
       </Modal>
     </div>

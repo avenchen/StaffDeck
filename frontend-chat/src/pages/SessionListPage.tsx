@@ -96,14 +96,14 @@ export default function SessionListPage() {
   function openRename(event: MouseEvent<HTMLElement>, session: ChatSession) {
     event.stopPropagation();
     setRenameSession(session);
-    setRenameTitle(session.title || session.id);
+    setRenameTitle(session.title || session.summary || session.last_agent_question || '');
   }
 
   async function saveRename() {
     if (!renameSession) return;
     const title = renameTitle.trim();
     if (!title) {
-      message.warning('请输入任务名称');
+      message.warning('请输入会话名称');
       return;
     }
     const updated = await api.put<ChatSession>(`/api/chat/sessions/${renameSession.id}`, {
@@ -119,8 +119,8 @@ export default function SessionListPage() {
   function confirmDelete(event: MouseEvent<HTMLElement>, target: ChatSession) {
     event.stopPropagation();
     Modal.confirm({
-      title: '删除历史任务',
-      content: `确定删除「${target.title || target.id}」吗？此操作会同时删除该任务的消息记录。`,
+      title: '删除会话',
+      content: `确定删除「${target.title || target.summary || target.last_agent_question || '新会话'}」吗？此操作会同时删除该会话的消息记录。`,
       okText: '删除',
       okButtonProps: { danger: true },
       cancelText: '取消',
@@ -183,15 +183,15 @@ export default function SessionListPage() {
           </div>
         )}
         <div className="session-list-scroll">
-          <div className="session-section-label">历史任务</div>
+          <div className="session-section-label">历史会话</div>
           {visibleSessions.length === 0 ? (
             <div className="session-list-empty">
-              <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="当前员工暂无历史任务" />
+              <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="当前员工暂无历史会话" />
             </div>
           ) : (
             visibleSessions.map((session) => {
-              const sessionTitle = staffdeckDisplayText(session.title || session.id);
-              const sessionSummary = staffdeckDisplayText(session.summary || session.last_agent_question || '新任务');
+              const sessionTitle = staffdeckDisplayText(session.title || session.summary || session.last_agent_question || '新会话');
+              const sessionSummary = staffdeckDisplayText(session.summary || session.last_agent_question || '新会话');
               const sessionAgent = session.agent_id ? agents.find((agent) => agent.id === session.agent_id) || null : null;
               const sessionProfile = sessionAgent ? employeeProfile(sessionAgent) : null;
               const sessionAgentFallback = sessionAgent ? employeeDisplayName(sessionAgent).slice(0, 1) : '员';
@@ -235,7 +235,7 @@ export default function SessionListPage() {
                         size="small"
                         type="text"
                         icon={<StaffdeckIcon name="edit" />}
-                        aria-label="重命名"
+                        aria-label="重命名会话"
                         onClick={(event) => openRename(event, session)}
                       />
                       <Button
@@ -243,7 +243,7 @@ export default function SessionListPage() {
                         size="small"
                         type="text"
                         icon={<StaffdeckIcon name="trash" />}
-                        aria-label="删除任务"
+                        aria-label="删除会话"
                         onClick={(event) => confirmDelete(event, session)}
                       />
                     </div>
@@ -262,7 +262,7 @@ export default function SessionListPage() {
       <main className="chat-main">
         <div className="chat-header">
           <div>
-            <Typography.Text strong>历史任务</Typography.Text>
+            <Typography.Text strong>历史会话</Typography.Text>
           </div>
           <div className="chat-header-actions">
             <ThemeToggleButton />
@@ -301,7 +301,7 @@ export default function SessionListPage() {
           value={renameTitle}
           onChange={(event) => setRenameTitle(event.target.value)}
           onPressEnter={saveRename}
-          placeholder="输入任务名称"
+          placeholder="输入会话名称"
         />
       </Modal>
     </div>

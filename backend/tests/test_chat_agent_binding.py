@@ -5,6 +5,7 @@ from fastapi import HTTPException
 from sqlalchemy.pool import StaticPool
 from sqlmodel import Session, SQLModel, create_engine, select
 
+from app.api import chat as chat_api
 from app.api.chat import (
     _bind_request_to_session_agent,
     _ensure_chat_agent_available,
@@ -12,7 +13,7 @@ from app.api.chat import (
     create_chat_session,
 )
 from app.core.agent_loop import AgentLoop, AgentLoopPreconditionError
-from app.db.models import AgentProfile, ChatSession, ModelConfig, PersonaConfig, Tenant, User
+from app.db.models import AgentEvent, AgentProfile, ChatSession, Message, ModelConfig, PersonaConfig, Tenant, User
 from app.session.session_schema import ChatSessionCreateRequest, ChatTurnRequest
 
 
@@ -107,6 +108,58 @@ def test_create_chat_session_always_creates_new_agent_session() -> None:
         assert first.id != "session_existing"
         assert second.id not in {"session_existing", first.id}
         assert len(session_rows) == 3
+
+
+def test_session_title_summary_uses_first_user_message_when_title_empty(monkeypatch) -> None:
+    engine = _test_engine()
+    monkeypatch.setattr(chat_api, "engine", engine)
+    with Session(engine) as db:
+        db.add(ChatSession(id="session_title", tenant_id="tenant_demo", user_id="user_demo"))
+        db.add(Message(id="msg_user", tenant_id="tenant_demo", session_id="session_title", role="user", content="请查询北京今天的天气。"))
+        db.commit()
+
+    chat_api._summarize_session_title_once("tenant_demo", "user_demo", "session_title", None)
+
+    with Session(engine) as db:
+        row = db.get(ChatSession, "session_title")
+        event = db.exec(
+            select(AgentEvent).where(
+                AgentEvent.session_id == "session_title",
+                AgentEvent.event_type == chat_api.SESSION_TITLE_SUMMARY_EVENT,
+            )
+        ).first()
+
+    assert row is not None
+    assert row.title == "请查询北京今天的天气"
+    assert event is not None
+    assert event.payload_json["title"] == "请查询北京今天的天气"
+
+
+def test_session_title_summary_does_not_override_existing_title(monkeypatch) -> None:
+    engine = _test_engine()
+    monkeypatch.setattr(chat_api, "engine", engine)
+    with Session(engine) as db:
+        db.add(ChatSession(id="session_manual_title", tenant_id="tenant_demo", user_id="user_demo", title="手动标题"))
+        db.add(
+            Message(
+                id="msg_user_manual",
+                tenant_id="tenant_demo",
+                session_id="session_manual_title",
+                role="user",
+                content="请查询北京今天的天气。",
+            )
+        )
+        db.commit()
+
+    chat_api._summarize_session_title_once("tenant_demo", "user_demo", "session_manual_title", None)
+
+    with Session(engine) as db:
+        row = db.get(ChatSession, "session_manual_title")
+        events = db.exec(select(AgentEvent).where(AgentEvent.session_id == "session_manual_title")).all()
+
+    assert row is not None
+    assert row.title == "手动标题"
+    assert events == []
 
 
 def test_scheduled_task_chat_turn_marks_user_message_metadata() -> None:
@@ -263,10 +316,14 @@ def test_agent_persona_prompt_keeps_custom_prompt_with_identity() -> None:
 
 
 def _test_session() -> Session:
+    return Session(_test_engine())
+
+
+def _test_engine():
     engine = create_engine(
         "sqlite://",
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
     )
     SQLModel.metadata.create_all(engine)
-    return Session(engine)
+    return engine

@@ -5022,7 +5022,7 @@ body,
 }
 
 .chat-agent-list .chat-agent-card .session-actions {
-  display: none !important;
+  display: inline-flex !important;
 }
 
 .gallery-agent-status {

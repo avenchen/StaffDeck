@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import threading
+import time
 from datetime import timedelta
 from collections.abc import Iterator
 
@@ -84,6 +85,8 @@ SESSION_TITLE_PROMPT = """你是任务派发台的会话标题编辑器。
 - 不要包含标点符号、引号、编号、员工名或用户称呼。
 - 如果无法判断，就返回最能概括用户需求的短语。
 """
+_session_title_summary_jobs: set[str] = set()
+_session_title_summary_jobs_lock = threading.Lock()
 
 
 class HumanHandoffRead(BaseModel):
@@ -192,9 +195,21 @@ def _schedule_session_title_summary(
 ) -> None:
     if not session_id:
         return
+    job_key = f"{tenant_id}:{user_id}:{session_id}"
+    with _session_title_summary_jobs_lock:
+        if job_key in _session_title_summary_jobs:
+            return
+        _session_title_summary_jobs.add(job_key)
+
+    def run() -> None:
+        try:
+            _summarize_session_title_once(tenant_id, user_id, session_id, agent_id)
+        finally:
+            with _session_title_summary_jobs_lock:
+                _session_title_summary_jobs.discard(job_key)
+
     thread = threading.Thread(
-        target=_summarize_session_title_once,
-        args=(tenant_id, user_id, session_id, agent_id),
+        target=run,
         daemon=True,
     )
     thread.start()
@@ -207,69 +222,97 @@ def _summarize_session_title_once(
     agent_id: str | None,
 ) -> None:
     try:
-        with Session(engine) as db:
-            session = db.exec(
-                select(ChatSession).where(
-                    ChatSession.id == session_id,
-                    ChatSession.tenant_id == tenant_id,
-                    ChatSession.user_id == user_id,
+        for attempt in range(8):
+            with Session(engine) as db:
+                session = db.exec(
+                    select(ChatSession).where(
+                        ChatSession.id == session_id,
+                        ChatSession.tenant_id == tenant_id,
+                        ChatSession.user_id == user_id,
+                    )
+                ).first()
+                if not session:
+                    return
+                if (session.title or "").strip():
+                    return
+                existing = db.exec(
+                    select(AgentEvent).where(
+                        AgentEvent.tenant_id == tenant_id,
+                        AgentEvent.session_id == session_id,
+                        AgentEvent.event_type == SESSION_TITLE_SUMMARY_EVENT,
+                    )
+                ).first()
+                if existing:
+                    return
+                messages = db.exec(
+                    select(Message)
+                    .where(Message.tenant_id == tenant_id, Message.session_id == session_id)
+                    .order_by(Message.created_at)
+                    .limit(6)
+                ).all()
+                if not any(row.role == "user" for row in messages):
+                    if attempt < 7:
+                        time.sleep(0.25)
+                        continue
+                    return
+                payload = {
+                    "current_title": "",
+                    "messages": [
+                        {"role": row.role, "content": row.content[:1200]}
+                        for row in messages
+                        if row.role in {"user", "assistant"}
+                    ],
+                }
+                title = ""
+                title_source = "first_user_fallback"
+                model_config = model_for_agent(db, tenant_id, agent_id or session.agent_id)
+                if model_config:
+                    try:
+                        raw = LLMClient(model_config).generate_json(SESSION_TITLE_PROMPT, payload)
+                        title = _normalize_auto_title(str(raw.get("title") or ""))
+                        if title:
+                            title_source = "first_turn_summary"
+                    except LLMError:
+                        title = ""
+                if not title:
+                    title = _fallback_session_title(messages)
+                if not title:
+                    return
+                db.refresh(session)
+                if (session.title or "").strip():
+                    return
+                session.title = title
+                db.add(session)
+                db.add(
+                    AgentEvent(
+                        tenant_id=tenant_id,
+                        session_id=session_id,
+                        event_type=SESSION_TITLE_SUMMARY_EVENT,
+                        payload_json={"title": title, "source": title_source},
+                    )
                 )
-            ).first()
-            if not session:
+                db.commit()
                 return
-            existing = db.exec(
-                select(AgentEvent).where(
-                    AgentEvent.tenant_id == tenant_id,
-                    AgentEvent.session_id == session_id,
-                    AgentEvent.event_type == SESSION_TITLE_SUMMARY_EVENT,
-                )
-            ).first()
-            if existing:
-                return
-            messages = db.exec(
-                select(Message)
-                .where(Message.tenant_id == tenant_id, Message.session_id == session_id)
-                .order_by(Message.created_at)
-                .limit(6)
-            ).all()
-            if not any(row.role == "user" for row in messages):
-                return
-            payload = {
-                "current_title": session.title or "",
-                "messages": [
-                    {"role": row.role, "content": row.content[:1200]}
-                    for row in messages
-                    if row.role in {"user", "assistant"}
-                ],
-            }
-            title = ""
-            title_source = "first_user_fallback"
-            model_config = model_for_agent(db, tenant_id, agent_id or session.agent_id)
-            if model_config:
-                try:
-                    raw = LLMClient(model_config).generate_json(SESSION_TITLE_PROMPT, payload)
-                    title = _normalize_auto_title(str(raw.get("title") or ""))
-                    if title:
-                        title_source = "first_turn_summary"
-                except LLMError:
-                    title = ""
-            if not title:
-                title = _fallback_session_title(messages)
-            if not title:
-                return
-            session.title = title
-            db.add(session)
-            db.add(
-                AgentEvent(
-                    tenant_id=tenant_id,
-                    session_id=session_id,
-                    event_type=SESSION_TITLE_SUMMARY_EVENT,
-                    payload_json={"title": title, "source": title_source},
-                )
-            )
-            db.commit()
     except (LLMError, Exception):
         return
+
+
+def _session_title_summary_payload(db: Session, tenant_id: str, session_id: str) -> dict[str, str] | None:
+    event = db.exec(
+        select(AgentEvent)
+        .where(
+            AgentEvent.tenant_id == tenant_id,
+            AgentEvent.session_id == session_id,
+            AgentEvent.event_type == SESSION_TITLE_SUMMARY_EVENT,
+        )
+        .order_by(AgentEvent.created_at.desc())
+        .limit(1)
+    ).first()
+    payload = event.payload_json if event else None
+    title = payload.get("title") if isinstance(payload, dict) else None
+    if not isinstance(title, str) or not title.strip():
+        return None
+    return {"sessionId": session_id, "title": title.strip()}
 
 
 def _normalize_auto_title(value: str) -> str:
@@ -647,6 +690,15 @@ def chat_stream(
                     return
             for item in AgentLoop(db).handle_turn_stream(request):
                 yield _sse(item["event"], item["data"])
+                if item["event"] == "user_message_received":
+                    source_session_id = str(item["data"].get("sessionId") or request.session_id or "")
+                    _schedule_session_title_summary(
+                        request.tenant_id,
+                        request.user_id,
+                        source_session_id,
+                        request.agent_id,
+                    )
+                    continue
                 if item["event"] == "complete":
                     source_session_id = str(item["data"].get("sessionId") or request.session_id or "")
                     _schedule_session_title_summary(
@@ -655,6 +707,10 @@ def chat_stream(
                         source_session_id,
                         request.agent_id,
                     )
+                    if source_session_id:
+                        summary_payload = _session_title_summary_payload(db, request.tenant_id, source_session_id)
+                        if summary_payload:
+                            yield _sse(SESSION_TITLE_SUMMARY_EVENT, summary_payload)
                     if request.interaction_mode != "scheduled_task" or not request.agent_id:
                         continue
                     draft = detect_scheduled_task_draft(
