@@ -2664,6 +2664,11 @@ export default function ChatWindowPage() {
       .finally(() => setHandoffsLoading(false));
   }, [auth, notifyRequestError, tenantId]);
 
+  const openHandoffInbox = useCallback(() => {
+    setShowHandoffInbox(true);
+    void loadHandoffs();
+  }, [loadHandoffs]);
+
   const submitHandoffReply = useCallback((handoff: HumanHandoffRead) => {
     const reply = (handoffReplies[handoff.id] || '').trim();
     if (!reply) {
@@ -4400,6 +4405,22 @@ export default function ChatWindowPage() {
                 <span>选择数字员工</span>
               </span>
               <StaffdeckIcon name="arrow" />
+            </button>
+            <button
+              type="button"
+              className={`sidebar-handoff-entry${handoffs.length > 0 ? ' has-items' : ''}`}
+              onClick={openHandoffInbox}
+            >
+              <span className="sidebar-handoff-entry-icon"><StaffdeckIcon name="inbox" /></span>
+              <span className="sidebar-gallery-entry-copy">
+                <strong>待回答</strong>
+                <span>{handoffs.length > 0 ? `${handoffs.length} 条需要人工接续` : '暂无待处理'}</span>
+              </span>
+              {handoffs.length > 0 ? (
+                <span className="sidebar-handoff-badge">{handoffs.length}</span>
+              ) : (
+                <StaffdeckIcon name="arrow" />
+              )}
             </button>
             <div className="session-filter-bar">
               <span className="session-filter-label">员工会话</span>
