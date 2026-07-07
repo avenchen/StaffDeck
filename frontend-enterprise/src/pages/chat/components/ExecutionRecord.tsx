@@ -14,6 +14,8 @@ import { cn } from '@/lib/utils';
 import {
   CHAT_TRACE_CHEVRON_CLASS,
   CHAT_TRACE_CHEVRON_EXPANDED_CLASS,
+  CHAT_TRACE_CODE_BLOCK_CLASS,
+  CHAT_TRACE_CODE_DETAILS_CLASS,
   CHAT_TRACE_CODE_SUMMARY_CLASS,
   CHAT_TRACE_DETAILS_CLASS,
   CHAT_TRACE_FLOW_TEXT_CLASS,
@@ -103,15 +105,15 @@ export default function ExecutionRecord({
                 </span>
                 {line.detail && <span className={CHAT_TRACE_LINE_DETAIL_CLASS}>{line.detail}</span>}
                 {line.code && (
-                  <details open className="min-w-0">
+                  <details open className={CHAT_TRACE_CODE_DETAILS_CLASS}>
                     <summary className={CHAT_TRACE_CODE_SUMMARY_CLASS}>查看代码</summary>
-                    <CodeBlock className="mt-[6px]" code={line.code} language={line.language || 'python'} />
+                    <CodeBlock className={CHAT_TRACE_CODE_BLOCK_CLASS} code={line.code} language={line.language || 'python'} />
                   </details>
                 )}
                 {line.output && (
-                  <details open className="min-w-0">
+                  <details open className={CHAT_TRACE_CODE_DETAILS_CLASS}>
                     <summary className={CHAT_TRACE_CODE_SUMMARY_CLASS}>{line.outputTitle || '查看输出'}</summary>
-                    <CodeBlock className="mt-[6px]" code={line.output} language={line.outputLanguage || 'text'} />
+                    <CodeBlock className={CHAT_TRACE_CODE_BLOCK_CLASS} code={line.output} language={line.outputLanguage || 'text'} />
                   </details>
                 )}
               </span>

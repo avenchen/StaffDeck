@@ -114,6 +114,9 @@ export const CHAT_TRACE_LINE_TEXT_FAILED_CLASS = 'text-[#d20b0b]';
 export const CHAT_TRACE_LINE_DETAIL_CLASS = 'text-[12px] leading-[1.5] text-[#858b9c] wrap-anywhere';
 export const CHAT_TRACE_CODE_SUMMARY_CLASS =
   'cursor-pointer text-[12px] font-medium text-[#757f9c] hover:text-[#18181a]';
+export const CHAT_TRACE_CODE_DETAILS_CLASS = 'block min-w-0 max-w-full overflow-hidden';
+export const CHAT_TRACE_CODE_BLOCK_CLASS =
+  'mt-[6px] max-h-[420px] w-full max-w-full overflow-auto overscroll-contain';
 
 // ---------------------------------------------------------------------------
 // Citations
