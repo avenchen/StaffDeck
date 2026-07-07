@@ -107,7 +107,7 @@ export const CHAT_TRACE_CHEVRON_EXPANDED_CLASS = 'rotate-90';
 export const CHAT_TRACE_DETAILS_CLASS =
   'mt-[8px] grid gap-[8px] border-l-[1.5px] border-[#eef0f4] pl-[14px]';
 export const CHAT_TRACE_LINE_CLASS = 'grid grid-cols-[18px_minmax(0,1fr)] items-start gap-[8px]';
-export const CHAT_TRACE_LINE_CONTENT_CLASS = 'grid min-w-0 gap-[4px]';
+export const CHAT_TRACE_LINE_CONTENT_CLASS = 'grid grid-cols-[minmax(0,1fr)] min-w-0 gap-[4px]';
 export const CHAT_TRACE_LINE_TEXT_CLASS = 'text-[13px] leading-[1.5] text-[#464c5e] wrap-anywhere';
 export const CHAT_TRACE_FLOW_TEXT_CLASS = 'sd1-trace-flow-text';
 export const CHAT_TRACE_LINE_TEXT_FAILED_CLASS = 'text-[#d20b0b]';

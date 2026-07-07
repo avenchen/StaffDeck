@@ -103,13 +103,13 @@ export default function ExecutionRecord({
                 </span>
                 {line.detail && <span className={CHAT_TRACE_LINE_DETAIL_CLASS}>{line.detail}</span>}
                 {line.code && (
-                  <details open>
+                  <details open className="min-w-0">
                     <summary className={CHAT_TRACE_CODE_SUMMARY_CLASS}>查看代码</summary>
                     <CodeBlock className="mt-[6px]" code={line.code} language={line.language || 'python'} />
                   </details>
                 )}
                 {line.output && (
-                  <details open>
+                  <details open className="min-w-0">
                     <summary className={CHAT_TRACE_CODE_SUMMARY_CLASS}>{line.outputTitle || '查看输出'}</summary>
                     <CodeBlock className="mt-[6px]" code={line.output} language={line.outputLanguage || 'text'} />
                   </details>
