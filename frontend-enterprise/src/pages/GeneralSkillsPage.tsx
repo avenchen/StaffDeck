@@ -82,67 +82,67 @@ const EMPTY_SKILL_MARKDOWN = `# 技能说明
 在这里编写技能文档。名称、Slug 和描述由上方表单维护，系统不会从文档中自动抽取。`;
 
 const SECTION_CARD_CLASS =
-  'flex flex-col gap-[24px] rounded-[20px_20px_0_0] bg-[#FFF] p-[18px] shadow-[0_-4px_16px_0_rgba(0,0,0,0.05)] dark:bg-(--surface)';
-const SECTION_CARD_TITLE_CLASS = 'text-[14px] font-medium text-[#18181a] dark:text-white';
-const FIELD_LABEL_CLASS = 'text-[13px] font-medium text-[#18181a] dark:text-white';
+  'flex flex-col gap-[24px] rounded-[20px_20px_0_0] bg-[#FFF] p-[18px] shadow-[0_-4px_16px_0_rgba(0,0,0,0.05)]';
+const SECTION_CARD_TITLE_CLASS = 'text-[14px] font-medium text-[#18181a]';
+const FIELD_LABEL_CLASS = 'text-[13px] font-medium text-[#18181a]';
 const RETURN_BUTTON_CLASS =
-  'h-8 gap-1 rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-5 text-[12px] font-normal text-[#757f9c] hover:border-[#cbd3e6]! hover:bg-white! hover:text-[#18181a]! aria-expanded:border-[#cbd3e6]! aria-expanded:bg-white! aria-expanded:text-[#18181a]! dark:border-border dark:bg-(--surface) dark:text-muted-foreground dark:hover:bg-(--surface)! dark:aria-expanded:bg-(--surface)!';
+  'h-8 gap-1 rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-5 text-[12px] font-normal text-[#757f9c] hover:border-[#cbd3e6]! hover:bg-white! hover:text-[#18181a]! aria-expanded:border-[#cbd3e6]! aria-expanded:bg-white! aria-expanded:text-[#18181a]!';
 const PRIMARY_BUTTON_CLASS =
-  'h-8 gap-1 rounded-[10px] bg-[#18181a] px-5 text-[12px] font-normal text-white hover:bg-[#303030] dark:bg-white dark:text-[#18181a] dark:hover:bg-white/90';
+  'h-8 gap-1 rounded-[10px] bg-[#18181a] px-5 text-[12px] font-normal text-white hover:bg-[#303030]';
 const DELETE_BUTTON_CLASS =
-  'h-8 gap-1 rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-5 text-[12px] font-normal text-[#d20b0b] hover:border-[#f3b6b6]! hover:bg-[#fce7e7]! hover:text-[#d20b0b]! aria-expanded:border-[#f3b6b6]! aria-expanded:bg-[#fce7e7]! aria-expanded:text-[#d20b0b]! dark:border-border dark:bg-(--surface) dark:text-[#ff6b6b] dark:hover:bg-[#d20b0b]/20! dark:hover:text-[#ff6b6b]! dark:aria-expanded:bg-[#d20b0b]/20! dark:aria-expanded:text-[#ff6b6b]!';
+  'h-8 gap-1 rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-5 text-[12px] font-normal text-[#d20b0b] hover:border-[#f3b6b6]! hover:bg-[#fce7e7]! hover:text-[#d20b0b]! aria-expanded:border-[#f3b6b6]! aria-expanded:bg-[#fce7e7]! aria-expanded:text-[#d20b0b]!';
 const EDITOR_ACTION_OUTLINE_CLASS = RETURN_BUTTON_CLASS;
 const EDITOR_ACTION_PRIMARY_CLASS = PRIMARY_BUTTON_CLASS;
 const HIDDEN_FILE_INPUT_CLASS =
   'pointer-events-none fixed size-px opacity-0 [inset:auto_auto_0_0]';
 const SKILL_EDITOR_DRAG_ACTIVE_CLASS =
-  'ring-1 ring-[#18181a]/20 shadow-[0_-4px_16px_0_rgba(0,0,0,0.08)] dark:ring-white/25';
+  'ring-1 ring-[#18181a]/20 shadow-[0_-4px_16px_0_rgba(0,0,0,0.08)]';
 const SKILL_DROP_HINT_CLASS =
-  'pointer-events-none absolute inset-x-[18px] bottom-[18px] top-[46px] z-[6] flex items-center justify-center gap-3 rounded-[14px] border border-dashed border-[#18181a] bg-white/90 text-[15px] font-semibold text-[#18181a] shadow-sm backdrop-blur-sm dark:border-white dark:bg-[#26272d]/90 dark:text-white';
+  'pointer-events-none absolute inset-x-[18px] bottom-[18px] top-[46px] z-[6] flex items-center justify-center gap-3 rounded-[14px] border border-dashed border-[#18181a] bg-white/90 text-[15px] font-semibold text-[#18181a] shadow-sm backdrop-blur-sm';
 const SKILL_FILE_EDITOR_CLASS =
-  'grid min-h-[560px] flex-1 grid-cols-[minmax(180px,240px)_minmax(0,1fr)] overflow-hidden border-t border-[#e3e7f1] bg-[#fafafa] dark:border-[#343741] dark:bg-[#1e1e1e]';
+  'grid min-h-[560px] flex-1 grid-cols-[minmax(180px,240px)_minmax(0,1fr)] overflow-hidden border-t border-[#e3e7f1] bg-[#fafafa]';
 const SKILL_FILE_TREE_CLASS =
-  'grid min-w-0 grid-rows-[auto_minmax(0,1fr)_auto] border-r border-[#e3e7f1] bg-white dark:border-[#343741] dark:bg-[#202126]';
+  'grid min-w-0 grid-rows-[auto_minmax(0,1fr)_auto] border-r border-[#e3e7f1] bg-white';
 const SKILL_FILE_TREE_HEADER_CLASS =
-  'flex min-h-[44px] items-center gap-2 border-b border-[#e3e7f1] bg-[#f6f6f6] px-[14px] text-[12px] font-medium text-[#757f9c] dark:border-[#343741] dark:bg-[#26272d]';
+  'flex min-h-[44px] items-center gap-2 border-b border-[#e3e7f1] bg-[#f6f6f6] px-[14px] text-[12px] font-medium text-[#757f9c]';
 const SKILL_FILE_TREE_LIST_CLASS =
-  'min-h-0 overflow-auto bg-white p-2 dark:bg-[#202126]';
+  'min-h-0 overflow-auto bg-white p-2';
 const SKILL_FILE_TREE_ACTIONS_CLASS =
-  'flex gap-2 border-t border-[#e3e7f1] bg-white p-[10px] dark:border-[#343741] dark:bg-[#202126]';
+  'flex gap-2 border-t border-[#e3e7f1] bg-white p-[10px]';
 const SKILL_FILE_PANE_CLASS =
   'grid min-w-0 grid-rows-[auto_minmax(0,1fr)]';
 const SKILL_FILE_TAB_CLASS =
-  'flex min-h-[44px] items-center gap-2 border-b border-[#e3e7f1] bg-[#f6f6f6] px-[14px] text-[12px] font-medium text-[#757f9c] dark:border-[#343741] dark:bg-[#26272d]';
+  'flex min-h-[44px] items-center gap-2 border-b border-[#e3e7f1] bg-[#f6f6f6] px-[14px] text-[12px] font-medium text-[#757f9c]';
 const SKILL_CODE_EDITOR_CLASS =
-  'relative min-h-0 overflow-hidden bg-[#fafafa] font-mono text-[13px] leading-[1.7] tab-[2] shadow-[inset_0_1px_0_#e3e7f1] dark:bg-[#1e1e1e] dark:text-[#d4d4d4] dark:shadow-[inset_0_1px_0_#343741]';
+  'relative min-h-0 overflow-hidden bg-[#fafafa] font-mono text-[13px] leading-[1.7] tab-[2] shadow-[inset_0_1px_0_#e3e7f1]';
 const SKILL_CODE_HIGHLIGHT_CLASS =
-  'pointer-events-none absolute inset-0 z-[1] m-0 overflow-hidden whitespace-pre p-[18px_20px] text-[#18181a] tab-[2] dark:text-[#d4d4d4]';
+  'pointer-events-none absolute inset-0 z-[1] m-0 overflow-hidden whitespace-pre p-[18px_20px] text-[#18181a] tab-[2]';
 const SKILL_CODE_HIGHLIGHT_CODE_CLASS =
   'block w-max min-w-full font-[inherit] will-change-transform';
 const SKILL_CODE_INPUT_CLASS =
-  'absolute inset-0 z-[2] m-0 size-full min-h-0 resize-none overflow-auto rounded-none border-0 bg-transparent! p-[18px_20px] font-[inherit] leading-[inherit] tracking-normal whitespace-pre text-transparent caret-[#18181a] outline-none tab-[2] [scrollbar-gutter:stable] selection:bg-[rgba(0,120,215,0.24)] [-webkit-text-fill-color:transparent] dark:caret-[#d4d4d4] dark:selection:bg-[rgba(38,79,120,0.86)]';
+  'absolute inset-0 z-[2] m-0 size-full min-h-0 resize-none overflow-auto rounded-none border-0 bg-transparent! p-[18px_20px] font-[inherit] leading-[inherit] tracking-normal whitespace-pre text-transparent caret-[#18181a] outline-none tab-[2] [scrollbar-gutter:stable] selection:bg-[rgba(0,120,215,0.24)] [-webkit-text-fill-color:transparent]';
 const SKILL_RESULT_LAYOUT_CLASS = 'grid gap-5';
 const SKILL_SECTION_LABEL_CLASS =
-  'mb-2 text-[12px] font-semibold text-[#757f9c] dark:text-[#a8afbd]';
+  'mb-2 text-[12px] font-semibold text-[#757f9c]';
 const SKILL_REPLY_PANEL_CLASS =
-  'rounded-xl border border-[#eceef1] bg-white p-[16px_18px] dark:border-white/10 dark:bg-[#26272d]';
+  'rounded-xl border border-[#eceef1] bg-white p-[16px_18px]';
 const SKILL_REPLY_TEXT_CLASS =
-  'mb-0! text-[15px] leading-[1.8] text-[#18181a] dark:text-white';
+  'mb-0! text-[15px] leading-[1.8] text-[#18181a]';
 const SKILL_TRACE_LIST_CLASS =
-  'grid gap-[10px] rounded-xl border border-[#eceef1] bg-[#fbfcfd] p-[12px_14px] dark:border-white/10 dark:bg-[#26272d]';
+  'grid gap-[10px] rounded-xl border border-[#eceef1] bg-[#fbfcfd] p-[12px_14px]';
 const SKILL_TRACE_ITEM_CLASS =
   'grid min-w-0 grid-cols-[12px_minmax(0,1fr)] gap-[10px]';
 const SKILL_TRACE_ITEM_BODY_CLASS = 'min-w-0 max-w-full';
 const SKILL_TRACE_DOT_CLASS =
-  'mt-[9px] size-[7px] shrink-0 rounded-full bg-[#18181a] dark:bg-white';
+  'mt-[9px] size-[7px] shrink-0 rounded-full bg-[#18181a]';
 const SKILL_TRACE_TITLE_CLASS =
-  'text-[13px] font-semibold text-[#18181a] dark:text-white';
+  'text-[13px] font-semibold text-[#18181a]';
 const SKILL_TRACE_MESSAGE_CLASS =
-  'mt-[2px] break-words text-[12px] leading-[1.55] text-[#757f9c] dark:text-[#a8afbd]';
+  'mt-[2px] break-words text-[12px] leading-[1.55] text-[#757f9c]';
 const SKILL_TRACE_CODE_DETAILS_CLASS =
-  'group/gs-trace box-border w-full min-w-0 max-w-full overflow-hidden rounded-xl border border-[#eceef1] bg-white dark:border-white/10 dark:bg-[#26272d]';
+  'group/gs-trace box-border w-full min-w-0 max-w-full overflow-hidden rounded-xl border border-[#eceef1] bg-white';
 const SKILL_TRACE_CODE_SUMMARY_CLASS =
-  "flex min-h-[38px] cursor-pointer list-none items-center gap-2 px-3 py-[9px] text-[12px] font-semibold text-[#18181a] select-none after:ml-auto after:text-[12px] after:font-medium after:text-[#757f9c] after:content-['展开'] group-open/gs-trace:border-b group-open/gs-trace:border-[#eceef1] group-open/gs-trace:after:content-['收起'] dark:text-white dark:after:text-[#a8afbd] dark:group-open/gs-trace:border-white/10 [&::-webkit-details-marker]:hidden";
+  "flex min-h-[38px] cursor-pointer list-none items-center gap-2 px-3 py-[9px] text-[12px] font-semibold text-[#18181a] select-none after:ml-auto after:text-[12px] after:font-medium after:text-[#757f9c] after:content-['展开'] group-open/gs-trace:border-b group-open/gs-trace:border-[#eceef1] group-open/gs-trace:after:content-['收起'] [&::-webkit-details-marker]:hidden";
 const SKILL_CODE_BLOCK_CLASS =
   'm-0 max-h-[520px] max-w-full overflow-auto whitespace-pre border-0 p-[16px_18px] font-mono text-[12px] leading-[1.65]';
 const SKILL_OUTPUT_STACK_CLASS = 'grid gap-[10px]';
@@ -150,8 +150,8 @@ const SKILL_OUTPUT_STACK_CLASS = 'grid gap-[10px]';
 function skillFileNodeClass(active: boolean) {
   return cn(
     'flex w-full min-w-0 cursor-pointer items-center gap-2 rounded-lg border-0 bg-transparent px-[10px] py-2 text-left text-[12px] text-[#757f9c] transition-[background,color,box-shadow] duration-150',
-    'hover:bg-[#f6f6f6] hover:text-[#18181a] dark:hover:bg-[#37373d] dark:hover:text-white',
-    active && 'bg-[#f6f6f6] text-[#18181a] dark:bg-[#37373d] dark:text-white',
+    'hover:bg-[#f6f6f6] hover:text-[#18181a]',
+    active && 'bg-[#f6f6f6] text-[#18181a]',
   );
 }
 
@@ -551,7 +551,7 @@ export default function GeneralSkillsPage({ embedded = false, currentUser, onLog
       <DropdownMenu>
         <DropdownMenuTrigger
           aria-label="技能操作"
-          className="ml-auto grid size-7 place-items-center rounded-[8px] text-[#1a71ff] transition-colors outline-none hover:bg-black/5 hover:text-[#4a8dff] focus-visible:bg-black/5 dark:hover:bg-white/10"
+          className="ml-auto grid size-7 place-items-center rounded-[8px] text-[#1a71ff] transition-colors outline-none hover:bg-black/5 hover:text-[#4a8dff] focus-visible:bg-black/5"
         >
           <IconMore className="size-3.5" />
         </DropdownMenuTrigger>
@@ -574,7 +574,7 @@ export default function GeneralSkillsPage({ embedded = false, currentUser, onLog
               启用
             </DropdownMenuItem>
           )}
-          <DropdownMenuSeparator className="my-[2px] bg-[#eef0f4] dark:bg-white/10" />
+          <DropdownMenuSeparator className="my-[2px] bg-[#eef0f4]" />
           <DropdownMenuItem
             variant="destructive"
             className={MENU_ITEM_DANGER_CLASS}
@@ -593,10 +593,10 @@ export default function GeneralSkillsPage({ embedded = false, currentUser, onLog
       key: 'name',
       title: '名称',
       width: 200,
-      className: 'text-[#18181a] dark:text-white',
+      className: 'text-[#18181a]',
       render: (row) => (
         <div className="flex min-w-0 flex-col gap-[2px]">
-          <span className="truncate font-medium leading-[18px] text-[#18181a] dark:text-white" title={row.name}>
+          <span className="truncate font-medium leading-[18px] text-[#18181a]" title={row.name}>
             {row.name}
           </span>
           <span className="truncate text-[#858b9c]" title={row.slug}>
@@ -647,7 +647,7 @@ export default function GeneralSkillsPage({ embedded = false, currentUser, onLog
       <article className={MOBILE_CARD_CLASS} key={row.id}>
         <div className="flex min-w-0 items-start justify-between gap-[10px]">
           <div className="min-w-0">
-            <strong className="block truncate text-[14px] font-semibold text-[#18181a] dark:text-white">{row.name}</strong>
+            <strong className="block truncate text-[14px] font-semibold text-[#18181a]">{row.name}</strong>
             <span className="mt-[2px] block truncate text-[12px] text-[#858b9c]">{row.slug}</span>
           </div>
           {renderActions(row)}
@@ -675,13 +675,13 @@ export default function GeneralSkillsPage({ embedded = false, currentUser, onLog
               variant="outline"
               onClick={() => void load()}
               disabled={loading}
-              className="h-[34px] gap-[4px] rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-[20px] text-[12px] font-normal text-[#757f9c] hover:border-[#cbd3e6] hover:bg-white hover:text-[#18181a] dark:border-border dark:bg-(--surface) dark:text-muted-foreground dark:hover:bg-(--surface)"
+              className="h-[34px] gap-[4px] rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-[20px] text-[12px] font-normal text-[#757f9c] hover:border-[#cbd3e6] hover:bg-white hover:text-[#18181a]"
             >
               <IconRefresh className={cn('size-[14px]', loading && 'animate-spin')} />
               刷新
             </UIButton>
             <DropdownMenu>
-              <DropdownMenuTrigger className="flex h-[34px] items-center gap-[4px] rounded-[10px] bg-[#18181a] px-[20px] text-[12px] font-normal text-white outline-none transition-colors hover:bg-[#303030] dark:bg-white dark:text-[#18181a] dark:hover:bg-white/90">
+              <DropdownMenuTrigger className="flex h-[34px] items-center gap-[4px] rounded-[10px] bg-[#18181a] px-[20px] text-[12px] font-normal text-white outline-none transition-colors hover:bg-[#303030]">
                 <IconAdd className="size-[14px]" />
                 新增
                 <IconChevronDown className="size-[12px]" />
@@ -713,7 +713,7 @@ export default function GeneralSkillsPage({ embedded = false, currentUser, onLog
         </>
       )}
 
-      <div className="flex flex-col gap-[24px] rounded-[20px_20px_0_0] bg-[#FFF] p-[18px] shadow-[0_-4px_16px_0_rgba(0,0,0,0.05)] dark:bg-(--surface)">
+      <div className="flex flex-col gap-[24px] rounded-[20px_20px_0_0] bg-[#FFF] p-[18px] shadow-[0_-4px_16px_0_rgba(0,0,0,0.05)]">
         <div className="flex flex-wrap items-stretch gap-[20px]" aria-label="技能统计">
           <StatCard label="技能总数" value={stats.total} />
           <StatCard label="已启用" value={stats.published} tone="green" />
@@ -722,19 +722,19 @@ export default function GeneralSkillsPage({ embedded = false, currentUser, onLog
         </div>
 
         <div className="flex flex-col gap-[18px]">
-          <div className="flex items-center gap-[6px] px-[12px] text-[#757f9c] dark:text-muted-foreground">
+          <div className="flex items-center gap-[6px] px-[12px] text-[#757f9c]">
             <IconSkill className="size-[14px] shrink-0" />
             <span className="text-[14px] font-normal leading-none">{listLabel}</span>
           </div>
 
           <div className="flex flex-wrap items-center gap-[16px]">
-            <label className="flex h-[34px] w-[300px] items-center gap-[8px] overflow-hidden rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-[12px] transition-colors focus-within:border-[#18181a] max-[900px]:w-full dark:border-border dark:bg-(--surface) dark:focus-within:border-white/40">
+            <label className="flex h-[34px] w-[300px] items-center gap-[8px] overflow-hidden rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-[12px] transition-colors focus-within:border-[#18181a] max-[900px]:w-full">
               <IconSearch className="size-[14px] shrink-0 text-[#858b9c]" />
               <input
                 value={searchText}
                 placeholder="搜索技能名称、Slug、描述或主页"
                 onChange={(event) => setSearchText(event.target.value)}
-                className="h-full min-w-0 flex-1 bg-transparent text-[12px] text-[#17191f] outline-none placeholder:text-[#c0c6d4] dark:text-white dark:placeholder:text-muted-foreground"
+                className="h-full min-w-0 flex-1 bg-transparent text-[12px] text-[#17191f] outline-none placeholder:text-[#c0c6d4]"
               />
               {searchText && (
                 <button
@@ -875,9 +875,9 @@ function ClawHubDialog({
         aria-describedby={undefined}
         className="flex w-[calc(100%-2rem)] flex-col gap-[16px] overflow-hidden rounded-[14px] px-[20px] py-[16px] sm:max-w-[560px]"
       >
-        <div className="flex items-center gap-[6px] px-[12px] text-[#757f9c] dark:text-muted-foreground">
+        <div className="flex items-center gap-[6px] px-[12px] text-[#757f9c]">
           <IconSkill className="size-[14px] shrink-0" />
-          <DialogTitle className="text-[14px] font-normal leading-none text-[#757f9c] dark:text-muted-foreground">
+          <DialogTitle className="text-[14px] font-normal leading-none text-[#757f9c]">
             从开源平台导入技能
           </DialogTitle>
         </div>
@@ -890,7 +890,7 @@ function ClawHubDialog({
             value={source}
             onChange={(event) => onSourceChange(event.target.value)}
             placeholder="例如 alchaincyf/nuwa-skill 或 https://github.com/owner/repo/tree/main/skill"
-            className="h-[34px] w-full rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-[12px] text-[12px] text-[#17191f] outline-none transition-colors placeholder:text-[#c0c6d4] focus:border-[#18181a] dark:border-border dark:bg-(--surface) dark:text-white dark:placeholder:text-muted-foreground dark:focus:border-white/40"
+            className="h-[34px] w-full rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-[12px] text-[12px] text-[#17191f] outline-none transition-colors placeholder:text-[#c0c6d4] focus:border-[#18181a]"
           />
         </div>
 
@@ -899,7 +899,7 @@ function ClawHubDialog({
             variant="outline"
             disabled={loading}
             onClick={onClose}
-            className="h-[32px] w-[80px] rounded-[10px] border-[#e3e7f1] bg-white px-[12px] text-[14px] font-normal text-[#464c5e] hover:border-[#e3e7f1] hover:bg-[#f6f6f6] hover:text-[#18181a] dark:border-border dark:bg-transparent dark:text-muted-foreground dark:hover:bg-input/50 dark:hover:text-white"
+            className="h-[32px] w-[80px] rounded-[10px] border-[#e3e7f1] bg-white px-[12px] text-[14px] font-normal text-[#464c5e] hover:border-[#e3e7f1] hover:bg-[#f6f6f6] hover:text-[#18181a]"
           >
             取消
           </UIButton>
@@ -1088,7 +1088,7 @@ function SectionCard({
       )}
       <div className={cn('min-h-0 flex-1', bodyClassName)}>
         {loading ? (
-          <div className="py-[24px] text-center text-[13px] text-[#858b9c] dark:text-muted-foreground">加载中…</div>
+          <div className="py-[24px] text-center text-[13px] text-[#858b9c]">加载中…</div>
         ) : (
           children
         )}
@@ -2096,7 +2096,7 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
               <section className={SKILL_FILE_PANE_CLASS}>
                 <div className={SKILL_FILE_TAB_CLASS}>
                   <IconProfileFile className="size-[14px] shrink-0 text-[#757f9c]" />
-                  <span className="min-w-0 truncate text-[#18181a] dark:text-white">{selectedFile?.path || '未选择文件'}</span>
+                  <span className="min-w-0 truncate text-[#18181a]">{selectedFile?.path || '未选择文件'}</span>
                 </div>
                 <div className={SKILL_CODE_EDITOR_CLASS} data-language={selectedFileLanguage}>
                   <pre className={SKILL_CODE_HIGHLIGHT_CLASS} aria-hidden="true">
@@ -2299,21 +2299,21 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
           <DialogTitle className="border-b border-border px-[24px] py-[16px] text-[16px] font-semibold text-foreground">
             导入新技能前是否保存当前技能？
           </DialogTitle>
-          <p className="px-[24px] py-[16px] text-[13px] leading-[20px] text-[#4f5669] dark:text-muted-foreground">
+          <p className="px-[24px] py-[16px] text-[13px] leading-[20px] text-[#4f5669]">
             你正在编辑现有技能。导入会进入新建状态，不会覆盖当前技能。
           </p>
           <div className="flex items-center justify-end gap-[8px] bg-background px-[24px] py-[12px]">
             <UIButton
               variant="outline"
               onClick={() => { setImportPrepareOpen(false); importPrepareActionRef.current = null; }}
-              className="h-[32px] rounded-[10px] border-[#e3e7f1] bg-white px-[14px] text-[14px] font-normal text-[#464c5e] hover:border-[#e3e7f1] hover:bg-[#f6f6f6] hover:text-[#18181a] dark:border-border dark:bg-transparent dark:text-muted-foreground dark:hover:bg-input/50 dark:hover:text-white"
+              className="h-[32px] rounded-[10px] border-[#e3e7f1] bg-white px-[14px] text-[14px] font-normal text-[#464c5e] hover:border-[#e3e7f1] hover:bg-[#f6f6f6] hover:text-[#18181a]"
             >
               取消
             </UIButton>
             <UIButton
               variant="outline"
               onClick={() => void confirmImportPrepareSkip()}
-              className="h-[32px] rounded-[10px] border-[#e3e7f1] bg-white px-[14px] text-[14px] font-normal text-[#464c5e] hover:border-[#e3e7f1] hover:bg-[#f6f6f6] hover:text-[#18181a] dark:border-border dark:bg-transparent dark:text-muted-foreground dark:hover:bg-input/50 dark:hover:text-white"
+              className="h-[32px] rounded-[10px] border-[#e3e7f1] bg-white px-[14px] text-[14px] font-normal text-[#464c5e] hover:border-[#e3e7f1] hover:bg-[#f6f6f6] hover:text-[#18181a]"
             >
               不保存，继续导入
             </UIButton>
@@ -2349,7 +2349,7 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
             <UIButton
               variant="outline"
               onClick={() => setRenameTarget(null)}
-              className="h-[32px] w-[80px] rounded-[10px] border-[#e3e7f1] bg-white px-[12px] text-[14px] font-normal text-[#464c5e] hover:border-[#e3e7f1] hover:bg-[#f6f6f6] hover:text-[#18181a] dark:border-border dark:bg-transparent dark:text-muted-foreground dark:hover:bg-input/50 dark:hover:text-white"
+              className="h-[32px] w-[80px] rounded-[10px] border-[#e3e7f1] bg-white px-[12px] text-[14px] font-normal text-[#464c5e] hover:border-[#e3e7f1] hover:bg-[#f6f6f6] hover:text-[#18181a]"
             >
               取消
             </UIButton>

@@ -171,14 +171,14 @@ export default function EmployeeGalleryPage({
         onLogout={onLogout}
         userName={currentUser?.username}
         left={(
-          <div className="flex h-[50px] w-full items-center gap-[6px] rounded-[20px] bg-white px-[20px] text-[#757F9C] shadow-[0_0_6px_rgba(0,0,0,0.05)] dark:bg-[#26272d]">
+          <div className="flex h-[50px] w-full items-center gap-[6px] rounded-[20px] bg-white px-[20px] text-[#757F9C] shadow-[0_0_6px_rgba(0,0,0,0.05)]">
             <IconSearch className="size-[20px] shrink-0" />
             <input
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
               placeholder="搜索"
               aria-label="搜索数字员工"
-              className="min-w-0 flex-1 border-0 bg-transparent text-[14px] text-[#18181A] outline-none placeholder:text-[#757F9C] dark:text-white"
+              className="min-w-0 flex-1 border-0 bg-transparent text-[14px] text-[#18181A] outline-none placeholder:text-[#757F9C]"
             />
           </div>
         )}
@@ -209,7 +209,7 @@ export default function EmployeeGalleryPage({
           />
         ))}
         {!filteredEmployees.length && (
-          <div className="grid h-[262px] w-[294px] max-w-full place-items-center content-center gap-[10px] rounded-[18px] border border-dashed border-[#dfe4ec] bg-[#fbfcfd] font-bold text-[#8b94aa] dark:border-[#343741] dark:bg-[#202126] dark:text-[#a8afbd]">
+          <div className="grid h-[262px] w-[294px] max-w-full place-items-center content-center gap-[10px] rounded-[18px] border border-dashed border-[#dfe4ec] bg-[#fbfcfd] font-bold text-[#8b94aa]">
             <IconSearch className="size-[20px] shrink-0" />
             <span>{emptyText}</span>
           </div>

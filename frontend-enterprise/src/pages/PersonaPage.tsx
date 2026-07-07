@@ -280,7 +280,7 @@ export default function PersonaPage() {
 function LabeledField({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
   return (
     <label className="flex flex-col gap-[6px]">
-      <span className="text-[12px] font-medium text-[#464c5e] dark:text-muted-foreground">{label}</span>
+      <span className="text-[12px] font-medium text-[#464c5e]">{label}</span>
       {hint && <span className="text-[11px] leading-[16px] text-muted-foreground">{hint}</span>}
       {children}
     </label>
@@ -290,7 +290,7 @@ function LabeledField({ label, hint, children }: { label: string; hint?: string;
 function SwitchRow({ label, checked, onChange }: { label: string; checked: boolean; onChange: (next: boolean) => void }) {
   return (
     <label className="flex items-center justify-between gap-[16px]">
-      <span className="text-[12px] font-medium text-[#464c5e] dark:text-muted-foreground">{label}</span>
+      <span className="text-[12px] font-medium text-[#464c5e]">{label}</span>
       <Switch checked={checked} onCheckedChange={onChange} />
     </label>
   );

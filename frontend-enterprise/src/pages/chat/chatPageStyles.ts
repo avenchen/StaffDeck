@@ -206,14 +206,14 @@ export const CHAT_COMPOSER_SEND_BTN_CLASS =
 export const CHAT_COMPOSER_STOP_BTN_CLASS = 'bg-[#d20b0b] hover:bg-[#b40a0a]';
 
 export const CHAT_MENU_CONTENT_CLASS =
-  'flex flex-col gap-[6px] rounded-[14px] border-0 bg-white p-[6px] shadow-[0px_16px_15px_rgba(0,0,0,0.1)] ring-0 dark:bg-[#26272d] [--accent:#F6F6F6] [--accent-foreground:#18181A] dark:[--accent:#2f3136] dark:[--accent-foreground:#ffffff]';
+  'flex flex-col gap-[6px] rounded-[14px] border-0 bg-white p-[6px] shadow-[0px_16px_15px_rgba(0,0,0,0.1)] ring-0 [--accent:#F6F6F6] [--accent-foreground:#18181A]';
 export const CHAT_MENU_ITEM_CLASS =
-  'h-[36px] cursor-pointer gap-[8px] rounded-[10px] px-[12px] text-[14px] text-[#464C5E] dark:text-[#a8afbd]';
+  'h-[36px] cursor-pointer gap-[8px] rounded-[10px] px-[12px] text-[14px] text-[#464C5E]';
 
 export const CHAT_MODEL_MENU_ITEM_CLASS =
-  'flex h-auto cursor-pointer items-center justify-between gap-[16px] rounded-[10px] px-[12px] py-[8px] text-[#464C5E] dark:text-[#a8afbd]';
+  'flex h-auto cursor-pointer items-center justify-between gap-[16px] rounded-[10px] px-[12px] py-[8px] text-[#464C5E]';
 export const CHAT_MODEL_MENU_COPY_CLASS = 'grid min-w-0 gap-px';
-export const CHAT_MODEL_MENU_NAME_CLASS = 'truncate text-[13px] font-medium text-[#18181a] dark:text-white';
+export const CHAT_MODEL_MENU_NAME_CLASS = 'truncate text-[13px] font-medium text-[#18181a]';
 export const CHAT_MODEL_MENU_DETAIL_CLASS = 'truncate text-[11px] text-[#858b9c]';
 
 // ---------------------------------------------------------------------------

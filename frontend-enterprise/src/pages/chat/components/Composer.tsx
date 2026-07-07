@@ -113,10 +113,10 @@ export default function Composer({ chat }: { chat: UseChatSession }) {
               side="left"
               align="end"
               sideOffset={10}
-              className="flex w-[220px] flex-col items-start gap-[8px] rounded-[20px] border-0 bg-white p-0 py-[4px] shadow-[0px_16px_15px_rgba(0,0,0,0.1)] ring-0 dark:bg-[#26272d]"
+              className="flex w-[220px] flex-col items-start gap-[8px] rounded-[20px] border-0 bg-white p-0 py-[4px] shadow-[0px_16px_15px_rgba(0,0,0,0.1)] ring-0"
             >
               <div className="flex w-full flex-col px-[6px]">
-                <div className="flex h-[46px] w-full flex-col items-center justify-end rounded-[14px] bg-[#f6f6f6] pb-[4px] pl-[8px] pr-[16px] pt-[8px] dark:bg-white/5">
+                <div className="flex h-[46px] w-full flex-col items-center justify-end rounded-[14px] bg-[#f6f6f6] pb-[4px] pl-[8px] pr-[16px] pt-[8px]">
                   <div className="flex w-full items-end">
                     <div className="flex items-end gap-[4px]">
                       <EmployeeAvatar
@@ -128,10 +128,10 @@ export default function Composer({ chat }: { chat: UseChatSession }) {
                         objectPosition="bottom"
                       />
                       <div className="flex h-[36px] flex-col justify-center gap-[2px] whitespace-nowrap pb-[2px] text-[10px] capitalize leading-normal">
-                        <p className="font-medium text-[#464c5e] dark:text-white/80">
+                        <p className="font-medium text-[#464c5e]">
                           {displayedAgent ? employeeDisplayName(displayedAgent) : displayedProfile.roleName}
                         </p>
-                        <p className="text-[#757f9c] dark:text-white/50">{displayedProfile.roleName}</p>
+                        <p className="text-[#757f9c]">{displayedProfile.roleName}</p>
                       </div>
                     </div>
                   </div>
@@ -139,7 +139,7 @@ export default function Composer({ chat }: { chat: UseChatSession }) {
               </div>
 
               <div className="flex w-full flex-col gap-[8px] px-[8px]">
-                <p className="w-full text-[10px] capitalize leading-[14px] text-[#757f9c] dark:text-white/50">
+                <p className="w-full text-[10px] capitalize leading-[14px] text-[#757f9c]">
                   {emptyRoleSummary}
                 </p>
                 {emptyProfileTags.length > 0 && (
@@ -147,9 +147,9 @@ export default function Composer({ chat }: { chat: UseChatSession }) {
                     {emptyProfileTags.map((tag, index) => (
                       <div
                         key={`${tag}-${index}`}
-                        className="flex h-[16px] items-center justify-center rounded-[10px] border-[0.5px] border-[#e3e7f1] px-[8px] py-[2px] dark:border-white/15"
+                        className="flex h-[16px] items-center justify-center rounded-[10px] border-[0.5px] border-[#e3e7f1] px-[8px] py-[2px]"
                       >
-                        <span className="whitespace-nowrap text-[8px] capitalize leading-normal text-[#757f9c] dark:text-white/50">
+                        <span className="whitespace-nowrap text-[8px] capitalize leading-normal text-[#757f9c]">
                           {tag}
                         </span>
                       </div>
@@ -164,13 +164,13 @@ export default function Composer({ chat }: { chat: UseChatSession }) {
                     <div
                       key={item.label}
                       className={cn(
-                        'flex flex-1 flex-col justify-center gap-[4px] border-[0.5px] border-[#e3e7f1] px-[12px] py-[6px] dark:border-white/15',
+                        'flex flex-1 flex-col justify-center gap-[4px] border-[0.5px] border-[#e3e7f1] px-[12px] py-[6px]',
                         index === 0 && 'rounded-l-[14px]',
                         index === emptyStats.length - 1 && 'rounded-r-[14px]',
                       )}
                     >
-                      <p className="text-[16px] font-medium text-[#18181a] dark:text-white">{item.value}</p>
-                      <p className="text-[10px] text-[#464c5e] dark:text-white/70">{item.label}</p>
+                      <p className="text-[16px] font-medium text-[#18181a]">{item.value}</p>
+                      <p className="text-[10px] text-[#464c5e]">{item.label}</p>
                     </div>
                   ))}
                 </div>

@@ -56,7 +56,7 @@ export function TaskSection<TFilter extends string, TRow>({
 }: TaskSectionProps<TFilter, TRow>) {
   return (
     <section aria-label={title}>
-      <div className="mb-[16px] flex items-center gap-[6px] px-[12px] text-[#757f9c] dark:text-muted-foreground">
+      <div className="mb-[16px] flex items-center gap-[6px] px-[12px] text-[#757f9c]">
         {icon}
         <span className="text-[14px] font-normal leading-none">{title}</span>
       </div>

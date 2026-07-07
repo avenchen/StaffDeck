@@ -55,13 +55,13 @@ const ALIGN_CLASS = {
 } as const;
 
 const HEAD_CELL_CLASS =
-  'h-[36px] bg-[#f2f3f7] px-[16px] py-[12px] align-middle text-[12px] font-normal text-[#464c5e] dark:bg-[#26272d] dark:text-muted-foreground';
-const BODY_CELL_CLASS = 'px-[16px] py-[12px] align-middle text-[12px] text-[#858b9c] dark:text-muted-foreground';
+  'h-[36px] bg-[#f2f3f7] px-[16px] py-[12px] align-middle text-[12px] font-normal text-[#464c5e]';
+const BODY_CELL_CLASS = 'px-[16px] py-[12px] align-middle text-[12px] text-[#858b9c]';
 const BODY_HEIGHT = {
   default: 'h-[64px]',
   compact: 'h-[46px]',
 } as const;
-const CELL_BORDER = 'border border-[#f2f3f7] dark:border-[#2a2b31]';
+const CELL_BORDER = 'border border-[#f2f3f7]';
 
 /**
  * Business data table (SD1 designs: node 281:1942 default, 281:2040 compact grid).
@@ -86,7 +86,7 @@ export function DataTable<T>({
   return (
     <div
       className={cn(
-        'overflow-hidden rounded-[14px] border border-[#f2f3f7] dark:border-[#2a2b31]',
+        'overflow-hidden rounded-[14px] border border-[#f2f3f7]',
         className,
       )}
     >
@@ -119,12 +119,12 @@ export function DataTable<T>({
                   'has-aria-expanded:bg-transparent',
                   bordered
                     ? 'border-0'
-                    : 'border-b border-[#f2f3f7] last:border-0 dark:border-[#2a2b31]',
+                    : 'border-b border-[#f2f3f7] last:border-0',
                   striped
                     ? index % 2 === 1
-                      ? 'bg-[#fbfbfb] hover:bg-[#f2f3f7] dark:bg-white/2 dark:hover:bg-white/5'
-                      : 'bg-white hover:bg-[#f2f3f7] dark:bg-transparent dark:hover:bg-white/5'
-                    : 'hover:bg-[#fafbfc] dark:hover:bg-white/5',
+                      ? 'bg-[#fbfbfb] hover:bg-[#f2f3f7]'
+                      : 'bg-white hover:bg-[#f2f3f7]'
+                    : 'hover:bg-[#fafbfc]',
                   onRowClick && 'cursor-pointer',
                 )}
               >

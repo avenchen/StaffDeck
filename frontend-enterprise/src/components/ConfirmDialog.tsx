@@ -65,13 +65,13 @@ export function ConfirmDialog({
       <AlertDialogContent className="gap-0 overflow-hidden rounded-[16px] p-0">
         <div className="flex items-start gap-[8px] px-[16px] pt-[16px] pb-[12px]">
           {leadingIcon}
-          <AlertDialogTitle className="min-w-0 flex-1 text-[14px] leading-[normal] font-medium text-[#18181a] [word-break:break-word] dark:text-white">
+          <AlertDialogTitle className="min-w-0 flex-1 text-[14px] leading-[normal] font-medium text-[#18181a] [word-break:break-word]">
             {title}
           </AlertDialogTitle>
         </div>
         {description != null && (
           <div className="px-[24px] pb-[12px]">
-            <AlertDialogDescription className="text-[14px] leading-[20px] text-[#4f5669] [word-break:break-word] dark:text-muted-foreground">
+            <AlertDialogDescription className="text-[14px] leading-[20px] text-[#4f5669] [word-break:break-word]">
               {description}
             </AlertDialogDescription>
           </div>
@@ -81,7 +81,7 @@ export function ConfirmDialog({
             <Button
               variant="outline"
               disabled={loading}
-              className="h-[32px] w-[80px] rounded-[10px] border-[#e3e7f1] bg-white px-[12px] py-[8px] text-[14px] font-normal text-[#464c5e] hover:border-[#e3e7f1] hover:bg-[#f6f6f6] hover:text-[#18181a] dark:border-border dark:bg-transparent dark:text-muted-foreground dark:hover:bg-input/50 dark:hover:text-white"
+              className="h-[32px] w-[80px] rounded-[10px] border-[#e3e7f1] bg-white px-[12px] py-[8px] text-[14px] font-normal text-[#464c5e] hover:border-[#e3e7f1] hover:bg-[#f6f6f6] hover:text-[#18181a]"
             >
               {cancelText}
             </Button>

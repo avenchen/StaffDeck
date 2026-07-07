@@ -181,7 +181,7 @@ export default function AgentsPage({
   ];
 
   const summaryCardClass =
-    'flex h-[100px] flex-1 basis-[220px] items-center gap-[16px] rounded-[20px] bg-[#f6f6f6] px-[32px] py-[20px] text-left transition-shadow dark:bg-[#26272d]';
+    'flex h-[100px] flex-1 basis-[220px] items-center gap-[16px] rounded-[20px] bg-[#f6f6f6] px-[32px] py-[20px] text-left transition-shadow';
   const summaryStats: { key: typeof employeeFilter; value: number; label: string; sub: string }[] = [
     { key: 'all', value: employees.length, label: '员工总数', sub: `${onlineEmployees.length}位在线` },
     { key: 'offline', value: offlineEmployees.length, label: '下线员工', sub: '0位在线' },
@@ -199,14 +199,14 @@ export default function AgentsPage({
         onLogout={onLogout}
         userName={currentUser?.username}
         left={(
-          <div className="flex h-[50px] w-full items-center gap-[6px] rounded-[20px] bg-white px-[20px] text-[#757F9C] shadow-[0_0_6px_rgba(0,0,0,0.05)] dark:bg-[#26272d]">
+          <div className="flex h-[50px] w-full items-center gap-[6px] rounded-[20px] bg-white px-[20px] text-[#757F9C] shadow-[0_0_6px_rgba(0,0,0,0.05)]">
             <IconSearch className="size-[20px] shrink-0" />
             <input
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
               placeholder="搜索"
               aria-label="搜索员工"
-              className="min-w-0 flex-1 border-0 bg-transparent text-[14px] text-[#18181A] outline-none placeholder:text-[#757F9C] dark:text-white"
+              className="min-w-0 flex-1 border-0 bg-transparent text-[14px] text-[#18181A] outline-none placeholder:text-[#757F9C]"
             />
           </div>
         )}
@@ -224,19 +224,19 @@ export default function AgentsPage({
               summaryCardClass,
             )}
           >
-            <span className="shrink-0 text-[34px] font-semibold leading-none text-[#18181A] dark:text-white">{stat.value}</span>
+            <span className="shrink-0 text-[34px] font-semibold leading-none text-[#18181A]">{stat.value}</span>
             <span className="flex min-w-0 flex-col gap-[4px]">
-              <span className="whitespace-nowrap text-[14px] text-[#464C5E] dark:text-[#e5e7eb]">{stat.label}</span>
+              <span className="whitespace-nowrap text-[14px] text-[#464C5E]">{stat.label}</span>
               <span className="whitespace-nowrap text-[12px] text-[#757F9C]">{stat.sub}</span>
             </span>
           </button>
         ))}
         <button type="button" onClick={onCreateAgent} className={cn(summaryCardClass, 'hover:shadow-[0_16px_30px_0_rgba(0,0,0,0.10)]')}>
-          <span className="grid size-[38px] shrink-0 place-items-center text-[#18181A] dark:text-white">
+          <span className="grid size-[38px] shrink-0 place-items-center text-[#18181A]">
             <IconPlus className="size-[38px]" />
           </span>
           <span className="flex min-w-0 flex-col gap-[4px]">
-            <span className="whitespace-nowrap text-[14px] text-[#464C5E] dark:text-[#e5e7eb]">创建新员工</span>
+            <span className="whitespace-nowrap text-[14px] text-[#464C5E]">创建新员工</span>
             <span className="whitespace-nowrap text-[12px] text-[#757F9C]">几步搭好你的数字员工</span>
           </span>
         </button>
@@ -267,7 +267,7 @@ export default function AgentsPage({
           />
         ))}
         {!filteredEmployees.length && (
-          <div className="grid h-[262px] w-[294px] max-w-full place-items-center content-center gap-[10px] rounded-[18px] border border-dashed border-[#dfe4ec] bg-[#fbfcfd] font-bold text-[#8b94aa] dark:border-[#343741] dark:bg-[#202126] dark:text-[#a8afbd]">
+          <div className="grid h-[262px] w-[294px] max-w-full place-items-center content-center gap-[10px] rounded-[18px] border border-dashed border-[#dfe4ec] bg-[#fbfcfd] font-bold text-[#8b94aa]">
             <IconSearch className="size-[20px] shrink-0" />
             <span>没有匹配的数字员工</span>
           </div>

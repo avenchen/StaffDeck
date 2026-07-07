@@ -28,7 +28,7 @@ export default function BrandLogo({
       />
       {!markOnly && (
         <span className={cn('flex flex-col items-start gap-[2px] leading-none', wordmarkClassName)}>
-          <span className="text-[12px] font-semibold leading-none text-[#0f136c] dark:text-primary">
+          <span className="text-[12px] font-semibold leading-none text-[#0f136c]">
             Modelbest
           </span>
           <strong className="text-[17px] font-semibold leading-none text-sidebar-accent-foreground">

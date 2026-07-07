@@ -598,8 +598,8 @@ function Shell({
                     className={cn(
                       "rounded-[8px] px-[14px] py-[5px] text-[13px] font-medium transition-colors",
                       agentForm.sourceMode === option.value
-                        ? "bg-[#18181a] text-white dark:bg-white dark:text-[#18181a]"
-                        : "text-[#5b6273] hover:text-foreground dark:text-muted-foreground",
+                        ? "bg-[#18181a] text-white"
+                        : "text-[#5b6273] hover:text-foreground",
                     )}
                     onClick={() =>
                       setAgentForm((prev) => ({
@@ -775,17 +775,6 @@ export default function App() {
   const [auth, setAuth] = useState<EnterpriseAuthSession | null>(() =>
     getEnterpriseAuthSession(),
   );
-
-  // Force light theme app-wide (theme switching has been removed).
-  useEffect(() => {
-    const root = document.documentElement;
-    root.classList.remove("dark");
-    root.classList.add("light");
-    root.setAttribute("data-theme", "light");
-    root.setAttribute("data-theme-mode", "light");
-    root.style.colorScheme = "light";
-    window.localStorage.setItem("ultrarag_theme_mode", "light");
-  }, []);
 
   function logout() {
     clearEnterpriseAuthSession();

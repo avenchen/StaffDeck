@@ -178,7 +178,7 @@ export default function AccountsPage({
       <DropdownMenu>
         <DropdownMenuTrigger
           aria-label="账号操作"
-          className="ml-auto grid size-7 place-items-center rounded-[8px] text-[#1a71ff] transition-colors outline-none hover:bg-black/5 hover:text-[#4a8dff] focus-visible:bg-black/5 dark:hover:bg-white/10"
+          className="ml-auto grid size-7 place-items-center rounded-[8px] text-[#1a71ff] transition-colors outline-none hover:bg-black/5 hover:text-[#4a8dff] focus-visible:bg-black/5"
         >
           <IconMore className="size-3.5" />
         </DropdownMenuTrigger>
@@ -187,7 +187,7 @@ export default function AccountsPage({
             <IconEdit />
             编辑
           </DropdownMenuItem>
-          <DropdownMenuSeparator className="my-[2px] bg-[#eef0f4] dark:bg-white/10" />
+          <DropdownMenuSeparator className="my-[2px] bg-[#eef0f4]" />
           <DropdownMenuItem
             variant="destructive"
             className={MENU_ITEM_DANGER_CLASS}
@@ -207,10 +207,10 @@ export default function AccountsPage({
       key: 'username',
       title: '用户名',
       width: 220,
-      className: 'text-[#18181a] dark:text-white',
+      className: 'text-[#18181a]',
       render: (row) => (
         <span className="flex min-w-0 items-center gap-[8px]">
-          <span className="grid size-[24px] shrink-0 place-items-center rounded-full bg-[#eef1fb] text-[#7e96dc] dark:bg-white/10">
+          <span className="grid size-[24px] shrink-0 place-items-center rounded-full bg-[#eef1fb] text-[#7e96dc]">
             <User className="size-[14px]" />
           </span>
           <span className="truncate font-medium">{row.username}</span>
@@ -238,11 +238,11 @@ export default function AccountsPage({
     <article className={MOBILE_CARD_CLASS} key={row.id}>
       <div className="flex min-w-0 items-start justify-between gap-[10px]">
         <span className="flex min-w-0 items-center gap-[8px]">
-          <span className="grid size-[28px] shrink-0 place-items-center rounded-full bg-[#eef1fb] text-[#7e96dc] dark:bg-white/10">
+          <span className="grid size-[28px] shrink-0 place-items-center rounded-full bg-[#eef1fb] text-[#7e96dc]">
             <User className="size-[15px]" />
           </span>
           <span className="min-w-0">
-            <strong className="block truncate text-[14px] font-semibold text-[#18181a] dark:text-white">{row.username}</strong>
+            <strong className="block truncate text-[14px] font-semibold text-[#18181a]">{row.username}</strong>
             <span className="mt-[2px] block truncate text-[12px] text-[#858b9c]">{row.display_name || row.username}</span>
           </span>
         </span>
@@ -264,34 +264,34 @@ export default function AccountsPage({
           variant="outline"
           onClick={() => void load()}
           disabled={loading}
-          className="h-[34px] gap-[4px] rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-[20px] text-[12px] font-normal text-[#757f9c] hover:border-[#cbd3e6] hover:bg-white hover:text-[#18181a] dark:border-border dark:bg-(--surface) dark:text-muted-foreground dark:hover:bg-(--surface)"
+          className="h-[34px] gap-[4px] rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-[20px] text-[12px] font-normal text-[#757f9c] hover:border-[#cbd3e6] hover:bg-white hover:text-[#18181a]"
         >
           <IconRefresh className={cn('size-[14px]', loading && 'animate-spin')} />
           刷新
         </UIButton>
         <UIButton
           onClick={openCreate}
-          className="h-[34px] gap-[4px] rounded-[10px] bg-[#18181a] px-[20px] text-[12px] font-normal text-white hover:bg-[#303030] dark:bg-white dark:text-[#18181a] dark:hover:bg-white/90"
+          className="h-[34px] gap-[4px] rounded-[10px] bg-[#18181a] px-[20px] text-[12px] font-normal text-white hover:bg-[#303030]"
         >
           <IconAdd className="size-[14px]" />
           新建账号
         </UIButton>
       </div>
 
-      <div className="flex flex-col gap-[24px] rounded-[20px_20px_0_0] bg-white p-[18px_18px_24px_18px] shadow-[0_-4px_16px_0_rgba(0,0,0,0.05)] dark:bg-(--surface)">
+      <div className="flex flex-col gap-[24px] rounded-[20px_20px_0_0] bg-white p-[18px_18px_24px_18px] shadow-[0_-4px_16px_0_rgba(0,0,0,0.05)]">
         <div className="flex flex-col gap-[18px]">
-          <div className="flex items-center gap-[6px] px-[12px] text-[#757f9c] dark:text-muted-foreground">
+          <div className="flex items-center gap-[6px] px-[12px] text-[#757f9c]">
             <IconAccounts className="size-[14px] shrink-0" />
             <span className="text-[14px] font-normal leading-none">账号列表</span>
           </div>
 
-          <label className="flex h-[34px] w-[300px] items-center gap-[8px] overflow-hidden rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-[12px] transition-colors focus-within:border-[#18181a] max-[900px]:w-full dark:border-border dark:bg-(--surface) dark:focus-within:border-white/40">
+          <label className="flex h-[34px] w-[300px] items-center gap-[8px] overflow-hidden rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-[12px] transition-colors focus-within:border-[#18181a] max-[900px]:w-full">
             <IconSearch className="size-[14px] shrink-0 text-[#858b9c]" />
             <input
               value={searchText}
               placeholder="搜索用户名或显示名"
               onChange={(event) => setSearchText(event.target.value)}
-              className="h-full min-w-0 flex-1 bg-transparent text-[12px] text-[#17191f] outline-none placeholder:text-[#c0c6d4] dark:text-white dark:placeholder:text-muted-foreground"
+              className="h-full min-w-0 flex-1 bg-transparent text-[12px] text-[#17191f] outline-none placeholder:text-[#c0c6d4]"
             />
             {searchText && (
               <button
@@ -414,9 +414,9 @@ function AccountDialog({
         aria-describedby={undefined}
         className="flex w-[calc(100%-2rem)] flex-col gap-[16px] overflow-hidden rounded-[14px] px-[20px] py-[16px] sm:max-w-[440px]"
       >
-        <div className="flex items-center gap-[6px] px-[12px] text-[#757f9c] dark:text-muted-foreground">
+        <div className="flex items-center gap-[6px] px-[12px] text-[#757f9c]">
           <IconAccounts className="size-[14px] shrink-0" />
-          <DialogTitle className="text-[14px] font-normal leading-none text-[#757f9c] dark:text-muted-foreground">
+          <DialogTitle className="text-[14px] font-normal leading-none text-[#757f9c]">
             {title}
           </DialogTitle>
         </div>
@@ -453,7 +453,7 @@ function AccountDialog({
             variant="outline"
             disabled={loading}
             onClick={onClose}
-            className="h-[32px] w-[80px] rounded-[10px] border-[#e3e7f1] bg-white px-[12px] text-[14px] font-normal text-[#464c5e] hover:border-[#e3e7f1] hover:bg-[#f6f6f6] hover:text-[#18181a] dark:border-border dark:bg-transparent dark:text-muted-foreground dark:hover:bg-input/50 dark:hover:text-white"
+            className="h-[32px] w-[80px] rounded-[10px] border-[#e3e7f1] bg-white px-[12px] text-[14px] font-normal text-[#464c5e] hover:border-[#e3e7f1] hover:bg-[#f6f6f6] hover:text-[#18181a]"
           >
             取消
           </UIButton>
@@ -473,7 +473,7 @@ function AccountDialog({
 function LabeledField({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="flex flex-col gap-[6px]">
-      <span className="text-[12px] font-medium text-[#464c5e] dark:text-muted-foreground">{label}</span>
+      <span className="text-[12px] font-medium text-[#464c5e]">{label}</span>
       {children}
     </label>
   );

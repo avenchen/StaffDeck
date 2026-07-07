@@ -1,14 +1,5 @@
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import EmployeeAvatar from '@/components/EmployeeAvatar';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -192,26 +183,31 @@ export default function ChatDialogs({ chat }: { chat: UseChatSession }) {
           }
         }}
       >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>重命名</DialogTitle>
+        <DialogContent className="gap-0 overflow-hidden rounded-[16px] p-0">
+          <DialogHeader className="px-[16px] pt-[16px] pb-[12px]">
+            <DialogTitle className="text-[14px] leading-[normal] font-medium text-[#18181a]">
+              重命名
+            </DialogTitle>
           </DialogHeader>
-          <Input
-            autoFocus
-            maxLength={80}
-            value={renameTitle}
-            onChange={(event) => setRenameTitle(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') {
-                event.preventDefault();
-                void saveRename();
-              }
-            }}
-            placeholder="输入会话名称"
-          />
-          <div className="flex justify-end gap-[8px]">
+          <div className="px-[16px] pb-[4px]">
+            <Input
+              autoFocus
+              maxLength={80}
+              value={renameTitle}
+              onChange={(event) => setRenameTitle(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  event.preventDefault();
+                  void saveRename();
+                }
+              }}
+              placeholder="输入会话名称"
+            />
+          </div>
+          <div className="flex items-center justify-end gap-[8px] pt-[12px] pr-[16px] pb-[16px] pl-[12px]">
             <Button
-              variant="ghost"
+              variant="outline"
+              className="h-[32px] w-[80px] rounded-[10px] border-[#e3e7f1] bg-white px-[12px] py-[8px] text-[14px] font-normal text-[#464c5e] hover:border-[#e3e7f1] hover:bg-[#f6f6f6] hover:text-[#18181a]"
               onClick={() => {
                 setRenameSession(null);
                 setRenameTitle('');
@@ -219,25 +215,23 @@ export default function ChatDialogs({ chat }: { chat: UseChatSession }) {
             >
               取消
             </Button>
-            <Button onClick={() => void saveRename()}>保存</Button>
+            <Button
+              className="h-[32px] w-[80px] rounded-[10px] bg-[#18181a] px-[12px] py-[8px] text-[14px] font-normal text-white hover:bg-[#303030]"
+              onClick={() => void saveRename()}
+            >
+              保存
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={Boolean(pendingDelete)} onOpenChange={(open) => !open && setPendingDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>删除会话</AlertDialogTitle>
-            <AlertDialogDescription>
-              删除后无法恢复该会话及其消息记录，确定继续吗？
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>取消</AlertDialogCancel>
-            <AlertDialogAction onClick={() => void confirmDeleteSession()}>删除</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        open={Boolean(pendingDelete)}
+        onOpenChange={(open) => !open && setPendingDelete(null)}
+        title="删除会话"
+        description="删除后无法恢复该会话及其消息记录，确定继续吗？"
+        onConfirm={() => void confirmDeleteSession()}
+      />
     </>
   );
 }

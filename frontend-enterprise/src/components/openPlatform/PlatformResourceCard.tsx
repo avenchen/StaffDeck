@@ -8,10 +8,10 @@ import IconFolder from '../../assets/icons/cap-folder.svg?react';
 export type PlatformResourceAccent = 'green' | 'blue' | 'indigo' | 'orange';
 
 const ACCENT_STYLES: Record<PlatformResourceAccent, { meta: string; tag: string }> = {
-  green: { meta: 'text-[#2cb360]', tag: 'bg-[#e9f7ef] text-[#2cb360] dark:bg-[#2cb360]/15' },
-  blue: { meta: 'text-[#27c9ff]', tag: 'bg-[#c4f1ff] text-[#25c7ff] dark:bg-[#27c9ff]/15' },
-  indigo: { meta: 'text-[#1a71ff]', tag: 'bg-[#e8f0ff] text-[#1a71ff] dark:bg-[#1a71ff]/15' },
-  orange: { meta: 'text-[#ff7f00]', tag: 'bg-[#fff2e5] text-[#ff7f00] dark:bg-[#ff7f00]/15' },
+  green: { meta: 'text-[#2cb360]', tag: 'bg-[#e9f7ef] text-[#2cb360]' },
+  blue: { meta: 'text-[#27c9ff]', tag: 'bg-[#c4f1ff] text-[#25c7ff]' },
+  indigo: { meta: 'text-[#1a71ff]', tag: 'bg-[#e8f0ff] text-[#1a71ff]' },
+  orange: { meta: 'text-[#ff7f00]', tag: 'bg-[#fff2e5] text-[#ff7f00]' },
 };
 
 export const platformResourceAccentStyles = ACCENT_STYLES;
@@ -52,24 +52,24 @@ export default function PlatformResourceCard({
       onClick={onClick}
       className={cn(
         'relative flex h-[112px] w-full shrink-0 flex-col items-center justify-center overflow-hidden rounded-[14px] border-[0.5px] border-[#f6f6f6] bg-white p-[4px] text-left backdrop-blur-[1.835px] transition-shadow hover:shadow-[0_8px_20px_rgba(15,23,42,0.06)]',
-        'dark:border-white/10 dark:bg-white/4',
+        '',
         className,
       )}
     >
       <div className="flex w-full flex-col items-start gap-[6px] px-[8px]">
         <div className="flex w-full items-center gap-[4px]">
           {icon ?? (
-            <span className="grid size-[32px] shrink-0 place-items-center rounded-[10px] bg-[#f2f4f8] text-[#8a94a6] dark:bg-white/10 dark:text-[#a8afbd]">
+            <span className="grid size-[32px] shrink-0 place-items-center rounded-[10px] bg-[#f2f4f8] text-[#8a94a6]">
               <IconFolder className="size-[18px]" />
             </span>
           )}
           <div className="flex min-w-0 flex-1 flex-col gap-[4px]">
-            <p className="truncate text-[12px] font-medium text-[#464c5e] dark:text-[#f0f2f6]">{title}</p>
+            <p className="truncate text-[12px] font-medium text-[#464c5e]">{title}</p>
             <p className={cn('truncate text-[10px]', accentStyles.meta)}>{meta}</p>
           </div>
         </div>
 
-        <p className="line-clamp-2 h-[26px] w-full text-[10px] leading-[13px] text-[#757f9c] dark:text-[#a8afbd]">
+        <p className="line-clamp-2 h-[26px] w-full text-[10px] leading-[13px] text-[#757f9c]">
           {description}
         </p>
 

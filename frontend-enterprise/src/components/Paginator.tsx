@@ -21,7 +21,7 @@ export type PaginatorProps = {
 const PILL_CLASS =
   'flex h-[20px] min-w-[20px] items-center justify-center rounded-[6px] px-[12px] text-[10px] leading-none transition-colors';
 const ARROW_CLASS =
-  'flex size-[14px] shrink-0 items-center justify-center text-[#464c5e] transition-opacity disabled:cursor-not-allowed disabled:opacity-30 dark:text-muted-foreground';
+  'flex size-[14px] shrink-0 items-center justify-center text-[#464c5e] transition-opacity disabled:cursor-not-allowed disabled:opacity-30';
 
 function getPaginationRange(
   current: number,
@@ -83,7 +83,7 @@ export function Paginator({
             <PaginationItem key={`ellipsis-${index}`}>
               <span
                 aria-hidden="true"
-                className="flex h-[20px] items-center justify-center px-[4px] text-[10px] leading-none text-[#999] dark:text-muted-foreground"
+                className="flex h-[20px] items-center justify-center px-[4px] text-[10px] leading-none text-[#999]"
               >
                 ···
               </span>
@@ -97,8 +97,8 @@ export function Paginator({
                 className={cn(
                   PILL_CLASS,
                   item === page
-                    ? 'bg-[#f6f6f6] text-[#464c5e] dark:bg-white/10 dark:text-white'
-                    : 'text-[#999] hover:bg-[#f2f3f7] hover:text-[#464c5e] dark:text-muted-foreground dark:hover:bg-white/10 dark:hover:text-white',
+                    ? 'bg-[#f6f6f6] text-[#464c5e]'
+                    : 'text-[#999] hover:bg-[#f2f3f7] hover:text-[#464c5e]',
                 )}
               >
                 {label(item)}

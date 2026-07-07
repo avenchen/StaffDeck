@@ -52,7 +52,7 @@ export default function PlatformColumn({
     <section
       className={cn(
         'flex h-full min-h-0 w-full min-w-[180px] flex-col items-center gap-[10px] rounded-[14px] border-[0.5px] border-[#e3e7f1] px-[12px] py-[14px]',
-        'dark:border-[#343741]',
+        '',
         className,
       )}
     >
@@ -60,12 +60,12 @@ export default function PlatformColumn({
         <div className="flex w-full shrink-0 flex-col gap-[10px]">
           <div className="flex w-full items-center justify-between">
             <div className="flex items-center gap-[4px]">
-              <span className="flex size-[14px] shrink-0 items-center justify-center text-[#464c5e] dark:text-[#a8afbd]">
+              <span className="flex size-[14px] shrink-0 items-center justify-center text-[#464c5e]">
                 {icon}
               </span>
-              <p className="truncate text-[12px] font-medium text-[#464c5e] dark:text-white">{title}</p>
+              <p className="truncate text-[12px] font-medium text-[#464c5e]">{title}</p>
             </div>
-            <div className="flex shrink-0 items-center gap-[2px] text-[12px] text-[#464c5e] dark:text-[#a8afbd]">
+            <div className="flex shrink-0 items-center gap-[2px] text-[12px] text-[#464c5e]">
               <span>{count}</span>
               {/* <span>{countLabel}</span> */}
               {/* <IconChevronDown className="size-[14px] text-[#757f9c]" /> */}
@@ -77,7 +77,7 @@ export default function PlatformColumn({
               {filters.map((filter) => (
                 <span
                   key={filter}
-                  className="rounded-[20px] border-[0.5px] border-[#e3e7f1] px-[8px] py-[2px] text-[10px] leading-[normal] text-[#757f9c] dark:border-[#343741] dark:text-[#a8afbd]"
+                  className="rounded-[20px] border-[0.5px] border-[#e3e7f1] px-[8px] py-[2px] text-[10px] leading-[normal] text-[#757f9c]"
                 >
                   {filter}
                 </span>
@@ -85,14 +85,14 @@ export default function PlatformColumn({
             </div>
           )}
 
-          <div className="h-px w-full bg-[#e3e7f1] dark:bg-[#343741]" />
+          <div className="h-px w-full bg-[#e3e7f1]" />
         </div>
 
         <div className="-mr-[12px] flex min-h-0 w-[calc(100%+12px)] flex-1 flex-col gap-[16px] overflow-y-auto pr-[12px]">
           {loading ? (
             <PlatformColumnSkeleton />
           ) : isEmpty ? (
-            <div className="flex h-[112px] w-full items-center justify-center rounded-[14px] border-[0.5px] border-[#f6f6f6] bg-white text-center text-[10px] text-[#757f9c] backdrop-blur-[1.835px] dark:border-white/10 dark:bg-white/4 dark:text-[#a8afbd]">
+            <div className="flex h-[112px] w-full items-center justify-center rounded-[14px] border-[0.5px] border-[#f6f6f6] bg-white text-center text-[10px] text-[#757f9c] backdrop-blur-[1.835px]">
               {emptyText}
             </div>
           ) : (
@@ -103,12 +103,12 @@ export default function PlatformColumn({
 
       {!isEmpty && (
         <>
-          <div className="h-px w-full shrink-0 bg-[#e3e7f1] dark:bg-[#343741]" />
+          <div className="h-px w-full shrink-0 bg-[#e3e7f1]" />
 
           <button
             type="button"
             onClick={onViewAll}
-            className="flex w-[120px] shrink-0 items-center justify-center gap-[2px] rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-[20px] py-[8px] text-[12px] text-[#757f9c] transition-colors hover:text-[#18181a] dark:border-[#343741] dark:bg-[#202126] dark:text-[#a8afbd] dark:hover:text-white"
+            className="flex w-[120px] shrink-0 items-center justify-center gap-[2px] rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-[20px] py-[8px] text-[12px] text-[#757f9c] transition-colors hover:text-[#18181a]"
           >
             查看全部
             <IconChevronDown className="size-[14px] shrink-0 -rotate-90" />
@@ -125,7 +125,7 @@ function PlatformColumnSkeleton() {
       {[0, 1, 2].map((index) => (
         <div
           key={index}
-          className="h-[112px] w-full shrink-0 animate-pulse rounded-[20px] border-[0.5px] border-[#f0f1f5] bg-[#f6f6f6] dark:border-[#343741] dark:bg-[#202126]"
+          className="h-[112px] w-full shrink-0 animate-pulse rounded-[20px] border-[0.5px] border-[#f0f1f5] bg-[#f6f6f6]"
         />
       ))}
     </div>

@@ -195,6 +195,7 @@ export function useChatSession() {
   const scheduledEventIdsRef = useRef(new Set<string>());
   const knownSessionIdsRef = useRef(new Set<string>());
   const optimisticSessionIdsRef = useRef(new Set<string>());
+  const pendingPromotedSessionIdRef = useRef<string | null>(null);
   const sessionsInitializedRef = useRef(false);
   const autoOpenedSessionIdsRef = useRef(new Set<string>());
   const loadErrorNoticeRef = useRef<Record<string, number>>({});
@@ -300,10 +301,14 @@ export function useChatSession() {
   const currentSession = sessionId ? sessions.find((item) => item.id === sessionId) || null : null;
   const availableAgents = visibleChatEmployees(agents, auth?.user);
   const defaultAgent = availableAgents.find((agent) => agent.id === selectedAgentId) || availableAgents[0] || null;
-  const showEmployeeGallery = !sessionId && !draftAgentId;
-  const activeDraftAgentId = draftAgentId || '';
-  const activeConversationId = sessionId || (activeDraftAgentId ? draftConversationKey(activeDraftAgentId) : '');
-  const isDraftConversation = Boolean(activeDraftAgentId && !sessionId);
+  // While a freshly created draft is being promoted to a real session, `navigate`
+  // has not yet updated the `sessionId` route param. During that transition frame
+  // we point the active conversation at the promoted (real) session id so we don't
+  // resolve to the already-deleted draft slot and flash the empty state.
+  const promotedSessionId = !sessionId ? pendingPromotedSessionIdRef.current : null;
+  const activeDraftAgentId = draftAgentId || (!sessionId && !promotedSessionId ? (defaultAgent?.id || '') : '');
+  const activeConversationId = sessionId || promotedSessionId || (activeDraftAgentId ? draftConversationKey(activeDraftAgentId) : '');
+  const isDraftConversation = Boolean(activeDraftAgentId && !sessionId && !promotedSessionId);
   const draftAgent = activeDraftAgentId
     ? agents.find((agent) => agent.id === activeDraftAgentId) || null
     : null;
@@ -1137,6 +1142,12 @@ export function useChatSession() {
       .then(setUiConfig)
       .catch(() => undefined);
   }, [auth, tenantId]);
+
+  useEffect(() => {
+    if (sessionId) {
+      pendingPromotedSessionIdRef.current = null;
+    }
+  }, [sessionId]);
 
   useEffect(() => {
     if (!sessionId) return;
@@ -2198,6 +2209,10 @@ export function useChatSession() {
 
     const promoteDraftConversation = (nextSessionId: string) => {
       if (!isDraftConversation || !nextSessionId || nextSessionId === liveConversationId) return;
+      // Keep the active conversation resolvable to the real session until the route
+      // param catches up, so the transition frame doesn't fall back to the deleted
+      // draft slot and briefly render ChatEmptyState.
+      pendingPromotedSessionIdRef.current = nextSessionId;
       const previousId = liveConversationId;
       const draftSlot = storeRef.current.get(previousId);
       if (draftSlot) {
@@ -2454,7 +2469,6 @@ export function useChatSession() {
     displayedAgent,
     displayedProfile,
     currentSession,
-    showEmployeeGallery,
     emptyProfileTags,
     emptyRoleSummary,
     emptyStats,

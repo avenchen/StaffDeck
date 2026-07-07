@@ -188,7 +188,7 @@ function CardNavButton({
 
 function GroupLabel({ children }: { children: string }) {
   return (
-    <span className="px-[8px] pt-[6px] pb-[2px] text-[10px] leading-none text-[#464c5e] dark:text-sidebar-foreground group-data-[collapsible=icon]:hidden">
+    <span className="px-[8px] pt-[6px] pb-[2px] text-[10px] leading-none text-[#464c5e] group-data-[collapsible=icon]:hidden">
       {children}
     </span>
   );
@@ -226,15 +226,15 @@ function AgentSwitcher({
           ) : (
             <div className="w-[60px] h-[30px] relative">
               <div className="absolute inset-0 flex items-end justify-center">
-                <span className="flex w-[60px] h-[71px] items-center justify-center rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white text-sidebar-foreground dark:border-sidebar-border dark:bg-sidebar">
+                <span className="flex w-[60px] h-[71px] items-center justify-center rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white text-sidebar-foreground">
                   <IconAdd className="size-[20px]" />
                 </span>
               </div>
             </div>
           )}
           <span className="flex min-w-0 flex-1 flex-col gap-[4px] group-data-[collapsible=icon]:hidden">
-            <span className="text-[10px] leading-none text-[#757f9c] dark:text-sidebar-foreground">{caption}</span>
-            <span className="block truncate text-[12px] font-medium leading-none text-[#464c5e] dark:text-sidebar-accent-foreground">
+            <span className="text-[10px] leading-none text-[#757f9c]">{caption}</span>
+            <span className="block truncate text-[12px] font-medium leading-none text-[#464c5e]">
               {nameLabel}
             </span>
           </span>
@@ -278,7 +278,7 @@ function SidebarFooterActions({ onOpenChat }: { onOpenChat: () => void }) {
         onClick={onOpenChat}
         title="对话端"
         className={cn(
-          'flex h-[40px] w-[130px] items-center justify-center gap-[6px] rounded-[10px] border-[0.5px] border-[#E3E7F1] bg-[#F6F6F6] px-[20px] py-[4px] text-[14px] text-sidebar-accent-foreground transition-opacity hover:opacity-70 dark:border-sidebar-border dark:bg-sidebar-accent',
+          'flex h-[40px] w-[130px] items-center justify-center gap-[6px] rounded-[10px] border-[0.5px] border-[#E3E7F1] bg-[#F6F6F6] px-[20px] py-[4px] text-[14px] text-sidebar-accent-foreground transition-opacity hover:opacity-70',
           'group-data-[collapsible=icon]:size-[40px] group-data-[collapsible=icon]:w-[40px] group-data-[collapsible=icon]:px-0',
         )}
       >
@@ -300,7 +300,7 @@ function SidebarFooterActions({ onOpenChat }: { onOpenChat: () => void }) {
 
 function CollapsedGroupLabel({ children }: { children: string }) {
   return (
-    <span className="text-[10px] leading-none text-[#464c5e] dark:text-sidebar-foreground">
+    <span className="text-[10px] leading-none text-[#464c5e]">
       {children}
     </span>
   );
@@ -364,11 +364,11 @@ function CollapsedAgentSwitcher({
           {sidebarAgent ? (
             <EmployeeAvatar agent={sidebarAgent} width={32} height={38} radius={8} />
           ) : (
-            <span className="flex h-[38px] w-[32px] items-center justify-center rounded-[8px] border-[0.5px] border-[#e3e7f1] bg-white text-sidebar-foreground dark:border-sidebar-border dark:bg-sidebar">
+            <span className="flex h-[38px] w-[32px] items-center justify-center rounded-[8px] border-[0.5px] border-[#e3e7f1] bg-white text-sidebar-foreground">
               <IconAdd className="size-[16px]" />
             </span>
           )}
-          <span className="w-[34px] text-center text-[10px] font-medium leading-tight wrap-break-word text-[#18181a] dark:text-sidebar-accent-foreground">
+          <span className="w-[34px] text-center text-[10px] font-medium leading-tight wrap-break-word text-[#18181a]">
             {nameLabel}
           </span>
         </button>
@@ -456,7 +456,7 @@ function CollapsedSidebar({
       </div>
 
       <div className="flex min-h-0 w-full flex-1 flex-col items-center justify-between">
-        <div className="flex w-[38px] flex-col items-center gap-[8px] rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-[2px] pt-[6px] pb-[8px] dark:border-sidebar-border dark:bg-sidebar">
+        <div className="flex w-[38px] flex-col items-center gap-[8px] rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-[2px] pt-[6px] pb-[8px]">
           <CollapsedAgentSwitcher
             sidebarAgent={sidebarAgent}
             scopeAgents={scopeAgents}
@@ -501,7 +501,7 @@ function CollapsedSidebar({
                 type="button"
                 onClick={onOpenChat}
                 aria-label="切换到对话端"
-                className="flex size-[32px] shrink-0 items-center justify-center rounded-[10px] border-[0.5px] border-[#E3E7F1] bg-[#F6F6F6] text-sidebar-accent-foreground transition-opacity hover:opacity-70 dark:border-sidebar-border dark:bg-sidebar-accent"
+                className="flex size-[32px] shrink-0 items-center justify-center rounded-[10px] border-[0.5px] border-[#E3E7F1] bg-[#F6F6F6] text-sidebar-accent-foreground transition-opacity hover:opacity-70"
               >
                 <IconChat className="size-[16px]!" />
               </button>
@@ -582,7 +582,7 @@ function ManagementSidebar({
       <SidebarContent className="px-[20px] group-data-[collapsible=icon]:px-[20px]">
         <div
           className={cn(
-            'mt-[36px] mb-[24px] flex flex-col gap-[8px] rounded-[20px] border-[0.5px] border-[#e3e7f1] bg-sidebar px-[4px] pt-[6px] pb-[8px] dark:border-sidebar-border',
+            'mt-[36px] mb-[24px] flex flex-col gap-[8px] rounded-[20px] border-[0.5px] border-[#e3e7f1] bg-sidebar px-[4px] pt-[6px] pb-[8px]',
             'group-data-[collapsible=icon]:mt-[24px] group-data-[collapsible=icon]:border-transparent group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:shadow-none',
           )}
         >
@@ -660,7 +660,7 @@ function ChatSessionFilter({
           <button
             type="button"
             aria-label="筛选会话"
-            className="flex h-[32px] w-full items-center justify-center rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-[#f6f6f6] transition-colors hover:border-[#c9d2e4] dark:border-sidebar-border dark:bg-sidebar-accent"
+            className="flex h-[32px] w-full items-center justify-center rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-[#f6f6f6] transition-colors hover:border-[#c9d2e4]"
           >
             <IconSort className="size-[14px]! shrink-0 text-[#858b9c]" />
           </button>
@@ -668,12 +668,12 @@ function ChatSessionFilter({
           <button
             type="button"
             aria-label="筛选会话"
-            className="flex h-[40px] w-full items-center justify-between rounded-[14px] border-[0.5px] border-[#e3e7f1] bg-[#f6f6f6] px-[20px] py-[10px] text-left transition-colors hover:border-[#c9d2e4] dark:border-sidebar-border dark:bg-sidebar-accent"
+            className="flex h-[40px] w-full items-center justify-between rounded-[14px] border-[0.5px] border-[#e3e7f1] bg-[#f6f6f6] px-[20px] py-[10px] text-left transition-colors hover:border-[#c9d2e4]"
           >
             <span className="flex min-w-0 items-center gap-[6px]">
-              <span className="truncate text-[14px] text-[#464c5e] dark:text-sidebar-accent-foreground">{namePart}</span>
+              <span className="truncate text-[14px] text-[#464c5e]">{namePart}</span>
               {countPart && (
-                <span className="inline-flex h-[18px] min-w-[30px] items-center justify-center rounded-full bg-white px-[4px] text-[12px] text-[#757f9c] dark:bg-sidebar dark:text-sidebar-foreground">
+                <span className="inline-flex h-[18px] min-w-[30px] items-center justify-center rounded-full bg-white px-[4px] text-[12px] text-[#757f9c]">
                   {countPart}
                 </span>
               )}
@@ -686,7 +686,7 @@ function ChatSessionFilter({
         align={collapsed ? 'center' : 'start'}
         side={collapsed ? 'right' : 'bottom'}
         className={cn(
-          'flex flex-col gap-[6px] rounded-[14px] bg-white p-[6px] shadow-[0px_16px_15px_rgba(0,0,0,0.1)] ring-0 dark:bg-sidebar dark:ring-1 dark:ring-sidebar-border',
+          'flex flex-col gap-[6px] rounded-[14px] bg-white p-[6px] shadow-[0px_16px_15px_rgba(0,0,0,0.1)] ring-0',
           collapsed ? 'min-w-[160px]' : 'w-(--radix-dropdown-menu-trigger-width)',
         )}
       >
@@ -699,16 +699,16 @@ function ChatSessionFilter({
               data-active={active}
               onSelect={() => onSessionFilterChange(option.value)}
               className={cn(
-                'group/filter flex h-[32px] cursor-pointer items-center gap-[4px] rounded-[14px] px-[12px] py-[4px] transition-colors focus:bg-[#f6f6f6] dark:focus:bg-sidebar-accent',
-                active ? 'bg-[#f6f6f6] dark:bg-sidebar-accent' : 'bg-transparent',
+                'group/filter flex h-[32px] cursor-pointer items-center gap-[4px] rounded-[14px] px-[12px] py-[4px] transition-colors focus:bg-[#f6f6f6]',
+                active ? 'bg-[#f6f6f6]' : 'bg-transparent',
               )}
             >
               <span
                 className={cn(
                   'truncate text-[12px] leading-none',
                   active
-                    ? 'text-[#18181a]! dark:text-sidebar-accent-foreground!'
-                    : 'text-[#858b9c]! dark:text-sidebar-foreground!',
+                    ? 'text-[#18181a]!'
+                    : 'text-[#858b9c]!',
                 )}
               >
                 {optionName}
@@ -718,8 +718,8 @@ function ChatSessionFilter({
                   className={cn(
                     'inline-flex h-[14px] items-center justify-center rounded-full px-[8px] text-[10px] leading-none text-[#757f9c]! capitalize',
                     active
-                      ? 'bg-white dark:bg-sidebar'
-                      : 'bg-[#f6f6f6] group-focus/filter:bg-white dark:bg-sidebar-accent',
+                      ? 'bg-white'
+                      : 'bg-[#f6f6f6] group-focus/filter:bg-white',
                   )}
                 >
                   {optionCount}
@@ -781,7 +781,7 @@ function ChatHandoffButton({
         <span className="truncate">待回答</span>
       </span>
       {count > 0 && (
-        <span className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-white px-[6px] text-[11px] leading-none text-[#f5483b] shadow-[0_0_0_0.5px_rgba(245,72,59,0.18)] dark:bg-sidebar-accent">
+        <span className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-white px-[6px] text-[11px] leading-none text-[#f5483b] shadow-[0_0_0_0.5px_rgba(245,72,59,0.18)]">
           {badge}
         </span>
       )}
@@ -823,11 +823,11 @@ function ChatSessionRow({
       className={cn(
         'group/session relative flex w-full cursor-pointer items-center gap-[6px] rounded-[14px] py-[6px] pl-[8px] pr-[12px] text-left transition-colors',
         active
-          ? 'border-[0.5px] border-[#e3e7f1] bg-white shadow-[0px_0px_5px_rgba(0,0,0,0.05)] dark:border-sidebar-border dark:bg-sidebar-accent'
-          : 'border-[0.5px] border-transparent hover:bg-[#f4f5f7] dark:hover:bg-sidebar-accent',
+          ? 'border-[0.5px] border-[#e3e7f1] bg-white shadow-[0px_0px_5px_rgba(0,0,0,0.05)]'
+          : 'border-[0.5px] border-transparent hover:bg-[#f4f5f7]',
       )}
     >
-      <span className="inline-grid size-[42px] shrink-0 place-items-center overflow-hidden rounded-[12px] bg-[#f1f2f5] text-[#464c5e] dark:bg-sidebar">
+      <span className="inline-grid size-[42px] shrink-0 place-items-center overflow-hidden rounded-[12px] bg-[#f1f2f5] text-[#464c5e]">
         {agent ? (
           <EmployeeAvatar agent={agent} size={42} radius={12} />
         ) : (
@@ -835,10 +835,10 @@ function ChatSessionRow({
         )}
       </span>
       <span className="flex min-w-0 flex-1 flex-col justify-between self-stretch py-[3px]">
-        <span className="truncate text-[14px] leading-none text-[#464c5e] capitalize dark:text-sidebar-accent-foreground" title={title}>
+        <span className="truncate text-[14px] leading-none text-[#464c5e] capitalize" title={title}>
           {title}
         </span>
-        <span className="truncate text-[12px] leading-none text-[#757f9c] dark:text-sidebar-foreground" title={subtitle}>
+        <span className="truncate text-[12px] leading-none text-[#757f9c]" title={subtitle}>
           {subtitle}
         </span>
       </span>
@@ -853,7 +853,7 @@ function ChatSessionRow({
             event.stopPropagation();
             onRenameSession(session);
           }}
-          className="inline-grid size-[24px] place-items-center rounded-[10px] text-[#858b9c] transition-colors hover:bg-[#e3e7f1] hover:text-[#18181a] dark:hover:bg-sidebar dark:hover:text-sidebar-accent-foreground"
+          className="inline-grid size-[24px] place-items-center rounded-[10px] text-[#858b9c] transition-colors hover:bg-[#e3e7f1] hover:text-[#18181a]"
         >
           <IconEdit className="size-[14px]!" />
         </button>
@@ -876,10 +876,10 @@ function ChatSessionRow({
 function ChatSessionRowSkeleton() {
   return (
     <div className="flex w-full animate-pulse items-center gap-[6px] rounded-[14px] border-[0.5px] border-transparent px-[8px] py-[6px]">
-      <span className="size-[42px] shrink-0 rounded-[12px] bg-[#eef0f4] dark:bg-sidebar-accent" />
+      <span className="size-[42px] shrink-0 rounded-[12px] bg-[#eef0f4]" />
       <span className="flex min-w-0 flex-1 flex-col gap-[6px] pb-[2px]">
-        <span className="h-[12px] w-[60%] rounded-full bg-[#eef0f4] dark:bg-sidebar-accent" />
-        <span className="h-[10px] w-[40%] rounded-full bg-[#f1f2f5] dark:bg-sidebar" />
+        <span className="h-[12px] w-[60%] rounded-full bg-[#eef0f4]" />
+        <span className="h-[10px] w-[40%] rounded-full bg-[#f1f2f5]" />
       </span>
     </div>
   );
@@ -902,7 +902,7 @@ function ChatFooterActions({ onOpenAdmin }: { onOpenAdmin: () => void }) {
         type="button"
         onClick={onOpenAdmin}
         title="管理端"
-        className="flex h-[40px] w-[130px] items-center justify-center gap-[6px] rounded-[10px] border-[0.5px] border-[#E3E7F1] bg-[#F6F6F6] px-[20px] py-[4px] text-[14px] text-[#858b9c] transition-opacity hover:opacity-70 dark:border-sidebar-border dark:bg-sidebar-accent"
+        className="flex h-[40px] w-[130px] items-center justify-center gap-[6px] rounded-[10px] border-[0.5px] border-[#E3E7F1] bg-[#F6F6F6] px-[20px] py-[4px] text-[14px] text-[#858b9c] transition-opacity hover:opacity-70"
       >
         <IconViewMasonry className="size-[16px]!" />
         <span>管理端</span>
@@ -997,12 +997,12 @@ function CollapsedChatSidebar({
           onSessionFilterChange={onSessionFilterChange}
         />
 
-        <span className="text-[10px] leading-none text-[#464c5e] dark:text-sidebar-foreground">会话</span>
+        <span className="text-[10px] leading-none text-[#464c5e]">会话</span>
 
         <div className="no-scrollbar mx-[-8px] flex min-h-0 w-[calc(100%+16px)] flex-1 flex-col items-center gap-[10px] overflow-y-auto py-[2px]">
           {sessionsLoading
             ? Array.from({ length: 5 }).map((_, index) => (
-                <span key={index} className="size-[36px] shrink-0 animate-pulse rounded-[10px] bg-[#eef0f4] dark:bg-sidebar-accent" />
+                <span key={index} className="size-[36px] shrink-0 animate-pulse rounded-[10px] bg-[#eef0f4]" />
               ))
             : sessions.map((session) => {
                 const agent = sessionAgentFor(session, agents);
@@ -1019,8 +1019,8 @@ function CollapsedChatSidebar({
                         className={cn(
                           'relative flex shrink-0 items-center justify-center overflow-hidden transition-shadow',
                           active
-                            ? 'size-[44px] rounded-[14px] border-[0.5px] border-[#464c5e] bg-white shadow-[0px_0px_5px_rgba(0,0,0,0.1)] dark:border-sidebar-accent-foreground dark:bg-sidebar-accent'
-                            : 'size-[36px] rounded-[10px] bg-[#D8D8D8] text-[#464c5e] dark:bg-sidebar',
+                            ? 'size-[44px] rounded-[14px] border-[0.5px] border-[#464c5e] bg-white shadow-[0px_0px_5px_rgba(0,0,0,0.1)]'
+                            : 'size-[36px] rounded-[10px] bg-[#D8D8D8] text-[#464c5e]',
                         )}
                       >
                         {agent ? (
@@ -1049,7 +1049,7 @@ function CollapsedChatSidebar({
               type="button"
               onClick={onOpenAdmin}
               aria-label="切换到管理端"
-              className="flex size-[32px] shrink-0 items-center justify-center rounded-[10px] border-[0.5px] border-[#E3E7F1] bg-[#F6F6F6] text-[#858b9c] transition-opacity hover:opacity-70 dark:border-sidebar-border dark:bg-sidebar-accent"
+              className="flex size-[32px] shrink-0 items-center justify-center rounded-[10px] border-[0.5px] border-[#E3E7F1] bg-[#F6F6F6] text-[#858b9c] transition-opacity hover:opacity-70"
             >
               <IconViewMasonry className="size-[16px]!" />
             </button>
@@ -1150,7 +1150,7 @@ function ChatSidebarVariant({
               sessionFilterOptions={sessionFilterOptions}
               onSessionFilterChange={onSessionFilterChange}
             />
-            <span className="text-[12px] leading-none text-[#858b9c] dark:text-sidebar-foreground">员工会话</span>
+            <span className="text-[12px] leading-none text-[#858b9c]">员工会话</span>
           </div>
         </SidebarHeader>
 

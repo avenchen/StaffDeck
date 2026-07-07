@@ -220,7 +220,7 @@ export default function ToolsPage({ currentUser, onLogout }: ToolPageProps = {})
       <DropdownMenu>
         <DropdownMenuTrigger
           aria-label="工具操作"
-          className="ml-auto grid size-7 place-items-center rounded-[8px] text-[#1a71ff] transition-colors outline-none hover:bg-black/5 hover:text-[#4a8dff] focus-visible:bg-black/5 dark:hover:bg-white/10"
+          className="ml-auto grid size-7 place-items-center rounded-[8px] text-[#1a71ff] transition-colors outline-none hover:bg-black/5 hover:text-[#4a8dff] focus-visible:bg-black/5"
         >
           <IconMore className="size-3.5" />
         </DropdownMenuTrigger>
@@ -233,7 +233,7 @@ export default function ToolsPage({ currentUser, onLogout }: ToolPageProps = {})
             <FlaskConical />
             测试
           </DropdownMenuItem>
-          <DropdownMenuSeparator className="my-[2px] bg-[#eef0f4] dark:bg-white/10" />
+          <DropdownMenuSeparator className="my-[2px] bg-[#eef0f4]" />
           <DropdownMenuItem
             variant="destructive"
             className={MENU_ITEM_DANGER_CLASS}
@@ -252,10 +252,10 @@ export default function ToolsPage({ currentUser, onLogout }: ToolPageProps = {})
       key: 'name',
       title: '工具名称',
       width: 200,
-      className: 'text-[#18181a] dark:text-white',
+      className: 'text-[#18181a]',
       render: (row) => (
         <div className="flex min-w-0 flex-col gap-[2px]">
-          <span className="truncate font-medium leading-[18px] text-[#18181a] dark:text-white" title={row.display_name || row.name}>
+          <span className="truncate font-medium leading-[18px] text-[#18181a]" title={row.display_name || row.name}>
             {row.display_name || row.name}
           </span>
           <span className="truncate text-[#858b9c]" title={row.name}>
@@ -306,7 +306,7 @@ export default function ToolsPage({ currentUser, onLogout }: ToolPageProps = {})
     <article className={MOBILE_CARD_CLASS} key={row.id}>
       <div className="flex min-w-0 items-start justify-between gap-[10px]">
         <div className="min-w-0">
-          <strong className="block truncate text-[14px] font-semibold text-[#18181a] dark:text-white">
+          <strong className="block truncate text-[14px] font-semibold text-[#18181a]">
             {row.display_name || row.name}
           </strong>
           <span className="mt-[2px] block truncate text-[12px] text-[#858b9c]">{row.name}</span>
@@ -335,13 +335,13 @@ export default function ToolsPage({ currentUser, onLogout }: ToolPageProps = {})
           variant="outline"
           onClick={() => void load()}
           disabled={loading}
-          className="h-[34px] gap-[4px] rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-[20px] text-[12px] font-normal text-[#757f9c] hover:border-[#cbd3e6] hover:bg-white hover:text-[#18181a] dark:border-border dark:bg-(--surface) dark:text-muted-foreground dark:hover:bg-(--surface)"
+          className="h-[34px] gap-[4px] rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-[20px] text-[12px] font-normal text-[#757f9c] hover:border-[#cbd3e6] hover:bg-white hover:text-[#18181a]"
         >
           <IconRefresh className={cn('size-[14px]', loading && 'animate-spin')} />
           刷新
         </UIButton>
         <DropdownMenu>
-          <DropdownMenuTrigger className="flex h-[34px] items-center gap-[4px] rounded-[10px] bg-[#18181a] px-[20px] text-[12px] font-normal text-white outline-none transition-colors hover:bg-[#303030] dark:bg-white dark:text-[#18181a] dark:hover:bg-white/90">
+          <DropdownMenuTrigger className="flex h-[34px] items-center gap-[4px] rounded-[10px] bg-[#18181a] px-[20px] text-[12px] font-normal text-white outline-none transition-colors hover:bg-[#303030]">
             <IconAdd className="size-[14px]" />
             新增
             <IconChevronDown className="size-[12px]" />
@@ -367,7 +367,7 @@ export default function ToolsPage({ currentUser, onLogout }: ToolPageProps = {})
         </DropdownMenu>
       </div>
 
-      <div className="flex flex-col gap-[24px] rounded-[20px_20px_0_0] bg-white p-[18px_18px_24px_18px] shadow-[0_-4px_16px_0_rgba(0,0,0,0.05)] dark:bg-(--surface)">
+      <div className="flex flex-col gap-[24px] rounded-[20px_20px_0_0] bg-white p-[18px_18px_24px_18px] shadow-[0_-4px_16px_0_rgba(0,0,0,0.05)]">
         <div className="flex flex-wrap items-stretch gap-[20px]" aria-label="工具统计">
           <StatCard label="工具总数" value={stats.total} className="basis-[220px]" />
           <StatCard label="已启用" value={stats.enabled} tone="green" className="basis-[220px]" />
@@ -375,19 +375,19 @@ export default function ToolsPage({ currentUser, onLogout }: ToolPageProps = {})
         </div>
 
         <div className="flex flex-col gap-[18px]">
-          <div className="flex items-center gap-[6px] px-[12px] text-[#757f9c] dark:text-muted-foreground">
+          <div className="flex items-center gap-[6px] px-[12px] text-[#757f9c]">
             <IconTool className="size-[14px] shrink-0" />
             <span className="text-[14px] font-normal leading-none">{listLabel}</span>
           </div>
 
           <div className="flex flex-wrap items-center gap-[16px]">
-            <label className="flex h-[34px] w-[300px] items-center gap-[8px] overflow-hidden rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-[12px] transition-colors focus-within:border-[#18181a] max-[900px]:w-full dark:border-border dark:bg-(--surface) dark:focus-within:border-white/40">
+            <label className="flex h-[34px] w-[300px] items-center gap-[8px] overflow-hidden rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-[12px] transition-colors focus-within:border-[#18181a] max-[900px]:w-full">
               <IconSearch className="size-[14px] shrink-0 text-[#858b9c]" />
               <input
                 value={searchText}
                 placeholder="搜索工具名称、描述、URL 或分桶"
                 onChange={(event) => setSearchText(event.target.value)}
-                className="h-full min-w-0 flex-1 bg-transparent text-[12px] text-[#17191f] outline-none placeholder:text-[#c0c6d4] dark:text-white dark:placeholder:text-muted-foreground"
+                className="h-full min-w-0 flex-1 bg-transparent text-[12px] text-[#17191f] outline-none placeholder:text-[#c0c6d4]"
               />
               {searchText && (
                 <button
@@ -584,16 +584,16 @@ function ToolEditorPage({ mode, currentUser, onLogout }: { mode: 'new' | 'edit' 
 }
 
 const CARD_CLASS =
-  'rounded-[14px] border border-[#eceef1] bg-white dark:border-white/10 dark:bg-[#26272d]';
-const CARD_TITLE_CLASS = 'text-[14px] font-medium text-[#18181a] dark:text-white';
-const FIELD_LABEL_CLASS = 'text-[13px] font-medium text-[#18181a] dark:text-white';
-const SUBSECTION_TITLE_CLASS = 'text-[13px] font-medium text-[#18181a] dark:text-white';
-const HINT_CLASS = 'text-[12px] leading-[1.55] text-[#858b9c] dark:text-muted-foreground';
+  'rounded-[14px] border border-[#eceef1] bg-white';
+const CARD_TITLE_CLASS = 'text-[14px] font-medium text-[#18181a]';
+const FIELD_LABEL_CLASS = 'text-[13px] font-medium text-[#18181a]';
+const SUBSECTION_TITLE_CLASS = 'text-[13px] font-medium text-[#18181a]';
+const HINT_CLASS = 'text-[12px] leading-[1.55] text-[#858b9c]';
 const MONO_INPUT_CLASS = 'font-mono text-[12px] leading-[1.65]';
 const RETURN_BUTTON_CLASS =
-  'h-8 gap-1 rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-5 text-[12px] font-normal text-[#757f9c] hover:border-[#cbd3e6] hover:bg-white hover:text-[#18181a] dark:border-border dark:bg-(--surface) dark:text-muted-foreground dark:hover:bg-(--surface)';
+  'h-8 gap-1 rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-5 text-[12px] font-normal text-[#757f9c] hover:border-[#cbd3e6] hover:bg-white hover:text-[#18181a]';
 const PRIMARY_BUTTON_CLASS =
-  'h-8 gap-1 rounded-[10px] bg-[#18181a] px-5 text-[12px] font-normal text-white hover:bg-[#303030] dark:bg-white dark:text-[#18181a] dark:hover:bg-white/90';
+  'h-8 gap-1 rounded-[10px] bg-[#18181a] px-5 text-[12px] font-normal text-white hover:bg-[#303030]';
 
 function SectionCard({
   title,
@@ -613,14 +613,14 @@ function SectionCard({
   return (
     <section className={cn(CARD_CLASS, 'overflow-hidden', className)}>
       {(title || extra) && (
-        <div className="flex min-h-[54px] items-center justify-between gap-[12px] border-b border-[#eceef1] px-[20px] py-[10px] dark:border-white/10">
+        <div className="flex min-h-[54px] items-center justify-between gap-[12px] border-b border-[#eceef1] px-[20px] py-[10px]">
           <div className={cn('min-w-0', CARD_TITLE_CLASS)}>{title}</div>
           {extra ? <div className="shrink-0">{extra}</div> : null}
         </div>
       )}
       <div className={cn('p-[20px]', bodyClassName)}>
         {loading ? (
-          <div className="py-[24px] text-center text-[13px] text-[#858b9c] dark:text-muted-foreground">加载中…</div>
+          <div className="py-[24px] text-center text-[13px] text-[#858b9c]">加载中…</div>
         ) : (
           children
         )}
@@ -696,16 +696,16 @@ export function ToolTestPage({ currentUser, onLogout }: ToolPageProps = {}) {
         <SectionCard title="工具信息" loading={loading && !tool} bodyClassName="flex flex-col gap-[16px]">
           {tool && (
             <>
-              <div className="grid grid-cols-[58px_minmax(0,1fr)] items-start gap-[16px] rounded-[14px] border border-[#eceef1] bg-[#fafbfc] p-[16px] dark:border-white/10 dark:bg-white/5">
-                <div className="grid size-[58px] place-items-center rounded-[16px] border border-[#eceef1] bg-white text-[24px] text-[#18181a] dark:border-white/10 dark:bg-white/10 dark:text-white">
+              <div className="grid grid-cols-[58px_minmax(0,1fr)] items-start gap-[16px] rounded-[14px] border border-[#eceef1] bg-[#fafbfc] p-[16px]">
+                <div className="grid size-[58px] place-items-center rounded-[16px] border border-[#eceef1] bg-white text-[24px] text-[#18181a]">
                   <ToolOutlined />
                 </div>
                 <div className="min-w-0">
                   <span className="text-[12px] font-semibold text-[#1a71ff]">{tool.bucket || '未分桶'}</span>
-                  <h4 className="my-[4px] text-[18px] font-semibold wrap-break-word text-[#18181a] dark:text-white">
+                  <h4 className="my-[4px] text-[18px] font-semibold wrap-break-word text-[#18181a]">
                     {tool.display_name || tool.name}
                   </h4>
-                  <p className="mb-[10px] text-[13px] leading-[1.65] wrap-break-word text-[#858b9c] dark:text-muted-foreground">
+                  <p className="mb-[10px] text-[13px] leading-[1.65] wrap-break-word text-[#858b9c]">
                     {tool.description || '暂无描述'}
                   </p>
                   <div className="flex flex-wrap items-center gap-[6px]">
@@ -725,19 +725,19 @@ export function ToolTestPage({ currentUser, onLogout }: ToolPageProps = {}) {
                 ].map((item) => (
                   <div
                     key={item.label}
-                    className="flex min-h-[78px] flex-col gap-[8px] rounded-[12px] border border-[#eceef1] bg-white px-[14px] py-[13px] dark:border-white/10 dark:bg-(--surface)"
+                    className="flex min-h-[78px] flex-col gap-[8px] rounded-[12px] border border-[#eceef1] bg-white px-[14px] py-[13px]"
                   >
-                    <span className="text-[12px] font-semibold text-[#858b9c] dark:text-muted-foreground">{item.label}</span>
-                    <strong className="text-[14px] leading-[1.35] wrap-break-word text-[#18181a] dark:text-white">
+                    <span className="text-[12px] font-semibold text-[#858b9c]">{item.label}</span>
+                    <strong className="text-[14px] leading-[1.35] wrap-break-word text-[#18181a]">
                       {item.value}
                     </strong>
                   </div>
                 ))}
               </div>
 
-              <div className="flex flex-col gap-[8px] rounded-[12px] border border-[#eceef1] bg-[#fafbfc] px-[16px] py-[14px] dark:border-white/10 dark:bg-white/5">
-                <span className="text-[12px] font-semibold text-[#858b9c] dark:text-muted-foreground">调用地址</span>
-                <code className="block font-mono text-[13px] leading-[1.6] wrap-break-word text-[#18181a] dark:text-white">
+              <div className="flex flex-col gap-[8px] rounded-[12px] border border-[#eceef1] bg-[#fafbfc] px-[16px] py-[14px]">
+                <span className="text-[12px] font-semibold text-[#858b9c]">调用地址</span>
+                <code className="block font-mono text-[13px] leading-[1.6] wrap-break-word text-[#18181a]">
                   {tool.method} {tool.url}
                 </code>
               </div>
@@ -921,7 +921,7 @@ function ToolFormFields({
         />
       </Field>
 
-      <div className="flex items-center justify-between rounded-[12px] border border-[#eceef1] bg-[#fafbfc] px-[14px] py-[12px] dark:border-white/10 dark:bg-white/5">
+      <div className="flex items-center justify-between rounded-[12px] border border-[#eceef1] bg-[#fafbfc] px-[14px] py-[12px]">
         <div className="flex flex-col gap-[2px]">
           <span className={FIELD_LABEL_CLASS}>启用工具</span>
           <span className={HINT_CLASS}>停用后员工将无法调用该工具。</span>
@@ -1078,8 +1078,8 @@ function SavedToolTestCard({ tool, standalone = false }: { tool: ToolRead; stand
         </UIButton>
       )}
     >
-      <div className="flex items-start justify-between gap-[12px] rounded-[12px] border border-[#eceef1] bg-[#fafbfc] px-[14px] py-[12px] dark:border-white/10 dark:bg-white/5">
-        <span className="text-[13px] leading-[1.65] text-[#858b9c] dark:text-muted-foreground">
+      <div className="flex items-start justify-between gap-[12px] rounded-[12px] border border-[#eceef1] bg-[#fafbfc] px-[14px] py-[12px]">
+        <span className="text-[13px] leading-[1.65] text-[#858b9c]">
           调用已保存的「{tool.display_name || tool.name}」，用于验证员工实际可用的工具返回。
         </span>
         <StatusBadge tone="gray">{toolTypeLabel(tool)}</StatusBadge>
@@ -1101,7 +1101,7 @@ function SavedToolTestCard({ tool, standalone = false }: { tool: ToolRead; stand
         {testResult ? (
           <CodeBlock className="max-h-[340px] whitespace-pre-wrap wrap-break-word" code={testResult} language="json" />
         ) : (
-          <div className="grid min-h-[180px] place-items-center rounded-[12px] border border-dashed border-[#eceef1] p-[20px] text-center text-[13px] text-[#858b9c] dark:border-white/10 dark:text-muted-foreground">
+          <div className="grid min-h-[180px] place-items-center rounded-[12px] border border-dashed border-[#eceef1] p-[20px] text-center text-[13px] text-[#858b9c]">
             点击调用后，这里会显示工具返回、错误信息和原始 data。
           </div>
         )}

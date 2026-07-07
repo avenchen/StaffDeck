@@ -2272,7 +2272,7 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
                 }
               />
               <div className={CHAT_ACTIONS_CLASS}>
-                <span className="min-w-0 truncate text-[12px] text-[#858b9c] dark:text-muted-foreground">{streamStatus}</span>
+                <span className="min-w-0 truncate text-[12px] text-[#858b9c]">{streamStatus}</span>
                 <div className={CHAT_ACTIONS_GROUP_CLASS}>
                   <label>
                     <input
@@ -2328,7 +2328,7 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
                           >
                             <span className="flex min-w-0 flex-1 flex-col">
                               <strong className="text-[13px] text-foreground">{model.name || model.model}</strong>
-                              <em className="text-[11px] not-italic text-[#858b9c] dark:text-muted-foreground">
+                              <em className="text-[11px] not-italic text-[#858b9c]">
                                 {model.is_default ? `${model.model} · 默认` : model.model}
                               </em>
                             </span>
@@ -2392,9 +2392,9 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
           </div>
           {!draft ? (
             <div className={SOURCE_EMPTY_STATE_CLASS}>
-              <FileTextOutlined className="text-[28px] text-[#c0c6d4] dark:text-muted-foreground" />
+              <FileTextOutlined className="text-[28px] text-[#c0c6d4]" />
               <p className={SOURCE_EMPTY_TEXT_CLASS}>暂无技能草稿</p>
-              <p className="text-[12px] leading-[18px] text-[#c0c6d4] dark:text-muted-foreground">在左侧输入说明或上传文档后开始生成</p>
+              <p className="text-[12px] leading-[18px] text-[#c0c6d4]">在左侧输入说明或上传文档后开始生成</p>
             </div>
           ) : viewMode === 'source' ? (
             <SkillSource
@@ -2680,7 +2680,7 @@ function SimpleTooltip({ title, children }: { title?: ReactNode; children: React
 
 function EmptyState({ description }: { description: ReactNode }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-[8px] py-[32px] text-center text-[13px] text-[#858b9c] dark:text-muted-foreground">
+    <div className="flex flex-col items-center justify-center gap-[8px] py-[32px] text-center text-[13px] text-[#858b9c]">
       {description}
     </div>
   );
@@ -2688,7 +2688,7 @@ function EmptyState({ description }: { description: ReactNode }) {
 
 function DistillTag({ children }: { children: ReactNode }) {
   return (
-    <span className="inline-flex items-center rounded-[6px] bg-[#f2f3f5] px-[8px] py-px text-[12px] font-medium leading-[18px] text-[#5b6273] dark:bg-white/10 dark:text-muted-foreground">
+    <span className="inline-flex items-center rounded-[6px] bg-[#f2f3f5] px-[8px] py-px text-[12px] font-medium leading-[18px] text-[#5b6273]">
       {children}
     </span>
   );
@@ -2833,7 +2833,7 @@ function ActionCombobox({
         className="max-h-[280px] w-[320px] overflow-y-auto p-[4px]"
       >
         {filtered.length === 0 ? (
-          <div className="px-[10px] py-[12px] text-center text-[13px] text-[#858b9c] dark:text-muted-foreground">无匹配动作</div>
+          <div className="px-[10px] py-[12px] text-center text-[13px] text-[#858b9c]">无匹配动作</div>
         ) : (
           filtered.map((option) => (
             <button

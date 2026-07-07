@@ -71,7 +71,7 @@ function DialogContent({
           <DialogPrimitive.Close data-slot="dialog-close" asChild>
             <Button
               variant="ghost"
-              className="absolute top-2 right-2 text-[#858b9c] hover:bg-[#f2f3f7] hover:text-[#18181a] dark:text-muted-foreground dark:hover:bg-white/10 dark:hover:text-white"
+              className="absolute top-2 right-2 text-[#858b9c] hover:bg-[#f2f3f7] hover:text-[#18181a]"
               size="icon-sm"
             >
               <XIcon
@@ -107,7 +107,7 @@ function DialogFooter({
     <div
       data-slot="dialog-footer"
       className={cn(
-        "flex flex-col-reverse gap-2 bg-white px-[24px] py-[12px] sm:flex-row sm:justify-end dark:bg-[#26272d]",
+        "flex flex-col-reverse gap-2 bg-white px-[24px] py-[12px] sm:flex-row sm:justify-end",
         className
       )}
       {...props}

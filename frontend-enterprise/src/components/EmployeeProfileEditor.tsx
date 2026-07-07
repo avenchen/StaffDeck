@@ -145,7 +145,7 @@ export default function EmployeeProfileEditor({
         aria-describedby={undefined}
         className="employee-profile-modal flex max-h-[calc(100dvh-4rem)] w-[calc(100%-2rem)] flex-col gap-[16px] overflow-hidden rounded-[14px] px-[20px] py-[16px] sm:max-w-[860px]"
       >
-        <DialogTitle className="px-[12px] text-[14px] font-normal leading-none text-[#757f9c] dark:text-muted-foreground">
+        <DialogTitle className="px-[12px] text-[14px] font-normal leading-none text-[#757f9c]">
           {agent ? `编辑数字员工档案：${employeeDisplayName(agent)}` : '编辑数字员工档案'}
         </DialogTitle>
 
@@ -155,7 +155,7 @@ export default function EmployeeProfileEditor({
               <EmployeeAvatar agent={agent} size={92} />
               <div>
                 <span className="m-0 block text-[12px] text-muted-foreground">数字员工档案</span>
-                <h4 className="mt-[4px] mb-[6px] text-[18px] font-semibold text-[#18181a] dark:text-white">{agent ? employeeDisplayName(agent) : '数字员工'}</h4>
+                <h4 className="mt-[4px] mb-[6px] text-[18px] font-semibold text-[#18181a]">{agent ? employeeDisplayName(agent) : '数字员工'}</h4>
                 <span className="m-0 block text-[12px] text-muted-foreground">{profile.roleName}</span>
               </div>
               <span className="employee-profile-preview-icon"><IdcardOutlined /></span>
@@ -209,7 +209,7 @@ export default function EmployeeProfileEditor({
 
               <div className="employee-profile-publish">
                 <div>
-                  <strong className="text-[13px] text-[#18181a] dark:text-white">发布到广场</strong>
+                  <strong className="text-[13px] text-[#18181a]">发布到广场</strong>
                   <p className="m-0 mt-[4px] text-[12px] text-muted-foreground">
                     开启后，其他账号可以在对话端和数字员工广场中选择这个员工。
                   </p>
@@ -225,7 +225,7 @@ export default function EmployeeProfileEditor({
             variant="outline"
             disabled={saving}
             onClick={onClose}
-            className="h-[32px] w-[80px] rounded-[10px] border-[#e3e7f1] bg-white px-[12px] text-[14px] font-normal text-[#464c5e] hover:border-[#e3e7f1] hover:bg-[#f6f6f6] hover:text-[#18181a] dark:border-border dark:bg-transparent dark:text-muted-foreground dark:hover:bg-input/50 dark:hover:text-white"
+            className="h-[32px] w-[80px] rounded-[10px] border-[#e3e7f1] bg-white px-[12px] text-[14px] font-normal text-[#464c5e] hover:border-[#e3e7f1] hover:bg-[#f6f6f6] hover:text-[#18181a]"
           >
             取消
           </UIButton>
@@ -245,7 +245,7 @@ export default function EmployeeProfileEditor({
 function LabeledField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="flex flex-col gap-[6px]">
-      <span className="text-[12px] font-medium text-[#464c5e] dark:text-muted-foreground">{label}</span>
+      <span className="text-[12px] font-medium text-[#464c5e]">{label}</span>
       {children}
     </label>
   );
@@ -273,18 +273,18 @@ function TagsField({
 
   return (
     <div className="flex flex-col gap-[8px]">
-      <div className="flex min-h-[34px] flex-wrap items-center gap-[6px] rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-[8px] py-[5px] transition-colors focus-within:border-[#18181a] dark:border-border dark:bg-(--surface) dark:focus-within:border-white/40">
+      <div className="flex min-h-[34px] flex-wrap items-center gap-[6px] rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-[8px] py-[5px] transition-colors focus-within:border-[#18181a]">
         {value.map((tag) => (
           <span
             key={tag}
-            className="inline-flex items-center gap-[4px] rounded-[6px] bg-[#f2f3f7] px-[8px] py-[2px] text-[12px] text-[#18181a] dark:bg-white/10 dark:text-white"
+            className="inline-flex items-center gap-[4px] rounded-[6px] bg-[#f2f3f7] px-[8px] py-[2px] text-[12px] text-[#18181a]"
           >
             {tag}
             <button
               type="button"
               aria-label={`移除 ${tag}`}
               onClick={() => removeTag(tag)}
-              className="grid place-items-center text-[#858b9c] hover:text-[#18181a] dark:hover:text-white"
+              className="grid place-items-center text-[#858b9c] hover:text-[#18181a]"
             >
               <XIcon className="size-[12px]" />
             </button>
@@ -303,7 +303,7 @@ function TagsField({
             }
           }}
           onBlur={() => draft.trim() && addTags(draft)}
-          className="h-[22px] min-w-[80px] flex-1 bg-transparent text-[12px] text-[#17191f] outline-none placeholder:text-[#c0c6d4] dark:text-white dark:placeholder:text-muted-foreground"
+          className="h-[22px] min-w-[80px] flex-1 bg-transparent text-[12px] text-[#17191f] outline-none placeholder:text-[#c0c6d4]"
         />
       </div>
       {suggestions.length > 0 && (
@@ -313,7 +313,7 @@ function TagsField({
               key={item}
               type="button"
               onClick={() => addTags(item)}
-              className="rounded-[6px] border-[0.5px] border-[#e3e7f1] px-[8px] py-[2px] text-[12px] text-[#858b9c] hover:border-[#18181a] hover:text-[#18181a] dark:border-border dark:text-muted-foreground dark:hover:text-white"
+              className="rounded-[6px] border-[0.5px] border-[#e3e7f1] px-[8px] py-[2px] text-[12px] text-[#858b9c] hover:border-[#18181a] hover:text-[#18181a]"
             >
               + {item}
             </button>

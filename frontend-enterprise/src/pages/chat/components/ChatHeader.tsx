@@ -45,18 +45,18 @@ export default function ChatHeader({ chat }: { chat: UseChatSession }) {
           aria-label="账户菜单"
           className="flex shrink-0 items-center gap-[10px] rounded-[10px] py-[4px] pl-[6px] pr-[10px] outline-none transition-colors"
         >
-          <span className="grid size-[32px] shrink-0 place-items-center overflow-hidden rounded-full bg-[#eef1fb] text-[14px] font-medium text-[#7e96dc] dark:bg-white/10">
+          <span className="grid size-[32px] shrink-0 place-items-center overflow-hidden rounded-full bg-[#eef1fb] text-[14px] font-medium text-[#7e96dc]">
             {initial}
           </span>
           <IconChevronDown className="size-[14px] shrink-0 text-[#757F9C]" />
         </DropdownMenuTrigger>
         <DropdownMenuContent
           align="end"
-          className="w-fit min-w-[160px] rounded-[14px] border-0 bg-white p-[6px] shadow-[0px_16px_15px_rgba(0,0,0,0.1)] ring-0 dark:bg-[#26272d] [--accent:#F6F6F6] [--accent-foreground:#18181A] dark:[--accent:#2f3136] dark:[--accent-foreground:#ffffff]"
+          className="w-fit min-w-[160px] rounded-[14px] border-0 bg-white p-[6px] shadow-[0px_16px_15px_rgba(0,0,0,0.1)] ring-0 [--accent:#F6F6F6] [--accent-foreground:#18181A]"
         >
           <DropdownMenuItem
             onSelect={logout}
-            className="h-[36px] cursor-pointer gap-2 rounded-[10px] px-[12px] text-[14px] text-[#464C5E] dark:text-[#a8afbd]"
+            className="h-[36px] cursor-pointer gap-2 rounded-[10px] px-[12px] text-[14px] text-[#464C5E]"
           >
             <IconLogout className="size-[16px]" />
             退出登录

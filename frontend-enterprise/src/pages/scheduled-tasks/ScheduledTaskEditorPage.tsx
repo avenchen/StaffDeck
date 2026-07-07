@@ -48,9 +48,9 @@ export function ScheduledTaskEditPage(props: ScheduledTaskPageProps = {}) {
 type FormErrors = Partial<Record<'title' | 'prompt' | 'run_at' | 'time' | 'weekdays', string>>;
 
 const CARD_CLASS =
-  'rounded-[14px] border border-[#eceef1] bg-white p-[20px] dark:border-white/10 dark:bg-[#26272d]';
-const CARD_TITLE_CLASS = 'mb-[16px] text-[14px] font-medium text-[#18181a] dark:text-white';
-const FIELD_LABEL_CLASS = 'text-[13px] font-medium text-[#18181a] dark:text-white';
+  'rounded-[14px] border border-[#eceef1] bg-white p-[20px]';
+const CARD_TITLE_CLASS = 'mb-[16px] text-[14px] font-medium text-[#18181a]';
+const FIELD_LABEL_CLASS = 'text-[13px] font-medium text-[#18181a]';
 const FIELD_ERROR_CLASS = 'text-[12px] leading-none text-[#d20b0b]';
 
 function ScheduledTaskEditorPage({
@@ -182,7 +182,7 @@ function ScheduledTaskEditorPage({
         <Button
           variant="outline"
           onClick={() => navigate('/enterprise/scheduled-tasks')}
-          className="h-8 gap-1 rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-5 text-[12px] font-normal text-[#757f9c] hover:border-[#cbd3e6] hover:bg-white hover:text-[#18181a] dark:border-border dark:bg-(--surface) dark:text-muted-foreground dark:hover:bg-(--surface)"
+          className="h-8 gap-1 rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-5 text-[12px] font-normal text-[#757f9c] hover:border-[#cbd3e6] hover:bg-white hover:text-[#18181a]"
         >
           <IconArrowRight className="size-3.5 rotate-180" />
           返回定时任务
@@ -334,7 +334,7 @@ function ScheduledTaskEditorPage({
                   {WEEKDAY_OPTIONS.map((option) => (
                     <label
                       key={option.value}
-                      className="flex cursor-pointer items-center gap-[6px] text-[13px] text-[#18181a] dark:text-white"
+                      className="flex cursor-pointer items-center gap-[6px] text-[13px] text-[#18181a]"
                     >
                       <Checkbox
                         checked={values.weekdays.includes(option.value)}
@@ -383,7 +383,7 @@ function ScheduledTaskEditorPage({
               />
             </div>
 
-            <div className="rounded-[12px] border border-[#eef0f4] bg-[#fafbfc] px-[14px] py-[12px] text-[13px] leading-[1.6] text-[#858b9c] dark:border-white/10 dark:bg-white/5">
+            <div className="rounded-[12px] border border-[#eef0f4] bg-[#fafbfc] px-[14px] py-[12px] text-[13px] leading-[1.6] text-[#858b9c]">
               默认使用 forbid 并发策略：上一轮未结束时跳过本次唤醒，避免同一员工重复处理同一批任务。
             </div>
           </div>

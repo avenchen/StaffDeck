@@ -68,7 +68,7 @@ const FILTER_TABS: UnderlineTabItem<LogFilter>[] = [
 ];
 
 const MOBILE_CARD_CLASS =
-  'min-w-0 rounded-[8px] border border-[#eceef1] bg-white p-[14px] dark:border-white/10 dark:bg-[#26272d]';
+  'min-w-0 rounded-[8px] border border-[#eceef1] bg-white p-[14px]';
 
 export default function FeedbackPage({
   currentUser,
@@ -218,7 +218,7 @@ export default function FeedbackPage({
       key: 'title',
       title: '对话任务',
       width: 200,
-      className: 'whitespace-normal text-[#18181a] dark:text-white',
+      className: 'whitespace-normal text-[#18181a]',
       render: (row) => (
         <span className="line-clamp-1 wrap-break-word">
           {row.title || row.summary || row.last_agent_question || row.id}
@@ -295,7 +295,7 @@ export default function FeedbackPage({
   const renderMobileCard = (row: ConversationLogRow) => (
     <article className={MOBILE_CARD_CLASS} key={row.id}>
       <div className="flex min-w-0 items-start justify-between gap-[10px]">
-        <strong className="min-w-0 wrap-break-word text-[14px] font-semibold text-[#18181a] dark:text-white">
+        <strong className="min-w-0 wrap-break-word text-[14px] font-semibold text-[#18181a]">
           {row.title || row.summary || row.last_agent_question || row.id}
         </strong>
         <div className="flex shrink-0 flex-wrap justify-end gap-[4px]">
@@ -340,15 +340,15 @@ export default function FeedbackPage({
           variant="outline"
           onClick={() => void load()}
           disabled={loading}
-          className="h-8 w-[100px] gap-1 rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-5 text-[12px] font-normal text-[#757f9c] hover:border-[#cbd3e6] hover:bg-white hover:text-[#18181a] dark:border-border dark:bg-(--surface) dark:text-muted-foreground dark:hover:bg-(--surface)"
+          className="h-8 w-[100px] gap-1 rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-5 text-[12px] font-normal text-[#757f9c] hover:border-[#cbd3e6] hover:bg-white hover:text-[#18181a]"
         >
           <IconRefresh className={cn('size-3.5', loading && 'animate-spin')} />
           刷新
         </UIButton>
       </div>
 
-      <div className="flex flex-col gap-[24px] rounded-[20px_20px_0_0] bg-white p-[18px_18px_18px_18px] shadow-[0_-4px_16px_0_rgba(0,0,0,0.05)] dark:bg-(--surface)">
-        <div className="flex items-center gap-[6px] px-[12px] text-[#757f9c] dark:text-muted-foreground">
+      <div className="flex flex-col gap-[24px] rounded-[20px_20px_0_0] bg-white p-[18px_18px_18px_18px] shadow-[0_-4px_16px_0_rgba(0,0,0,0.05)]">
+        <div className="flex items-center gap-[6px] px-[12px] text-[#757f9c]">
           <Clock className="size-[14px] shrink-0" />
           <span className="text-[14px] font-normal leading-none">对话记录</span>
         </div>
@@ -361,9 +361,9 @@ export default function FeedbackPage({
         </div>
 
         {summary && (summary.summary || summary.bucket_counts.length > 0) && (
-          <div className="flex flex-col gap-[12px] rounded-[14px] border border-[#eef0f4] bg-[#fafbfc] px-[20px] py-[16px] dark:border-white/10 dark:bg-white/5">
+          <div className="flex flex-col gap-[12px] rounded-[14px] border border-[#eef0f4] bg-[#fafbfc] px-[20px] py-[16px]">
             {summary.summary && (
-              <p className="wrap-break-word text-[13px] leading-[1.7] text-[#464c5e] dark:text-[#c9cdd6]">
+              <p className="wrap-break-word text-[13px] leading-[1.7] text-[#464c5e]">
                 {summary.summary}
               </p>
             )}
@@ -447,9 +447,9 @@ function FeedbackDetailDialog({
         aria-describedby={undefined}
         className="flex max-h-[calc(100dvh-4rem)] w-[calc(100%-2rem)] flex-col gap-[16px] overflow-hidden rounded-[14px] px-[20px] py-[16px] sm:max-w-[900px]"
       >
-        <div className="flex items-center gap-[6px] px-[12px] text-[#757f9c] dark:text-muted-foreground">
+        <div className="flex items-center gap-[6px] px-[12px] text-[#757f9c]">
           <Clock className="size-[14px] shrink-0" />
-          <DialogTitle className="text-[14px] font-normal leading-none text-[#757f9c] dark:text-muted-foreground">
+          <DialogTitle className="text-[14px] font-normal leading-none text-[#757f9c]">
             对话日志详情
           </DialogTitle>
         </div>

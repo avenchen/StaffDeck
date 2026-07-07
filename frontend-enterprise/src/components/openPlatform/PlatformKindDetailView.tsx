@@ -7,7 +7,7 @@ import { Button as UIButton } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 const RETURN_BUTTON_CLASS =
-  'h-8 gap-1 rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-5 text-[12px] font-normal text-[#757f9c] hover:border-[#cbd3e6] hover:bg-white hover:text-[#18181a] dark:border-border dark:bg-(--surface) dark:text-muted-foreground dark:hover:bg-(--surface)';
+  'h-8 gap-1 rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-5 text-[12px] font-normal text-[#757f9c] hover:border-[#cbd3e6] hover:bg-white hover:text-[#18181a]';
 
 import IconArrowRight from '../../assets/icons/arrow-right.svg?react';
 import IconRefresh from '../../assets/icons/refresh.svg?react';
@@ -72,7 +72,7 @@ function DetailSkeleton({ kind }: { kind: PlatformDetailKind }) {
         <div
           key={index}
           className={cn(
-            'w-full animate-pulse rounded-[20px] border-[0.5px] border-[#f0f1f5] bg-[#f6f6f6] dark:border-[#343741] dark:bg-[#202126]',
+            'w-full animate-pulse rounded-[20px] border-[0.5px] border-[#f0f1f5] bg-[#f6f6f6]',
             cardHeight,
           )}
         />
@@ -139,13 +139,13 @@ export default function PlatformKindDetailView({
         </UIButton>
       </div>
 
-      <div className="flex flex-col gap-[24px] rounded-[20px] bg-white p-[18px_18px_24px_18px] shadow-[0_-4px_16px_0_rgba(0,0,0,0.05)] dark:bg-[#202126]">
+      <div className="flex flex-col gap-[24px] rounded-[20px] bg-white p-[18px_18px_24px_18px] shadow-[0_-4px_16px_0_rgba(0,0,0,0.05)]">
         <div className="flex flex-wrap items-stretch gap-[20px]" aria-label={`${title}统计`}>
           <StatCard value={items.length} label={countLabel} className="max-w-[220px]" />
         </div>
 
         <div className="flex flex-col gap-[18px]">
-          <div className="flex items-center gap-[6px] px-[12px] text-[#757f9c] dark:text-[#a8afbd]">
+          <div className="flex items-center gap-[6px] px-[12px] text-[#757f9c]">
             <PlatformIcon className="size-[14px] shrink-0" />
             <span className="text-[14px] font-normal leading-none">{title}</span>
           </div>
@@ -155,7 +155,7 @@ export default function PlatformKindDetailView({
               {signals.map((signal) => (
                 <span
                   key={signal}
-                  className="rounded-[20px] border-[0.5px] border-[#e3e7f1] px-[8px] py-[2px] text-[10px] leading-[normal] text-[#757f9c] dark:border-[#343741] dark:text-[#a8afbd]"
+                  className="rounded-[20px] border-[0.5px] border-[#e3e7f1] px-[8px] py-[2px] text-[10px] leading-[normal] text-[#757f9c]"
                 >
                   {signal}
                 </span>
@@ -163,20 +163,20 @@ export default function PlatformKindDetailView({
             </div>
           )}
 
-          <label className="flex h-[34px] w-full max-w-[360px] items-center gap-[8px] overflow-hidden rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-[12px] transition-colors focus-within:border-[#18181a] dark:border-[#343741] dark:bg-[#26272d] dark:focus-within:border-white/40">
+          <label className="flex h-[34px] w-full max-w-[360px] items-center gap-[8px] overflow-hidden rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-[12px] transition-colors focus-within:border-[#18181a]">
             <IconSearch className="size-[14px] shrink-0 text-[#858b9c]" />
             <input
               value={searchText}
               placeholder={`搜索${countLabel}`}
               onChange={(event) => setSearchText(event.target.value)}
-              className="min-w-0 flex-1 border-0 bg-transparent text-[12px] text-[#18181a] outline-none placeholder:text-[#858b9c] dark:text-white"
+              className="min-w-0 flex-1 border-0 bg-transparent text-[12px] text-[#18181a] outline-none placeholder:text-[#858b9c]"
             />
           </label>
 
           {loading ? (
             <DetailSkeleton kind={kind} />
           ) : filteredItems.length === 0 ? (
-            <div className="grid min-h-[180px] w-full place-items-center content-center gap-[10px] rounded-[18px] border border-dashed border-[#dfe4ec] bg-[#fbfcfd] px-[20px] py-[40px] text-center font-bold text-[#8b94aa] dark:border-[#343741] dark:bg-[#202126] dark:text-[#a8afbd]">
+            <div className="grid min-h-[180px] w-full place-items-center content-center gap-[10px] rounded-[18px] border border-dashed border-[#dfe4ec] bg-[#fbfcfd] px-[20px] py-[40px] text-center font-bold text-[#8b94aa]">
               <IconSearch className="size-[20px] shrink-0" />
               <span>{items.length === 0 ? '暂无开放内容' : '没有匹配的广场内容'}</span>
             </div>

@@ -105,7 +105,7 @@ export default function MemoriesPage({
       key: 'username',
       title: '用户名',
       width: 160,
-      className: 'text-[#18181a] dark:text-white',
+      className: 'text-[#18181a]',
       render: (row) => <span className="truncate">{row.username || '-'}</span>,
     },
     {
@@ -163,7 +163,7 @@ export default function MemoriesPage({
   const renderMobileCard = (row: MemoryUserGroup) => (
     <article className={MOBILE_CARD_CLASS} key={row.key}>
       <div className="flex min-w-0 items-start justify-between gap-[10px]">
-        <strong className="min-w-0 truncate text-[14px] font-semibold text-[#18181a] dark:text-white">
+        <strong className="min-w-0 truncate text-[14px] font-semibold text-[#18181a]">
           {row.username || row.user_id}
         </strong>
         <UIButton
@@ -194,9 +194,9 @@ export default function MemoriesPage({
     >
       <AppHeader onLogout={onLogout} userName={currentUser?.username} title="员工记忆" />
 
-      <div className="mt-[20px] flex flex-col gap-[24px] rounded-[20px_20px_0_0] bg-white p-[18px_18px_18px_18px] shadow-[0_-4px_16px_0_rgba(0,0,0,0.05)] dark:bg-(--surface)">
+      <div className="mt-[20px] flex flex-col gap-[24px] rounded-[20px_20px_0_0] bg-white p-[18px_18px_18px_18px] shadow-[0_-4px_16px_0_rgba(0,0,0,0.05)]">
         <div className="flex flex-col gap-[18px]">
-          <div className="flex items-center gap-[6px] px-[12px] text-[#757f9c] dark:text-muted-foreground">
+          <div className="flex items-center gap-[6px] px-[12px] text-[#757f9c]">
             <IconListBulleted className="size-[14px] shrink-0" />
             <span className="text-[14px] font-normal leading-none">记忆查询</span>
           </div>
@@ -239,7 +239,7 @@ export default function MemoriesPage({
               variant="outline"
               onClick={resetFilter}
               disabled={loading}
-              className="h-[34px] w-[80px] gap-[4px] rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-[20px] text-[12px] font-normal text-[#757f9c] hover:border-[#cbd3e6] hover:bg-white hover:text-[#18181a] dark:border-border dark:bg-(--surface) dark:text-muted-foreground dark:hover:bg-(--surface)"
+              className="h-[34px] w-[80px] gap-[4px] rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-[20px] text-[12px] font-normal text-[#757f9c] hover:border-[#cbd3e6] hover:bg-white hover:text-[#18181a]"
             >
               <IconRefresh className={cn('size-[14px]', loading && 'animate-spin')} />
               重置
@@ -294,15 +294,15 @@ function PrefixInput({
   onChange: (value: string) => void;
 }) {
   return (
-    <label className="flex h-[34px] w-[260px] items-center overflow-hidden rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white transition-colors focus-within:border-[#18181a] max-[900px]:w-full dark:border-border dark:bg-(--surface) dark:focus-within:border-white/40">
-      <span className="flex h-full w-[58px] shrink-0 items-center justify-center border-r-[0.5px] border-[#e3e7f1] bg-[#f6f6f6] text-[12px] text-[#858b9c] dark:border-border dark:bg-white/5 dark:text-muted-foreground">
+    <label className="flex h-[34px] w-[260px] items-center overflow-hidden rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white transition-colors focus-within:border-[#18181a] max-[900px]:w-full">
+      <span className="flex h-full w-[58px] shrink-0 items-center justify-center border-r-[0.5px] border-[#e3e7f1] bg-[#f6f6f6] text-[12px] text-[#858b9c]">
         {label}
       </span>
       <input
         value={value}
         placeholder={placeholder}
         onChange={(event) => onChange(event.target.value)}
-        className="h-full min-w-0 flex-1 bg-transparent px-[12px] text-[12px] text-[#17191f] outline-none placeholder:text-[#c0c6d4] dark:text-white dark:placeholder:text-muted-foreground"
+        className="h-full min-w-0 flex-1 bg-transparent px-[12px] text-[12px] text-[#17191f] outline-none placeholder:text-[#c0c6d4]"
       />
     </label>
   );
@@ -335,9 +335,9 @@ function MemoryDetailDialog({
         aria-describedby={undefined}
         className="flex max-h-[calc(100dvh-4rem)] w-[calc(100%-2rem)] flex-col gap-[16px] overflow-hidden rounded-[14px] px-[20px] py-[16px] sm:max-w-[720px]"
       >
-        <div className="flex items-center gap-[6px] px-[12px] text-[#757f9c] dark:text-muted-foreground">
+        <div className="flex items-center gap-[6px] px-[12px] text-[#757f9c]">
           <IconListBulleted className="size-[14px] shrink-0" />
-          <DialogTitle className="text-[14px] font-normal leading-none text-[#757f9c] dark:text-muted-foreground">
+          <DialogTitle className="text-[14px] font-normal leading-none text-[#757f9c]">
             员工记忆详情
           </DialogTitle>
         </div>
@@ -361,7 +361,7 @@ function MemoryDetailDialog({
               {detail.memories.map((item) => (
                 <article
                   key={item.id}
-                  className="rounded-[12px] border border-[#eef0f4] bg-white p-[14px] dark:border-white/10 dark:bg-white/5"
+                  className="rounded-[12px] border border-[#eef0f4] bg-white p-[14px]"
                 >
                   <div className="flex items-center justify-between gap-[10px]">
                     <MemoryKindBadge kind={item.kind} />
@@ -371,13 +371,13 @@ function MemoryDetailDialog({
                     <span>importance: {item.importance}</span>
                     <span>session: {item.session_id || '-'}</span>
                   </div>
-                  <p className="mt-[8px] text-[13px] leading-[1.6] text-[#18181a] wrap-break-word dark:text-white">
+                  <p className="mt-[8px] text-[13px] leading-[1.6] text-[#18181a] wrap-break-word">
                     {item.content}
                   </p>
                   {Object.keys(item.metadata || {}).length > 0 && (
                     <details className="mt-[10px] text-[12px] text-[#858b9c]">
                       <summary className="cursor-pointer select-none">metadata</summary>
-                      <pre className="mt-[6px] overflow-x-auto rounded-[8px] bg-[#f6f6f6] p-[10px] text-[11px] leading-normal text-[#464c5e] dark:bg-white/5 dark:text-muted-foreground">
+                      <pre className="mt-[6px] overflow-x-auto rounded-[8px] bg-[#f6f6f6] p-[10px] text-[11px] leading-normal text-[#464c5e]">
                         {JSON.stringify(item.metadata, null, 2)}
                       </pre>
                     </details>
@@ -400,9 +400,9 @@ const MEMORY_KIND_TONE: Record<string, MemoryTone> = {
 };
 
 const MEMORY_KIND_TONE_CLASS: Record<MemoryTone, string> = {
-  blue: 'bg-[#e8f0ff] text-[#1a71ff] dark:bg-[#1a71ff]/15',
-  green: 'bg-[#e9f7ef] text-[#2cb360] dark:bg-[#2cb360]/15',
-  gray: 'bg-[#f2f3f7] text-[#858b9c] dark:bg-white/10',
+  blue: 'bg-[#e8f0ff] text-[#1a71ff]',
+  green: 'bg-[#e9f7ef] text-[#2cb360]',
+  gray: 'bg-[#f2f3f7] text-[#858b9c]',
 };
 
 function groupMemories(rows: MemoryRead[]): MemoryUserGroup[] {

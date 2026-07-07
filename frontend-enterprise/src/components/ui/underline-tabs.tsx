@@ -46,7 +46,7 @@ export function UnderlineTabs<T extends string = string>({
       aria-label={ariaLabel}
       className={cn(
         'flex items-start',
-        isLine && 'border-b-[0.5px] border-[#e3e7f1] dark:border-[#2a2b31]',
+        isLine && 'border-b-[0.5px] border-[#e3e7f1]',
         className,
       )}
     >
@@ -65,11 +65,11 @@ export function UnderlineTabs<T extends string = string>({
               isLine ? 'pt-[6px] pb-[8px] mb-[-0.5px] border-b-2' : 'py-[6px]',
               isLine
                 ? active
-                  ? 'border-[#18181a] font-medium text-[#18181a] dark:border-white dark:text-white'
-                  : 'border-transparent font-normal text-[#4f5669] hover:text-[#18181a] dark:text-muted-foreground dark:hover:text-white'
+                  ? 'border-[#18181a] font-medium text-[#18181a]'
+                  : 'border-transparent font-normal text-[#4f5669] hover:text-[#18181a]'
                 : active
-                  ? 'font-medium text-[#18181A] dark:text-white'
-                  : 'font-normal text-[#858B9C] hover:text-[#18181A] dark:hover:text-white',
+                  ? 'font-medium text-[#18181A]'
+                  : 'font-normal text-[#858B9C] hover:text-[#18181A]',
               'disabled:cursor-not-allowed disabled:opacity-50',
               tabClassName,
             )}
@@ -78,7 +78,7 @@ export function UnderlineTabs<T extends string = string>({
             {!isLine && active && (
               <span
                 aria-hidden="true"
-                className="absolute top-[33px] left-1/2 h-[3px] w-[10px] -translate-x-1/2 rounded-[4px] bg-[#18181A] dark:bg-white"
+                className="absolute top-[33px] left-1/2 h-[3px] w-[10px] -translate-x-1/2 rounded-[4px] bg-[#18181A]"
               />
             )}
           </button>

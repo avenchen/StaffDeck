@@ -209,7 +209,7 @@ export default function ModelsPage({
       <DropdownMenu>
         <DropdownMenuTrigger
           aria-label="模型操作"
-          className="ml-auto grid size-7 place-items-center rounded-[8px] text-[#1a71ff] transition-colors outline-none hover:bg-black/5 hover:text-[#4a8dff] focus-visible:bg-black/5 dark:hover:bg-white/10"
+          className="ml-auto grid size-7 place-items-center rounded-[8px] text-[#1a71ff] transition-colors outline-none hover:bg-black/5 hover:text-[#4a8dff] focus-visible:bg-black/5"
         >
           <IconMore className="size-3.5" />
         </DropdownMenuTrigger>
@@ -236,11 +236,11 @@ export default function ModelsPage({
       key: 'name',
       title: '名称',
       width: 240,
-      className: 'text-[#18181a] dark:text-white',
+      className: 'text-[#18181a]',
       render: (row) => (
         <div className="flex min-w-0 flex-col gap-[2px]">
           <span className="flex min-w-0 items-center gap-[6px]">
-            <span className="truncate font-medium leading-[18px] text-[#18181a] dark:text-white">{row.name}</span>
+            <span className="truncate font-medium leading-[18px] text-[#18181a]">{row.name}</span>
             {row.is_default && <StatusBadge tone="green">默认</StatusBadge>}
           </span>
           <span className="truncate text-[#858b9c]">
@@ -273,13 +273,13 @@ export default function ModelsPage({
 
   const renderMobileCard = (row: ModelConfigRead) => (
     <article
-      className="min-w-0 rounded-[8px] border border-[#eceef1] bg-white p-[14px] dark:border-white/10 dark:bg-[#26272d]"
+      className="min-w-0 rounded-[8px] border border-[#eceef1] bg-white p-[14px]"
       key={row.id}
     >
       <div className="flex min-w-0 items-start justify-between gap-[10px]">
         <div className="min-w-0">
           <span className="flex min-w-0 items-center gap-[6px]">
-            <strong className="truncate text-[14px] font-semibold text-[#18181a] dark:text-white">{row.name}</strong>
+            <strong className="truncate text-[14px] font-semibold text-[#18181a]">{row.name}</strong>
             {row.is_default && <StatusBadge tone="green">默认</StatusBadge>}
           </span>
           <span className="mt-[2px] block truncate text-[12px] text-[#858b9c]">
@@ -304,21 +304,21 @@ export default function ModelsPage({
           variant="outline"
           onClick={() => void load()}
           disabled={loading}
-          className="h-[34px] gap-[4px] rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-[20px] text-[12px] font-normal text-[#757f9c] hover:border-[#cbd3e6] hover:bg-white hover:text-[#18181a] dark:border-border dark:bg-(--surface) dark:text-muted-foreground dark:hover:bg-(--surface)"
+          className="h-[34px] gap-[4px] rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-[20px] text-[12px] font-normal text-[#757f9c] hover:border-[#cbd3e6] hover:bg-white hover:text-[#18181a]"
         >
           <IconRefresh className={cn('size-[14px]', loading && 'animate-spin')} />
           刷新
         </UIButton>
         <UIButton
           onClick={createBlank}
-          className="h-[34px] gap-[4px] rounded-[10px] bg-[#18181a] px-[20px] text-[12px] font-normal text-white hover:bg-[#303030] dark:bg-white dark:text-[#18181a] dark:hover:bg-white/90"
+          className="h-[34px] gap-[4px] rounded-[10px] bg-[#18181a] px-[20px] text-[12px] font-normal text-white hover:bg-[#303030]"
         >
           <IconAdd className="size-[14px]" />
           新建模型
         </UIButton>
       </div>
 
-      <div className="flex flex-col gap-[24px] rounded-[20px_20px_0_0] bg-white p-[18px_18px_24px_18px] shadow-[0_-4px_16px_0_rgba(0,0,0,0.05)] dark:bg-(--surface)">
+      <div className="flex flex-col gap-[24px] rounded-[20px_20px_0_0] bg-white p-[18px_18px_24px_18px] shadow-[0_-4px_16px_0_rgba(0,0,0,0.05)]">
         <div className="flex flex-wrap items-stretch gap-[20px]" aria-label="模型统计">
           <StatCard label="模型" value={rows.length} />
           <StatCard label="已启用" value={enabledCount} tone="green" />
@@ -327,18 +327,18 @@ export default function ModelsPage({
         </div>
 
         <div className="flex flex-col gap-[18px]">
-          <div className="flex items-center gap-[6px] px-[12px] text-[#757f9c] dark:text-muted-foreground">
+          <div className="flex items-center gap-[6px] px-[12px] text-[#757f9c]">
             <IconModels className="size-[14px] shrink-0" />
             <span className="text-[14px] font-normal leading-none">模型列表</span>
           </div>
 
-          <label className="flex h-[34px] w-[300px] items-center gap-[8px] overflow-hidden rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-[12px] transition-colors focus-within:border-[#18181a] max-[900px]:w-full dark:border-border dark:bg-(--surface) dark:focus-within:border-white/40">
+          <label className="flex h-[34px] w-[300px] items-center gap-[8px] overflow-hidden rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-[12px] transition-colors focus-within:border-[#18181a] max-[900px]:w-full">
             <IconSearch className="size-[14px] shrink-0 text-[#858b9c]" />
             <input
               value={searchText}
               placeholder="搜索名称、模型、Provider 或 Base URL"
               onChange={(event) => setSearchText(event.target.value)}
-              className="h-full min-w-0 flex-1 bg-transparent text-[12px] text-[#17191f] outline-none placeholder:text-[#c0c6d4] dark:text-white dark:placeholder:text-muted-foreground"
+              className="h-full min-w-0 flex-1 bg-transparent text-[12px] text-[#17191f] outline-none placeholder:text-[#c0c6d4]"
             />
             {searchText && (
               <button
@@ -388,9 +388,9 @@ export default function ModelsPage({
           aria-describedby={undefined}
           className="flex max-h-[calc(100dvh-4rem)] w-[calc(100%-2rem)] flex-col gap-[16px] overflow-hidden rounded-[14px] px-[20px] py-[16px] sm:max-w-[640px]"
         >
-          <div className="flex items-center gap-[6px] px-[12px] text-[#757f9c] dark:text-muted-foreground">
+          <div className="flex items-center gap-[6px] px-[12px] text-[#757f9c]">
             <IconModels className="size-[14px] shrink-0" />
-            <DialogTitle className="min-w-0 truncate text-[14px] font-normal leading-none text-[#757f9c] dark:text-muted-foreground">
+            <DialogTitle className="min-w-0 truncate text-[14px] font-normal leading-none text-[#757f9c]">
               {selected ? `编辑模型：${selected.name}` : '新建模型'}
             </DialogTitle>
           </div>
@@ -442,11 +442,11 @@ export default function ModelsPage({
             <div className="mt-[16px] flex flex-wrap items-center gap-[24px]">
               <label className="flex cursor-pointer items-center gap-[8px]">
                 <Switch checked={form.is_default} onCheckedChange={(next) => updateForm('is_default', next)} />
-                <span className="text-[12px] font-medium text-[#464c5e] dark:text-muted-foreground">设为默认</span>
+                <span className="text-[12px] font-medium text-[#464c5e]">设为默认</span>
               </label>
               <label className="flex cursor-pointer items-center gap-[8px]">
                 <Switch checked={form.enabled} onCheckedChange={(next) => updateForm('enabled', next)} />
-                <span className="text-[12px] font-medium text-[#464c5e] dark:text-muted-foreground">启用</span>
+                <span className="text-[12px] font-medium text-[#464c5e]">启用</span>
               </label>
             </div>
           </div>
@@ -456,7 +456,7 @@ export default function ModelsPage({
               variant="outline"
               disabled={saving}
               onClick={closeEditor}
-              className="h-[32px] w-[80px] rounded-[10px] border-[#e3e7f1] bg-white px-[12px] text-[14px] font-normal text-[#464c5e] hover:border-[#e3e7f1] hover:bg-[#f6f6f6] hover:text-[#18181a] dark:border-border dark:bg-transparent dark:text-muted-foreground dark:hover:bg-input/50 dark:hover:text-white"
+              className="h-[32px] w-[80px] rounded-[10px] border-[#e3e7f1] bg-white px-[12px] text-[14px] font-normal text-[#464c5e] hover:border-[#e3e7f1] hover:bg-[#f6f6f6] hover:text-[#18181a]"
             >
               取消
             </UIButton>
@@ -477,7 +477,7 @@ export default function ModelsPage({
 function LabeledField({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="flex flex-col gap-[6px]">
-      <span className="text-[12px] font-medium text-[#464c5e] dark:text-muted-foreground">{label}</span>
+      <span className="text-[12px] font-medium text-[#464c5e]">{label}</span>
       {children}
     </label>
   );

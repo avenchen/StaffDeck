@@ -45,9 +45,9 @@ export {
 
 const MOBILE_CARD_HEAD_CLASS = 'flex min-w-0 items-start justify-between gap-[10px]';
 const MOBILE_META_CLASS =
-  'mt-[12px] grid grid-cols-2 gap-[8px] max-[520px]:grid-cols-1 [&>span]:min-w-0 [&>span]:rounded-[10px] [&>span]:border [&>span]:border-[#eef0f4] [&>span]:bg-[#fafbfc] [&>span]:px-[10px] [&>span]:py-[9px] [&>span]:text-[12px] [&>span]:leading-[1.45] [&>span]:text-[#18181a] [&>span]:[overflow-wrap:anywhere] [&_b]:mb-[3px] [&_b]:block [&_b]:text-[11px] [&_b]:font-semibold [&_b]:text-[#858b9c] dark:[&>span]:border-white/10 dark:[&>span]:bg-white/5 dark:[&>span]:text-white';
+  'mt-[12px] grid grid-cols-2 gap-[8px] max-[520px]:grid-cols-1 [&>span]:min-w-0 [&>span]:rounded-[10px] [&>span]:border [&>span]:border-[#eef0f4] [&>span]:bg-[#fafbfc] [&>span]:px-[10px] [&>span]:py-[9px] [&>span]:text-[12px] [&>span]:leading-[1.45] [&>span]:text-[#18181a] [&>span]:[overflow-wrap:anywhere] [&_b]:mb-[3px] [&_b]:block [&_b]:text-[11px] [&_b]:font-semibold [&_b]:text-[#858b9c]';
 const MOBILE_TITLE_CLASS =
-  'min-w-0 wrap-break-word text-[14px] font-semibold text-[#18181a] dark:text-white';
+  'min-w-0 wrap-break-word text-[14px] font-semibold text-[#18181a]';
 const MOBILE_SUMMARY_CLASS = 'mt-[8px] line-clamp-2 text-[12px] leading-[1.55] text-[#858b9c]';
 
 export default function ScheduledTasksPage({
@@ -233,7 +233,7 @@ export default function ScheduledTasksPage({
       className: 'whitespace-normal',
       render: (row) => (
         <div className="flex min-w-0 flex-col gap-[4px]">
-          <span className="font-medium leading-[18px] text-[#18181a] dark:text-white">{row.title}</span>
+          <span className="font-medium leading-[18px] text-[#18181a]">{row.title}</span>
           <span className="truncate">{row.prompt}</span>
         </div>
       ),
@@ -416,7 +416,7 @@ export default function ScheduledTasksPage({
           variant="outline"
           onClick={() => void load()}
           disabled={loading}
-          className="h-8 w-[100px] gap-1 rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-5 text-[12px] font-normal text-[#757f9c] hover:border-[#cbd3e6] hover:bg-white hover:text-[#18181a] dark:border-border dark:bg-(--surface) dark:text-muted-foreground dark:hover:bg-(--surface)"
+          className="h-8 w-[100px] gap-1 rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-5 text-[12px] font-normal text-[#757f9c] hover:border-[#cbd3e6] hover:bg-white hover:text-[#18181a]"
         >
           <IconRefresh className={cn('size-3.5', loading && 'animate-spin')} />
           刷新
@@ -432,7 +432,7 @@ export default function ScheduledTasksPage({
       </div>
 
       {selectedAgent?.is_overall ? (
-        <div className="mt-[24px] flex min-h-[200px] items-center justify-center rounded-[14px] bg-[#f6f6f6] text-[13px] text-[#858b9c] dark:bg-[#26272d] dark:text-muted-foreground">
+        <div className="mt-[24px] flex min-h-[200px] items-center justify-center rounded-[14px] bg-[#f6f6f6] text-[13px] text-[#858b9c]">
           请先选择一个数字员工再配置定时任务。
         </div>
       ) : (
@@ -491,9 +491,9 @@ export default function ScheduledTasksPage({
           aria-describedby={undefined}
           className="flex max-h-[calc(100dvh-4rem)] w-[calc(100%-2rem)] flex-col gap-[16px] overflow-hidden rounded-[14px] px-[20px] py-[16px] sm:max-w-[920px]"
         >
-          <div className="flex items-center gap-[6px] px-[12px] text-[#757f9c] dark:text-muted-foreground">
+          <div className="flex items-center gap-[6px] px-[12px] text-[#757f9c]">
             <IconAlignJustify className="size-[14px] shrink-0" />
-            <DialogTitle className="text-[14px] font-normal leading-none text-[#757f9c] dark:text-muted-foreground">
+            <DialogTitle className="text-[14px] font-normal leading-none text-[#757f9c]">
               执行记录
             </DialogTitle>
           </div>

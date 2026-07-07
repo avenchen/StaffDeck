@@ -107,7 +107,7 @@ export default function EmployeeAvatarEditor({
         aria-describedby={undefined}
         className="employee-avatar-modal flex max-h-[calc(100dvh-4rem)] w-[calc(100%-2rem)] flex-col gap-[16px] overflow-hidden rounded-[14px] px-[20px] py-[16px] sm:max-w-[680px]"
       >
-        <DialogTitle className="px-[12px] text-[14px] font-normal leading-none text-[#757f9c] dark:text-muted-foreground">
+        <DialogTitle className="px-[12px] text-[14px] font-normal leading-none text-[#757f9c]">
           {agent ? `设置头像：${employeeDisplayName(agent)}` : '设置头像'}
         </DialogTitle>
         <div className="min-h-0 flex-1 overflow-y-auto px-[12px]">
@@ -115,7 +115,7 @@ export default function EmployeeAvatarEditor({
             <div className="employee-avatar-preview">
               <EmployeeAvatar profile={profile} size={104} />
               <div>
-                <strong className="m-0 block text-[14px] text-[#18181a] dark:text-white">{mode === 'upload' ? '自定义头像' : selected.label}</strong>
+                <strong className="m-0 block text-[14px] text-[#18181a]">{mode === 'upload' ? '自定义头像' : selected.label}</strong>
                 <p className="m-0 mt-[4px] text-[12px] text-muted-foreground">
                   头像会显示在我的数字员工、数字员工档案页和对话端的员工选择中。
                 </p>
@@ -124,7 +124,7 @@ export default function EmployeeAvatarEditor({
 
             <div className="employee-avatar-section">
               <div className="employee-avatar-section-head">
-                <strong className="text-[13px] text-[#18181a] dark:text-white">默认头像</strong>
+                <strong className="text-[13px] text-[#18181a]">默认头像</strong>
                 <span className="text-[12px] text-muted-foreground">选择一个适合岗位的默认头像。</span>
               </div>
           <div className="employee-avatar-preset-grid">
@@ -179,7 +179,7 @@ export default function EmployeeAvatarEditor({
             variant="outline"
             disabled={saving}
             onClick={onClose}
-            className="h-[32px] w-[92px] rounded-[10px] border-[#e3e7f1] bg-white px-[12px] text-[14px] font-normal text-[#464c5e] hover:border-[#e3e7f1] hover:bg-[#f6f6f6] hover:text-[#18181a] dark:border-border dark:bg-transparent dark:text-muted-foreground dark:hover:bg-input/50 dark:hover:text-white"
+            className="h-[32px] w-[92px] rounded-[10px] border-[#e3e7f1] bg-white px-[12px] text-[14px] font-normal text-[#464c5e] hover:border-[#e3e7f1] hover:bg-[#f6f6f6] hover:text-[#18181a]"
           >
             取消
           </UIButton>
