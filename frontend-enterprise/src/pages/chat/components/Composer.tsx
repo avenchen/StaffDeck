@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import EmployeeAvatar from '@/components/EmployeeAvatar';
 import StaffdeckIcon from '@/components/StaffdeckIcon';
@@ -85,12 +85,20 @@ export default function Composer({ chat }: { chat: UseChatSession }) {
   } = chat;
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [scheduleIntentHovered, setScheduleIntentHovered] = useState(false);
+
   useEffect(() => {
     const element = textareaRef.current;
     if (!element) return;
     element.style.height = 'auto';
     element.style.height = `${Math.min(element.scrollHeight, 200)}px`;
   }, [input]);
+
+  useEffect(() => {
+    if (composerIntent !== 'scheduled_task') {
+      setScheduleIntentHovered(false);
+    }
+  }, [composerIntent]);
 
   const sendDisabled = !currentSessionRunning
     && ((!input.trim() && readyComposerAttachments.length === 0) || uploadingComposerAttachment);
@@ -285,27 +293,36 @@ export default function Composer({ chat }: { chat: UseChatSession }) {
                 </DropdownMenuContent>
               </DropdownMenu>
               {composerIntent === 'scheduled_task' && (
-                <div className={CHAT_COMPOSER_INTENT_CHIP_CLASS}>
-                  <button
-                    type="button"
-                    className="group/intent-close relative inline-grid size-[16px] shrink-0 place-items-center rounded-full text-[#858b9c] transition-colors hover:bg-white hover:text-[#18181a]"
-                    onClick={() => setComposerIntent(null)}
-                    aria-label="移除定时任务"
-                    title="移除定时任务"
+                <button
+                  type="button"
+                  className={CHAT_COMPOSER_INTENT_CHIP_CLASS}
+                  onMouseEnter={() => setScheduleIntentHovered(true)}
+                  onMouseLeave={() => setScheduleIntentHovered(false)}
+                  onFocus={() => setScheduleIntentHovered(true)}
+                  onBlur={() => setScheduleIntentHovered(false)}
+                  onClick={() => setComposerIntent(null)}
+                  aria-label="取消定时任务"
+                  title="取消定时任务"
+                >
+                  <span className={cn(
+                    'relative inline-grid size-[16px] shrink-0 place-items-center rounded-full transition-colors',
+                    scheduleIntentHovered ? 'text-[#18181a]' : 'text-[#858b9c]',
+                  )}
                   >
                     <StaffdeckIcon
                       name="clock"
                       size={14}
-                      className="transition-opacity group-hover/intent-close:opacity-0"
+                      className={cn('transition-opacity', scheduleIntentHovered ? 'opacity-0' : 'opacity-100')}
                     />
                     <StaffdeckIcon
                       name="close"
-                      size={14}
-                      className="absolute transition-opacity opacity-0 group-hover/intent-close:opacity-100"
+                      size={9}
+                      className={cn('absolute transition-opacity', scheduleIntentHovered ? 'opacity-100' : 'opacity-0')}
+                      style={{ width: 9, height: 9 }}
                     />
-                  </button>
+                  </span>
                   <span>定时任务</span>
-                </div>
+                </button>
               )}
               <div className={CHAT_COMPOSER_HINT_CLASS}>Enter 发送 / Shift+Enter 换行</div>
             </div>
