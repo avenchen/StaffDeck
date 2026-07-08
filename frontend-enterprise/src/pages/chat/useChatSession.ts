@@ -1852,6 +1852,43 @@ export function useChatSession() {
       notifyStream();
       return;
     }
+    if (item.event === 'stream_interrupted' || item.event === 'error_occurred') {
+      const interruptedStreamTurnId = eventStream.turnId || traceTurnId;
+      finishTrace(traceTurnId, true);
+      if (!shouldTouchStream) {
+        window.setTimeout(() => {
+          loadMessages(eventSessionId);
+          loadTraces(eventSessionId);
+          syncTurnUntilAssistant(eventSessionId, traceTurnId);
+        }, 120);
+        notifyStream();
+        return;
+      }
+      clearStreamSlot(eventSessionId, true);
+      upsertTraceLine(traceTurnId, {
+        id: 'generation_interrupted',
+        kind: 'thinking',
+        text: '响应生成中断',
+        detail: typeof item.data.reason === 'string'
+          ? item.data.reason
+          : typeof item.data.message === 'string'
+            ? item.data.message
+            : undefined,
+        state: 'failed',
+      });
+      window.setTimeout(() => {
+        loadMessages(eventSessionId);
+        loadTraces(eventSessionId);
+        syncTurnUntilAssistant(eventSessionId, traceTurnId);
+      }, 120);
+      setRunningTurn((current) => (
+        current?.sessionId === eventSessionId && (current.turnId === traceTurnId || current.turnId === interruptedStreamTurnId)
+          ? null
+          : current
+      ));
+      notifyStream();
+      return;
+    }
     if (item.event === 'complete' || item.event === 'done') {
       if (!shouldTouchStream) {
         finishTrace(traceTurnId);
@@ -1942,6 +1979,8 @@ export function useChatSession() {
     || event.event === 'done'
     || event.event === 'stream_end'
     || event.event === 'stream_cancelled'
+    || event.event === 'stream_interrupted'
+    || event.event === 'error_occurred'
     || event.event === 'error'
   ), []);
 
@@ -2453,7 +2492,12 @@ export function useChatSession() {
           }
           return;
         }
-        if (item.event === 'stream_end' || item.event === 'stream_cancelled') {
+        if (
+          item.event === 'stream_end'
+          || item.event === 'stream_cancelled'
+          || item.event === 'stream_interrupted'
+          || item.event === 'error_occurred'
+        ) {
           markStreamTerminal();
         }
         handleStreamEvent(item, eventSessionId, turnId);

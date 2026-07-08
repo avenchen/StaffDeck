@@ -20,6 +20,7 @@ from app.db.models import (
     KnowledgeDocument,
     utc_now,
 )
+from app.knowledge.citations import CITATION_EXCERPT_CHAR_LIMIT
 
 OKF_VERSION = "0.1"
 RESERVED_FILENAMES = {"index.md", "log.md"}
@@ -168,7 +169,7 @@ def selected_concept_cards(concepts: list[KnowledgeConcept]) -> list[dict[str, A
             "links": row.links_json or [],
             "citations": row.citations_json or [],
             "source_refs": row.source_refs_json or [],
-            "content_excerpt": _strip_frontmatter(row.content_md).strip()[:1600],
+            "content": _strip_frontmatter(row.content_md).strip()[:CITATION_EXCERPT_CHAR_LIMIT],
         }
         for row in concepts
     ]

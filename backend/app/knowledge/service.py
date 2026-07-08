@@ -38,6 +38,7 @@ from app.knowledge.okf import (
     selected_concept_cards,
     upsert_concepts,
 )
+from app.knowledge.citations import CITATION_EXCERPT_CHAR_LIMIT
 from app.llm import LLMClient, LLMError
 from app.skills.skill_schema import SkillCard
 
@@ -1520,7 +1521,8 @@ def _build_evidence_pack(query: str, chunks: list[KnowledgeChunk]) -> list[dict[
                 "source_path": chunk.source_ref,
                 "section_path": (chunk.metadata_json or {}).get("section_path"),
                 "summary": chunk.summary,
-                "excerpt": chunk.content[:1200],
+                "content": chunk.content[:CITATION_EXCERPT_CHAR_LIMIT],
+                "excerpt": chunk.content[:CITATION_EXCERPT_CHAR_LIMIT],
                 "relevance_score": round(score, 2),
                 "confidence_reason": "引用来源摘要、章节路径或正文与查询相关",
             }

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-import queue
+import re
 import threading
 import time
 from datetime import timedelta
@@ -22,6 +22,8 @@ from app.db.models import (
     AgentProfile,
     ChatSession,
     HumanHandoffRequest,
+    KnowledgeChunk,
+    KnowledgeConcept,
     Message,
     MessageFeedback,
     Skill,
@@ -31,6 +33,7 @@ from app.db.models import (
     utc_now,
 )
 from app.feedback import enqueue_feedback_analysis
+from app.knowledge.citations import CITATION_EXCERPT_CHAR_LIMIT
 from app.llm import LLMClient, LLMError
 from app.security.auth import get_current_user
 from app.security.tenant import ensure_tenant
@@ -51,12 +54,25 @@ from app.session.session_schema import (
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 CANCELLED_ASSISTANT_REPLY = "已停止生成"
+INTERRUPTED_ASSISTANT_REPLY = "本次响应中断，请重试发送。"
 CHAT_ADMIN_USERNAMES = {"admin", "admin_demo"}
 STREAM_REPLY_CHUNK_SIZE = 96
+STREAM_RELAY_POLL_SECONDS = 0.08
+STREAM_RELAY_IDLE_TIMEOUT_SECONDS = 660.0
 MAX_CHAT_ATTACHMENT_BYTES = 12 * 1024 * 1024
 MAX_CHAT_ATTACHMENTS = 8
 SESSION_TITLE_SUMMARY_EVENT = "session_title_summarized"
 EVENT_PAYLOAD_META_KEYS = {"id", "event", "type", "event_type", "created_at", "data"}
+STREAM_RELAY_EVENT_ALIASES = {
+    "router_decision_created": "router_decision",
+    "stream_status": "status",
+}
+STREAM_RELAY_TERMINAL_EVENTS = {
+    "complete",
+    "error_occurred",
+    "stream_cancelled",
+    "stream_interrupted",
+}
 SESSION_TITLE_PROMPT = """你是任务派发台的会话标题编辑器。
 
 根据首轮用户需求和员工回复，生成一个简短、可读、具体的中文标题。
@@ -122,8 +138,9 @@ def message_read(
     row: Message,
     feedback_rating: str | None = None,
     turn_id: str | None = None,
+    db: Session | None = None,
 ) -> MessageRead:
-    metadata = row.metadata_json or {}
+    metadata = _message_metadata_read(row, db)
     metadata_turn_id = str(metadata.get("turn_id") or metadata.get("user_message_id") or "").strip()
     return MessageRead(
         id=row.id,
@@ -136,6 +153,58 @@ def message_read(
         created_at=row.created_at.isoformat(),
         feedback_rating=feedback_rating,
     )
+
+
+def _message_metadata_read(row: Message, db: Session | None = None) -> dict:
+    metadata = dict(row.metadata_json or {})
+    if db is None:
+        return metadata
+    citations = metadata.get("knowledge_citations")
+    if not isinstance(citations, list) or not citations:
+        return metadata
+    hydrated: list[object] = []
+    changed = False
+    for citation in citations:
+        if not isinstance(citation, dict):
+            hydrated.append(citation)
+            continue
+        content = _citation_content_from_db(db, row.tenant_id, citation)
+        if content:
+            next_citation = dict(citation)
+            next_citation["content"] = content[:CITATION_EXCERPT_CHAR_LIMIT]
+            next_citation["excerpt"] = content[:CITATION_EXCERPT_CHAR_LIMIT]
+            hydrated.append(next_citation)
+            changed = True
+        else:
+            hydrated.append(citation)
+    if changed:
+        metadata["knowledge_citations"] = hydrated
+    return metadata
+
+
+def _citation_content_from_db(db: Session, tenant_id: str, citation: dict) -> str:
+    concept_id = str(citation.get("concept_id") or "").strip()
+    if concept_id:
+        concept = db.exec(
+            select(KnowledgeConcept).where(
+                KnowledgeConcept.tenant_id == tenant_id,
+                or_(KnowledgeConcept.concept_id == concept_id, KnowledgeConcept.id == concept_id),
+            )
+        ).first()
+        if concept:
+            content = _strip_okf_frontmatter(concept.content_md or "")
+            if content:
+                return content
+    chunk_id = str(citation.get("chunk_id") or "").strip()
+    if chunk_id:
+        chunk = db.get(KnowledgeChunk, chunk_id)
+        if chunk and chunk.tenant_id == tenant_id and chunk.content:
+            return chunk.content
+    return ""
+
+
+def _strip_okf_frontmatter(value: str) -> str:
+    return re.sub(r"^---[\s\S]*?---\s*", "", value or "", count=1).strip()
 
 
 def human_handoff_read(row: HumanHandoffRequest) -> HumanHandoffRead:
@@ -790,10 +859,20 @@ def chat_stream(
     if not request.message.strip() and not request.attachments:
         raise HTTPException(status_code=400, detail="Message cannot be empty")
 
-    event_queue: queue.Queue[str | None] = queue.Queue()
+    relay_ready = threading.Event()
+    worker_done = threading.Event()
+    source_session_id = {"value": request.session_id or ""}
+    worker_terminal = {"seen": False}
+    initial_cursor = _latest_event_cursor(db, request.tenant_id, request.session_id) if request.session_id else None
 
-    def enqueue(event: object, data: object) -> None:
-        event_queue.put(_sse(event, data))
+    def set_source_session(session_id: str) -> None:
+        if not session_id:
+            return
+        source_session_id["value"] = session_id
+        relay_ready.set()
+
+    if source_session_id["value"]:
+        relay_ready.set()
 
     def run_stream_worker() -> None:
         try:
@@ -807,24 +886,77 @@ def chat_stream(
                         request.session_id,
                     )
                     if request.interaction_mode == "scheduled_task":
-                        enqueue("status", {"phase": "scheduled_task_intent", "text": "识别定时任务需求"})
-                        enqueue("status", {"phase": "scheduled_task_parse", "text": "解析执行计划"})
+                        _persist_relay_only_event(
+                            worker_db,
+                            request.tenant_id,
+                            chat_session.id,
+                            "stream_status",
+                            {"phase": "scheduled_task_intent", "text": "识别定时任务需求"},
+                        )
+                        _persist_relay_only_event(
+                            worker_db,
+                            request.tenant_id,
+                            chat_session.id,
+                            "stream_status",
+                            {"phase": "scheduled_task_parse", "text": "解析执行计划"},
+                        )
                     scheduled_response = _maybe_handle_scheduled_task_request(worker_db, request, chat_session)
                     if scheduled_response:
                         response, draft = scheduled_response
-                        enqueue(
-                            "status",
+                        set_source_session(response.session_id)
+                        message_id, client_turn_id = _resolve_turn_ids_from_events(
+                            worker_db,
+                            request.tenant_id,
+                            response.session_id,
+                            request.client_turn_id or "",
+                        )
+                        turn_payload = {
+                            "turn_id": message_id,
+                            "user_message_id": message_id,
+                            "client_turn_id": client_turn_id or None,
+                        }
+                        _persist_relay_only_event(
+                            worker_db,
+                            request.tenant_id,
+                            response.session_id,
+                            "stream_status",
                             {
                                 "phase": "scheduled_task_draft",
                                 "text": "生成定时任务草案",
                                 **draft.model_dump(mode="json"),
+                                **turn_payload,
                             },
                         )
-                        enqueue("scheduled_task_draft", draft.model_dump(mode="json"))
+                        _persist_relay_only_event(
+                            worker_db,
+                            request.tenant_id,
+                            response.session_id,
+                            "scheduled_task_draft",
+                            {**draft.model_dump(mode="json"), **turn_payload},
+                        )
                         for chunk in _reply_chunks(response.reply):
-                            enqueue("stream_delta", {"content": chunk})
-                        enqueue("stream_end", {})
-                        enqueue("complete", response.model_dump(mode="json"))
+                            _persist_relay_only_event(
+                                worker_db,
+                                request.tenant_id,
+                                response.session_id,
+                                "stream_delta",
+                                {"content": chunk, **turn_payload},
+                            )
+                        _persist_relay_only_event(
+                            worker_db,
+                            request.tenant_id,
+                            response.session_id,
+                            "stream_end",
+                            turn_payload,
+                        )
+                        _persist_relay_only_event(
+                            worker_db,
+                            request.tenant_id,
+                            response.session_id,
+                            "complete",
+                            {**response.model_dump(mode="json"), **turn_payload},
+                        )
+                        worker_terminal["seen"] = True
                         _schedule_session_title_summary(
                             request.tenant_id,
                             request.user_id,
@@ -833,28 +965,46 @@ def chat_stream(
                         )
                         return
                 for item in AgentLoop(worker_db).handle_turn_stream(request):
-                    enqueue(item["event"], item["data"])
+                    event_name = str(item["event"])
+                    data = item["data"] if isinstance(item.get("data"), dict) else {}
+                    item_session_id = str(data.get("sessionId") or request.session_id or source_session_id["value"] or "")
+                    if item_session_id:
+                        set_source_session(item_session_id)
+                    if event_name == "session_created" and item_session_id:
+                        _persist_relay_only_event(worker_db, request.tenant_id, item_session_id, event_name, data)
+                    elif event_name == "complete" and item_session_id:
+                        _persist_relay_only_event(worker_db, request.tenant_id, item_session_id, event_name, data)
+                        worker_terminal["seen"] = True
+                    elif event_name in {"stream_cancelled", "stream_interrupted", "error"}:
+                        worker_terminal["seen"] = True
                     if item["event"] == "user_message_received":
-                        source_session_id = str(item["data"].get("sessionId") or request.session_id or "")
+                        event_source_session_id = str(item["data"].get("sessionId") or request.session_id or "")
+                        set_source_session(event_source_session_id)
                         _schedule_session_title_summary(
                             request.tenant_id,
                             request.user_id,
-                            source_session_id,
+                            event_source_session_id,
                             request.agent_id,
                         )
                         continue
                     if item["event"] == "complete":
-                        source_session_id = str(item["data"].get("sessionId") or request.session_id or "")
+                        event_source_session_id = str(item["data"].get("sessionId") or request.session_id or "")
                         _schedule_session_title_summary(
                             request.tenant_id,
                             request.user_id,
-                            source_session_id,
+                            event_source_session_id,
                             request.agent_id,
                         )
-                        if source_session_id:
-                            summary_payload = _session_title_summary_payload(worker_db, request.tenant_id, source_session_id)
+                        if event_source_session_id:
+                            summary_payload = _session_title_summary_payload(worker_db, request.tenant_id, event_source_session_id)
                             if summary_payload:
-                                enqueue(SESSION_TITLE_SUMMARY_EVENT, summary_payload)
+                                _persist_relay_only_event(
+                                    worker_db,
+                                    request.tenant_id,
+                                    event_source_session_id,
+                                    SESSION_TITLE_SUMMARY_EVENT,
+                                    summary_payload,
+                                )
                         if request.interaction_mode != "scheduled_task" or not request.agent_id:
                             continue
                         draft = detect_scheduled_task_draft(
@@ -863,24 +1013,111 @@ def chat_stream(
                             request.agent_id,
                             request.user_id,
                             request.message,
-                            source_session_id or None,
+                            event_source_session_id or None,
                         )
                         if draft and draft.should_create:
-                            _persist_scheduled_task_draft(worker_db, request.tenant_id, source_session_id, draft)
-                            enqueue("scheduled_task_draft", draft.model_dump(mode="json"))
+                            _persist_scheduled_task_draft(worker_db, request.tenant_id, event_source_session_id, draft)
+                            _persist_relay_only_event(
+                                worker_db,
+                                request.tenant_id,
+                                event_source_session_id,
+                                "scheduled_task_draft",
+                                draft.model_dump(mode="json"),
+                            )
         except Exception as exc:
-            enqueue("error", {"message": str(exc)[:300] or "stream worker failed"})
+            session_id = source_session_id["value"] or request.session_id or ""
+            if session_id:
+                with Session(engine) as error_db:
+                    chat_session = error_db.get(ChatSession, session_id)
+                    if chat_session:
+                        _persist_chat_turn_interrupted(
+                            error_db,
+                            request.tenant_id,
+                            chat_session,
+                            request.client_turn_id or "",
+                            str(exc) or "stream worker failed",
+                        )
+                        error_db.commit()
+                        worker_terminal["seen"] = True
+                        set_source_session(session_id)
+        except BaseException as exc:
+            session_id = source_session_id["value"] or request.session_id or ""
+            if session_id:
+                with Session(engine) as error_db:
+                    chat_session = error_db.get(ChatSession, session_id)
+                    if chat_session:
+                        _persist_chat_turn_interrupted(
+                            error_db,
+                            request.tenant_id,
+                            chat_session,
+                            request.client_turn_id or "",
+                            exc.__class__.__name__,
+                        )
+                        error_db.commit()
+                        worker_terminal["seen"] = True
+                        set_source_session(session_id)
+            if isinstance(exc, (KeyboardInterrupt, SystemExit)):
+                raise
         finally:
-            event_queue.put(None)
+            session_id = source_session_id["value"] or request.session_id or ""
+            if session_id and not worker_terminal["seen"]:
+                with Session(engine) as final_db:
+                    chat_session = final_db.get(ChatSession, session_id)
+                    if chat_session:
+                        changed = _persist_chat_turn_interrupted(
+                            final_db,
+                            request.tenant_id,
+                            chat_session,
+                            request.client_turn_id or "",
+                            "stream worker ended before terminal event",
+                        )
+                        if changed:
+                            final_db.commit()
+                            set_source_session(session_id)
+            worker_done.set()
 
     threading.Thread(target=run_stream_worker, daemon=True).start()
 
     def stream_events() -> Iterator[str]:
+        nonlocal initial_cursor
+        relay_ready.wait(15)
+        deadline = time.monotonic() + STREAM_RELAY_IDLE_TIMEOUT_SECONDS
+        terminal_sent = False
         while True:
-            item = event_queue.get()
-            if item is None:
+            session_id = source_session_id["value"]
+            emitted = False
+            if session_id:
+                with Session(engine) as relay_db:
+                    rows = _events_after_cursor(relay_db, request.tenant_id, session_id, initial_cursor)
+                for row in rows:
+                    event_name, data = _relay_event_payload(row)
+                    initial_cursor = (row.created_at, row.id)
+                    emitted = True
+                    yield _sse(event_name, data, row.id)
+                    if event_name in STREAM_RELAY_TERMINAL_EVENTS:
+                        terminal_sent = True
+                if emitted:
+                    deadline = time.monotonic() + STREAM_RELAY_IDLE_TIMEOUT_SECONDS
+            if terminal_sent and worker_done.is_set() and not emitted:
                 return
-            yield item
+            if worker_done.is_set() and not emitted:
+                return
+            if time.monotonic() > deadline:
+                if session_id:
+                    with Session(engine) as timeout_db:
+                        chat_session = timeout_db.get(ChatSession, session_id)
+                        if chat_session:
+                            _persist_chat_turn_interrupted(
+                                timeout_db,
+                                request.tenant_id,
+                                chat_session,
+                                request.client_turn_id or "",
+                                "stream relay timed out waiting for terminal event",
+                            )
+                            timeout_db.commit()
+                    continue
+                return
+            time.sleep(STREAM_RELAY_POLL_SECONDS)
 
     return StreamingResponse(stream_events(), media_type="text/event-stream")
 
@@ -1060,9 +1297,249 @@ def _ensure_cancelled_assistant_message(
     return True
 
 
-def _sse(event: object, data: object) -> str:
+def _persist_chat_turn_interrupted(
+    db: Session,
+    tenant_id: str,
+    chat_session: ChatSession,
+    requested_turn_id: str,
+    reason: str,
+) -> bool:
+    message_id, client_turn_id = _resolve_turn_ids_from_events(db, tenant_id, chat_session.id, requested_turn_id)
+    if not message_id:
+        message_id = requested_turn_id.strip()
+    if not message_id:
+        return False
+
+    if _turn_has_terminal_event(db, tenant_id, chat_session.id, message_id, client_turn_id):
+        return False
+
+    now = utc_now()
+    payload = {
+        "turn_id": message_id,
+        "user_message_id": message_id,
+        "client_turn_id": client_turn_id or None,
+        "phase": "interrupted",
+        "text": "响应生成中断",
+        "reason": reason[:300],
+    }
+    db.add(
+        AgentEvent(
+            tenant_id=tenant_id,
+            session_id=chat_session.id,
+            event_type="stream_interrupted",
+            payload_json=payload,
+            created_at=now,
+        )
+    )
+    _ensure_interrupted_assistant_message(
+        db,
+        tenant_id,
+        chat_session,
+        message_id,
+        client_turn_id,
+        now + timedelta(microseconds=1),
+    )
+    chat_session.status = "active"
+    chat_session.updated_at = now
+    db.add(chat_session)
+    return True
+
+
+def _resolve_turn_ids_from_events(
+    db: Session,
+    tenant_id: str,
+    session_id: str,
+    requested_turn_id: str,
+) -> tuple[str, str]:
+    requested_turn_id = requested_turn_id.strip()
+    if not requested_turn_id:
+        return "", ""
+    events = db.exec(
+        select(AgentEvent)
+        .where(AgentEvent.tenant_id == tenant_id, AgentEvent.session_id == session_id)
+        .order_by(AgentEvent.created_at)
+    ).all()
+    for event in reversed(events):
+        if event.event_type != "user_message_received":
+            continue
+        payload = event.payload_json or {}
+        candidate_message_id = str(payload.get("message_id") or payload.get("user_message_id") or "").strip()
+        candidate_client_turn_id = str(payload.get("client_turn_id") or "").strip()
+        if requested_turn_id in {candidate_message_id, candidate_client_turn_id}:
+            return candidate_message_id, candidate_client_turn_id
+    return requested_turn_id, requested_turn_id
+
+
+def _turn_has_terminal_event(
+    db: Session,
+    tenant_id: str,
+    session_id: str,
+    message_id: str,
+    client_turn_id: str = "",
+) -> bool:
+    turn_ids = {message_id}
+    if client_turn_id:
+        turn_ids.add(client_turn_id)
+    events = db.exec(
+        select(AgentEvent)
+        .where(AgentEvent.tenant_id == tenant_id, AgentEvent.session_id == session_id)
+        .order_by(AgentEvent.created_at)
+    ).all()
+    for event in events:
+        if event.event_type not in {
+            "assistant_message_created",
+            "complete",
+            "error_occurred",
+            "stream_cancelled",
+            "stream_interrupted",
+        }:
+            continue
+        payload = event.payload_json or {}
+        event_turn_ids = {
+            str(payload.get("turn_id") or "").strip(),
+            str(payload.get("user_message_id") or "").strip(),
+            str(payload.get("message_id") or "").strip(),
+            str(payload.get("client_turn_id") or "").strip(),
+        }
+        if turn_ids & event_turn_ids:
+            return True
+    return False
+
+
+def _ensure_interrupted_assistant_message(
+    db: Session,
+    tenant_id: str,
+    chat_session: ChatSession,
+    user_message_id: str,
+    client_turn_id: str,
+    created_at,
+) -> bool:
+    user_message = db.get(Message, user_message_id)
+    if not user_message or user_message.tenant_id != tenant_id or user_message.session_id != chat_session.id:
+        return False
+    if user_message.role != "user":
+        return False
+
+    turn_ids = {user_message_id}
+    if client_turn_id:
+        turn_ids.add(client_turn_id)
+    messages = db.exec(
+        select(Message)
+        .where(Message.tenant_id == tenant_id, Message.session_id == chat_session.id, Message.role == "assistant")
+        .order_by(Message.created_at)
+    ).all()
+    for message_row in messages:
+        metadata = message_row.metadata_json or {}
+        row_turn_ids = {
+            str(metadata.get("turn_id") or "").strip(),
+            str(metadata.get("user_message_id") or "").strip(),
+            str(metadata.get("client_turn_id") or "").strip(),
+        }
+        if turn_ids & row_turn_ids:
+            return False
+
+    assistant_message = Message(
+        tenant_id=tenant_id,
+        session_id=chat_session.id,
+        role="assistant",
+        content=INTERRUPTED_ASSISTANT_REPLY,
+        metadata_json={
+            "turn_id": user_message_id,
+            "user_message_id": user_message_id,
+            "client_turn_id": client_turn_id or None,
+            "status": "interrupted",
+        },
+        created_at=created_at,
+    )
+    db.add(assistant_message)
+    db.add(
+        AgentEvent(
+            tenant_id=tenant_id,
+            session_id=chat_session.id,
+            event_type="assistant_message_created",
+            payload_json={
+                "message_id": assistant_message.id,
+                "assistant_message_id": assistant_message.id,
+                "user_message_id": user_message_id,
+                "turn_id": user_message_id,
+                "client_turn_id": client_turn_id or None,
+                "reply": INTERRUPTED_ASSISTANT_REPLY,
+                "status": "interrupted",
+            },
+            created_at=created_at,
+        )
+    )
+    chat_session.summary = f"最近回复：{INTERRUPTED_ASSISTANT_REPLY}"
+    chat_session.updated_at = created_at
+    db.add(chat_session)
+    return True
+
+
+def _persist_relay_only_event(
+    db: Session,
+    tenant_id: str,
+    session_id: str,
+    event_type: str,
+    payload: dict[str, object],
+) -> None:
+    db.add(
+        AgentEvent(
+            tenant_id=tenant_id,
+            session_id=session_id,
+            event_type=event_type,
+            payload_json=payload,
+        )
+    )
+    db.commit()
+
+
+def _relay_event_payload(row: AgentEvent) -> tuple[str, dict[str, object]]:
+    payload = dict(row.payload_json or {})
+    event_name = STREAM_RELAY_EVENT_ALIASES.get(row.event_type, row.event_type)
+    data: dict[str, object] = {
+        "kind": event_name,
+        "sessionId": row.session_id,
+        "timestamp": row.created_at.isoformat(),
+        "provider": "skill",
+        **payload,
+    }
+    return event_name, data
+
+
+def _events_after_cursor(
+    db: Session,
+    tenant_id: str,
+    session_id: str,
+    cursor: tuple[object, str] | None,
+) -> list[AgentEvent]:
+    statement = select(AgentEvent).where(AgentEvent.tenant_id == tenant_id, AgentEvent.session_id == session_id)
+    if cursor:
+        last_created_at, last_id = cursor
+        statement = statement.where(
+            or_(
+                AgentEvent.created_at > last_created_at,
+                (AgentEvent.created_at == last_created_at) & (AgentEvent.id > last_id),
+            )
+        )
+    return db.exec(statement.order_by(AgentEvent.created_at, AgentEvent.id).limit(200)).all()
+
+
+def _latest_event_cursor(db: Session, tenant_id: str, session_id: str) -> tuple[object, str] | None:
+    row = db.exec(
+        select(AgentEvent)
+        .where(AgentEvent.tenant_id == tenant_id, AgentEvent.session_id == session_id)
+        .order_by(AgentEvent.created_at.desc(), AgentEvent.id.desc())
+        .limit(1)
+    ).first()
+    if not row:
+        return None
+    return row.created_at, row.id
+
+
+def _sse(event: object, data: object, event_id: str | None = None) -> str:
     payload = json.dumps(data, ensure_ascii=False)
-    return f"event: {event}\ndata: {payload}\n\n"
+    id_line = f"id: {event_id}\n" if event_id else ""
+    return f"{id_line}event: {event}\ndata: {payload}\n\n"
 
 
 @router.post("/sessions", response_model=ChatSessionRead)
@@ -1182,7 +1659,7 @@ def list_chat_messages(
     ).all()
     turn_ids_by_message = _message_turn_ids_from_events(events)
     feedback_by_message = _feedback_by_message(db, tenant_id, current_user.id, [row.id for row in rows])
-    return [message_read(row, feedback_by_message.get(row.id), turn_ids_by_message.get(row.id)) for row in rows]
+    return [message_read(row, feedback_by_message.get(row.id), turn_ids_by_message.get(row.id), db) for row in rows]
 
 
 @router.get("/sessions/{session_id}/events")
@@ -1928,7 +2405,7 @@ def _build_turn_traces(
             _complete_trace_lines(current["lines"])
             if active_turn_id == target_turn_id:
                 active_turn_id = None
-        elif event.event_type == "stream_cancelled":
+        elif event.event_type in {"stream_cancelled", "stream_interrupted"}:
             if not current.get("completed_at"):
                 current["completed_at"] = event.created_at.isoformat()
             _finish_trace_if_needed(current, event.created_at)
@@ -2149,6 +2626,14 @@ def _event_trace_line(
             "text": "用户已停止生成",
             "detail": None,
             "state": "completed",
+        }
+    if event.event_type == "stream_interrupted":
+        return {
+            "id": "generation_interrupted",
+            "kind": "thinking",
+            "text": "响应生成中断",
+            "detail": str(payload.get("reason") or payload.get("text") or "") or None,
+            "state": "failed",
         }
     if event.event_type == "general_skill_selected":
         skill_name = str(payload.get("skill_name") or payload.get("skill_slug") or "").strip()

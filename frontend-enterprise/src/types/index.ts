@@ -453,6 +453,7 @@ export type KnowledgeCitation = {
   title?: string;
   source_path?: string;
   section_path?: string;
+  content?: string;
   excerpt?: string;
   summary?: string;
   confidence_reason?: string;

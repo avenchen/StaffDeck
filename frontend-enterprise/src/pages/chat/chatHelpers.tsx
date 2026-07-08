@@ -37,7 +37,7 @@ export const SIDEBAR_COLLAPSED_STORAGE_KEY = 'skill_agent_sidebar_collapsed';
 export const RUNNING_EVENT_RECOVERY_WINDOW_MS = 600 * 1000;
 export const CHAT_STREAM_IDLE_TIMEOUT_MS = 600 * 1000;
 export const CHAT_TRACE_RECOVERY_WINDOW_MS = 10 * 60 * 1000;
-export const STREAM_TERMINAL_EVENTS = new Set(['complete', 'done', 'stream_end', 'stream_cancelled', 'error']);
+export const STREAM_TERMINAL_EVENTS = new Set(['complete', 'done', 'stream_end', 'stream_cancelled', 'stream_interrupted', 'error', 'error_occurred']);
 export const HIDDEN_GENERAL_SKILL_TRACE_PHASES = new Set(['replying']);
 const DRAFT_SCHEDULE_TYPES = new Set<DraftScheduleType>(['once', 'daily', 'weekly', 'monthly']);
 const DRAFT_SCHEDULE_TYPE_LABELS: Record<DraftScheduleType, string> = {
@@ -116,7 +116,7 @@ export function normalizeMessageText(value?: string): string {
 
 export function renderInlineMarkdown(text: string, keyPrefix: string): ReactNode[] {
   const nodes: ReactNode[] = [];
-  const pattern = /(`[^`]*`|\*\*[^*]+?\*\*|\[[^\]]+\]\(https?:\/\/[^)\s]+\))/g;
+  const pattern = /(`[^`]*`|\*\*[^*]+?\*\*|!?\[[^\]\n]+\]\([A-Za-z][A-Za-z0-9+.-]*:\/\/[^)\s]+\))/g;
   let cursor = 0;
   let index = 0;
   let match: RegExpExecArray | null;
@@ -132,13 +132,24 @@ export function renderInlineMarkdown(text: string, keyPrefix: string): ReactNode
     } else if (token.startsWith('**') && token.endsWith('**')) {
       nodes.push(<strong key={key}>{renderInlineMarkdown(token.slice(2, -2), key)}</strong>);
     } else {
-      const link = token.match(/^\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)$/);
+      const image = token.match(/^!\[([^\]]+)\]\(([A-Za-z][A-Za-z0-9+.-]*:\/\/[^)\s]+)\)$/);
+      if (image) {
+        nodes.push(<span key={key}>{image[1] || '图片'}</span>);
+        cursor = match.index + token.length;
+        index += 1;
+        continue;
+      }
+      const link = token.match(/^\[([^\]]+)\]\(([A-Za-z][A-Za-z0-9+.-]*:\/\/[^)\s]+)\)$/);
       if (link) {
-        nodes.push(
-          <a key={key} href={link[2]} target="_blank" rel="noreferrer">
-            {link[1]}
-          </a>,
-        );
+        if (/^https?:\/\//i.test(link[2])) {
+          nodes.push(
+            <a key={key} href={link[2]} target="_blank" rel="noreferrer">
+              {link[1]}
+            </a>,
+          );
+        } else {
+          nodes.push(<span key={key}>{link[1]}</span>);
+        }
       } else {
         nodes.push(token);
       }

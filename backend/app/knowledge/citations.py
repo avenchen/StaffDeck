@@ -3,6 +3,10 @@ from __future__ import annotations
 import re
 from typing import Any
 
+CITATION_EXCERPT_CHAR_LIMIT = 6000
+CITATION_SUMMARY_CHAR_LIMIT = 800
+CONCEPT_EXCERPT_CHAR_LIMIT = 2400
+
 
 def _compact(value: str, limit: int) -> str:
     text = re.sub(r"\s+", " ", (value or "").strip())
@@ -67,6 +71,8 @@ def knowledge_citations_from_results(
             concept_id = str(concept.get("concept_id") or concept.get("id") or "").strip()
             title = _display_title(str(concept.get("title") or concept_id or "Wiki 概念"))
             description = str(concept.get("description") or "").strip()
+            content = str(concept.get("content") or concept.get("content_excerpt") or "").strip()
+            excerpt = content or description
             source_refs = concept.get("source_refs") if isinstance(concept.get("source_refs"), list) else []
             source_path = ""
             if source_refs and isinstance(source_refs[0], dict):
@@ -77,7 +83,9 @@ def knowledge_citations_from_results(
                 {
                     "title": title,
                     "source_path": source_path,
-                    "excerpt": description[:820],
+                    "content": excerpt[:CITATION_EXCERPT_CHAR_LIMIT],
+                    "excerpt": excerpt[:CITATION_EXCERPT_CHAR_LIMIT],
+                    "summary": description[:CITATION_SUMMARY_CHAR_LIMIT],
                     "concept_id": concept_id,
                     "concept_type": concept.get("type"),
                 },
@@ -86,7 +94,7 @@ def knowledge_citations_from_results(
         for item in result.get("evidence_pack") or []:
             if not isinstance(item, dict):
                 continue
-            excerpt = str(item.get("excerpt") or "").strip()
+            excerpt = str(item.get("content") or item.get("excerpt") or "").strip()
             summary = str(item.get("summary") or "").strip()
             section_path = str(item.get("section_path") or "").strip()
             source_path = str(item.get("source_path") or "").strip()
@@ -100,8 +108,9 @@ def knowledge_citations_from_results(
                     "title": title,
                     "source_path": source_path,
                     "section_path": section_path,
-                    "excerpt": excerpt[:1600],
-                    "summary": summary[:420],
+                    "content": excerpt[:CITATION_EXCERPT_CHAR_LIMIT],
+                    "excerpt": excerpt[:CITATION_EXCERPT_CHAR_LIMIT],
+                    "summary": summary[:CITATION_SUMMARY_CHAR_LIMIT],
                     "confidence_reason": str(item.get("confidence_reason") or ""),
                     "document_id": item.get("document_id"),
                     "bucket_id": item.get("bucket_id"),

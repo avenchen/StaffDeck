@@ -124,6 +124,52 @@ def test_open_gallery_tool_read_returns_system_creator_metadata() -> None:
         assert rows[0].metadata["created_by_username"] == "admin"
 
 
+def test_agent_without_tool_binding_does_not_see_open_gallery_tools() -> None:
+    with _test_session() as db:
+        db.add(Tenant(id="tenant_demo", name="Demo"))
+        db.add(AgentProfile(id="agent_overall", tenant_id="tenant_demo", name="开放广场", is_overall=True))
+        db.add(AgentProfile(id="agent_branch", tenant_id="tenant_demo", name="研发员工", is_overall=False))
+        tool = Tool(
+            id="tool_weather",
+            tenant_id="tenant_demo",
+            name="weather.forecast",
+            display_name="天气查询",
+            method="POST",
+            url="/api/mock/weather",
+        )
+        db.add(tool)
+        db.commit()
+        ensure_open_gallery_binding(db, "tenant_demo", "tool", tool.id, "active")
+        db.commit()
+
+        rows = list_tools("tenant_demo", bucket=None, agent_id="agent_branch", db=db)
+
+        assert rows == []
+
+
+def test_invalid_agent_id_does_not_fall_back_to_open_gallery_tools() -> None:
+    with _test_session() as db:
+        db.add(Tenant(id="tenant_demo", name="Demo"))
+        db.add(AgentProfile(id="agent_overall", tenant_id="tenant_demo", name="开放广场", is_overall=True))
+        tool = Tool(
+            id="tool_weather",
+            tenant_id="tenant_demo",
+            name="weather.forecast",
+            display_name="天气查询",
+            method="POST",
+            url="/api/mock/weather",
+        )
+        db.add(tool)
+        db.commit()
+        ensure_open_gallery_binding(db, "tenant_demo", "tool", tool.id, "active")
+        db.commit()
+
+        with pytest.raises(HTTPException) as exc_info:
+            list_tools("tenant_demo", bucket=None, agent_id="agent_missing", db=db)
+
+        assert exc_info.value.status_code == 404
+
+
 def test_probe_tool_success_infers_output_schema(monkeypatch: pytest.MonkeyPatch) -> None:
     class FakeClient:
         def __init__(self, *args, **kwargs):

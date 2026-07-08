@@ -164,7 +164,7 @@ export const SOURCE_EMPTY_STATE_CLASS =
   'flex min-h-[240px] flex-1 flex-col items-center justify-center gap-[10px] rounded-[12px] border border-dashed border-[#e3e7f1] bg-[#fbfcfd] px-[24px] py-[32px] text-center';
 export const SOURCE_EMPTY_TEXT_CLASS = 'text-[13px] leading-[20px] text-[#858b9c]';
 export const SOURCE_MD_CLASS =
-  'box-border grid min-h-0 w-full max-w-none flex-1 content-start gap-[14px] self-stretch overflow-x-hidden overflow-y-auto overscroll-contain [scrollbar-gutter:stable] pr-[clamp(6px,1vw,14px)]';
+  'box-border grid min-h-0 min-w-0 w-full max-w-full flex-1 content-start gap-[14px] self-stretch overflow-x-hidden overflow-y-auto overscroll-contain [scrollbar-gutter:stable] pr-[clamp(6px,1vw,14px)]';
 export const SOURCE_GROUP_TITLE_CLASS =
   'my-[2px_-2px] text-[13px] font-semibold text-[#18181a]';
 export const SOURCE_STEPS_CLASS = 'grid gap-[12px]';
@@ -182,15 +182,16 @@ export const SOURCE_RENDERED_CLASS = 'grid gap-[12px] text-[13px] leading-[1.7] 
 export const SOURCE_META_LIST_CLASS = 'grid gap-[7px]';
 export const SOURCE_STEP_HEADER_CLASS =
   'flex min-w-0 items-start justify-between gap-[12px] pr-[6px]';
-export const SOURCE_LINE_CLASS = 'grid min-h-[1.7em] grid-cols-[132px_minmax(0,1fr)] items-start gap-[10px]';
+export const SOURCE_LINE_CLASS =
+  'grid min-h-[1.7em] min-w-0 max-w-full grid-cols-[132px_minmax(0,1fr)] items-start gap-[10px] max-[760px]:grid-cols-1';
 export const SOURCE_LINE_COLLAPSIBLE_CLASS = '[&_.source-edit-field]:w-full';
 export const SOURCE_LINE_READONLY_CLASS = '';
 export const SOURCE_KEY_CLASS = 'text-[12px] font-semibold text-[#858b9c]';
-export const SOURCE_VALUE_CLASS = 'min-w-0 w-full whitespace-pre-wrap text-[#18181a]';
+export const SOURCE_VALUE_CLASS = 'min-w-0 w-full max-w-full whitespace-pre-wrap text-[#18181a]';
 export const SOURCE_READONLY_VALUE_CLASS = 'block';
 export const SOURCE_JSON_INLINE_CLASS =
   'm-0 max-w-full rounded-[8px] border border-[#eceef1] bg-[#f8f6ef]/72 p-[8px_10px] whitespace-pre-wrap wrap-anywhere text-[#18181a]';
-export const SOURCE_EDIT_FIELD_CLASS = 'flex min-w-0 w-fit max-w-full items-start';
+export const SOURCE_EDIT_FIELD_CLASS = 'flex min-w-0 w-full max-w-full items-start';
 
 const PILL_OUTLINE_BUTTON_BASE =
   'inline-flex cursor-pointer items-center justify-center gap-1 rounded-full border-[0.5px] border-[#e3e7f1] bg-white text-[12px] font-normal leading-none text-[#858b9c] shadow-none transition-colors hover:border-[#04756f]! hover:bg-white! hover:text-[#18181a]! focus-visible:border-[#04756f]! focus-visible:ring-0 focus-visible:outline-none focus-visible:text-[#18181a]! [&_.anticon]:inline-flex [&_.anticon]:shrink-0 [&_.anticon]:items-center [&_.anticon]:justify-center [&_.anticon_svg]:block';
@@ -204,11 +205,11 @@ export const NODE_INSERT_BUTTON_CLASS = PILL_OUTLINE_BUTTON_CLASS;
 export const SOURCE_TITLE_INPUT_CLASS =
   'max-w-full rounded-[6px] border-transparent bg-transparent px-[6px] py-0 text-[18px] font-semibold leading-[1.5] shadow-none hover:border-[#eceef1] hover:bg-white focus-visible:border-[#eceef1] focus-visible:bg-white focus-visible:ring-0';
 export const SOURCE_STEP_TITLE_EDIT_CLASS =
-  'inline-grid max-w-full min-w-0 grid-cols-[auto_auto] items-center gap-[6px] text-[15px] font-semibold [&>span:first-child]:whitespace-nowrap [&>span:first-child]:text-[#18181a]';
+  'inline-grid w-full max-w-full min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-[6px] text-[15px] font-semibold [&>span:first-child]:whitespace-nowrap [&>span:first-child]:text-[#18181a]';
 export const SOURCE_EDIT_INPUT_CLASS =
-  'max-w-full resize-none overflow-y-hidden! rounded-[6px] border-transparent bg-transparent px-[6px] py-[2px] leading-[1.65] shadow-none hover:border-[#eceef1] hover:bg-white focus-visible:border-[#eceef1] focus-visible:bg-white focus-visible:ring-0';
+  'box-border min-w-0 max-w-full resize-none overflow-x-hidden overflow-y-hidden! rounded-[6px] border-transparent bg-transparent px-[6px] py-[2px] leading-[1.65] wrap-anywhere shadow-none field-sizing-fixed hover:border-[#eceef1] hover:bg-white focus-visible:border-[#eceef1] focus-visible:bg-white focus-visible:ring-0';
 
-export const SOURCE_COLLAPSIBLE_EDITOR_CLASS = 'grid w-[min(960px,100%)] gap-[8px]';
+export const SOURCE_COLLAPSIBLE_EDITOR_CLASS = 'grid min-w-0 w-full max-w-full gap-[8px]';
 export const SOURCE_COLLAPSIBLE_HEAD_CLASS =
   'grid min-h-[38px] w-full cursor-pointer grid-cols-[minmax(0,1fr)_auto] items-center gap-[10px] rounded-[10px] border border-[#eceef1] bg-linear-to-b from-[#f8f7f4]/96 to-[#f4f2ed]/78 px-[12px] py-[6px] text-left text-[#858b9c] shadow-[inset_0_1px_0_rgba(255,255,255,0.74)] hover:border-[#d1d5db] hover:bg-white hover:text-[#18181a] focus-visible:outline-none';
 export const SOURCE_COLLAPSIBLE_PREVIEW_CLASS = 'min-w-0 truncate text-[12px] leading-[1.5]';
@@ -225,22 +226,22 @@ export const SOURCE_ACTION_EDIT_BUTTON_CLASS =
 export const SOURCE_ACTION_REMOVE_CLASS =
   'grid size-[16px] scale-[0.86] place-items-center rounded-full border-0 bg-transparent p-0 text-[#858b9c] opacity-0 transition-[opacity,transform,color,background] duration-140 group/token:pointer-events-auto group/token:scale-100 group/token:opacity-100 hover:bg-[#f2f3f5] hover:text-[#18181a]';
 export const SOURCE_ACTION_ADD_CLASS = PILL_OUTLINE_BUTTON_SM_CLASS;
-export const SOURCE_ACTION_PICKER_CLASS = 'inline-flex min-w-[min(280px,100%)]';
+export const SOURCE_ACTION_PICKER_CLASS = 'inline-flex min-w-[min(280px,100%)] max-w-full';
 export const SOURCE_ACTION_SELECT_CLASS =
-  'h-[26px] max-w-full rounded-full border border-[#eceef1] bg-white px-2 text-[12px] leading-[1.4] shadow-none';
+  'h-[26px] min-w-0 w-full max-w-full rounded-full border border-[#eceef1] bg-white px-2 text-[12px] leading-[1.4] shadow-none';
 export const SOURCE_EDIT_HINT_CLASS =
   'shrink-0 text-[11px] text-[#858b9c] opacity-0 group/action-editor:opacity-100';
 
 export const SOURCE_SELECT_CLASS = 'min-w-[168px]';
 export const CONDITION_EDITOR_CLASS =
-  'grid w-[min(920px,100%)] grid-cols-[minmax(160px,220px)_minmax(280px,1fr)] items-start gap-x-[10px] gap-y-[8px]';
+  'grid min-w-0 w-full max-w-full grid-cols-1 items-start gap-x-[10px] gap-y-[8px] min-[1500px]:grid-cols-[minmax(160px,220px)_minmax(0,1fr)]';
 export const CONDITION_READABLE_CLASS =
   'col-span-full text-[12px] leading-[1.55] text-[#858b9c]';
 export const CONDITION_PRESET_CLASS = 'min-w-[168px]';
 export const CONDITION_INPUT_CLASS = 'w-full! min-w-0';
 
 export const RETRY_POLICY_EDITOR_CLASS =
-  'grid w-[min(920px,100%)] grid-cols-[120px_minmax(180px,240px)_minmax(260px,1fr)] items-start gap-x-[10px] gap-y-[8px]';
+  'grid min-w-0 w-full max-w-full grid-cols-1 items-start gap-x-[10px] gap-y-[8px] min-[1500px]:grid-cols-[120px_minmax(180px,240px)_minmax(0,1fr)]';
 export const RETRY_POLICY_FIELD_CLASS = 'grid min-w-0 gap-[4px] [&>span]:text-[11px] [&>span]:font-semibold [&>span]:leading-[1.3] [&>span]:text-[#858b9c]';
 
 export const FLOW_RULE_EDITOR_CLASS = 'grid w-[min(1120px,100%)] gap-[10px]';
@@ -248,14 +249,14 @@ export const FLOW_RULE_HEAD_CLASS =
   'flex flex-wrap items-center justify-between gap-2 text-[12px] font-semibold text-[#858b9c]';
 export const FLOW_RULE_LIST_CLASS = 'grid gap-[10px]';
 export const FLOW_RULE_ITEM_CLASS =
-  'grid min-w-0 gap-x-[12px] gap-y-[10px] rounded-[12px] border border-[#eceef1] bg-[#fafafa] p-[12px] [grid-template-areas:"target_label_priority_delete"_"condition_condition_condition_condition"] [grid-template-columns:minmax(220px,1.05fr)_minmax(220px,1fr)_112px_32px]';
+  'grid min-w-0 max-w-full gap-x-[12px] gap-y-[10px] rounded-[12px] border border-[#eceef1] bg-[#fafafa] p-[12px] [grid-template-areas:"target"_"label"_"priority"_"condition"_"delete"] [grid-template-columns:minmax(0,1fr)] min-[1500px]:[grid-template-areas:"target_label_priority_delete"_"condition_condition_condition_condition"] min-[1500px]:[grid-template-columns:minmax(220px,1.05fr)_minmax(220px,1fr)_112px_32px]';
 export const FLOW_RULE_FIELD_CLASS = 'grid min-w-0 gap-[4px] [&>span]:text-[11px] [&>span]:font-semibold [&>span]:leading-[1.3] [&>span]:text-[#858b9c]';
 export const FLOW_RULE_FIELD_TARGET_CLASS = '[grid-area:target]';
 export const FLOW_RULE_FIELD_LABEL_CLASS = '[grid-area:label]';
 export const FLOW_RULE_FIELD_CONDITION_CLASS = '[grid-area:condition] [&_em]:text-[11px] [&_em]:not-italic [&_em]:leading-[1.45] [&_em]:text-[#858b9c]';
 export const FLOW_RULE_FIELD_PRIORITY_CLASS = '[grid-area:priority]';
 export const FLOW_RULE_CONDITION_CONTROLS_CLASS =
-  'grid min-w-0 grid-cols-[minmax(180px,240px)_minmax(320px,1fr)] items-start gap-[8px]';
+  'grid min-w-0 max-w-full grid-cols-1 items-start gap-[8px] min-[1500px]:grid-cols-[minmax(180px,240px)_minmax(0,1fr)]';
 export const FLOW_RULE_TARGET_CLASS = 'w-full min-w-0';
 export const FLOW_RULE_LABEL_INPUT_CLASS = 'w-full min-w-0';
 export const FLOW_RULE_CONDITION_INPUT_CLASS = 'w-full min-w-0 resize-none';
@@ -376,7 +377,7 @@ export const TOOL_SUGGESTION_DETAIL_PRE_CLASS =
 
 // Inline editable source inputs (replaces ant-input)
 export const SOURCE_INPUT_CLASS =
-  'h-auto min-h-0 w-full rounded-[6px] border border-transparent bg-transparent px-[6px] py-[2px] text-[13px] leading-[1.65] text-[#18181a] shadow-none transition-colors hover:border-[#eceef1] hover:bg-white focus-visible:border-[#eceef1] focus-visible:bg-white focus-visible:ring-0';
+  'box-border h-auto min-h-0 min-w-0 w-full max-w-full rounded-[6px] border border-transparent bg-transparent px-[6px] py-[2px] text-[13px] leading-[1.65] text-[#18181a] shadow-none transition-colors field-sizing-fixed hover:border-[#eceef1] hover:bg-white focus-visible:border-[#eceef1] focus-visible:bg-white focus-visible:ring-0';
 
 // Helper functions
 export function chatRowClass(role: 'user' | 'assistant'): string {

@@ -135,6 +135,34 @@ def get_agent(db: Session, tenant_id: str, agent_id: str | None) -> AgentProfile
     ).first()
 
 
+def _agent_creator_metadata(agent: AgentProfile | None) -> dict[str, Any]:
+    if not agent:
+        return {}
+    source = dict(agent.metadata_json or {})
+    metadata = {
+        key: value
+        for key, value in source.items()
+        if key in CREATOR_METADATA_KEYS and _valid_creator_value(value)
+    }
+    if not metadata and not agent.is_overall and _valid_creator_value(agent.name):
+        metadata = {
+            "creator_name": agent.name,
+            "created_by": agent.name,
+            "created_by_username": agent.name,
+        }
+    return system_creator_metadata(metadata) if metadata else {}
+
+
+def _agent_private_metadata_for(
+    db: Session,
+    tenant_id: str,
+    agent_id: str,
+    extra: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    agent_metadata = _agent_creator_metadata(get_agent(db, tenant_id, agent_id))
+    return agent_private_metadata(agent_id, {**agent_metadata, **(extra or {})})
+
+
 def is_overall_agent(db: Session, tenant_id: str, agent_id: str | None) -> bool:
     agent = get_agent(db, tenant_id, agent_id)
     return bool(agent and agent.is_overall)
@@ -160,7 +188,7 @@ def open_gallery_metadata(extra: dict[str, Any] | None = None) -> dict[str, Any]
 
 
 def agent_private_metadata(agent_id: str, extra: dict[str, Any] | None = None) -> dict[str, Any]:
-    metadata = dict(extra or {})
+    metadata = system_creator_metadata(extra)
     metadata["scope"] = AGENT_PRIVATE_SCOPE
     metadata["visibility"] = AGENT_PRIVATE_SCOPE
     metadata["owner_agent_id"] = agent_id
@@ -238,7 +266,7 @@ def ensure_private_resource_binding(
         resource_type,
         resource_id,
         status,
-        metadata_json=agent_private_metadata(agent_id),
+        metadata_json=_agent_private_metadata_for(db, tenant_id, agent_id),
     )
 
 
@@ -317,6 +345,7 @@ def project_skill_with_branch(
         "sync_state": branch.sync_state,
         "status": branch.status,
         "binding_status": binding_status,
+        "metadata": system_creator_metadata(branch.metadata_json or {}),
     }
     projected = Skill(
         id=skill.id,
@@ -432,7 +461,12 @@ def ensure_agent_skill_branch(
             AgentSkillBranch.skill_id == skill.skill_id,
         )
     ).first()
+    metadata = _agent_private_metadata_for(db, tenant_id, agent_id, getattr(branch, "metadata_json", None) or {})
     if branch:
+        if branch.metadata_json != metadata:
+            branch.metadata_json = metadata
+            branch.updated_at = utc_now()
+            db.add(branch)
         return branch
     branch = AgentSkillBranch(
         tenant_id=tenant_id,
@@ -444,6 +478,7 @@ def ensure_agent_skill_branch(
         content_json=dict(skill.content_json),
         status="active" if skill.status == "published" else "inactive",
         sync_state="synced",
+        metadata_json=metadata,
     )
     db.add(branch)
     db.flush()
@@ -812,17 +847,6 @@ def copy_overall_scope_to_agent(db: Session, tenant_id: str, agent: AgentProfile
             continue
         _ensure_binding(db, tenant_id, agent.id, "skill", skill.id, _binding_status_from_resource_status(skill.status))
         ensure_agent_skill_branch(db, tenant_id, agent.id, skill)
-    knowledge_bases = db.exec(
-        select(KnowledgeBase).where(KnowledgeBase.tenant_id == tenant_id, KnowledgeBase.status == "active")
-    ).all()
-    for kb in knowledge_bases:
-        if not is_open_gallery_resource(db, tenant_id, "knowledge_base", kb):
-            continue
-        _ensure_binding(db, tenant_id, agent.id, "knowledge_base", kb.id, _binding_status_from_resource_status(kb.status))
-        branch = _ensure_knowledge_branch(db, tenant_id, agent.id, kb)
-        branch.status = _binding_status_from_resource_status(kb.status)
-        branch.updated_at = utc_now()
-        db.add(branch)
     general_skills = db.exec(
         select(GeneralSkill).where(GeneralSkill.tenant_id == tenant_id, GeneralSkill.status == "published")
     ).all()
@@ -837,7 +861,6 @@ def copy_overall_scope_to_agent(db: Session, tenant_id: str, agent: AgentProfile
             general_skill.id,
             _binding_status_from_resource_status(general_skill.status),
         )
-    copy_open_gallery_tools_to_agent(db, tenant_id, agent)
 
 
 def copy_open_gallery_tools_to_agent(db: Session, tenant_id: str, agent: AgentProfile) -> None:

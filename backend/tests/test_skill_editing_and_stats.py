@@ -9,6 +9,7 @@ from app.api.chat import _active_skill_context_for_assistant_message, _active_sk
 from app.api.skills import (
     _extract_uploaded_skill_file,
     _skill_stats,
+    create_skill,
     draft_skill,
     distill_skill,
     list_skill_versions,
@@ -24,7 +25,7 @@ from app.skills.skill_distiller import SkillDistiller
 from app.skills.skill_editor import SkillEditor
 from app.skills.skill_reflection import PROMPT_PATH as SKILL_REFLECTION_PROMPT_PATH
 from app.skills.skill_reflection import RUBRIC_LABELS
-from app.skills.skill_schema import SkillCard, SkillDistillRequest, SkillDistillResponse, SkillRewriteRequest
+from app.skills.skill_schema import SkillCard, SkillCreateRequest, SkillDistillRequest, SkillDistillResponse, SkillRewriteRequest
 from app.security.encryption import encrypt_secret
 
 
@@ -473,6 +474,62 @@ def test_skill_can_return_to_draft_without_leaving_runtime_list() -> None:
 
         assert published.status == "published"
         assert [item.skill_id for item in visible_published_skills(db, "tenant_demo")] == [content.skill_id]
+
+
+def test_personal_created_skill_uses_agent_owner_as_creator() -> None:
+    with _test_session() as db:
+        db.add(Tenant(id="tenant_demo", name="Demo"))
+        agent = AgentProfile(
+            id="agent_owner",
+            tenant_id="tenant_demo",
+            name="个人员工",
+            is_overall=False,
+            metadata_json={
+                "owner_user_id": "user_owner",
+                "owner_username": "owner",
+                "owner_display_name": "Owner",
+                "created_by_user_id": "user_owner",
+                "created_by_username": "owner",
+            },
+        )
+        db.add(agent)
+        db.commit()
+
+        created = create_skill(
+            SkillCreateRequest(tenant_id="tenant_demo", content=_skill_card(), status="published"),
+            agent_id=agent.id,
+            db=db,
+        )
+        listed = list_skills("tenant_demo", db, agent_id=agent.id)
+
+        assert created.metadata["creator_name"] == "owner"
+        assert created.metadata["created_by_username"] == "owner"
+        assert listed[0].metadata["creator_name"] == "owner"
+        assert listed[0].metadata["created_by_username"] == "owner"
+
+
+def test_personal_created_skill_falls_back_to_agent_name_when_owner_missing() -> None:
+    with _test_session() as db:
+        db.add(Tenant(id="tenant_demo", name="Demo"))
+        agent = AgentProfile(
+            id="agent_legacy",
+            tenant_id="tenant_demo",
+            name="旧员工",
+            is_overall=False,
+            metadata_json={},
+        )
+        db.add(agent)
+        db.commit()
+
+        created = create_skill(
+            SkillCreateRequest(tenant_id="tenant_demo", content=_skill_card(), status="published"),
+            agent_id=agent.id,
+            db=db,
+        )
+        listed = list_skills("tenant_demo", db, agent_id=agent.id)
+
+        assert created.metadata["creator_name"] == "旧员工"
+        assert listed[0].metadata["creator_name"] == "旧员工"
 
 
 def test_legacy_unversioned_stats_are_archived_to_oldest_version() -> None:

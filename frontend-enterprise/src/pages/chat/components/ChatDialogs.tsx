@@ -15,8 +15,8 @@ import {
   CHAT_CITATION_DETAIL_CLASS,
   CHAT_CITATION_DETAIL_EYEBROW_CLASS,
   CHAT_CITATION_DETAIL_GRID_CLASS,
+  CHAT_CITATION_DETAIL_MARKDOWN_CLASS,
   CHAT_CITATION_DETAIL_NOTE_CLASS,
-  CHAT_CITATION_DETAIL_QUOTE_CLASS,
   CHAT_CITATION_DETAIL_SECTION_CLASS,
   CHAT_CITATION_DETAIL_TITLE_CLASS,
   CHAT_HANDOFF_ACTIONS_CLASS,
@@ -31,6 +31,7 @@ import {
   citationKindLabel,
   citationSectionLabel,
   citationSourceLabel,
+  MarkdownMessage,
 } from '../chatHelpers';
 import type { UseChatSession } from '../useChatSession';
 
@@ -132,16 +133,16 @@ export default function ChatDialogs({ chat }: { chat: UseChatSession }) {
             <div className={CHAT_CITATION_DETAIL_CLASS}>
               <div className={CHAT_CITATION_DETAIL_EYEBROW_CLASS}>{citationKindLabel(activeCitation)}</div>
               <h3 className={CHAT_CITATION_DETAIL_TITLE_CLASS}>{citationDisplayTitle(activeCitation)}</h3>
-              {(activeCitation.summary || activeCitation.excerpt) && (
+              {citationDetailExcerpt(activeCitation) && (
                 <div className={CHAT_CITATION_DETAIL_SECTION_CLASS}>
-                  <span>引用内容</span>
-                  <p>{activeCitation.summary || activeCitation.excerpt}</p>
+                  <span>引用片段</span>
+                  <CitationMarkdown content={citationDetailExcerpt(activeCitation)} />
                 </div>
               )}
-              {activeCitation.summary && activeCitation.excerpt && (
+              {citationDetailSummary(activeCitation) && (
                 <div className={CHAT_CITATION_DETAIL_SECTION_CLASS}>
-                  <span>引用来源</span>
-                  <blockquote className={CHAT_CITATION_DETAIL_QUOTE_CLASS}>{activeCitation.excerpt}</blockquote>
+                  <span>片段摘要</span>
+                  <CitationMarkdown content={citationDetailSummary(activeCitation)} />
                 </div>
               )}
               {(activeCitation.source_path || activeCitation.section_path || activeCitation.concept_id) && (
@@ -234,4 +235,22 @@ export default function ChatDialogs({ chat }: { chat: UseChatSession }) {
       />
     </>
   );
+}
+
+function CitationMarkdown({ content }: { content: string }) {
+  return (
+    <div className={CHAT_CITATION_DETAIL_MARKDOWN_CLASS}>
+      <MarkdownMessage content={content} />
+    </div>
+  );
+}
+
+function citationDetailExcerpt(citation: NonNullable<UseChatSession['activeCitation']>): string {
+  return String(citation.content || citation.excerpt || citation.summary || '').trim();
+}
+
+function citationDetailSummary(citation: NonNullable<UseChatSession['activeCitation']>): string {
+  const summary = String(citation.summary || '').trim();
+  const content = String(citation.content || citation.excerpt || '').trim();
+  return summary && summary !== content ? summary : '';
 }

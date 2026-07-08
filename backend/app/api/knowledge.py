@@ -4,7 +4,7 @@ import base64
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import func
+from sqlalchemy import delete, func
 from sqlmodel import Session, select
 
 from app.agents.branching import (
@@ -21,6 +21,7 @@ from app.db import get_session
 from app.db.models import (
     KnowledgeBucket,
     KnowledgeChunk,
+    KnowledgeConcept,
     KnowledgeDiscoverySuggestion,
     KnowledgeDocument,
     KnowledgeIngestJob,
@@ -44,7 +45,7 @@ from app.knowledge.schema import (
     KnowledgeSearchRequest,
     KnowledgeSearchResponse,
 )
-from app.knowledge.okf import create_concept_evidence_rows, parse_okf_bundle, upsert_concepts
+from app.knowledge.okf import build_okf_for_document, create_concept_evidence_rows, parse_okf_bundle, upsert_concepts
 from app.knowledge.service import IngestPayload, KnowledgeService, bucket_read, chunk_read
 from app.security.tenant import ensure_tenant
 
@@ -341,16 +342,22 @@ def update_document(
     db: Session = Depends(get_session),
 ) -> KnowledgeDocumentRead:
     row = _get_document(db, request.tenant_id, document_id)
+    metadata = dict(row.metadata_json or {})
+    if request.metadata is not None:
+        metadata = dict(request.metadata)
     if request.title is not None:
         row.title = request.title.strip() or row.filename
+        document_card = metadata.get("document_card") if isinstance(metadata.get("document_card"), dict) else {}
+        metadata["document_card"] = {**document_card, "title": row.title}
     if request.status is not None:
         row.status = request.status
-    if request.metadata is not None:
-        row.metadata_json = request.metadata
+    if request.metadata is not None or request.title is not None:
+        row.metadata_json = metadata
     row.updated_at = utc_now()
     db.add(row)
     db.commit()
     db.refresh(row)
+    _refresh_document_okf_concepts(db, row)
     return document_read(row)
 
 
@@ -396,6 +403,9 @@ def update_bucket(
     db.add(row)
     db.commit()
     db.refresh(row)
+    document = db.get(KnowledgeDocument, row.document_id)
+    if document:
+        _refresh_document_okf_concepts(db, document)
     chunk_count = db.exec(
         select(func.count(KnowledgeChunk.id)).where(
             KnowledgeChunk.tenant_id == request.tenant_id,
@@ -441,8 +451,14 @@ def update_chunk(
         row.metadata_json = request.metadata
     row.updated_at = utc_now()
     db.add(row)
+    bucket = _sync_bucket_content_from_chunks(db, request.tenant_id, row.bucket_id)
     db.commit()
     db.refresh(row)
+    if bucket:
+        db.refresh(bucket)
+        document = db.get(KnowledgeDocument, bucket.document_id)
+        if document:
+            _refresh_document_okf_concepts(db, document)
     return chunk_read(row)
 
 
@@ -526,6 +542,65 @@ def reject_discovery(
     row = _get_discovery(db, tenant_id, suggestion_id)
     KnowledgeService(db).reject_discovery(row)
     return {"status": "rejected"}
+
+
+def _refresh_document_okf_concepts(db: Session, document: KnowledgeDocument) -> None:
+    metadata = document.metadata_json or {}
+    section_nodes = metadata.get("section_tree") if isinstance(metadata.get("section_tree"), list) else []
+    buckets = db.exec(
+        select(KnowledgeBucket)
+        .where(
+            KnowledgeBucket.tenant_id == document.tenant_id,
+            KnowledgeBucket.knowledge_base_id == document.knowledge_base_id,
+            KnowledgeBucket.knowledge_base_version_id == document.knowledge_base_version_id,
+            KnowledgeBucket.document_id == document.id,
+        )
+        .order_by(KnowledgeBucket.created_at.asc())
+    ).all()
+    if not section_nodes and not buckets:
+        return
+    db.exec(
+        delete(KnowledgeConcept).where(
+            KnowledgeConcept.tenant_id == document.tenant_id,
+            KnowledgeConcept.knowledge_base_id == document.knowledge_base_id,
+            KnowledgeConcept.knowledge_base_version_id == document.knowledge_base_version_id,
+            KnowledgeConcept.document_id == document.id,
+            KnowledgeConcept.concept_type.in_(["Source Document", "Source Section"]),
+        )
+    )
+    db.flush()
+    upsert_concepts(
+        db,
+        document.tenant_id,
+        document.knowledge_base_id,
+        document.knowledge_base_version_id,
+        build_okf_for_document(document, section_nodes, buckets),
+    )
+
+
+def _sync_bucket_content_from_chunks(
+    db: Session,
+    tenant_id: str,
+    bucket_id: str,
+) -> KnowledgeBucket | None:
+    bucket = db.get(KnowledgeBucket, bucket_id)
+    if not bucket or bucket.tenant_id != tenant_id:
+        return None
+    chunks = db.exec(
+        select(KnowledgeChunk)
+        .where(KnowledgeChunk.tenant_id == tenant_id, KnowledgeChunk.bucket_id == bucket_id)
+        .order_by(KnowledgeChunk.chunk_index.asc())
+    ).all()
+    content = "\n\n".join(chunk.content for chunk in chunks if chunk.content.strip()).strip()
+    metadata = dict(bucket.metadata_json or {})
+    metadata["content"] = content[:6000]
+    metadata["chunk_count"] = len(chunks)
+    metadata["representative_chunk_ids"] = [chunk.id for chunk in chunks[:3]]
+    bucket.metadata_json = metadata
+    bucket.token_estimate = max(1, len(content) // 2) if content else bucket.token_estimate
+    bucket.updated_at = utc_now()
+    db.add(bucket)
+    return bucket
 
 
 def job_read(row: KnowledgeIngestJob) -> KnowledgeIngestJobRead:

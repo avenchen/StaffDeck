@@ -1084,7 +1084,7 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
         });
       } else {
         try {
-          savedSkill = await api.post<SkillRead>(`/api/enterprise/skills${agentOnlyQuery}`, { tenant_id: TENANT_ID, content: finalDraft, status: 'draft' });
+          savedSkill = await api.post<SkillRead>(`/api/enterprise/skills${agentOnlyQuery}`, { tenant_id: TENANT_ID, content: finalDraft, status: 'published' });
         } catch (error) {
           if (!(error instanceof Error) || !error.message.includes('409')) throw error;
           finalDraft = {
@@ -1092,7 +1092,7 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
             skill_id: uniqueDraftSkillId(finalDraft.skill_id),
           };
           renamedSkillId = finalDraft.skill_id;
-          savedSkill = await api.post<SkillRead>(`/api/enterprise/skills${agentOnlyQuery}`, { tenant_id: TENANT_ID, content: finalDraft, status: 'draft' });
+          savedSkill = await api.post<SkillRead>(`/api/enterprise/skills${agentOnlyQuery}`, { tenant_id: TENANT_ID, content: finalDraft, status: 'published' });
         }
       }
       setLoadedSkill(savedSkill);
@@ -1111,9 +1111,9 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
       if (clearAfterSave) {
         setClearAfterSave(false);
         clearDistillWorkspace();
-        notify.success('草稿已保存，当前改写已清空');
+        notify.success('SOP 已保存，当前改写已清空');
       } else {
-        notify.success(renamedSkillId ? `SOP ID 已存在，已另存为 ${renamedSkillId}` : '草稿已保存');
+        notify.success(renamedSkillId ? `SOP ID 已存在，已另存为 ${renamedSkillId}` : 'SOP 已保存');
       }
     } catch (error) {
       notify.error(error instanceof Error ? error.message : '保存失败');
@@ -4326,7 +4326,7 @@ function sourceInputStyle(value: string, multiline = false): CSSProperties {
   const minCh = multiline ? 34 : 18;
   const maxCh = multiline ? 96 : 72;
   const width = Math.max(minCh, Math.min(maxCh, longestLine + 4));
-  return { width: `${width}ch`, maxWidth: '100%' };
+  return { width: `min(${width}ch, 100%)`, maxWidth: '100%' };
 }
 
 function previewSourceText(value: string): string {

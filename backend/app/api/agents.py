@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+from time import sleep
+
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy.exc import OperationalError
 from sqlmodel import Session, select
 
 from app.agents.schema import (
@@ -22,6 +25,7 @@ from app.agents.branching import (
     ensure_agent_skill_branch,
     ensure_knowledge_base_version,
     get_overall_agent,
+    is_bound_resource_visible_for_agent,
     is_open_gallery_resource,
     promote_branch_to_overall,
     promote_knowledge_branch_to_overall,
@@ -40,6 +44,9 @@ from app.db.models import (
     AgentSkillBranchVersion,
     GeneralSkill,
     KnowledgeBase,
+    KnowledgeBucket,
+    KnowledgeChunk,
+    KnowledgeDocument,
     Skill,
     Tool,
     utc_now,
@@ -49,6 +56,8 @@ from app.security.auth import get_current_user
 from app.security.tenant import ensure_tenant
 
 ADMIN_USERNAMES = {"admin", "admin_demo"}
+IMPORT_LOCK_RETRY_ATTEMPTS = 2
+IMPORT_LOCK_RETRY_DELAY_SECONDS = 0.5
 
 enterprise_router = APIRouter(prefix="/api/enterprise/agents", tags=["enterprise:agents"])
 chat_router = APIRouter(prefix="/api/chat/agents", tags=["chat:agents"])
@@ -275,6 +284,23 @@ def import_agent_resources(
     request: AgentResourceImportRequest,
     db: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
+) -> dict[str, object]:
+    for attempt in range(IMPORT_LOCK_RETRY_ATTEMPTS):
+        try:
+            return _import_agent_resources_once(agent_id, request, db, current_user)
+        except OperationalError as exc:
+            db.rollback()
+            if not _is_database_locked_error(exc) or attempt >= IMPORT_LOCK_RETRY_ATTEMPTS - 1:
+                raise
+            sleep(IMPORT_LOCK_RETRY_DELAY_SECONDS * (attempt + 1))
+    raise HTTPException(status_code=503, detail="Resource import is temporarily busy")
+
+
+def _import_agent_resources_once(
+    agent_id: str,
+    request: AgentResourceImportRequest,
+    db: Session,
+    current_user: User | object,
 ) -> dict[str, object]:
     target_agent = _get_agent(db, request.tenant_id, agent_id)
     source_agent = _get_agent(db, request.tenant_id, request.source_agent_id)
@@ -512,6 +538,10 @@ def agent_read(row: AgentProfile, bindings: list[AgentResourceBinding]) -> Agent
 
 def _dependency_user(current_user: object) -> User | None:
     return current_user if isinstance(current_user, User) else None
+
+
+def _is_database_locked_error(exc: OperationalError) -> bool:
+    return "database is locked" in str(exc).lower()
 
 
 def _is_admin_user(user: User) -> bool:
@@ -853,24 +883,26 @@ def _upsert_imported_resource_binding(
 
 
 def _copy_or_update_skill_branch(db: Session, tenant_id: str, source_agent_id: str, target_agent_id: str, skill: Skill) -> None:
-    source_branch = db.exec(
-        select(AgentSkillBranch).where(
-            AgentSkillBranch.tenant_id == tenant_id,
-            AgentSkillBranch.agent_id == source_agent_id,
-            AgentSkillBranch.skill_id == skill.skill_id,
-        )
-    ).first()
+    with db.no_autoflush:
+        source_branch = db.exec(
+            select(AgentSkillBranch).where(
+                AgentSkillBranch.tenant_id == tenant_id,
+                AgentSkillBranch.agent_id == source_agent_id,
+                AgentSkillBranch.skill_id == skill.skill_id,
+            )
+        ).first()
     if not source_branch:
         branch = sync_branch_from_overall(db, tenant_id, target_agent_id, skill)
         _ensure_copied_skill_branch_version(db, branch, "导入自整体智能体")
         return
-    target_branch = db.exec(
-        select(AgentSkillBranch).where(
-            AgentSkillBranch.tenant_id == tenant_id,
-            AgentSkillBranch.agent_id == target_agent_id,
-            AgentSkillBranch.skill_id == skill.skill_id,
-        )
-    ).first()
+    with db.no_autoflush:
+        target_branch = db.exec(
+            select(AgentSkillBranch).where(
+                AgentSkillBranch.tenant_id == tenant_id,
+                AgentSkillBranch.agent_id == target_agent_id,
+                AgentSkillBranch.skill_id == skill.skill_id,
+            )
+        ).first()
     if not target_branch:
         target_branch = AgentSkillBranch(
             tenant_id=tenant_id,
@@ -929,20 +961,21 @@ def _copy_or_update_knowledge_branch(
     target_agent_id: str,
     kb: KnowledgeBase,
 ) -> None:
-    source_branch = db.exec(
-        select(AgentKnowledgeBranch).where(
-            AgentKnowledgeBranch.tenant_id == tenant_id,
-            AgentKnowledgeBranch.agent_id == source_agent_id,
-            AgentKnowledgeBranch.knowledge_base_id == kb.id,
-        )
-    ).first()
-    target_branch = db.exec(
-        select(AgentKnowledgeBranch).where(
-            AgentKnowledgeBranch.tenant_id == tenant_id,
-            AgentKnowledgeBranch.agent_id == target_agent_id,
-            AgentKnowledgeBranch.knowledge_base_id == kb.id,
-        )
-    ).first()
+    with db.no_autoflush:
+        source_branch = db.exec(
+            select(AgentKnowledgeBranch).where(
+                AgentKnowledgeBranch.tenant_id == tenant_id,
+                AgentKnowledgeBranch.agent_id == source_agent_id,
+                AgentKnowledgeBranch.knowledge_base_id == kb.id,
+            )
+        ).first()
+        target_branch = db.exec(
+            select(AgentKnowledgeBranch).where(
+                AgentKnowledgeBranch.tenant_id == tenant_id,
+                AgentKnowledgeBranch.agent_id == target_agent_id,
+                AgentKnowledgeBranch.knowledge_base_id == kb.id,
+            )
+        ).first()
     if source_branch:
         base_version = source_branch.base_version
         head_version = source_branch.head_version
@@ -1094,10 +1127,66 @@ def _bindings_by_agent(db: Session, tenant_id: str) -> dict[str, list[AgentResou
         .where(AgentResourceBinding.tenant_id == tenant_id)
         .order_by(AgentResourceBinding.created_at.asc())
     ).all()
+    agent_ids = {row.agent_id for row in rows}
+    agents_by_id = {
+        row.id: row
+        for row in db.exec(
+            select(AgentProfile).where(
+                AgentProfile.tenant_id == tenant_id,
+                AgentProfile.id.in_(agent_ids) if agent_ids else AgentProfile.id == "__none__",
+            )
+        ).all()
+    }
     grouped: dict[str, list[AgentResourceBinding]] = {}
     for row in rows:
+        if not _resource_binding_visible_in_agent_summary(db, tenant_id, agents_by_id.get(row.agent_id), row):
+            continue
         grouped.setdefault(row.agent_id, []).append(row)
     return grouped
+
+
+def _resource_binding_visible_in_agent_summary(
+    db: Session,
+    tenant_id: str,
+    agent: AgentProfile | None,
+    binding: AgentResourceBinding,
+) -> bool:
+    if binding.resource_type != "knowledge_base":
+        return True
+    kb = db.get(KnowledgeBase, binding.resource_id)
+    if not kb or kb.tenant_id != tenant_id:
+        return False
+    if _is_empty_default_knowledge_base(db, tenant_id, kb):
+        return False
+    if not agent or agent.is_overall:
+        return is_open_gallery_resource(db, tenant_id, "knowledge_base", kb)
+    branch = db.exec(
+        select(AgentKnowledgeBranch).where(
+            AgentKnowledgeBranch.tenant_id == tenant_id,
+            AgentKnowledgeBranch.agent_id == agent.id,
+            AgentKnowledgeBranch.knowledge_base_id == kb.id,
+            AgentKnowledgeBranch.status != "deleted",
+        )
+    ).first()
+    return bool(branch and is_bound_resource_visible_for_agent(db, tenant_id, "knowledge_base", kb, binding))
+
+
+def _is_empty_default_knowledge_base(db: Session, tenant_id: str, kb: KnowledgeBase) -> bool:
+    metadata = kb.metadata_json or {}
+    has_runtime_rows = any(
+        db.exec(
+            select(model.id).where(
+                model.tenant_id == tenant_id,
+                model.knowledge_base_id == kb.id,
+            )
+        ).first()
+        for model in (KnowledgeDocument, KnowledgeBucket, KnowledgeChunk)
+    )
+    if has_runtime_rows:
+        return False
+    if metadata.get("created_from_document_upload") and not metadata.get("source_document_id"):
+        return True
+    return kb.name == "默认知识库"
 
 
 def _ensure_resource_exists(db: Session, tenant_id: str, item: AgentResourceBindingInput) -> None:

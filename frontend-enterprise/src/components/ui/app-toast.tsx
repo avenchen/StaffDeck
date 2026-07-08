@@ -54,6 +54,7 @@ export type AppToastOptions = Omit<
 
 function showVariant(variant: ToastVariant, message: ReactNode, options?: AppToastOptions) {
   return toast.custom(() => <ToastPill variant={variant} message={message} />, {
+    duration: variant === 'success' ? 3200 : 4800,
     unstyled: true,
     className: 'flex w-full justify-center',
     ...options,

@@ -107,6 +107,10 @@ export default function ToolsPage({ currentUser, onLogout }: ToolPageProps = {})
 
   const agentQuery = agentId ? `&agent_id=${encodeURIComponent(agentId)}` : '';
   const load = () => {
+    if (!agentScopeLoaded) {
+      setRows([]);
+      return Promise.resolve();
+    }
     setLoading(true);
     return api
       .get<ToolRead[]>(`/api/enterprise/tools?tenant_id=${TENANT_ID}${agentQuery}`)
@@ -116,16 +120,21 @@ export default function ToolsPage({ currentUser, onLogout }: ToolPageProps = {})
   };
 
   useEffect(() => {
+    if (!agentScopeLoaded) return;
     void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [agentQuery]);
+  }, [agentQuery, agentScopeLoaded]);
 
   useEffect(() => {
     const loadAgentScope = async () => {
       try {
         const agents = await api.get<AgentProfileRead[]>(`/api/enterprise/agents?tenant_id=${TENANT_ID}`);
         setAgents(agents);
-        const selectedAgent = agents.find((agent) => agent.id === agentId) || agents.find((agent) => agent.is_overall) || null;
+        const exactSelectedAgent = agents.find((agent) => agent.id === agentId) || null;
+        const selectedAgent = exactSelectedAgent || agents.find((agent) => agent.is_overall) || null;
+        if (agentId && !exactSelectedAgent) {
+          setAgentId(selectedAgent?.id || '');
+        }
         setIsOverallAgent(Boolean(selectedAgent?.is_overall));
         setAgentScopeLoaded(true);
       } catch {

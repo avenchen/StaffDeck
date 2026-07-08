@@ -31,7 +31,13 @@ from app.scheduled_tasks.worker import start_background_worker, stop_background_
 
 settings = get_settings()
 
-app = FastAPI(title=settings.app_name, version="0.1.0")
+app = FastAPI(
+    title=settings.app_name,
+    version="0.1.0",
+    docs_url=None,
+    redoc_url=None,
+    openapi_url=None,
+)
 
 app.add_middleware(
     CORSMiddleware,

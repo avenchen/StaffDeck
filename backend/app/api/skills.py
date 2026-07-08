@@ -205,6 +205,8 @@ def create_skill(
     db.add(row)
     db.flush()
     agent = get_agent(db, request.tenant_id, agent_id)
+    branch = None
+    binding_status = "active" if request.status == "published" else "inactive"
     if agent and not agent.is_overall:
         ensure_private_resource_binding(
             db,
@@ -212,9 +214,9 @@ def create_skill(
             agent.id,
             "skill",
             row.id,
-            "active" if request.status == "published" else "inactive",
+            binding_status,
         )
-        ensure_agent_skill_branch(db, request.tenant_id, agent.id, row)
+        branch = ensure_agent_skill_branch(db, request.tenant_id, agent.id, row)
     else:
         mark_resource_open_gallery(row)
         ensure_open_gallery_binding(
@@ -222,12 +224,14 @@ def create_skill(
             request.tenant_id,
             "skill",
             row.id,
-            "active" if request.status == "published" else "inactive",
+            binding_status,
         )
     db.commit()
     db.refresh(row)
     _upsert_skill_version(db, row)
     stats = _skill_stats(db, request.tenant_id)
+    if branch:
+        row = project_skill_with_branch(row, branch, binding_status)
     return skill_read(row, stats, _recent_skill_stats(db, request.tenant_id, stats))
 
 
@@ -329,8 +333,9 @@ def publish_skill(
         branch.status = "active"
         branch.updated_at = utc_now()
         db.add(branch)
+        ensure_private_resource_binding(db, tenant_id, agent.id, "skill", row.id, "active")
         db.commit()
-        projected = project_skill_with_branch(row, branch)
+        projected = project_skill_with_branch(row, branch, "active")
         stats = _skill_stats(db, tenant_id)
         return skill_read(projected, stats, _recent_skill_stats(db, tenant_id, stats))
     row.status = "published"
@@ -360,8 +365,9 @@ def archive_skill(
         branch.status = "inactive"
         branch.updated_at = utc_now()
         db.add(branch)
+        ensure_private_resource_binding(db, tenant_id, agent.id, "skill", row.id, "inactive")
         db.commit()
-        projected = project_skill_with_branch(row, branch)
+        projected = project_skill_with_branch(row, branch, "inactive")
         stats = _skill_stats(db, tenant_id)
         return skill_read(projected, stats, _recent_skill_stats(db, tenant_id, stats))
     row.status = "archived"

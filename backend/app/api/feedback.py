@@ -7,6 +7,7 @@ from app.api.chat import message_read, session_read
 from app.db import get_session
 from app.db.models import ChatSession, Message, MessageFeedback, User, utc_now
 from app.feedback import FEEDBACK_BUCKET_LABELS, enqueue_feedback_analysis, feedback_analysis_read, feedback_summary
+from app.security.auth import get_current_user
 from app.security.tenant import ensure_tenant
 
 router = APIRouter(prefix="/api/enterprise/feedback", tags=["enterprise:feedback"])
@@ -17,19 +18,25 @@ def get_feedback_summary(
     tenant_id: str = Query(...),
     agent_id: str | None = Query(default=None),
     limit: int = Query(default=1000, ge=1, le=5000),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_session),
 ) -> dict:
+    _ensure_request_tenant(tenant_id, current_user)
     ensure_tenant(db, tenant_id)
+    owned_session_ids = _owned_session_ids(db, tenant_id, current_user, agent_id)
+    if not owned_session_ids:
+        return feedback_summary([])
     rows = list(
         db.exec(
             select(MessageFeedback)
-            .where(MessageFeedback.tenant_id == tenant_id)
+            .where(
+                MessageFeedback.tenant_id == tenant_id,
+                MessageFeedback.session_id.in_(owned_session_ids),  # type: ignore[attr-defined]
+            )
             .order_by(MessageFeedback.updated_at.desc())
             .limit(limit)
         ).all()
     )
-    if agent_id:
-        rows = [row for row in rows if _feedback_matches_agent(db, tenant_id, row, agent_id)]
     return feedback_summary(rows)
 
 
@@ -39,13 +46,22 @@ def list_feedback_sessions(
     rating: str = Query(default="down"),
     agent_id: str | None = Query(default=None),
     limit: int = Query(default=200, ge=1, le=1000),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_session),
 ) -> list[dict]:
+    _ensure_request_tenant(tenant_id, current_user)
     ensure_tenant(db, tenant_id)
+    owned_session_ids = _owned_session_ids(db, tenant_id, current_user, agent_id)
+    if not owned_session_ids:
+        return []
     feedback_rows = list(
         db.exec(
             select(MessageFeedback)
-            .where(MessageFeedback.tenant_id == tenant_id, MessageFeedback.rating == rating)
+            .where(
+                MessageFeedback.tenant_id == tenant_id,
+                MessageFeedback.rating == rating,
+                MessageFeedback.session_id.in_(owned_session_ids),  # type: ignore[attr-defined]
+            )
             .order_by(MessageFeedback.updated_at.desc())
             .limit(limit)
         ).all()
@@ -58,6 +74,8 @@ def list_feedback_sessions(
     for session_id, rows in grouped.items():
         chat_session = db.get(ChatSession, session_id)
         if not chat_session or chat_session.tenant_id != tenant_id:
+            continue
+        if chat_session.user_id != current_user.id:
             continue
         if agent_id and chat_session.agent_id != agent_id:
             continue
@@ -99,21 +117,16 @@ def list_feedback_sessions(
     return sorted(results, key=lambda item: item["latest_feedback_at"], reverse=True)
 
 
-def _feedback_matches_agent(db: Session, tenant_id: str, feedback: MessageFeedback, agent_id: str) -> bool:
-    chat_session = db.get(ChatSession, feedback.session_id)
-    return bool(chat_session and chat_session.tenant_id == tenant_id and chat_session.agent_id == agent_id)
-
-
 @router.get("/sessions/{session_id}")
 def get_feedback_session_detail(
     session_id: str,
     tenant_id: str = Query(...),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_session),
 ) -> dict:
+    _ensure_request_tenant(tenant_id, current_user)
     ensure_tenant(db, tenant_id)
-    chat_session = db.get(ChatSession, session_id)
-    if not chat_session or chat_session.tenant_id != tenant_id:
-        raise HTTPException(status_code=404, detail="Session not found")
+    chat_session = _get_owned_chat_session(db, tenant_id, current_user, session_id)
 
     messages = list(
         db.exec(
@@ -157,12 +170,15 @@ def get_feedback_session_detail(
 def reanalyze_feedback(
     feedback_id: str,
     tenant_id: str = Query(...),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_session),
 ) -> dict:
+    _ensure_request_tenant(tenant_id, current_user)
     ensure_tenant(db, tenant_id)
     row = db.get(MessageFeedback, feedback_id)
     if not row or row.tenant_id != tenant_id:
         raise HTTPException(status_code=404, detail="Feedback not found")
+    _get_owned_chat_session(db, tenant_id, current_user, row.session_id)
     now = utc_now()
     row.analysis_status = "pending"
     row.analysis_bucket = None
@@ -191,3 +207,27 @@ def _message_with_feedback(message: Message, feedback: MessageFeedback | None) -
         payload["feedback_updated_at"] = feedback.updated_at.isoformat()
         payload["feedback_analysis"] = feedback_analysis_read(feedback)
     return payload
+
+
+def _owned_session_ids(
+    db: Session,
+    tenant_id: str,
+    current_user: User,
+    agent_id: str | None = None,
+) -> list[str]:
+    conditions = [ChatSession.tenant_id == tenant_id, ChatSession.user_id == current_user.id]
+    if agent_id:
+        conditions.append(ChatSession.agent_id == agent_id)
+    return list(db.exec(select(ChatSession.id).where(*conditions)).all())
+
+
+def _get_owned_chat_session(db: Session, tenant_id: str, current_user: User, session_id: str) -> ChatSession:
+    row = db.get(ChatSession, session_id)
+    if not row or row.tenant_id != tenant_id or row.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Session not found")
+    return row
+
+
+def _ensure_request_tenant(tenant_id: str, current_user: User) -> None:
+    if tenant_id != current_user.tenant_id:
+        raise HTTPException(status_code=403, detail="Tenant mismatch")

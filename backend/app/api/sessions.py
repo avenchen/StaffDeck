@@ -5,7 +5,8 @@ from sqlmodel import Session, select
 
 from app.api.chat import message_read, session_read
 from app.db import get_session
-from app.db.models import AgentEvent, ChatSession, Message, utc_now
+from app.db.models import AgentEvent, ChatSession, Message, User, utc_now
+from app.security.auth import get_current_user
 from app.security.tenant import ensure_tenant
 
 router = APIRouter(prefix="/api/enterprise/sessions", tags=["enterprise:sessions"])
@@ -15,10 +16,12 @@ router = APIRouter(prefix="/api/enterprise/sessions", tags=["enterprise:sessions
 def list_sessions(
     tenant_id: str = Query(...),
     agent_id: str | None = Query(None),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_session),
 ) -> list[dict]:
+    _ensure_request_tenant(tenant_id, current_user)
     ensure_tenant(db, tenant_id)
-    conditions = [ChatSession.tenant_id == tenant_id]
+    conditions = [ChatSession.tenant_id == tenant_id, ChatSession.user_id == current_user.id]
     if agent_id:
         conditions.append(ChatSession.agent_id == agent_id)
     rows = db.exec(
@@ -31,9 +34,11 @@ def list_sessions(
 def get_session_detail(
     session_id: str,
     tenant_id: str = Query(...),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_session),
 ) -> dict:
-    row = _get_chat_session(db, tenant_id, session_id)
+    _ensure_request_tenant(tenant_id, current_user)
+    row = _get_chat_session(db, tenant_id, current_user.id, session_id)
     messages = db.exec(
         select(Message)
         .where(Message.tenant_id == tenant_id, Message.session_id == session_id)
@@ -63,9 +68,11 @@ def get_session_detail(
 def reset_session(
     session_id: str,
     tenant_id: str = Query(...),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_session),
 ) -> dict:
-    row = _get_chat_session(db, tenant_id, session_id)
+    _ensure_request_tenant(tenant_id, current_user)
+    row = _get_chat_session(db, tenant_id, current_user.id, session_id)
     row.active_skill_id = None
     row.active_step_id = None
     row.slots_json = {}
@@ -82,9 +89,14 @@ def reset_session(
     return session_read(row).model_dump()
 
 
-def _get_chat_session(db: Session, tenant_id: str, session_id: str) -> ChatSession:
+def _get_chat_session(db: Session, tenant_id: str, user_id: str, session_id: str) -> ChatSession:
     ensure_tenant(db, tenant_id)
     row = db.get(ChatSession, session_id)
-    if not row or row.tenant_id != tenant_id:
+    if not row or row.tenant_id != tenant_id or row.user_id != user_id:
         raise HTTPException(status_code=404, detail="Session not found")
     return row
+
+
+def _ensure_request_tenant(tenant_id: str, current_user: User) -> None:
+    if tenant_id != current_user.tenant_id:
+        raise HTTPException(status_code=403, detail="Tenant mismatch")

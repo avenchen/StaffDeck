@@ -749,6 +749,7 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
       setDocuments((current) => current.map((item) => (item.id === next.id ? next : item)));
       setSelectedDocument((current) => (current?.id === next.id ? next : current));
       setEditingDocument(null);
+      await loadBuckets(next, false);
       notify.success('已保存文档');
     } catch (error) {
       notify.error(error instanceof Error ? error.message : '保存文档失败');
@@ -778,15 +779,13 @@ export default function KnowledgeManagePage({ currentUser, onLogout }: Knowledge
         title: bucketDraft.title,
         summary: bucketDraft.summary,
       });
-      await Promise.all(
-        bucketChunks.map((chunk) =>
-          api.put<KnowledgeChunkRead>(`/api/enterprise/knowledge/chunks/${chunk.id}`, {
-            tenant_id: TENANT_ID,
-            content: chunkDrafts[chunk.id]?.content ?? chunk.content,
-            summary: chunkDrafts[chunk.id]?.summary ?? chunk.summary,
-          }),
-        ),
-      );
+      for (const chunk of bucketChunks) {
+        await api.put<KnowledgeChunkRead>(`/api/enterprise/knowledge/chunks/${chunk.id}`, {
+          tenant_id: TENANT_ID,
+          content: chunkDrafts[chunk.id]?.content ?? chunk.content,
+          summary: chunkDrafts[chunk.id]?.summary ?? chunk.summary,
+        });
+      }
       notify.success('已保存知识内容');
       setEditingBucket(null);
       if (selectedDocument) await loadBuckets(selectedDocument, false);
@@ -2169,7 +2168,7 @@ function WikiConceptViewer({ concept }: { concept: KnowledgeConceptRead }) {
         <p className="text-[14px] leading-[1.65] text-[#18181a]">{concept.description || conceptSummary(concept)}</p>
       </section>
 
-      <section className="grid gap-[10px] grid-cols-[repeat(auto-fit,minmax(160px,1fr))]" aria-label="知识图谱元信息">
+      <section className="grid min-w-0 gap-[10px] grid-cols-[repeat(auto-fit,minmax(160px,1fr))]" aria-label="知识图谱元信息">
         {[
           { label: '页面路径', value: concept.concept_id },
           { label: '链接', value: `${links.length} 个` },
@@ -2178,7 +2177,7 @@ function WikiConceptViewer({ concept }: { concept: KnowledgeConceptRead }) {
         ].map((item) => (
           <div
             key={item.label}
-            className="flex flex-col gap-[6px] rounded-[14px] border border-[#eceef1] bg-white px-[14px] py-[13px]"
+            className="flex min-w-0 flex-col gap-[6px] overflow-hidden rounded-[14px] border border-[#eceef1] bg-white px-[14px] py-[13px]"
           >
             <span className="text-[12px] font-semibold text-[#858b9c]">{item.label}</span>
             <strong className="wrap-break-word text-[14px] text-[#18181a]">{item.value}</strong>
@@ -2191,33 +2190,33 @@ function WikiConceptViewer({ concept }: { concept: KnowledgeConceptRead }) {
       </section>
 
       {(links.length > 0 || citations.length > 0 || sourceRefs.length > 0) && (
-        <section className="grid gap-[10px] grid-cols-[repeat(auto-fit,minmax(220px,1fr))]" aria-label="知识链接与引用">
+        <section className="grid min-w-0 grid-cols-1 gap-[10px] xl:grid-cols-3" aria-label="知识链接与引用">
           {links.length > 0 && (
-            <div className="flex flex-col gap-[10px] rounded-[14px] border border-[#eceef1] bg-white p-[14px]">
+            <div className="flex min-w-0 flex-col gap-[10px] overflow-hidden rounded-[14px] border border-[#eceef1] bg-white p-[14px]">
               <strong className="text-[13px] font-semibold text-[#18181a]">关联页面</strong>
-              <div className="flex flex-wrap gap-[6px]">
+              <div className="flex max-h-[220px] min-w-0 max-w-full flex-wrap gap-[6px] overflow-x-hidden overflow-y-auto pr-[2px]">
                 {links.slice(0, 12).map((item, index) => (
-                  <KTag key={`link-${index}`}>{recordLabel(item, ['target', 'concept_id', 'id'])}</KTag>
+                  <KnowledgeRelationChip key={`link-${index}`}>{recordLabel(item, ['target', 'concept_id', 'id'])}</KnowledgeRelationChip>
                 ))}
               </div>
             </div>
           )}
           {citations.length > 0 && (
-            <div className="flex flex-col gap-[10px] rounded-[14px] border border-[#eceef1] bg-white p-[14px]">
+            <div className="flex min-w-0 flex-col gap-[10px] overflow-hidden rounded-[14px] border border-[#eceef1] bg-white p-[14px]">
               <strong className="text-[13px] font-semibold text-[#18181a]">引用</strong>
-              <div className="flex flex-wrap gap-[6px]">
+              <div className="flex max-h-[220px] min-w-0 max-w-full flex-wrap gap-[6px] overflow-x-hidden overflow-y-auto pr-[2px]">
                 {citations.slice(0, 12).map((item, index) => (
-                  <KTag key={`citation-${index}`}>{recordLabel(item, ['label', 'source', 'uri', 'id'])}</KTag>
+                  <KnowledgeRelationChip key={`citation-${index}`}>{recordLabel(item, ['label', 'source', 'uri', 'id'])}</KnowledgeRelationChip>
                 ))}
               </div>
             </div>
           )}
           {sourceRefs.length > 0 && (
-            <div className="flex flex-col gap-[10px] rounded-[14px] border border-[#eceef1] bg-white p-[14px]">
+            <div className="flex min-w-0 flex-col gap-[10px] overflow-hidden rounded-[14px] border border-[#eceef1] bg-white p-[14px]">
               <strong className="text-[13px] font-semibold text-[#18181a]">来源</strong>
-              <div className="flex flex-wrap gap-[6px]">
+              <div className="flex max-h-[220px] min-w-0 max-w-full flex-wrap gap-[6px] overflow-x-hidden overflow-y-auto pr-[2px]">
                 {sourceRefs.slice(0, 12).map((item, index) => (
-                  <KTag key={`source-${index}`}>{recordLabel(item, ['document_id', 'section_id', 'source', 'id'])}</KTag>
+                  <KnowledgeRelationChip key={`source-${index}`}>{recordLabel(item, ['document_id', 'section_id', 'source', 'id'])}</KnowledgeRelationChip>
                 ))}
               </div>
             </div>
@@ -2318,6 +2317,14 @@ function recordLabel(item: unknown, keys: string[]) {
     if (value) return String(value);
   }
   return JSON.stringify(item);
+}
+
+function KnowledgeRelationChip({ children }: { children: ReactNode }) {
+  return (
+    <span className="inline-block min-w-0 max-w-full rounded-[6px] bg-[#f2f3f5] px-[8px] py-px text-[12px] font-medium leading-[18px] whitespace-normal wrap-anywhere text-[#5b6273]">
+      {children}
+    </span>
+  );
 }
 
 function KnowledgeBucketLinks({ bucket, evidenceOnly = false }: { bucket: KnowledgeBucketRead; evidenceOnly?: boolean }) {

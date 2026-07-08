@@ -182,6 +182,7 @@ export default function DashboardPage({
   const totalCalls = skills.reduce((sum, item) => sum + (item.total_call_count || item.call_count || 0), 0);
   const positiveFeedback = skills.reduce((sum, item) => sum + (item.total_positive_feedback_count || 0), 0);
   const negativeFeedback = skills.reduce((sum, item) => sum + (item.total_negative_feedback_count || 0), 0);
+  const visibleKnowledgeBases = knowledgeBases.filter((item) => !isEmptyDefaultKnowledgeBase(item));
 
   // Avoid flashing the 开放广场 / empty state before the agents API resolves,
   // which would otherwise briefly render before the employee profile appears.
@@ -229,7 +230,7 @@ export default function DashboardPage({
         <div className="org-dashboard-grid">
           <DashboardStat title="SOP" value={skills.length} icon={<StaffdeckIcon name="filter" />} />
           <DashboardStat title="技能" value={generalSkills.length} icon={<StaffdeckIcon name="spark" />} />
-          <DashboardStat title="知识库" value={knowledgeBases.length} icon={<StaffdeckIcon name="file" />} />
+          <DashboardStat title="知识库" value={visibleKnowledgeBases.length} icon={<StaffdeckIcon name="file" />} />
           <DashboardStat title="可用工具" value={tools.filter((item) => item.enabled).length} icon={<StaffdeckIcon name="tool" />} />
           <DashboardStat title="SOP 调用" value={totalCalls} icon={<StaffdeckIcon name="chat" />} />
           <DashboardStat title="好评" value={positiveFeedback || feedbackSummary?.up_count || 0} icon={<StaffdeckIcon name="chat" />} />
@@ -251,9 +252,9 @@ export default function DashboardPage({
   const canEditSelectedAgent = canManageEmployeeAgent(selectedAgent, currentUser);
   const activeSkills = skills.filter((item) => item.status === 'published' && item.branch_status !== 'inactive');
   const activeGeneralSkills = generalSkills.filter((item) => item.status === 'published');
-  const activeKnowledge = knowledgeBases.filter((item) => item.status === 'active');
+  const activeKnowledge = visibleKnowledgeBases.filter((item) => item.status === 'active');
   const activeTools = tools.filter((item) => item.enabled);
-  const selectedKnowledgeCount = agentResourceCount(selectedAgent, 'knowledge_base');
+  const selectedKnowledgeCount = visibleKnowledgeBases.length;
   const selectedGeneralSkillCount = agentResourceCount(selectedAgent, 'general_skill');
   const selectedSkillCount = agentResourceCount(selectedAgent, 'skill');
   const employeeScheduledTasks = scheduledTasks.filter((item) => item.agent_id === selectedAgent.id && item.status !== 'archived');
@@ -419,6 +420,19 @@ function DashboardStat({ title, value, icon }: { title: string; value: number; i
         <strong>{value}</strong>
       </div>
     </div>
+  );
+}
+
+function isEmptyDefaultKnowledgeBase(item: KnowledgeBaseRead): boolean {
+  const hasRuntimeKnowledge = item.document_count > 0 || item.bucket_count > 0 || item.chunk_count > 0;
+  if (!hasRuntimeKnowledge && item.metadata?.created_from_document_upload && !item.metadata?.source_document_id) {
+    return true;
+  }
+  return (
+    item.name === '默认知识库'
+    && item.document_count === 0
+    && item.bucket_count === 0
+    && item.chunk_count === 0
   );
 }
 

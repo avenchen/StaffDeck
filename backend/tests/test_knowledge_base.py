@@ -6,13 +6,14 @@ import pytest
 from sqlalchemy.pool import StaticPool
 from sqlmodel import Session, SQLModel, create_engine, select
 
-from app.api.knowledge import search_knowledge
+from app.api.knowledge import search_knowledge, update_chunk, update_document
 from app.api.knowledge_bases import knowledge_base_read
 from app.db.models import (
     KnowledgeBase,
     KnowledgeBaseVersion,
     KnowledgeBucket,
     KnowledgeChunk,
+    KnowledgeConcept,
     KnowledgeDiscoverySuggestion,
     KnowledgeDocument,
     ModelConfig,
@@ -20,7 +21,7 @@ from app.db.models import (
     Tenant,
     Tool,
 )
-from app.knowledge.schema import KnowledgeSearchRequest, KnowledgeSearchResponse
+from app.knowledge.schema import KnowledgeChunkUpdateRequest, KnowledgeDocumentUpdateRequest, KnowledgeSearchRequest, KnowledgeSearchResponse
 from app.knowledge.service import IngestPayload, KnowledgeService
 from app.skills.skill_schema import SkillCard
 
@@ -277,6 +278,165 @@ def test_knowledge_base_read_keeps_archived_rows_visible_despite_active_versions
 
     assert overall_read.status == "archived"
     assert branch_read.status == "archived"
+
+
+def test_update_document_syncs_document_card_and_okf_source_concept() -> None:
+    with _test_session() as db:
+        db.add(Tenant(id="tenant_demo", name="Demo"))
+        db.add(KnowledgeBase(id="kb_demo", tenant_id="tenant_demo", name="默认知识库"))
+        db.add(
+            KnowledgeBaseVersion(
+                id="kbv_demo",
+                tenant_id="tenant_demo",
+                knowledge_base_id="kb_demo",
+                version="1.0.0",
+                name="默认知识库",
+                status="active",
+            )
+        )
+        document = KnowledgeDocument(
+            id="kdoc_demo",
+            tenant_id="tenant_demo",
+            knowledge_base_id="kb_demo",
+            knowledge_base_version_id="kbv_demo",
+            filename="demo.md",
+            file_type="md",
+            title="旧标题",
+            status="ready",
+            bucket_count=1,
+            chunk_count=1,
+            metadata_json={
+                "document_card": {"title": "旧卡片标题", "summary": "文档摘要"},
+                "section_tree": [
+                    {
+                        "section_id": "intro",
+                        "title": "介绍",
+                        "path": "介绍",
+                        "summary": "旧章节摘要",
+                        "content": "旧章节内容",
+                    }
+                ],
+            },
+        )
+        bucket = KnowledgeBucket(
+            tenant_id="tenant_demo",
+            knowledge_base_id="kb_demo",
+            knowledge_base_version_id="kbv_demo",
+            document_id=document.id,
+            bucket_key="intro",
+            title="介绍",
+            summary="旧桶摘要",
+            token_estimate=10,
+            metadata_json={"content": "旧桶内容", "section_ids": ["intro"], "section_paths": ["介绍"]},
+        )
+        stale_source = KnowledgeConcept(
+            tenant_id="tenant_demo",
+            knowledge_base_id="kb_demo",
+            knowledge_base_version_id="kbv_demo",
+            document_id=document.id,
+            concept_id="sources/old-title",
+            concept_type="Source Document",
+            title="旧卡片标题",
+            description="旧来源",
+            content_md="# Old",
+        )
+        db.add(document)
+        db.add(bucket)
+        db.add(stale_source)
+        db.commit()
+
+        updated = update_document(
+            document.id,
+            KnowledgeDocumentUpdateRequest(tenant_id="tenant_demo", title="新标题"),
+            db,
+        )
+
+        assert updated.title == "新标题"
+        assert updated.metadata["document_card"]["title"] == "新标题"
+        source_concepts = db.exec(
+            select(KnowledgeConcept).where(
+                KnowledgeConcept.tenant_id == "tenant_demo",
+                KnowledgeConcept.document_id == document.id,
+                KnowledgeConcept.concept_type == "Source Document",
+            )
+        ).all()
+        assert len(source_concepts) == 1
+        assert source_concepts[0].title == "新标题"
+        assert source_concepts[0].concept_id != "sources/old-title"
+
+
+def test_update_chunk_refreshes_bucket_content_and_okf_topic() -> None:
+    with _test_session() as db:
+        db.add(Tenant(id="tenant_demo", name="Demo"))
+        db.add(KnowledgeBase(id="kb_demo", tenant_id="tenant_demo", name="默认知识库"))
+        db.add(
+            KnowledgeBaseVersion(
+                id="kbv_demo",
+                tenant_id="tenant_demo",
+                knowledge_base_id="kb_demo",
+                version="1.0.0",
+                name="默认知识库",
+                status="active",
+            )
+        )
+        document = KnowledgeDocument(
+            id="kdoc_demo",
+            tenant_id="tenant_demo",
+            knowledge_base_id="kb_demo",
+            knowledge_base_version_id="kbv_demo",
+            filename="demo.md",
+            file_type="md",
+            title="测试文档",
+            status="ready",
+            bucket_count=1,
+            chunk_count=1,
+            metadata_json={"document_card": {"title": "测试文档", "summary": "文档摘要"}},
+        )
+        bucket = KnowledgeBucket(
+            id="kbucket_demo",
+            tenant_id="tenant_demo",
+            knowledge_base_id="kb_demo",
+            knowledge_base_version_id="kbv_demo",
+            document_id=document.id,
+            bucket_key="refund",
+            title="退款规则",
+            summary="旧退款规则摘要",
+            token_estimate=10,
+            metadata_json={"content": "旧退款规则内容"},
+        )
+        chunk = KnowledgeChunk(
+            id="kchunk_demo",
+            tenant_id="tenant_demo",
+            knowledge_base_id="kb_demo",
+            knowledge_base_version_id="kbv_demo",
+            document_id=document.id,
+            bucket_id=bucket.id,
+            chunk_index=0,
+            content="旧退款规则内容",
+            summary="旧摘要",
+        )
+        db.add(document)
+        db.add(bucket)
+        db.add(chunk)
+        db.commit()
+
+        update_chunk(
+            chunk.id,
+            KnowledgeChunkUpdateRequest(tenant_id="tenant_demo", content="新退款规则内容", summary="新摘要"),
+            db,
+        )
+
+        refreshed_bucket = db.get(KnowledgeBucket, bucket.id)
+        assert refreshed_bucket is not None
+        assert "新退款规则内容" in refreshed_bucket.metadata_json["content"]
+        topic = db.exec(
+            select(KnowledgeConcept).where(
+                KnowledgeConcept.tenant_id == "tenant_demo",
+                KnowledgeConcept.document_id == document.id,
+                KnowledgeConcept.title == "退款规则",
+            )
+        ).one()
+        assert "新退款规则内容" in topic.content_md
 
 
 def test_confirm_discovery_is_required_before_tool_or_skill_enters_runtime() -> None:

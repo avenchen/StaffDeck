@@ -323,6 +323,8 @@ def _visible_tool_rows(
     agent_id: str | None = None,
 ) -> list[Tool]:
     agent = get_agent(db, tenant_id, agent_id)
+    if agent_id and not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
     if agent and not agent.is_overall:
         bindings = db.exec(
             select(AgentResourceBinding)
@@ -356,6 +358,8 @@ def _visible_tool_rows(
 
 def _ensure_tool_visible(db: Session, tenant_id: str, row: Tool, agent_id: str | None) -> None:
     agent = get_agent(db, tenant_id, agent_id)
+    if agent_id and not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
     if agent and not agent.is_overall:
         binding = _tool_binding(db, tenant_id, agent.id, row.id)
         if not binding or not is_bound_resource_visible_for_agent(db, tenant_id, "tool", row, binding):

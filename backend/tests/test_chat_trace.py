@@ -7,9 +7,11 @@ from app.api.chat import (
     _build_turn_traces,
     _message_turn_ids_from_events,
     _persist_chat_turn_cancelled,
+    _persist_chat_turn_interrupted,
+    _relay_event_payload,
     message_read,
 )
-from app.db.models import AgentEvent, ChatSession, Message
+from app.db.models import AgentEvent, ChatSession, KnowledgeConcept, Message
 
 
 def test_turn_trace_uses_router_skill_hint_when_events_have_turn_id() -> None:
@@ -76,6 +78,58 @@ def test_turn_trace_uses_router_skill_hint_when_events_have_turn_id() -> None:
     assert skill_lines
     assert skill_lines[0]["text"] == "推进技能 购买商品流程"
     assert skill_lines[0]["detail"] == "step end"
+
+
+def test_message_read_hydrates_knowledge_citation_content_from_concept() -> None:
+    engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    SQLModel.metadata.create_all(engine)
+    content = "完整 Content 正文。\n\n第二段继续保留。"
+    with Session(engine) as db:
+        db.add(
+            KnowledgeConcept(
+                tenant_id="tenant_demo",
+                knowledge_base_id="kb_demo",
+                knowledge_base_version_id="kbv_demo",
+                document_id="kdoc_demo",
+                concept_id="sources/demo/sections/sec-4",
+                concept_type="Source Section",
+                title="段落组 1",
+                description="不完整 summary",
+                content_md=f"---\ntitle: 段落组 1\n---\n{content}",
+            )
+        )
+        db.commit()
+        row = Message(
+            id="msg_assistant",
+            tenant_id="tenant_demo",
+            session_id="session_test",
+            role="assistant",
+            content="回答 [1]",
+            metadata_json={
+                "knowledge_citations": [
+                    {
+                        "id": "kref_1",
+                        "label": "[1]",
+                        "kind": "concept",
+                        "title": "段落组 1",
+                        "concept_id": "sources/demo/sections/sec-4",
+                        "summary": "不完整 summary",
+                        "excerpt": "不完整 summary",
+                    }
+                ]
+            },
+        )
+
+        read = message_read(row, db=db)
+
+    citation = read.metadata["knowledge_citations"][0]
+    assert citation["content"] == content
+    assert citation["excerpt"] == content
+    assert citation["summary"] == "不完整 summary"
 
 
 def test_turn_trace_falls_back_to_knowledge_citations_without_events() -> None:
@@ -407,6 +461,112 @@ def test_cancel_endpoint_persists_cancel_even_before_user_event_is_visible() -> 
         .order_by(Message.created_at)
     ).all()
     assert [message.role for message in messages] == []
+
+
+def test_stream_interrupted_persists_terminal_trace_and_message() -> None:
+    db = _test_db()
+    started_at = datetime(2026, 7, 4, 9, 7, 0)
+    session_row = ChatSession(id="session_interrupted", tenant_id="tenant_demo", user_id="user_demo")
+    db.add(session_row)
+    db.add(
+        Message(
+            id="msg_user",
+            tenant_id="tenant_demo",
+            session_id=session_row.id,
+            role="user",
+            content="你是谁",
+            created_at=started_at,
+        )
+    )
+    db.add(
+        AgentEvent(
+            tenant_id="tenant_demo",
+            session_id=session_row.id,
+            event_type="user_message_received",
+            payload_json={
+                "message_id": "msg_user",
+                "client_turn_id": "turn_interrupted",
+                "message": "你是谁",
+            },
+            created_at=started_at,
+        )
+    )
+    db.add(
+        AgentEvent(
+            tenant_id="tenant_demo",
+            session_id=session_row.id,
+            event_type="stream_status",
+            payload_json={
+                "turn_id": "msg_user",
+                "user_message_id": "msg_user",
+                "phase": "responding",
+                "text": "正在生成回复",
+            },
+            created_at=started_at + timedelta(milliseconds=100),
+        )
+    )
+    db.commit()
+
+    assert _persist_chat_turn_interrupted(db, "tenant_demo", session_row, "turn_interrupted", "GeneratorExit")
+    db.commit()
+    assert not _persist_chat_turn_interrupted(db, "tenant_demo", session_row, "turn_interrupted", "GeneratorExit")
+
+    events = db.exec(
+        select(AgentEvent)
+        .where(AgentEvent.tenant_id == "tenant_demo", AgentEvent.session_id == session_row.id)
+        .order_by(AgentEvent.created_at)
+    ).all()
+    interrupted_events = [event for event in events if event.event_type == "stream_interrupted"]
+    assert len(interrupted_events) == 1
+    assert interrupted_events[0].payload_json["turn_id"] == "msg_user"
+    assert interrupted_events[0].payload_json["client_turn_id"] == "turn_interrupted"
+
+    messages = db.exec(
+        select(Message)
+        .where(Message.tenant_id == "tenant_demo", Message.session_id == session_row.id)
+        .order_by(Message.created_at)
+    ).all()
+    assistant_messages = [message for message in messages if message.role == "assistant"]
+    assert len(assistant_messages) == 1
+    assert assistant_messages[0].metadata_json["status"] == "interrupted"
+
+    traces = _build_turn_traces(messages, events, {})
+    assert traces[0]["completed_at"] == interrupted_events[0].created_at.isoformat()
+    assert all(line["state"] != "running" for line in traces[0]["lines"])
+    assert any(
+        line["id"] == "generation_interrupted"
+        and line["text"] == "响应生成中断"
+        and line["state"] == "failed"
+        for line in traces[0]["lines"]
+    )
+
+
+def test_relay_event_payload_maps_persisted_router_and_status_events() -> None:
+    status_event = AgentEvent(
+        id="evt_status",
+        tenant_id="tenant_demo",
+        session_id="session_relay",
+        event_type="stream_status",
+        payload_json={"turn_id": "msg_user", "phase": "routing", "text": "正在判断用户意图"},
+        created_at=datetime(2026, 7, 4, 9, 9, 0),
+    )
+    router_event = AgentEvent(
+        id="evt_router",
+        tenant_id="tenant_demo",
+        session_id="session_relay",
+        event_type="router_decision_created",
+        payload_json={"turn_id": "msg_user", "decision": "answer_only"},
+        created_at=datetime(2026, 7, 4, 9, 9, 1),
+    )
+
+    status_name, status_payload = _relay_event_payload(status_event)
+    router_name, router_payload = _relay_event_payload(router_event)
+
+    assert status_name == "status"
+    assert status_payload["sessionId"] == "session_relay"
+    assert status_payload["phase"] == "routing"
+    assert router_name == "router_decision"
+    assert router_payload["decision"] == "answer_only"
 
 
 def test_turn_trace_without_terminal_event_stays_open_for_refresh_recovery() -> None:

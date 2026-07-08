@@ -262,7 +262,9 @@ export const CHAT_CITATION_DETAIL_TITLE_CLASS = 'text-[18px] font-semibold text-
 export const CHAT_CITATION_DETAIL_SECTION_CLASS =
   'grid gap-[5px] [&>span]:text-[12px] [&>span]:font-medium [&>span]:text-[#757f9c] [&>p]:text-[13px] [&>p]:leading-[1.7] [&>p]:text-[#464c5e]';
 export const CHAT_CITATION_DETAIL_QUOTE_CLASS =
-  'm-0 rounded-[10px] border-l-[3px] border-[#e3e7f1] bg-[#fafbfc] px-[12px] py-[8px] text-[13px] leading-[1.7] text-[#464c5e]';
+  'm-0 max-h-[min(52vh,520px)] overflow-y-auto overscroll-contain rounded-[10px] border-l-[3px] border-[#e3e7f1] bg-[#fafbfc] px-[12px] py-[8px] text-[13px] leading-[1.7] whitespace-pre-wrap wrap-anywhere text-[#464c5e]';
+export const CHAT_CITATION_DETAIL_MARKDOWN_CLASS =
+  'max-h-[min(52vh,520px)] min-w-0 max-w-full overflow-y-auto overscroll-contain rounded-[10px] border-l-[3px] border-[#e3e7f1] bg-[#fafbfc] px-[12px] py-[8px] [&>div]:text-[13px] [&>div]:leading-[1.7] [&>div]:text-[#464c5e] [&_h1]:text-[16px] [&_h2]:text-[15px] [&_h3]:text-[14px] [&_h4]:text-[13px] [&_p]:wrap-anywhere [&_li]:wrap-anywhere [&_code]:wrap-anywhere [&_a]:wrap-anywhere';
 export const CHAT_CITATION_DETAIL_GRID_CLASS =
   'grid grid-cols-2 gap-[12px] max-[520px]:grid-cols-1 [&>div]:grid [&>div]:gap-[3px] [&_span]:text-[11px] [&_span]:text-[#858b9c] [&_strong]:text-[13px] [&_strong]:font-medium [&_strong]:text-[#18181a]';
 export const CHAT_CITATION_DETAIL_NOTE_CLASS = 'text-[12px] leading-[1.6] text-[#858b9c]';
