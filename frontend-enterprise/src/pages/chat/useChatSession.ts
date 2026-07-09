@@ -23,6 +23,7 @@ import {
 } from '@/api/client';
 import { clearEnterpriseAuthSession, getEnterpriseAuthSession } from '@/auth';
 import { emitAgentScopeChange, persistSharedAgentScope } from '@/lib/agent-scope-storage';
+import { getClientTimeZone } from '@/lib/timezone';
 import {
   agentResourceCount,
   employeeDisplayName,
@@ -268,6 +269,11 @@ export function useChatSession() {
   const [scheduledDrafts, setScheduledDrafts] = useState<Record<string, ScheduledTaskDraftRead>>({});
   const [createdScheduledTasks, setCreatedScheduledTasks] = useState<Record<string, ScheduledTaskRead>>({});
   const [dismissedDraftMessageIds, setDismissedDraftMessageIds] = useState<string[]>([]);
+  const persistChatSessionAgentFilter = useCallback((value: string) => {
+    const next = value || 'all';
+    setSessionAgentFilter(next);
+    window.localStorage.setItem(sessionFilterStorageKey(userId), next);
+  }, [userId]);
   const [activeCitation, setActiveCitation] = useState<KnowledgeCitation | null>(null);
   const [handoffs, setHandoffs] = useState<HumanHandoffRead[]>([]);
   const [handoffsLoading, setHandoffsLoading] = useState(false);
@@ -500,10 +506,30 @@ export function useChatSession() {
     if (!activeDraftAgentId) return;
     setSelectedAgentId(activeDraftAgentId);
     if (draftAgentId) {
+      persistChatSessionAgentFilter(activeDraftAgentId);
       persistSharedAgentScope(activeDraftAgentId, userId);
       emitAgentScopeChange(activeDraftAgentId);
     }
-  }, [activeDraftAgentId, draftAgentId, userId]);
+  }, [activeDraftAgentId, draftAgentId, persistChatSessionAgentFilter, userId]);
+
+  useEffect(() => {
+    const onScopeChange = (event: Event) => {
+      const nextAgentId = (
+        (event as CustomEvent<{ agentId?: string }>).detail?.agentId
+        || window.localStorage.getItem(SELECTED_AGENT_STORAGE_KEY)
+        || ''
+      );
+      if (!nextAgentId) return;
+      setSelectedAgentId(nextAgentId);
+      setSessionAgentFilter((current) => {
+        if (current === 'all') return current;
+        window.localStorage.setItem(sessionFilterStorageKey(userId), nextAgentId);
+        return nextAgentId;
+      });
+    };
+    window.addEventListener('ultrarag-enterprise-agent-scope-change', onScopeChange);
+    return () => window.removeEventListener('ultrarag-enterprise-agent-scope-change', onScopeChange);
+  }, [userId]);
 
   useEffect(() => {
     if (!auth) return;
@@ -804,10 +830,9 @@ export function useChatSession() {
 
   useEffect(() => {
     if (!sessionFilterOptions.some((item) => item.value === sessionAgentFilter)) {
-      setSessionAgentFilter('all');
-      window.localStorage.setItem(sessionFilterStorageKey(userId), 'all');
+      persistChatSessionAgentFilter('all');
     }
-  }, [sessionAgentFilter, sessionFilterOptions, userId]);
+  }, [persistChatSessionAgentFilter, sessionAgentFilter, sessionFilterOptions]);
   const currentScheduledDraft = activeConversationId ? scheduledDrafts[activeConversationId] : undefined;
   const hasVisibleMessageScheduledDraft = displayedMessages.some((item) => (
     item.role === 'assistant'
@@ -1502,7 +1527,7 @@ export function useChatSession() {
         description: draft.description,
         schedule_type: draft.schedule_type,
         schedule: draft.schedule,
-        timezone: draft.timezone || 'Asia/Shanghai',
+        timezone: draft.timezone || getClientTimeZone(),
         rrule: draft.rrule,
         status: 'active',
         concurrency_policy: 'forbid',
@@ -2573,6 +2598,7 @@ export function useChatSession() {
         attachments: outgoingAttachments,
         channel: 'web',
         interaction_mode: resolvedInteractionMode,
+        client_timezone: getClientTimeZone(),
         model_config_id: prepared.modelConfigId,
       };
       if (!startedAsDraftConversation) {
@@ -2784,10 +2810,11 @@ export function useChatSession() {
   const openDraftForAgent = useCallback((agentId: string) => {
     if (!agentId) return;
     setSelectedAgentId(agentId);
+    persistChatSessionAgentFilter(agentId);
     persistSharedAgentScope(agentId, userId);
     emitAgentScopeChange(agentId);
     navigate(`${CHAT_BASE_PATH}/draft/${encodeURIComponent(agentId)}`);
-  }, [navigate, userId]);
+  }, [navigate, persistChatSessionAgentFilter, userId]);
 
   const openGallery = useCallback(() => {
     navigate('/workspace/gallery');
@@ -2795,14 +2822,13 @@ export function useChatSession() {
 
   const changeSessionAgentFilter = useCallback((value: string) => {
     const next = value || 'all';
-    setSessionAgentFilter(next);
-    window.localStorage.setItem(sessionFilterStorageKey(userId), next);
+    persistChatSessionAgentFilter(next);
     if (next !== 'all') {
       setSelectedAgentId(next);
       persistSharedAgentScope(next, userId);
       emitAgentScopeChange(next);
     }
-  }, [userId]);
+  }, [persistChatSessionAgentFilter, userId]);
 
   return {
     auth,

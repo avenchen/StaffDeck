@@ -154,6 +154,7 @@ class ChatTurnRequest(BaseModel):
     attachments: list["ChatAttachmentRead"] = Field(default_factory=list)
     channel: str = "web"
     interaction_mode: Literal["normal", "scheduled_task"] = "normal"
+    client_timezone: Optional[str] = None
     debug: bool = False
 
 

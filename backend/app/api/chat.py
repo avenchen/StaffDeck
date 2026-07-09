@@ -525,6 +525,7 @@ def _maybe_handle_scheduled_task_request(
         request.user_id,
         request.message,
         chat_session.id,
+        request.client_timezone,
     )
     if not draft or not draft.should_create:
         return None
@@ -836,6 +837,7 @@ def chat_turn(
             request.user_id,
             request.message,
             response.session_id,
+            request.client_timezone,
         )
         if draft and draft.should_create:
             _persist_scheduled_task_draft(db, request.tenant_id, response.session_id, draft)
@@ -1014,6 +1016,7 @@ def chat_stream(
                             request.user_id,
                             request.message,
                             event_source_session_id or None,
+                            request.client_timezone,
                         )
                         if draft and draft.should_create:
                             _persist_scheduled_task_draft(worker_db, request.tenant_id, event_source_session_id, draft)

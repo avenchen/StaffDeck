@@ -1300,10 +1300,11 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
     if (!editingSlug) return false;
     const original = rows.find((row) => row.slug === editingSlug);
     if (!original) return false;
+    const stableSlug = editingSlug || skillSlug;
     return (
       markdown !== original.skill_markdown
       || skillName !== original.name
-      || skillSlug !== original.slug
+      || stableSlug !== original.slug
       || skillDescription !== (original.description || '')
       || skillHomepage !== (original.homepage || '')
       || normalizedSkillFiles(skillFiles) !== normalizedSkillFiles(
@@ -1327,7 +1328,7 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
         tenant_id: TENANT_ID,
         agent_id: !isOverallAgent && agentId ? agentId : undefined,
         name: skillName.trim() || undefined,
-        slug: skillSlug.trim() || undefined,
+        slug: editingSlug || skillSlug.trim() || undefined,
         description: skillDescription.trim() || undefined,
         homepage: skillHomepage.trim() || undefined,
         markdown,
@@ -2025,9 +2026,12 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
               <Field label="Slug">
                 <Input
                   value={skillSlug}
-                  onChange={(event) => setSkillSlug(event.target.value)}
-                  disabled={!canManageCurrentScope}
-                  placeholder="用于路由和接口路径，例如 weather-zh"
+                  onChange={(event) => {
+                    if (editingSlug) return;
+                    setSkillSlug(event.target.value);
+                  }}
+                  disabled={!canManageCurrentScope || Boolean(editingSlug)}
+                  placeholder={editingSlug ? '创建后不可修改' : '用于路由和接口路径，例如 weather-zh'}
                 />
               </Field>
               <Field label="描述">

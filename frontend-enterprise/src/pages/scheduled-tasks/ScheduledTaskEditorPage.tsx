@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { notify } from '@/components/ui/app-toast';
+import { getClientTimeZone } from '@/lib/timezone';
 
 import AppHeader from '@/components/AppHeader';
 import { Button } from '@/components/ui/button';
@@ -133,7 +134,7 @@ function ScheduledTaskEditorPage({
       description: values.description?.trim() || undefined,
       schedule_type: values.schedule_type,
       schedule: buildSchedule(values),
-      timezone: 'Asia/Shanghai',
+      timezone: getClientTimeZone(),
       status: values.status,
       concurrency_policy: 'forbid',
       misfire_policy: 'coalesce',

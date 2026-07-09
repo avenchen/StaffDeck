@@ -2,6 +2,8 @@ import json
 from io import BytesIO
 from zipfile import ZipFile
 
+import pytest
+from fastapi import HTTPException
 from sqlalchemy.pool import StaticPool
 from sqlmodel import Session, SQLModel, create_engine, select
 
@@ -17,6 +19,7 @@ from app.api.skills import (
     publish_skill,
     rollback_skill_version,
     skill_read,
+    update_skill,
 )
 from app.agents.branching import ensure_open_gallery_binding, visible_published_skills
 from app.db.models import AgentEvent, AgentProfile, Message, Skill, SkillFeedback, SkillVersion, Tenant
@@ -25,7 +28,7 @@ from app.skills.skill_distiller import SkillDistiller
 from app.skills.skill_editor import SkillEditor
 from app.skills.skill_reflection import PROMPT_PATH as SKILL_REFLECTION_PROMPT_PATH
 from app.skills.skill_reflection import RUBRIC_LABELS
-from app.skills.skill_schema import SkillCard, SkillCreateRequest, SkillDistillRequest, SkillDistillResponse, SkillRewriteRequest
+from app.skills.skill_schema import SkillCard, SkillCreateRequest, SkillDistillRequest, SkillDistillResponse, SkillRewriteRequest, SkillUpdateRequest
 from app.security.encryption import encrypt_secret
 
 
@@ -444,6 +447,36 @@ def test_skill_versions_are_snapshotted_with_version_stats() -> None:
 
     assert versions[0].version == "1.5.0"
     assert versions[0].call_count == 1
+
+
+def test_skill_id_cannot_be_modified_after_create() -> None:
+    with _test_session() as db:
+        db.add(Tenant(id="tenant_demo", name="Demo"))
+        content = _skill_card()
+        db.add(
+            Skill(
+                tenant_id="tenant_demo",
+                skill_id=content.skill_id,
+                version=content.version,
+                name=content.name,
+                content_json=content.model_dump(),
+                status="published",
+            )
+        )
+        db.commit()
+
+        edited_content = content.model_copy(deep=True)
+        edited_content.skill_id = "purchase_v2"
+
+        with pytest.raises(HTTPException) as exc_info:
+            update_skill(
+                content.skill_id,
+                SkillUpdateRequest(tenant_id="tenant_demo", content=edited_content, status="published"),
+                db=db,
+            )
+
+        assert exc_info.value.status_code == 400
+        assert exc_info.value.detail == "SOP skill_id cannot be modified"
 
 
 def test_skill_can_return_to_draft_without_leaving_runtime_list() -> None:

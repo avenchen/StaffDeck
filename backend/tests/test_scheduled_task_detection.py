@@ -61,6 +61,13 @@ def test_fallback_draft_strips_configuration_prefix_only() -> None:
     assert draft.reason == "模型解析失败后的轻量关键词兜底草案"
 
 
+def test_fallback_draft_uses_requested_timezone() -> None:
+    draft = _fallback_draft("每天9点提醒我喝水", "America/Los_Angeles")
+
+    assert draft is not None
+    assert draft.timezone == "America/Los_Angeles"
+
+
 def test_llm_draft_is_used_without_confidence_fallback(monkeypatch) -> None:
     with _test_session() as db:
         db.add(Tenant(id="tenant_demo", name="Demo"))
@@ -100,6 +107,41 @@ def test_llm_draft_is_used_without_confidence_fallback(monkeypatch) -> None:
         assert draft.schedule_type == "once"
         assert draft.schedule["run_at"] == "2026-06-22T14:10:00+08:00"
         assert draft.confidence == 0.1
+
+
+def test_llm_draft_defaults_to_requested_timezone(monkeypatch) -> None:
+    with _test_session() as db:
+        db.add(Tenant(id="tenant_demo", name="Demo"))
+        db.add(AgentProfile(id="agent_demo", tenant_id="tenant_demo", name="客服", is_overall=False))
+        db.commit()
+
+        monkeypatch.setattr(
+            scheduled_service,
+            "_detect_with_llm",
+            lambda *args, **kwargs: scheduled_service._LLMScheduledTaskDraft(
+                should_create=True,
+                title="模型解析的周期任务",
+                prompt="每天提醒喝水",
+                schedule_type="daily",
+                schedule={"time": "09:00"},
+                confidence=0.8,
+                reason="模型已给出完整结构",
+            ),
+        )
+
+        draft = scheduled_service.detect_scheduled_task_draft(
+            db,
+            "tenant_demo",
+            "agent_demo",
+            "user_demo",
+            "每天9点提醒我喝水",
+            "session_demo",
+            "America/Los_Angeles",
+        )
+
+        assert draft is not None
+        assert draft.timezone == "America/Los_Angeles"
+        assert draft.schedule == {"time": "09:00"}
 
 
 def test_llm_negative_result_does_not_fallback(monkeypatch) -> None:

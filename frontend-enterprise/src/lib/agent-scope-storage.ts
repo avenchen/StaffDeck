@@ -7,18 +7,14 @@ export function sessionFilterStorageKey(userId: string): string {
 }
 
 export function persistSharedAgentScope(agentId: string, userId?: string): void {
+  void userId;
   if (!agentId) return;
   window.localStorage.setItem(ENTERPRISE_AGENT_STORAGE_KEY, agentId);
-  if (userId) {
-    window.localStorage.setItem(sessionFilterStorageKey(userId), agentId);
-  }
 }
 
 export function clearSharedAgentScope(userId?: string): void {
+  void userId;
   window.localStorage.removeItem(ENTERPRISE_AGENT_STORAGE_KEY);
-  if (userId) {
-    window.localStorage.removeItem(sessionFilterStorageKey(userId));
-  }
 }
 
 export function emitAgentScopeChange(agentId: string): void {

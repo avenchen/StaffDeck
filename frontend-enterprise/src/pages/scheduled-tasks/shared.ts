@@ -1,4 +1,5 @@
 import type { UnderlineTabItem } from '@/components/ui';
+import { formatClientDateTime, parseBackendDateTime } from '@/lib/timezone';
 import type { ScheduledTaskRead, ScheduledTaskRunRead } from '../../types';
 
 export const ENTERPRISE_AGENT_STORAGE_KEY = 'ultrarag_enterprise_agent_scope';
@@ -159,7 +160,7 @@ export function normalizeScheduleType(value: string): TaskFormValues['schedule_t
 
 export function toDatetimeLocal(value: string): string {
   if (!value) return '';
-  const date = parseBackendTime(value);
+  const date = parseBackendDateTime(value);
   if (Number.isNaN(date.getTime())) return '';
   const offset = date.getTimezoneOffset();
   const local = new Date(date.getTime() - offset * 60000);
@@ -172,15 +173,5 @@ export function formatSchedule(row: ScheduledTaskRead): string {
 }
 
 export function formatTime(value?: string): string {
-  if (!value) return '暂无';
-  const date = parseBackendTime(value);
-  if (Number.isNaN(date.getTime())) return '暂无';
-  return date.toLocaleString('zh-CN', { hour12: false });
-}
-
-function parseBackendTime(value: string): Date {
-  const text = String(value || '').trim();
-  if (!text) return new Date('');
-  if (/[zZ]|[+-]\d{2}:\d{2}$/.test(text)) return new Date(text);
-  return new Date(`${text}Z`);
+  return formatClientDateTime(value, '暂无');
 }

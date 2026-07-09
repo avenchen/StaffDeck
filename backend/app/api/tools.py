@@ -250,17 +250,15 @@ def update_tool(
     _ensure_tool_visible(db, request.tenant_id, row, agent_id)
     if agent and not agent.is_overall:
         source_tool_id = row.id
+        source_was_open_gallery = is_open_gallery_resource(db, request.tenant_id, "tool", row)
         row = _ensure_private_tool_for_agent(db, request.tenant_id, agent, row)
-        requested_name = request.name.strip()
-        if _tool_name_taken(db, request.tenant_id, requested_name, exclude_id=row.id):
-            requested_name = _unique_tool_name(db, request.tenant_id, requested_name, agent.id, exclude_id=row.id)
+        if not source_was_open_gallery and request.name.strip() != row.name:
+            raise HTTPException(status_code=400, detail="Tool name cannot be modified")
     else:
         ensure_open_gallery_admin(request.tenant_id, current_user)
         source_tool_id = row.id
-        requested_name = request.name.strip()
-        if _tool_name_taken(db, request.tenant_id, requested_name, exclude_id=row.id):
-            raise HTTPException(status_code=409, detail="Tool name already exists for this tenant")
-    row.name = requested_name
+        if request.name.strip() != row.name:
+            raise HTTPException(status_code=400, detail="Tool name cannot be modified")
     row.display_name = request.display_name
     row.description = request.description
     row.bucket = _normalize_bucket(request.bucket)

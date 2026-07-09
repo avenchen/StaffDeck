@@ -191,6 +191,7 @@ def create_chat_scheduled_task_draft(
         current_user.id,
         request.message,
         request.session_id,
+        request.timezone,
     )
     if not draft:
         return ScheduledTaskDraftRead(

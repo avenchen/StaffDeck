@@ -281,7 +281,7 @@ def update_skill(
     current_user: User = Depends(get_current_user),
 ) -> SkillRead:
     if request.content.skill_id != skill_id:
-        raise HTTPException(status_code=400, detail="Path skill_id must match content.skill_id")
+        raise HTTPException(status_code=400, detail="SOP skill_id cannot be modified")
     row = _get_skill(db, request.tenant_id, skill_id)
     normalized_content, _warnings = skill_card_with_unique_step_ids(request.content)
     agent = ensure_agent_scope_manager(db, request.tenant_id, agent_id, current_user)

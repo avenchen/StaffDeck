@@ -76,7 +76,7 @@ class _LLMScheduledTaskDraft(BaseModel):
     description: str | None = None
     schedule_type: str = "daily"
     schedule: dict[str, Any] = Field(default_factory=dict)
-    timezone: str = DEFAULT_TIMEZONE
+    timezone: str | None = None
     rrule: str | None = None
     confidence: float = 0.0
     reason: str | None = None
@@ -94,11 +94,11 @@ SCHEDULE_DRAFT_PROMPT = """
 - description: 可选，解释为什么这样拆解
 - schedule_type: one of "once", "daily", "weekly", "monthly"
 - schedule:
-  - once: {"run_at": "YYYY-MM-DDTHH:mm:ss+08:00"}
+  - once: {"run_at": "YYYY-MM-DDTHH:mm:ss±HH:MM"}
   - daily: {"time": "HH:mm"}
   - weekly: {"time": "HH:mm", "weekdays": [0-6]}，0=周一，6=周日
   - monthly: {"time": "HH:mm", "day_of_month": 1-31}
-- timezone: IANA 时区，默认 Asia/Shanghai
+- timezone: IANA 时区，默认使用 default_timezone
 - rrule: 可选 RRULE 字符串
 - confidence: 0 到 1
 - reason: 简短说明
@@ -255,23 +255,26 @@ def detect_scheduled_task_draft(
     user_id: str,
     message: str,
     source_session_id: str | None = None,
+    timezone: str | None = None,
 ) -> ScheduledTaskDraftRead | None:
     ensure_tenant(db, tenant_id)
     agent = db.get(AgentProfile, agent_id)
     if not agent or agent.tenant_id != tenant_id or agent.is_overall or agent.status != "active":
         return None
-    llm_draft = _detect_with_llm(db, tenant_id, agent_id, message)
+    user_timezone = _safe_timezone(timezone)
+    llm_draft = _detect_with_llm(db, tenant_id, agent_id, message, user_timezone)
     if llm_draft is not None:
         if not llm_draft.should_create:
             return None
         draft: _LLMScheduledTaskDraft | ScheduledTaskDraftRead = llm_draft
     else:
-        draft = _fallback_draft(message)
+        draft = _fallback_draft(message, user_timezone)
     if not draft or not draft.should_create:
         return None
     try:
         schedule_type = _normalize_schedule_type(draft.schedule_type)
-        schedule = normalize_schedule(schedule_type, draft.schedule, draft.timezone)
+        draft_timezone = _safe_timezone(draft.timezone, user_timezone)
+        schedule = normalize_schedule(schedule_type, draft.schedule, draft_timezone)
     except HTTPException:
         return None
     title = (draft.title or _compact_title(message)).strip()[:80]
@@ -287,7 +290,7 @@ def detect_scheduled_task_draft(
         description=draft.description,
         schedule_type=schedule_type,
         schedule=schedule,
-        timezone=draft.timezone or DEFAULT_TIMEZONE,
+        timezone=draft_timezone,
         rrule=draft.rrule or build_rrule(schedule_type, schedule),
         confidence=draft.confidence,
         reason=draft.reason,
@@ -460,6 +463,7 @@ def _execute_prepared_scheduled_task(
             message=automatic_task_message(task),
             channel="scheduled_task",
             interaction_mode="scheduled_task",
+            client_timezone=task.timezone,
         )
         result: ChatTurnResponse | None = None
         for seq, item in enumerate(AgentLoop(db).handle_turn_stream(request), start=1):
@@ -673,7 +677,13 @@ def _finish_task_schedule(db: Session, task: ScheduledTask, scheduled_for: datet
     db.add(task)
 
 
-def _detect_with_llm(db: Session, tenant_id: str, agent_id: str, message: str) -> _LLMScheduledTaskDraft | None:
+def _detect_with_llm(
+    db: Session,
+    tenant_id: str,
+    agent_id: str,
+    message: str,
+    timezone: str,
+) -> _LLMScheduledTaskDraft | None:
     model_config = model_for_agent(db, tenant_id, agent_id, "router") or model_for_agent(db, tenant_id, agent_id)
     if not model_config:
         return None
@@ -681,8 +691,8 @@ def _detect_with_llm(db: Session, tenant_id: str, agent_id: str, message: str) -
         raw = LLMClient(model_config).generate_json(
             SCHEDULE_DRAFT_PROMPT,
             {
-                "now": _to_local(utc_now(), DEFAULT_TIMEZONE).isoformat(),
-                "default_timezone": DEFAULT_TIMEZONE,
+                "now": _to_local(utc_now(), timezone).isoformat(),
+                "default_timezone": timezone,
                 "user_message": message,
             },
         )
@@ -691,7 +701,7 @@ def _detect_with_llm(db: Session, tenant_id: str, agent_id: str, message: str) -
         return None
 
 
-def _fallback_draft(message: str) -> ScheduledTaskDraftRead | None:
+def _fallback_draft(message: str, timezone: str = DEFAULT_TIMEZONE) -> ScheduledTaskDraftRead | None:
     schedule_type, schedule = _basic_fallback_schedule(message)
     return ScheduledTaskDraftRead(
         should_create=True,
@@ -702,7 +712,7 @@ def _fallback_draft(message: str) -> ScheduledTaskDraftRead | None:
         description="模型未返回有效草案，已按基础关键词生成可编辑自动任务草案，请确认计划和执行内容。",
         schedule_type=schedule_type,  # type: ignore[arg-type]
         schedule=schedule,
-        timezone=DEFAULT_TIMEZONE,
+        timezone=_safe_timezone(timezone),
         confidence=0.45,
         reason="模型解析失败后的轻量关键词兜底草案",
     )
@@ -836,6 +846,16 @@ def _tz(value: str) -> ZoneInfo:
         return ZoneInfo(value or DEFAULT_TIMEZONE)
     except ZoneInfoNotFoundError as exc:
         raise HTTPException(status_code=400, detail="无效时区") from exc
+
+
+def _safe_timezone(value: str | None, fallback: str = DEFAULT_TIMEZONE) -> str:
+    candidate = (value or "").strip() or fallback
+    try:
+        _tz(candidate)
+        return candidate
+    except HTTPException:
+        _tz(fallback)
+        return fallback
 
 
 def _to_local(value: datetime, timezone: str) -> datetime:

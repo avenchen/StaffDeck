@@ -1,3 +1,5 @@
+import { formatClientDateTime } from './timezone';
+
 /**
  * Shared Tailwind class tokens for the enterprise list pages (SOP, 技能, 定时任务,
  * 员工记忆, 对话日志 …). Keeping them in one place avoids copy-pasting the exact
@@ -58,8 +60,5 @@ export const SEARCH_COMBO_BUTTON_CLASS =
 
 /** Format a backend timestamp as a localized `zh-CN` date-time, or `-` when empty/invalid. */
 export function formatDateTime(value?: string): string {
-  if (!value) return '-';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '-';
-  return date.toLocaleString('zh-CN', { hour12: false });
+  return formatClientDateTime(value, '-');
 }

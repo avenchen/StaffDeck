@@ -76,7 +76,7 @@ def test_import_general_skill_uses_user_supplied_metadata() -> None:
             GeneralSkillImportRequest(
                 tenant_id="tenant_demo",
                 name="用户改名天气技能",
-                slug="weather-cn",
+                slug="weather-zh",
                 description="用户改写描述",
                 homepage="https://example.com/weather-cn",
                 original_slug="weather-zh",
@@ -88,11 +88,27 @@ def test_import_general_skill_uses_user_supplied_metadata() -> None:
         rows = list_general_skills("tenant_demo", db)
         assert first.id == second.id
         assert len(rows) == 1
-        assert rows[0].slug == "weather-cn"
+        assert rows[0].slug == "weather-zh"
         assert rows[0].name == "用户改名天气技能"
         assert rows[0].description == "用户改写描述"
         assert rows[0].homepage == "https://example.com/weather-cn"
         assert rows[0].skill_markdown.startswith("# 天气 demo")
+
+        try:
+            import_general_skill(
+                GeneralSkillImportRequest(
+                    tenant_id="tenant_demo",
+                    name="非法改 slug",
+                    slug="weather-cn",
+                    original_slug="weather-zh",
+                    markdown=WEATHER_SKILL_MD,
+                ),
+                db,
+            )
+            assert False, "expected general skill slug update to fail"
+        except HTTPException as exc:
+            assert exc.status_code == 400
+            assert exc.detail == "General skill slug cannot be modified"
 
 
 def test_import_general_skill_without_original_slug_does_not_overwrite_existing() -> None:

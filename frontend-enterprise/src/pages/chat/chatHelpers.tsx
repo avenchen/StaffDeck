@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import CodeBlock from '@/components/CodeBlock';
 import { ApiError } from '@/api/client';
 import type { StreamEvent } from '@/api/client';
+import { formatClientDateTime } from '@/lib/timezone';
 import type {
   ChatAttachmentRead,
   ChatMessage,
@@ -1693,9 +1694,9 @@ export function formatDraftSchedule(draft: ScheduledTaskDraftRead): string {
   }
   if (scheduleType === 'once') {
     const value = String(schedule.run_at || '');
-    const date = value ? new Date(value) : null;
-    return date && !Number.isNaN(date.getTime())
-      ? `一次性 ${date.toLocaleString('zh-CN', { hour12: false })}`
+    const formatted = formatClientDateTime(value, '');
+    return formatted
+      ? `一次性 ${formatted}`
       : '一次性';
   }
   return `每天 ${schedule.time || '09:00'}`;

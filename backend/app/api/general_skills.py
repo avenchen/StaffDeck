@@ -117,6 +117,8 @@ def import_general_skill(
         ).first()
         if not row:
             raise HTTPException(status_code=404, detail="General skill to update was not found")
+        if slug != row.slug:
+            raise HTTPException(status_code=400, detail="General skill slug cannot be modified")
         if is_private_agent_scope:
             if is_open_gallery_resource(db, request.tenant_id, "general_skill", row):
                 row = None

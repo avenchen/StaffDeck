@@ -57,6 +57,7 @@ class ScheduledTaskDraftRequest(BaseModel):
     agent_id: str
     session_id: Optional[str] = None
     message: str
+    timezone: Optional[str] = None
 
 
 class ScheduledTaskDraftRead(BaseModel):

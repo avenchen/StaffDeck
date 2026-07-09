@@ -474,6 +474,24 @@ type DistillPageProps = {
   onLogout?: () => void;
 };
 
+function lockSkillIdForDraft(draft: SkillCard, lockedSkillId: string): SkillCard {
+  if (!lockedSkillId || draft.skill_id === lockedSkillId) return draft;
+  return { ...cloneSkill(draft), skill_id: lockedSkillId };
+}
+
+function lockNullableSkillIdForDraft(draft: SkillCard | null, lockedSkillId: string): SkillCard | null {
+  return draft ? lockSkillIdForDraft(draft, lockedSkillId) : null;
+}
+
+function lockPendingChangeSkillId(change: PendingChange | null, lockedSkillId: string): PendingChange | null {
+  if (!change || !lockedSkillId) return change;
+  return {
+    ...change,
+    previousDraft: lockSkillIdForDraft(change.previousDraft, lockedSkillId),
+    nextDraft: lockSkillIdForDraft(change.nextDraft, lockedSkillId),
+  };
+}
+
 export default function DistillPage({ active = true, searchParamsOverride, currentUser, onLogout }: DistillPageProps = {}) {
   const navigate = useNavigate();
   const [routerSearchParams] = useSearchParams();
@@ -557,9 +575,10 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
       if (skillId && isBlankDistillWorkspace(cached)) {
         removeDistillCache(cacheKey);
       } else {
-        setDraft(cached.draft);
+        const cachedLockedSkillId = cached.loadedSkill?.skill_id || skillId || '';
+        setDraft(lockNullableSkillIdForDraft(cached.draft, cachedLockedSkillId));
         setLoadedSkill(cached.loadedSkill);
-        setLastSavedDraft(cached.lastSavedDraft);
+        setLastSavedDraft(lockNullableSkillIdForDraft(cached.lastSavedDraft, cachedLockedSkillId));
         setMessages(cached.messages.length > 0 ? cached.messages : DEFAULT_DISTILL_MESSAGES);
         setInput(cached.input);
         setSelectedPaths(normalizeInitialSelectedPaths(cached.selectedPaths));
@@ -567,7 +586,7 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
         setUpdatingPaths(cached.updatingPaths);
         setDirtyPaths(cached.dirtyPaths);
         setTextDiffs(cached.textDiffs);
-        setPendingChange(cached.pendingChange);
+        setPendingChange(lockPendingChangeSkillId(cached.pendingChange, cachedLockedSkillId));
         setViewMode(cached.viewMode || 'source');
         setAttachments(cached.attachments.filter((item) => item.status !== 'uploading'));
         setStreamStatus(cached.streamStatus);
@@ -609,9 +628,11 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
     api
       .get<SkillRead>(`/api/enterprise/skills/${encodeURIComponent(skillId)}?tenant_id=${TENANT_ID}${agentQuery}`)
       .then((result) => {
-        setDraft(result.content);
-        setLoadedSkill(result);
-        setLastSavedDraft(result.content);
+        const nextContent = lockSkillIdForDraft(result.content, result.skill_id || skillId || '');
+        const nextResult = nextContent === result.content ? result : { ...result, content: nextContent };
+        setDraft(nextContent);
+        setLoadedSkill(nextResult);
+        setLastSavedDraft(nextContent);
         setSelectedPaths(DEFAULT_TARGET_PATHS);
         setPendingChange(null);
         setHighlightedPaths([]);
@@ -766,16 +787,18 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
   const allSelected = draft ? selectedPaths.length > 0 && allPaths.every((path) => selectedPaths.includes(path)) : false;
   const toolDescriptions = useMemo(() => buildToolDescriptionMap(tools, messages), [messages, tools]);
   const toolStatuses = useMemo(() => buildToolStatusMap(tools, messages), [messages, tools]);
+  const lockedSkillId = loadedSkill?.skill_id || skillId || '';
   const saveReviewDraft = useMemo(() => {
     const sourceDraft = saveDraftSnapshot || draft;
     if (!sourceDraft) return null;
-    return {
+    const nextDraft = {
       ...cloneSkill(sourceDraft),
       name: saveName.trim() || sourceDraft.name,
       business_domain: saveDomain.trim() || undefined,
       version: saveVersion.trim() || sourceDraft.version,
     };
-  }, [draft, saveDomain, saveDraftSnapshot, saveName, saveVersion]);
+    return lockSkillIdForDraft(nextDraft, lockedSkillId);
+  }, [draft, lockedSkillId, saveDomain, saveDraftSnapshot, saveName, saveVersion]);
   const saveReviewDiffs = useMemo(() => {
     if (!saveReviewDraft) return [];
     const baseDraft = lastSavedDraft || blankSkillForAnimation(saveReviewDraft);
@@ -783,13 +806,21 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
     return collectTextDiffs(baseDraft, saveReviewDraft, changedPaths).filter((diff) => diff.field !== 'version');
   }, [lastSavedDraft, saveReviewDraft]);
   const hasSaveableDraftChanges = useMemo(
-    () => hasSkillContentChanges(pendingChange?.nextDraft || draft, lastSavedDraft),
-    [draft, lastSavedDraft, pendingChange],
+    () => hasSkillContentChanges(lockNullableSkillIdForDraft(pendingChange?.nextDraft || draft, lockedSkillId), lastSavedDraft),
+    [draft, lastSavedDraft, lockedSkillId, pendingChange],
   );
   const saveReviewHasContentChanges = useMemo(
     () => hasSkillContentChanges(saveReviewDraft, lastSavedDraft),
     [lastSavedDraft, saveReviewDraft],
   );
+
+  useEffect(() => {
+    if (!lockedSkillId) return;
+    setDraft((current) => lockNullableSkillIdForDraft(current, lockedSkillId));
+    setLastSavedDraft((current) => lockNullableSkillIdForDraft(current, lockedSkillId));
+    setSaveDraftSnapshot((current) => lockNullableSkillIdForDraft(current, lockedSkillId));
+    setPendingChange((current) => lockPendingChangeSkillId(current, lockedSkillId));
+  }, [lockedSkillId]);
 
   async function send() {
     const text = buildOutgoingText(input, readyAttachments);
@@ -797,7 +828,7 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
     const displayText = input.trim();
     const displayAttachments = buildDisplayAttachments(readyAttachments);
     const snapshotBefore = createHistorySnapshot();
-    const confirmedDraft = pendingChange?.nextDraft || draft;
+    const confirmedDraft = lockNullableSkillIdForDraft(pendingChange?.nextDraft || draft, lockedSkillId);
     confirmPendingChange(false);
     setInput('');
     setAttachments([]);
@@ -875,7 +906,7 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
             return;
           }
           if (item.event === 'complete') {
-            const draftSkill = item.data.draft_skill as SkillCard;
+            const draftSkill = lockSkillIdForDraft(item.data.draft_skill as SkillCard, lockedSkillId);
             const nextWarnings = Array.isArray(item.data.warnings) ? item.data.warnings.map(String) : [];
             const nextToolSuggestions = normalizeToolSuggestions(item.data.tool_suggestions);
             appendThinkingDetail(assistantId, `已生成 SOP 草稿：${draftSkill.name}`);
@@ -932,13 +963,14 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
   ) {
     if (!currentDraft) return;
     setSourceAutoScroll(false);
-    const previousDraft = cloneSkill(currentDraft);
+    const editableDraft = lockSkillIdForDraft(currentDraft, lockedSkillId);
+    const previousDraft = cloneSkill(editableDraft);
     const targets = targetPathsOverride?.length
       ? targetPathsOverride
       : selectedPaths.length > 0
         ? selectedPaths
-        : allTargetPaths(currentDraft);
-    const scopeLabel = targetLabel(targets, currentDraft);
+        : allTargetPaths(editableDraft);
+    const scopeLabel = targetLabel(targets, editableDraft);
     setLoading(true);
     setStreamStatus('正在改写选中内容');
     const assistantId = pushMessage('assistant', '', {
@@ -961,10 +993,10 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
     abortRef.current = controller;
     try {
       await streamPost(
-        `/api/enterprise/skills/${encodeURIComponent(currentDraft.skill_id)}/rewrite/stream`,
+        `/api/enterprise/skills/${encodeURIComponent(editableDraft.skill_id)}/rewrite/stream`,
         {
           tenant_id: TENANT_ID,
-          current_skill: currentDraft,
+          current_skill: editableDraft,
           instruction: text,
           model_config_id: selectedRewriteModelId || undefined,
           target_path: targets[0],
@@ -987,7 +1019,7 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
             return;
           }
           if (item.event === 'complete') {
-            const nextDraft = item.data.draft_skill as SkillCard;
+            const nextDraft = lockSkillIdForDraft(item.data.draft_skill as SkillCard, lockedSkillId);
             const nextWarnings = Array.isArray(item.data.warnings) ? item.data.warnings.map(String) : [];
             const nextToolSuggestions = normalizeToolSuggestions(item.data.tool_suggestions);
             const changedPaths = diffTargetPaths(previousDraft, nextDraft, targets);
@@ -1051,7 +1083,7 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
   }
 
   function openSaveReview(options: { clearAfterSave?: boolean } = {}) {
-    const targetDraft = pendingChange?.nextDraft || draft;
+    const targetDraft = lockNullableSkillIdForDraft(pendingChange?.nextDraft || draft, lockedSkillId);
     if (!targetDraft) return;
     if (!hasSkillContentChanges(targetDraft, lastSavedDraft)) {
       notify.info('当前没有内容变化，无需保存草稿。');
@@ -1072,7 +1104,7 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
       notify.info('当前没有内容变化，无需保存草稿。');
       return;
     }
-    let finalDraft: SkillCard = saveReviewDraft;
+    let finalDraft: SkillCard = lockSkillIdForDraft(saveReviewDraft, lockedSkillId);
     let renamedSkillId = '';
     try {
       let savedSkill: SkillRead;
@@ -1095,9 +1127,13 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
           savedSkill = await api.post<SkillRead>(`/api/enterprise/skills${agentOnlyQuery}`, { tenant_id: TENANT_ID, content: finalDraft, status: 'published' });
         }
       }
+      const savedContent = lockSkillIdForDraft(savedSkill.content, savedSkill.skill_id || lockedSkillId);
+      if (savedContent !== savedSkill.content) {
+        savedSkill = { ...savedSkill, content: savedContent };
+      }
       setLoadedSkill(savedSkill);
-      setDraft(savedSkill.content);
-      setLastSavedDraft(savedSkill.content);
+      setDraft(savedContent);
+      setLastSavedDraft(savedContent);
       setSaveDraftSnapshot(null);
       setHighlightedPaths([]);
       setDirtyPaths([]);
@@ -1183,8 +1219,9 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
   }
 
   function completeResumedDistillJob(job: ActiveDistillJob, data: Record<string, unknown>) {
-    const draftSkill = data.draft_skill as SkillCard | undefined;
-    if (!draftSkill) return;
+    const rawDraftSkill = data.draft_skill as SkillCard | undefined;
+    if (!rawDraftSkill) return;
+    const draftSkill = lockSkillIdForDraft(rawDraftSkill, lockedSkillId);
     const nextWarnings = Array.isArray(data.warnings) ? data.warnings.map(String) : [];
     const nextToolSuggestions = normalizeToolSuggestions(data.tool_suggestions);
     clearAnimationTimers();
@@ -1211,9 +1248,10 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
   }
 
   function completeResumedRewriteJob(job: ActiveDistillJob, data: Record<string, unknown>) {
-    const nextDraft = data.draft_skill as SkillCard | undefined;
-    if (!nextDraft) return;
-    const previousDraft = job.previousDraft || draft;
+    const rawNextDraft = data.draft_skill as SkillCard | undefined;
+    if (!rawNextDraft) return;
+    const nextDraft = lockSkillIdForDraft(rawNextDraft, lockedSkillId);
+    const previousDraft = lockNullableSkillIdForDraft(job.previousDraft || draft, lockedSkillId);
     if (!previousDraft) {
       setDraft(nextDraft);
       updateMessage(job.assistantId, String(data.assistant_message || '已完成改写。'), { thinking: 'done' });
@@ -1399,7 +1437,7 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
     setToolSuggestionPatch(messageId, suggestion.name, { probeStatus: 'probing' });
     try {
       const payload = {
-        ...toolPayloadFromSuggestion(suggestion, (pendingChange?.nextDraft || draft)?.skill_id),
+        ...toolPayloadFromSuggestion(suggestion, lockNullableSkillIdForDraft(pendingChange?.nextDraft || draft, lockedSkillId)?.skill_id),
         sample_arguments: args,
       };
       const result = await api.post<ToolProbeResponse>('/api/enterprise/tools/probe', payload);
@@ -1476,7 +1514,7 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
   }
 
   async function commitToolSuggestionSelections(messageId: string, suggestions: ToolSuggestionItem[]) {
-    const activeDraft = pendingChange?.nextDraft || draft;
+    const activeDraft = lockNullableSkillIdForDraft(pendingChange?.nextDraft || draft, lockedSkillId);
     const acceptedSuggestions = suggestions.filter(
       (item) => toolSuggestionResolution(item) === 'new_candidate' && item.status === 'accepted',
     );
@@ -1516,10 +1554,13 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
       });
       if (!activeDraft) return;
       const toolNames = acceptedSuggestions.map((item) => item.display_name || item.name).join('、');
-      const nextDraft = integrateToolSuggestionsIntoDraft(
-        activeDraft,
-        acceptedSuggestions,
-        pendingChange?.changedPaths?.length ? pendingChange.changedPaths : selectedPaths,
+      const nextDraft = lockSkillIdForDraft(
+        integrateToolSuggestionsIntoDraft(
+          activeDraft,
+          acceptedSuggestions,
+          pendingChange?.changedPaths?.length ? pendingChange.changedPaths : selectedPaths,
+        ),
+        lockedSkillId,
       );
       const changedPaths = diffTargetPaths(activeDraft, nextDraft, allTargetPaths(nextDraft));
       confirmPendingChange(false);
@@ -1553,12 +1594,12 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
   }
 
   function removeToolActionFromDraft(toolName: string) {
-    setDraft((current) => (current ? removeToolActionFromSkill(current, toolName) : current));
+    setDraft((current) => (current ? lockSkillIdForDraft(removeToolActionFromSkill(current, toolName), lockedSkillId) : current));
     setPendingChange((current) =>
       current
         ? {
             ...current,
-            nextDraft: removeToolActionFromSkill(current.nextDraft, toolName),
+            nextDraft: lockSkillIdForDraft(removeToolActionFromSkill(current.nextDraft, toolName), lockedSkillId),
           }
         : current,
     );
@@ -1616,7 +1657,7 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
   }
 
   function hasUnsavedSkillChanges() {
-    const targetDraft = pendingChange?.nextDraft || draft;
+    const targetDraft = lockNullableSkillIdForDraft(pendingChange?.nextDraft || draft, lockedSkillId);
     if (!targetDraft) return false;
     return hasSkillContentChanges(targetDraft, lastSavedDraft);
   }
@@ -1670,7 +1711,8 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
   }
 
   function handleSourceEdit(nextDraft: SkillCard, path: string) {
-    setDraft(nextDraft);
+    const lockedDraft = lockSkillIdForDraft(nextDraft, lockedSkillId);
+    setDraft(lockedDraft);
     setManualSourceEdited(true);
     setDirtyPaths((current) => mergePaths(current, [path]));
     setHighlightedPaths((current) => mergePaths(current, [path]));
@@ -1769,15 +1811,16 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
   function restoreHistorySnapshot(snapshot: DistillHistorySnapshot) {
     clearAnimationTimers();
     abortRef.current?.abort();
-    setDraft(snapshot.draft ? cloneSkill(snapshot.draft) : null);
+    const snapshotLockedSkillId = snapshot.loadedSkill?.skill_id || lockedSkillId;
+    setDraft(lockNullableSkillIdForDraft(snapshot.draft ? cloneSkill(snapshot.draft) : null, snapshotLockedSkillId));
     setLoadedSkill(snapshot.loadedSkill ? cloneSkillRead(snapshot.loadedSkill) : null);
-    setLastSavedDraft(snapshot.lastSavedDraft ? cloneSkill(snapshot.lastSavedDraft) : null);
+    setLastSavedDraft(lockNullableSkillIdForDraft(snapshot.lastSavedDraft ? cloneSkill(snapshot.lastSavedDraft) : null, snapshotLockedSkillId));
     setSelectedPaths([...snapshot.selectedPaths]);
     setHighlightedPaths([...snapshot.highlightedPaths]);
     setUpdatingPaths([...snapshot.updatingPaths]);
     setDirtyPaths([...snapshot.dirtyPaths]);
     setTextDiffs(snapshot.textDiffs.map((item) => ({ ...item })));
-    setPendingChange(
+    setPendingChange(lockPendingChangeSkillId(
       snapshot.pendingChange
         ? {
             assistantId: snapshot.pendingChange.assistantId,
@@ -1786,7 +1829,8 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
             changedPaths: [...snapshot.pendingChange.changedPaths],
           }
         : null,
-    );
+      snapshotLockedSkillId,
+    ));
     setViewMode(snapshot.viewMode);
     setTools(snapshot.tools.map((tool) => ({ ...tool })));
     setAttachments(snapshot.attachments.filter((item) => item.status !== 'uploading').map((item) => ({ ...item })));
@@ -1798,7 +1842,7 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
   function confirmPendingChange(showToast = true) {
     if (!pendingChange) return;
     clearAnimationTimers();
-    setDraft(pendingChange.nextDraft);
+    setDraft(lockSkillIdForDraft(pendingChange.nextDraft, lockedSkillId));
     setUpdatingPaths([]);
     setTextDiffs([]);
     updateMessage(pendingChange.assistantId, undefined, { actionState: 'confirmed' });
@@ -1809,7 +1853,7 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
   function rejectPendingChange() {
     if (!pendingChange) return;
     clearAnimationTimers();
-    setDraft(pendingChange.previousDraft);
+    setDraft(lockSkillIdForDraft(pendingChange.previousDraft, lockedSkillId));
     setHighlightedPaths([]);
     setUpdatingPaths([]);
     setTextDiffs([]);
@@ -1871,7 +1915,8 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
   ) {
     try {
       await rollbackPersistedOperations(snapshot, operations);
-      const confirmedDraft = snapshot.pendingChange?.nextDraft || snapshot.draft;
+      const snapshotLockedSkillId = snapshot.loadedSkill?.skill_id || lockedSkillId;
+      const confirmedDraft = lockNullableSkillIdForDraft(snapshot.pendingChange?.nextDraft || snapshot.draft, snapshotLockedSkillId);
       restoreHistorySnapshot({
         ...snapshot,
         draft: confirmedDraft ? cloneSkill(confirmedDraft) : null,
@@ -1949,19 +1994,21 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
     markDelay = 520,
   ) {
     clearAnimationTimers();
+    const lockedPreviousDraft = lockSkillIdForDraft(previousDraft, lockedSkillId);
+    const lockedNextDraft = lockSkillIdForDraft(nextDraft, lockedSkillId);
     const paths = changedPaths;
     if (paths.length === 0) {
-      setDraft(nextDraft);
+      setDraft(lockedNextDraft);
       setHighlightedPaths([]);
       setUpdatingPaths([]);
       setTextDiffs([]);
       return;
     }
-    const nextTextDiffs = collectTextDiffs(previousDraft, nextDraft, paths);
+    const nextTextDiffs = collectTextDiffs(lockedPreviousDraft, lockedNextDraft, paths);
     setHighlightedPaths(paths);
     setUpdatingPaths(paths);
     setTextDiffs(nextTextDiffs);
-    setDraft(previousDraft);
+    setDraft(lockedPreviousDraft);
     const startTimer = window.setTimeout(() => {
       setTextDiffs((current) => current.map((diff) => ({ ...diff, phase: 'type', progress: 0 })));
       const steps = 24;
@@ -1970,12 +2017,12 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
         tick += 1;
         const progress = Math.min(tick / steps, 1);
         setTextDiffs((current) => current.map((diff) => ({ ...diff, phase: 'type', progress })));
-        setDraft(typedDraft(previousDraft, nextDraft, nextTextDiffs, progress));
+        setDraft(typedDraft(lockedPreviousDraft, lockedNextDraft, nextTextDiffs, progress));
         if (progress >= 1) {
           window.clearInterval(interval);
           animationTimersRef.current = animationTimersRef.current.filter((timer) => timer !== interval);
           setTextDiffs((current) => current.map((diff) => ({ ...diff, phase: 'settled', progress: 1 })));
-          setDraft(nextDraft);
+          setDraft(lockedNextDraft);
           setUpdatingPaths([]);
           setDirtyPaths((current) => mergePaths(current, paths));
         }
@@ -2374,6 +2421,7 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
               toolDescriptions={toolDescriptions}
               toolStatuses={toolStatuses}
               containerRef={sourceScrollRef}
+              lockSkillId={Boolean(lockedSkillId)}
               onToggle={toggleTarget}
               onEdit={handleSourceEdit}
             />
@@ -2672,6 +2720,7 @@ function SourceInput({
   value?: string;
   placeholder?: string;
   disabled?: boolean;
+  readOnly?: boolean;
   style?: CSSProperties;
   onChange?: ChangeEventHandler<HTMLInputElement>;
 }) {
@@ -2690,6 +2739,7 @@ function AutoGrowTextarea({
   value?: string;
   placeholder?: string;
   disabled?: boolean;
+  readOnly?: boolean;
   style?: CSSProperties;
   onChange?: ChangeEventHandler<HTMLTextAreaElement>;
 }) {
@@ -2862,6 +2912,7 @@ function SkillSource({
   toolDescriptions,
   toolStatuses,
   containerRef,
+  lockSkillId,
   onToggle,
   onEdit,
 }: {
@@ -2874,12 +2925,14 @@ function SkillSource({
   toolDescriptions: ToolDescriptionMap;
   toolStatuses: ToolStatusMap;
   containerRef: RefObject<HTMLDivElement>;
+  lockSkillId?: boolean;
   onToggle: (target: TargetSelection) => void;
   onEdit: (nextDraft: SkillCard, path: string) => void;
 }) {
   const [deleteNodeIndex, setDeleteNodeIndex] = useState<number | null>(null);
 
   function editBasic(field: keyof SkillCard, value: string | string[]) {
+    if (field === 'skill_id' && lockSkillId) return;
     const next = cloneSkill(skill);
     if (field === 'trigger_intents' || field === 'user_utterance_examples' || field === 'goal' || field === 'required_info' || field === 'response_rules') {
       next[field] = Array.isArray(value) ? value : splitEditableList(value);
@@ -3180,7 +3233,12 @@ function SkillSource({
         <div className={SOURCE_RENDERED_CLASS}>
           <EditableSourceHeading value={skill.name} onChange={(value) => editBasic('name', value)} />
           <div className={SOURCE_META_LIST_CLASS}>
-            <EditableSourceTextLine label={fieldLabel('skill_id')} value={skill.skill_id} onChange={(value) => editBasic('skill_id', value)} />
+            <EditableSourceTextLine
+              label={fieldLabel('skill_id')}
+              value={skill.skill_id}
+              readOnly={lockSkillId}
+              onChange={(value) => editBasic('skill_id', value)}
+            />
             <EditableSourceTextLine label={fieldLabel('version')} value={skill.version} onChange={(value) => editBasic('version', value)} />
             <EditableSourceTextLine label={fieldLabel('business_domain')} value={skill.business_domain || ''} onChange={(value) => editBasic('business_domain', value)} />
             <EditableSourceTextLine label={fieldLabel('description')} value={skill.description || ''} multiline onChange={(value) => editBasic('description', value)} />
@@ -4379,12 +4437,14 @@ function EditableSourceTextLine({
   value,
   multiline = false,
   collapsible = false,
+  readOnly = false,
   onChange,
 }: {
   label: string;
   value: string;
   multiline?: boolean;
   collapsible?: boolean;
+  readOnly?: boolean;
   onChange: (value: string) => void;
 }) {
   const canCollapse = collapsible && multiline;
@@ -4423,7 +4483,10 @@ function EditableSourceTextLine({
                   value={value}
                   style={sourceInputStyle(value, true)}
                   minRows={3}
-                  onChange={(event) => onChange(event.target.value)}
+                  readOnly={readOnly}
+                  onChange={(event) => {
+                    if (!readOnly) onChange(event.target.value);
+                  }}
                 />
               )}
             </div>
@@ -4433,14 +4496,20 @@ function EditableSourceTextLine({
               value={value}
               style={sourceInputStyle(value, true)}
               minRows={2}
-              onChange={(event) => onChange(event.target.value)}
+              readOnly={readOnly}
+              onChange={(event) => {
+                if (!readOnly) onChange(event.target.value);
+              }}
             />
           ) : (
             <SourceInput
               className={SOURCE_EDIT_INPUT_CLASS}
               value={value}
               style={sourceInputStyle(value)}
-              onChange={(event) => onChange(event.target.value)}
+              readOnly={readOnly}
+              onChange={(event) => {
+                if (!readOnly) onChange(event.target.value);
+              }}
             />
           )}
         </EditableSourceField>

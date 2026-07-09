@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { notify } from '@/components/ui/app-toast';
+import { getClientTimeZone } from '@/lib/timezone';
 import { cn } from '@/lib/utils';
 import type { ScheduledTaskDraftRead, ScheduledTaskRead } from '@/types';
 
@@ -57,6 +58,7 @@ export default function ScheduledDraftCard({
   const [editing, setEditing] = useState(false);
   const [editableDraft, setEditableDraft] = useState<ScheduledTaskDraftRead>(draft);
   const created = Boolean(createdTask);
+  const currentTimezone = getClientTimeZone();
   const displayDraft = createdTask
     ? ({
       ...draft,
@@ -205,7 +207,7 @@ export default function ScheduledDraftCard({
             <span>时区</span>
             <Input
               className="h-[32px]"
-              value={editableDraft.timezone || 'Asia/Shanghai'}
+              value={editableDraft.timezone || currentTimezone}
               onChange={(event) => updateDraft({ timezone: event.target.value })}
             />
           </label>
@@ -240,7 +242,7 @@ export default function ScheduledDraftCard({
             </div>
             <div className={CHAT_DRAFT_META_ITEM_CLASS}>
               <span>时区</span>
-              <strong>{displayDraft.timezone || 'Asia/Shanghai'}</strong>
+              <strong>{displayDraft.timezone || currentTimezone}</strong>
             </div>
           </div>
           <div className={CHAT_DRAFT_PROMPT_CLASS}>

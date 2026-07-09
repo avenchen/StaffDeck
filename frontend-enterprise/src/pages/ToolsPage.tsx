@@ -1056,7 +1056,7 @@ function ToolEditorPage({ mode, currentUser, onLogout }: { mode: 'new' | 'edit' 
       {!isEdit && <ToolTypeSwitcher active="http" />}
       <div className="grid grid-cols-1 items-start gap-[20px] xl:grid-cols-2">
         <SectionCard title="工具定义" loading={loading && isEdit && !tool}>
-          <ToolFormFields values={values} setField={setField} bucketOptions={bucketOptions} />
+          <ToolFormFields values={values} setField={setField} bucketOptions={bucketOptions} lockName={isEdit} />
         </SectionCard>
         <div className="flex w-full flex-col gap-[20px]">
           <ToolProbeCard values={values} />
@@ -1702,10 +1702,12 @@ function ToolFormFields({
   values,
   setField,
   bucketOptions,
+  lockName = false,
 }: {
   values: ToolFormValues;
   setField: <K extends keyof ToolFormValues>(name: K, value: ToolFormValues[K]) => void;
   bucketOptions: { value: string; label: string }[];
+  lockName?: boolean;
 }) {
   return (
     <div className="flex flex-col gap-[16px]">
@@ -1718,7 +1720,11 @@ function ToolFormFields({
               className="pl-[30px]"
               placeholder="order_query"
               value={values.name || ''}
-              onChange={(event) => setField('name', event.target.value)}
+              disabled={lockName}
+              onChange={(event) => {
+                if (lockName) return;
+                setField('name', event.target.value);
+              }}
             />
           </div>
         </Field>

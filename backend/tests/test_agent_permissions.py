@@ -295,6 +295,55 @@ def test_private_tool_edit_does_not_mutate_open_gallery_tool() -> None:
         assert visible_binding is not None
         assert old_binding and old_binding.status == "deleted"
 
+        with pytest.raises(HTTPException) as rename_error:
+            update_tool(
+                updated.id,
+                ToolUpdateRequest(
+                    tenant_id="tenant_demo",
+                    name="weather_renamed",
+                    display_name="员工天气重命名",
+                    description=updated.description,
+                    url=updated.url,
+                ),
+                agent_id=agent.id,
+                db=db,
+                current_user=owner,
+            )
+        assert rename_error.value.status_code == 400
+        assert rename_error.value.detail == "Tool name cannot be modified"
+
+
+def test_tool_name_cannot_be_modified_after_create() -> None:
+    with _test_session() as db:
+        _owner, _other, admin = _seed_users(db)
+        tool = Tool(
+            id="tool_weather",
+            tenant_id="tenant_demo",
+            name="weather",
+            display_name="天气",
+            method="POST",
+            url="/api/weather",
+        )
+        db.add(tool)
+        db.commit()
+
+        with pytest.raises(HTTPException) as exc_info:
+            update_tool(
+                tool.id,
+                ToolUpdateRequest(
+                    tenant_id="tenant_demo",
+                    name="weather_v2",
+                    display_name="天气新版",
+                    url="/api/weather-v2",
+                ),
+                agent_id=None,
+                db=db,
+                current_user=admin,
+            )
+
+        assert exc_info.value.status_code == 400
+        assert exc_info.value.detail == "Tool name cannot be modified"
+
 
 def test_private_general_skill_edit_does_not_mutate_open_gallery_skill() -> None:
     with _test_session() as db:
@@ -352,6 +401,22 @@ def test_private_general_skill_edit_does_not_mutate_open_gallery_skill() -> None
                 AgentResourceBinding.status == "active",
             )
         ).first() is not None
+
+        with pytest.raises(HTTPException) as rename_error:
+            import_general_skill(
+                GeneralSkillImportRequest(
+                    tenant_id="tenant_demo",
+                    agent_id=agent.id,
+                    original_slug=updated.slug,
+                    slug="weather-renamed",
+                    name="员工天气技能",
+                    markdown="# 员工天气技能\n",
+                ),
+                db=db,
+                current_user=owner,
+            )
+        assert rename_error.value.status_code == 400
+        assert rename_error.value.detail == "General skill slug cannot be modified"
 
 
 def _seed_users(db: Session) -> tuple[User, User, User]:
