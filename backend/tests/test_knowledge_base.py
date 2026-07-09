@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+from datetime import timedelta
 
 import pytest
 from sqlalchemy.pool import StaticPool
@@ -23,6 +24,7 @@ from app.db.models import (
     Skill,
     Tenant,
     Tool,
+    utc_now,
 )
 from app.knowledge.schema import KnowledgeChunkUpdateRequest, KnowledgeDocumentUpdateRequest, KnowledgeSearchRequest, KnowledgeSearchResponse
 from app.knowledge.service import IngestPayload, KnowledgeService
@@ -251,6 +253,47 @@ def test_knowledge_ingest_cancel_running_job_cleans_partial_artifacts() -> None:
         assert db.get(KnowledgeChunk, chunk_id) is None
         assert db.get(KnowledgeConcept, concept_id) is None
         assert db.get(KnowledgeDiscoverySuggestion, suggestion_id) is None
+
+
+def test_knowledge_ingest_stale_cancel_request_finalizes_without_worker() -> None:
+    with _test_session() as db:
+        db.add(Tenant(id="tenant_demo", name="Demo"))
+        db.add(KnowledgeBase(id="kb_demo", tenant_id="tenant_demo", name="默认知识库"))
+        document = KnowledgeDocument(
+            id="kdoc_stale_cancel",
+            tenant_id="tenant_demo",
+            knowledge_base_id="kb_demo",
+            filename="stale.md",
+            file_type="md",
+            title="取消中的半成品",
+            status="processing",
+        )
+        job = KnowledgeIngestJob(
+            id="kjob_stale_cancel",
+            tenant_id="tenant_demo",
+            knowledge_base_id="kb_demo",
+            document_id=document.id,
+            filename="stale.md",
+            status="cancel_requested",
+            stage="chunking",
+            progress=70.0,
+            metadata_json={"content_base64": _b64("partial"), "stage_label": "取消中"},
+            updated_at=utc_now() - timedelta(seconds=60),
+        )
+        db.add(document)
+        db.add(job)
+        db.commit()
+        service = KnowledgeService(db)
+
+        finalized = service.finalize_stale_cancel_requested_job(job)
+
+        assert finalized is not None
+        assert finalized.status == "cancelled"
+        assert finalized.stage == "cancelled"
+        assert finalized.document_id is None
+        assert finalized.metadata_json["stage_label"] == "已取消"
+        assert "content_base64" not in finalized.metadata_json
+        assert db.get(KnowledgeDocument, document.id) is None
 
 
 def test_knowledge_search_preserves_fallback_bucket_rank_order() -> None:

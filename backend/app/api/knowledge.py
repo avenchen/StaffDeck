@@ -296,6 +296,7 @@ def list_jobs(
     db: Session = Depends(get_session),
 ) -> list[KnowledgeIngestJobRead]:
     ensure_tenant(db, tenant_id)
+    KnowledgeService(db).finalize_stale_cancel_requested_jobs(tenant_id)
     statement = select(KnowledgeIngestJob).where(KnowledgeIngestJob.tenant_id == tenant_id)
     if agent_id:
         visible_version_ids = visible_knowledge_base_version_ids(db, tenant_id, agent_id)
@@ -318,6 +319,7 @@ def get_job(job_id: str, tenant_id: str = Query(...), db: Session = Depends(get_
     job = db.get(KnowledgeIngestJob, job_id)
     if not job or job.tenant_id != tenant_id:
         raise HTTPException(status_code=404, detail="Knowledge ingest job not found")
+    KnowledgeService(db).finalize_stale_cancel_requested_job(job)
     return job_read(job)
 
 

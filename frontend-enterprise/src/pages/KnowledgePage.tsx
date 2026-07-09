@@ -1909,11 +1909,11 @@ function KnowledgeJobCard({
               variant="outline"
               size="sm"
               className={OUTLINE_ACTION_BUTTON_SM_CLASS}
-              disabled={cancelling || job.status === 'cancel_requested'}
+              disabled={cancelling}
               onClick={() => onCancel(job)}
             >
               <CloseOutlined />
-              {cancelling || job.status === 'cancel_requested' ? '取消中' : '取消'}
+              {cancelling ? '取消中' : job.status === 'cancel_requested' ? '结束取消' : '取消'}
             </UIButton>
           )}
         </div>
