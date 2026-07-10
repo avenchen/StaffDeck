@@ -46,10 +46,16 @@ def _backend_dir() -> Path:
 
 
 def _bundled_python() -> Path:
-    # 打包态：附带的 python-build-standalone 被拷到 PyInstaller onedir 根下的 runtime/
-    # 不用 resource_dir()==sys._MEIPASS（onedir 下指向 _internal/），runtime 在可执行文件同级。
-    # Windows 布局：python.exe 在 runtime 根，不在 Scripts/。
-    root = Path(sys.executable).resolve().parent / "runtime"
+    # 打包态：附带的 python-build-standalone 位置随平台不同。
+    # - macOS .app：runtime 在 Contents/Resources/runtime（放 Resources 是为了 codesign 密封通过），
+    #   sys.executable 在 Contents/MacOS/staffdeck，需跳到同级的 Resources。
+    # - Linux/Windows onedir：runtime 在可执行文件同级 runtime/。
+    # 不用 resource_dir()==sys._MEIPASS（onedir 下指向 _internal/）。
+    exe_dir = Path(sys.executable).resolve().parent
+    if sys.platform == "darwin" and exe_dir.name == "MacOS" and exe_dir.parent.name == "Contents":
+        root = exe_dir.parent / "Resources" / "runtime"
+    else:
+        root = exe_dir / "runtime"
     return (root / "python.exe") if sys.platform == "win32" else (root / "bin" / "python3")
 
 

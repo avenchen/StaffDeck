@@ -45,18 +45,29 @@ cd "$REPO"
 APP="packaging/out/URStaff.app"
 test -d "$APP" || { echo "PyInstaller 未产出 $APP"; exit 1; }
 
-echo "==> [4/5] 附带 python 运行时（拷进 .app/Contents/MacOS/runtime）"
+echo "==> [4/5] 附带 python 运行时（放 .app/Contents/Resources/runtime）"
+# 注意：runtime 必须放 Resources 而非 MacOS。放 MacOS 时 codesign 会把 runtime 里
+# 每个文件都当作需签名的代码，附带 python 有大量脚本/符号链接/畸形目录（如 itcl4.2.2），
+# 导致顶层签名失败、密封无效（"a sealed resource is missing or invalid"）→ 无法双击打开。
+# 放 Resources 后按数据资源密封，顶层签名可通过，app 能正常启动。
 python3 packaging/fetch_runtime_python.py packaging/runtime_dl --expect-arch "$ARCH"
-rm -rf "$APP/Contents/MacOS/runtime"
-cp -R packaging/runtime_dl/python "$APP/Contents/MacOS/runtime"
+rm -rf "$APP/Contents/Resources/runtime" "$APP/Contents/MacOS/runtime"
+cp -R packaging/runtime_dl/python "$APP/Contents/Resources/runtime"
 
-echo "==> [5/5] 签名（不用 --deep）+ 打 dmg"
-# ad-hoc 签名：不用 --deep（会破坏附带 python 二进制原签名，Hardened Runtime 下杀进程）。
-# 先签附带 runtime 里的可执行/动态库（可选，best-effort），再签主程序、最后签 bundle 顶层。
-find "$APP/Contents/MacOS/runtime" -type f \( -name "*.dylib" -o -name "*.so" -o -perm +111 \) \
-  -exec codesign --force --sign - {} \; 2>/dev/null || true
-codesign --force --sign - "$APP/Contents/MacOS/staffdeck" 2>/dev/null || echo "主程序 ad-hoc 签名跳过"
-codesign --force --sign - "$APP" 2>/dev/null || echo "bundle 顶层 ad-hoc 签名跳过"
+echo "==> [5/5] 签名 + 打 dmg"
+# arm64 要求 app 至少有 ad-hoc 签名才能启动。runtime 在 Resources，顶层签名可一次通过。
+xattr -cr "$APP" 2>/dev/null || true
+find "$APP/Contents/Frameworks" -type f -name "*.dylib" 2>/dev/null \
+  -exec codesign --force --timestamp=none --sign - {} \; 2>/dev/null || true
+codesign --force --timestamp=none --sign - "$APP/Contents/MacOS/staffdeck" 2>/dev/null || true
+codesign --force --timestamp=none --sign - "$APP" 2>/dev/null || echo "顶层签名跳过"
+
+# 验证密封（ad-hoc 未被 Gatekeeper 信任属正常，用户首次右键打开即可；但密封必须有效）
+if codesign --verify --strict "$APP" 2>/dev/null; then
+  echo "✓ 签名密封验证通过（可正常双击打开；未公证故首次可能需右键→打开）"
+else
+  echo "警告：密封校验未过，双击可能无法打开"
+fi
 
 DMG="packaging/out/URStaff-${VERSION}-macos-${ARCH}.dmg"
 rm -f "$DMG"

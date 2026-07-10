@@ -4,15 +4,24 @@ $Repo = Split-Path -Parent $PSScriptRoot
 Set-Location $Repo
 if (-not $env:VERSION) { $env:VERSION = "0.1.0" }
 
+# 兼容 python / py 两种命令（本地 Windows 常见 py，CI 用 python）
+function Get-PyCmd {
+  if (Get-Command python -ErrorAction SilentlyContinue) { return "python" }
+  if (Get-Command py -ErrorAction SilentlyContinue) { return "py" }
+  throw "未找到 Python，请先安装 Python 3.11 并加入 PATH"
+}
+$PY = Get-PyCmd
+Write-Host "使用 Python 命令: $PY"
+
 Write-Host "==> [1/6] 构建前端"
 npm --prefix frontend-enterprise run build
 
 Write-Host "==> [2/6] 后端 venv + 运行依赖 + 打包工具"
-python -m venv backend\.venv
+& $PY -m venv backend\.venv
 backend\.venv\Scripts\python -m pip install -U pip
-# 从 pyproject 提取 runtime 依赖（不 editable 安装本项目，见 B3 修复）
+# 从 pyproject 提取 runtime 依赖（不 editable 安装本项目）
 Push-Location backend
-$deps = python -c "import tomllib,pathlib; print('\n'.join(tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['dependencies']))"
+$deps = .\.venv\Scripts\python -c "import tomllib,pathlib; print('\n'.join(tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['dependencies']))"
 $deps | Out-File -Encoding utf8 ..\packaging\_win_reqs.txt
 Pop-Location
 backend\.venv\Scripts\python -m pip install -r packaging\_win_reqs.txt
@@ -24,12 +33,13 @@ Push-Location backend
 Pop-Location
 
 Write-Host "==> [4/6] 附带 python 运行时"
-python packaging\fetch_runtime_python.py packaging\runtime_dl --expect-arch x86_64
+backend\.venv\Scripts\python packaging\fetch_runtime_python.py packaging\runtime_dl --expect-arch x86_64
 if (Test-Path packaging\out\staffdeck\runtime) { Remove-Item -Recurse -Force packaging\out\staffdeck\runtime }
 Copy-Item -Recurse -Force packaging\runtime_dl\python packaging\out\staffdeck\runtime
 
 Write-Host "==> [5/6] Inno Setup 打 .exe 安装包"
 $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+if (-not (Test-Path $iscc)) { throw "未找到 Inno Setup，请先安装 Inno Setup 6（或 choco install innosetup）" }
 & "$iscc" packaging\installer\ultrarag.iss
 
 Write-Host "==> [6/6] 重命名产物"

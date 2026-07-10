@@ -63,70 +63,17 @@ def _open_browser_when_ready(url: str) -> None:
     for _ in range(120):
         try:
             with urllib.request.urlopen(url + "/api/health", timeout=1):
-                _focus_or_open_browser(url + "/chat/")
+                _open_browser(url + "/chat/")
                 return
         except Exception:
             time.sleep(0.5)
 
 
-def _focus_or_open_browser(target: str) -> None:
-    """macOS：若已有标签打开了本服务地址则聚焦它，否则新开一个（避免每次点图标都开新页签）。
-    非 macOS 或 AppleScript 失败时回退到 webbrowser.open。"""
-    if sys.platform == "darwin":
-        # 匹配同 host:port 的已有标签（忽略路径/hash 差异），命中则激活并聚焦，不新开。
-        import subprocess
-        from urllib.parse import urlparse
-
-        base = urlparse(target)
-        host_port = base.netloc  # 例 127.0.0.1:5173
-        script = f'''
-        set targetURL to "{target}"
-        set matchKey to "{host_port}"
-        set browsers to {{"Google Chrome", "Microsoft Edge", "Brave Browser", "Arc", "Safari"}}
-        repeat with b in browsers
-            try
-                if application b is running then
-                    tell application b
-                        if b is "Safari" then
-                            repeat with w in windows
-                                repeat with t in tabs of w
-                                    if (URL of t) contains matchKey then
-                                        set current tab of w to t
-                                        set index of w to 1
-                                        activate
-                                        return "focused"
-                                    end if
-                                end repeat
-                            end repeat
-                        else
-                            repeat with w in windows
-                                set tabList to tabs of w
-                                repeat with i from 1 to count of tabList
-                                    if (URL of (item i of tabList)) contains matchKey then
-                                        set active tab index of w to i
-                                        set index of w to 1
-                                        activate
-                                        return "focused"
-                                    end if
-                                end repeat
-                            end repeat
-                        end if
-                    end tell
-                end if
-            end try
-        end repeat
-        return "notfound"
-        '''
-        try:
-            result = subprocess.run(
-                ["osascript", "-e", script], capture_output=True, text=True, timeout=8
-            )
-            if (result.stdout or "").strip() == "focused":
-                return
-        except Exception:
-            pass
-    # 回退：正常打开（多数浏览器对相同 URL 会复用标签）
+def _open_browser(target: str) -> None:
+    """打开浏览器页面。点 Dock 图标每次都开一个新标签——最稳定、跨浏览器一致、
+    不依赖 macOS 自动化授权（adhoc 签名下自动化授权弹窗不可靠）。"""
     webbrowser.open(target)
+
 
 
 def _use_macos_dock_app() -> bool:
@@ -156,8 +103,8 @@ def _run_macos_dock_app(cfg: dict, url: str) -> int:
             print(f"URStaff 启动中，就绪后将打开：{url}/chat/")
 
         def applicationShouldHandleReopen_hasVisibleWindows_(self, _app, _flag):  # noqa: N802
-            # 点 Dock 图标（app 已在运行、无窗口）→ 聚焦已有页签，没有才新开
-            _focus_or_open_browser(url + "/chat/")
+            # 点 Dock 图标（app 已在运行）→ 打开浏览器页面（新标签）
+            _open_browser(url + "/chat/")
             return True
 
         def applicationShouldTerminate_(self, _app):  # noqa: N802
@@ -187,7 +134,7 @@ def main(argv: list[str] | None = None) -> int:
             import urllib.request
             with urllib.request.urlopen(url + "/api/health", timeout=1):
                 print(f"URStaff 已在运行：{url}/chat/")
-                _focus_or_open_browser(url + "/chat/")
+                _open_browser(url + "/chat/")
                 return 0
         except Exception:
             print(f"端口 {cfg['port']} 已被其它程序占用。请设置 ULTRARAG_PORT 换端口后重试。", file=sys.stderr)
