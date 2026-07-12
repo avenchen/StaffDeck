@@ -121,6 +121,12 @@ import {
   type TraceLine,
   type TurnTrace,
 } from './chatTypes';
+import {
+  chatQueueStorageKey,
+  readQueuedChatTurns,
+  writeQueuedChatTurns,
+  type PreparedChatTurn,
+} from './chatQueueStorage';
 
 const CHAT_BASE_PATH = '/workspace/chat';
 const STREAM_TEXT_EVENTS = new Set(['stream_replace', 'stream_delta', 'token']);
@@ -241,24 +247,16 @@ function scheduledTaskStatusTraceLine(phase: string, data: Record<string, unknow
 
 export type UseChatSession = ReturnType<typeof useChatSession>;
 
-type PreparedChatTurn = {
-  queueId: string;
-  conversationId: string;
-  agentId: string;
-  turnId: string;
-  text: string;
-  attachments: ChatAttachmentRead[];
-  interactionMode: ComposerInteractionMode;
-  modelConfigId?: string;
-  createdAt: string;
-};
-
 export function useChatSession() {
   const { sessionId, draftAgentId } = useParams<{ sessionId?: string; draftAgentId?: string }>();
   const navigate = useNavigate();
   const [auth] = useState(() => getEnterpriseAuthSession());
   const tenantId = auth?.user.tenant_id || TENANT_ID;
   const userId = auth?.user.id || '';
+  const queueStorageKey = chatQueueStorageKey(tenantId, userId);
+  const [restoredQueuedTurns] = useState(() => (
+    readQueuedChatTurns(window.sessionStorage, queueStorageKey)
+  ));
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [sessionsLoading, setSessionsLoading] = useState(true);
   const [sessionReadTimes, setSessionReadTimes] = useState<Record<string, string>>(() => loadSessionReadTimes(userId));
@@ -332,8 +330,9 @@ export function useChatSession() {
   const knownSessionIdsRef = useRef(new Set<string>());
   const optimisticSessionIdsRef = useRef(new Set<string>());
   const pendingPromotedSessionIdRef = useRef<string | null>(null);
-  const queuedTurnsRef = useRef<PreparedChatTurn[]>([]);
+  const queuedTurnsRef = useRef<PreparedChatTurn[]>(restoredQueuedTurns);
   const queuedTurnProcessingRef = useRef(false);
+  const queuedTurnPreviewsRestoredRef = useRef(false);
   const sessionsInitializedRef = useRef(false);
   const autoOpenedSessionIdsRef = useRef(new Set<string>());
   const loadErrorNoticeRef = useRef<Record<string, number>>({});
@@ -344,6 +343,9 @@ export function useChatSession() {
   const notifyTrace = useCallback(() => setTraceTick((value) => value + 1), []);
   const notifyFeedback = useCallback(() => setFeedbackTick((value) => value + 1), []);
   const notifyQueue = useCallback(() => setQueuedTurnsTick((value) => value + 1), []);
+  const persistQueuedTurns = useCallback(() => (
+    writeQueuedChatTurns(window.sessionStorage, queueStorageKey, queuedTurnsRef.current)
+  ), [queueStorageKey]);
 
   const redirectToLogin = useCallback(() => {
     clearEnterpriseAuthSession();
@@ -650,6 +652,7 @@ export function useChatSession() {
     optimisticSessionIdsRef.current.delete(id);
     if (queuedTurnsRef.current.some((item) => item.conversationId === id)) {
       queuedTurnsRef.current = queuedTurnsRef.current.filter((item) => item.conversationId !== id);
+      persistQueuedTurns();
       notifyQueue();
     }
     storeRef.current.delete(id);
@@ -671,7 +674,7 @@ export function useChatSession() {
     });
     notifyStore();
     notifyStream();
-  }, [notifyQueue, notifyStore, notifyStream]);
+  }, [notifyQueue, notifyStore, notifyStream, persistQueuedTurns]);
 
   const upsertOptimisticSession = useCallback((session: ChatSession) => {
     optimisticSessionIdsRef.current.add(session.id);
@@ -1205,9 +1208,20 @@ export function useChatSession() {
 
   const enqueuePreparedTurn = useCallback((turn: PreparedChatTurn) => {
     queuedTurnsRef.current = [...queuedTurnsRef.current, turn];
+    const persisted = persistQueuedTurns();
     appendQueuedTurnPreview(turn);
     notifyQueue();
     notify.info('已加入发送队列');
+    if (!persisted) {
+      notify.warning('排队内容过大，刷新页面后可能无法恢复');
+    }
+  }, [appendQueuedTurnPreview, notifyQueue, persistQueuedTurns]);
+
+  useEffect(() => {
+    if (queuedTurnPreviewsRestoredRef.current) return;
+    queuedTurnPreviewsRestoredRef.current = true;
+    queuedTurnsRef.current.forEach(appendQueuedTurnPreview);
+    if (queuedTurnsRef.current.length > 0) notifyQueue();
   }, [appendQueuedTurnPreview, notifyQueue]);
 
   const updateMessageFeedback = useCallback((
@@ -2621,6 +2635,7 @@ export function useChatSession() {
         queuedTurnsRef.current = queuedTurnsRef.current.map((item) => (
           item.conversationId === previousId ? { ...item, conversationId: nextSessionId } : item
         ));
+        persistQueuedTurns();
         notifyQueue();
       }
       setScheduledDrafts((prev) => {
@@ -2794,6 +2809,7 @@ export function useChatSession() {
     notifyQueue,
     notifyStore,
     notifyStream,
+    persistQueuedTurns,
     pollScheduledSessionEvents,
     redirectToLogin,
     removeQueuedTurnPreview,
@@ -2870,16 +2886,32 @@ export function useChatSession() {
     if (queuedTurnProcessingRef.current) return;
     const nextTurn = queuedTurnsRef.current[0];
     if (!nextTurn) return;
+    if (sessionsLoading) return;
+    const queuedSession = sessions.find((item) => item.id === nextTurn.conversationId);
+    if (
+      queuedSession
+      && (queuedSession.status === 'running' || queuedSession.status === 'executing')
+    ) {
+      return;
+    }
+    if (
+      !queuedSession
+      && !isDraftConversationKey(nextTurn.conversationId)
+      && !optimisticSessionIdsRef.current.has(nextTurn.conversationId)
+    ) {
+      return;
+    }
     const stream = getStreamSlot(nextTurn.conversationId);
     if (stream.loading || runningTurn?.sessionId === nextTurn.conversationId) return;
     queuedTurnsRef.current = queuedTurnsRef.current.slice(1);
+    persistQueuedTurns();
     notifyQueue();
     queuedTurnProcessingRef.current = true;
     void executePreparedTurn(nextTurn, { queued: true }).finally(() => {
       queuedTurnProcessingRef.current = false;
       notifyQueue();
     });
-  }, [executePreparedTurn, getStreamSlot, notifyQueue, runningTurn]);
+  }, [executePreparedTurn, getStreamSlot, notifyQueue, persistQueuedTurns, runningTurn, sessions, sessionsLoading]);
 
   useEffect(() => {
     void queuedTurnsTick;

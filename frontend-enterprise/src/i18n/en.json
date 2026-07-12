@@ -1359,6 +1359,7 @@
   "已回复，原会话会继续执行": "Response, original conversation will Continue Execute",
   "已回滚到 {1}": "Roll Back to {1}",
   "已加入发送队列": "Added to Send Queue",
+  "排队内容过大，刷新页面后可能无法恢复": "The queued content is too large to restore after a page refresh",
   "已加载「{1}」。你可以在右侧选择一个或多个区域，然后在这里描述需要怎样改写。": "Loaded “{1}”. Select one or more sections on the right, then describe how they should be rewritten.",
   "已拒绝": "Rejected",
   "已拒绝改写并还原": "Rewrite Rejected and Restored",
