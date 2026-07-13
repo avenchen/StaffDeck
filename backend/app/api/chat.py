@@ -38,6 +38,12 @@ from app.db.models import (
 from app.feedback import enqueue_feedback_analysis
 from app.knowledge.citations import CITATION_EXCERPT_CHAR_LIMIT, compact_knowledge_citation_labels
 from app.llm import LLMClient, LLMError
+from app.observability.spans import (
+    bind_span_sink,
+    llm_operation,
+    reset_span_sink,
+    set_span_sink,
+)
 from app.security.auth import get_current_user
 from app.security.permissions import agent_owned_by_user, is_admin_user
 from app.security.tenant import ensure_tenant
@@ -79,6 +85,14 @@ STREAM_RELAY_TERMINAL_EVENTS = {
     "error_occurred",
     "stream_cancelled",
     "stream_interrupted",
+}
+SPAN_EVENT_TYPES = {
+    "llm_call_started",
+    "llm_call_finished",
+    "llm_call_failed",
+    "knowledge_span_started",
+    "knowledge_span_finished",
+    "knowledge_span_failed",
 }
 SESSION_TITLE_PROMPT = """你是任务派发台的会话标题编辑器。
 
@@ -351,7 +365,26 @@ def _summarize_session_title_once(
             title_source = "first_user_fallback"
             if model_config:
                 try:
-                    raw = LLMClient(model_config).generate_json(SESSION_TITLE_PROMPT, payload)
+                    title_turn_id = next((row.id for row in messages if row.role == "user"), "")
+
+                    def persist_title_span(
+                        event_type: str, event_payload: dict[str, object]
+                    ) -> None:
+                        traced_payload = dict(event_payload)
+                        if title_turn_id:
+                            traced_payload.setdefault("turn_id", title_turn_id)
+                            traced_payload.setdefault("user_message_id", title_turn_id)
+                        with Session(engine) as span_db:
+                            _persist_relay_only_event(
+                                span_db,
+                                tenant_id,
+                                session_id,
+                                event_type,
+                                traced_payload,
+                            )
+
+                    with bind_span_sink(persist_title_span), llm_operation("session.title"):
+                        raw = LLMClient(model_config).generate_json(SESSION_TITLE_PROMPT, payload)
                     title = _normalize_auto_title(str(raw.get("title") or ""))
                     if title:
                         title_source = "first_turn_summary"
@@ -924,8 +957,31 @@ def chat_stream(
         relay_ready.set()
 
     def run_stream_worker() -> None:
+        span_sink_token = None
         try:
             with Session(engine) as worker_db:
+                span_turn_id = {"value": ""}
+
+                def persist_span(event_type: str, payload: dict[str, object]) -> None:
+                    session_id = source_session_id["value"] or request.session_id or ""
+                    if not session_id:
+                        return
+                    turn_id = span_turn_id["value"]
+                    event_payload = dict(payload)
+                    if turn_id:
+                        event_payload.setdefault("turn_id", turn_id)
+                        event_payload.setdefault("user_message_id", turn_id)
+                    if request.client_turn_id:
+                        event_payload.setdefault("client_turn_id", request.client_turn_id)
+                    _persist_relay_only_event(
+                        worker_db,
+                        request.tenant_id,
+                        session_id,
+                        event_type,
+                        event_payload,
+                    )
+
+                span_sink_token = set_span_sink(persist_span)
                 ensure_tenant(worker_db, request.tenant_id)
                 if request.session_id:
                     chat_session = _ensure_chat_session_available(
@@ -1029,6 +1085,12 @@ def chat_stream(
                     if item["event"] == "user_message_received":
                         event_source_session_id = str(item["data"].get("sessionId") or request.session_id or "")
                         set_source_session(event_source_session_id)
+                        span_turn_id["value"] = str(
+                            data.get("turn_id")
+                            or data.get("user_message_id")
+                            or data.get("message_id")
+                            or ""
+                        )
                         _schedule_session_title_summary(
                             request.tenant_id,
                             request.user_id,
@@ -1119,6 +1181,8 @@ def chat_stream(
             if isinstance(exc, (KeyboardInterrupt, SystemExit)):
                 raise
         finally:
+            if span_sink_token is not None:
+                reset_span_sink(span_sink_token)
             session_id = source_session_id["value"] or request.session_id or ""
             if session_id and not worker_terminal["seen"]:
                 with Session(engine) as final_db:
@@ -1587,7 +1651,11 @@ def _events_after_cursor(
     session_id: str,
     cursor: tuple[object, str] | None,
 ) -> list[AgentEvent]:
-    statement = select(AgentEvent).where(AgentEvent.tenant_id == tenant_id, AgentEvent.session_id == session_id)
+    statement = select(AgentEvent).where(
+        AgentEvent.tenant_id == tenant_id,
+        AgentEvent.session_id == session_id,
+        AgentEvent.event_type.notin_(SPAN_EVENT_TYPES),
+    )
     if cursor:
         last_created_at, last_id = cursor
         statement = statement.where(
@@ -1981,6 +2049,35 @@ def list_chat_session_trace(
     skills = db.exec(select(Skill).where(Skill.tenant_id == tenant_id)).all()
     skill_names = {skill.skill_id: skill.name for skill in skills}
     return _build_turn_traces(messages, events, skill_names)
+
+
+@router.get("/sessions/{session_id}/spans")
+def list_chat_session_spans(
+    session_id: str,
+    tenant_id: str = Query(...),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_session),
+) -> list[dict[str, object]]:
+    _ensure_request_tenant(tenant_id, current_user)
+    _get_readable_chat_session(db, tenant_id, current_user, session_id)
+    rows = db.exec(
+        select(AgentEvent)
+        .where(
+            AgentEvent.tenant_id == tenant_id,
+            AgentEvent.session_id == session_id,
+            AgentEvent.event_type.in_(SPAN_EVENT_TYPES),
+        )
+        .order_by(AgentEvent.created_at, AgentEvent.id)
+    ).all()
+    return [
+        {
+            "event_id": row.id,
+            "event_type": row.event_type,
+            "created_at": row.created_at.isoformat(),
+            **dict(row.payload_json or {}),
+        }
+        for row in rows
+    ]
 
 
 def _get_user_chat_session(db: Session, tenant_id: str, user_id: str, session_id: str) -> ChatSession:

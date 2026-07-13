@@ -5,14 +5,77 @@ from sqlmodel import Session, SQLModel, create_engine, select
 
 from app.api.chat import (
     _build_turn_traces,
+    _events_after_cursor,
     _format_scheduled_task_schedule,
     _message_turn_ids_from_events,
     _persist_chat_turn_cancelled,
     _persist_chat_turn_interrupted,
     _relay_event_payload,
+    list_chat_session_spans,
     message_read,
 )
-from app.db.models import AgentEvent, ChatSession, KnowledgeConcept, Message
+from app.db.models import AgentEvent, ChatSession, KnowledgeConcept, Message, Tenant, User
+
+
+def test_session_spans_endpoint_returns_internal_spans_without_relaying_them() -> None:
+    engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    SQLModel.metadata.create_all(engine)
+    with Session(engine) as db:
+        db.add(Tenant(id="tenant_demo", name="Demo"))
+        user = User(
+            id="user_demo",
+            tenant_id="tenant_demo",
+            username="demo",
+            password_hash="hashed",
+        )
+        db.add(user)
+        db.add(
+            ChatSession(
+                id="session_test",
+                tenant_id="tenant_demo",
+                user_id=user.id,
+            )
+        )
+        db.add(
+            AgentEvent(
+                id="evt_span",
+                tenant_id="tenant_demo",
+                session_id="session_test",
+                event_type="llm_call_finished",
+                payload_json={
+                    "span_id": "span_demo",
+                    "operation": "router.scene",
+                    "duration_ms": 123.4,
+                },
+            )
+        )
+        db.add(
+            AgentEvent(
+                id="evt_business",
+                tenant_id="tenant_demo",
+                session_id="session_test",
+                event_type="router_decision_created",
+                payload_json={"decision": "answer_only"},
+            )
+        )
+        db.commit()
+
+        spans = list_chat_session_spans(
+            "session_test",
+            tenant_id="tenant_demo",
+            current_user=user,
+            db=db,
+        )
+        relayed = _events_after_cursor(db, "tenant_demo", "session_test", None)
+
+    assert len(spans) == 1
+    assert spans[0]["operation"] == "router.scene"
+    assert spans[0]["duration_ms"] == 123.4
+    assert [event.event_type for event in relayed] == ["router_decision_created"]
 
 
 def test_turn_trace_uses_router_skill_hint_when_events_have_turn_id() -> None:

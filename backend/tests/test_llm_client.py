@@ -2,6 +2,7 @@ import pytest
 
 from app.llm.client import LLMClient, LLMError
 from app.llm.schemas import ModelConfigCreateRequest
+from app.observability.spans import bind_span_sink, llm_operation
 
 
 class _ForbiddenResponses:
@@ -108,6 +109,34 @@ def test_generate_text_uses_chat_completions_only():
     assert call["max_tokens"] == 256
 
 
+def test_generate_text_persists_provider_request_metrics():
+    client = object.__new__(LLMClient)
+    client.client = _FakeOpenAIClient()
+    client.model = "demo-model"
+    client.base_url = "https://example.test/v1"
+    client.temperature = 0.2
+    client.max_output_tokens = 256
+    events: list[tuple[str, dict]] = []
+
+    with bind_span_sink(lambda event_type, payload: events.append((event_type, payload))):
+        with llm_operation("router.scene"):
+            assert client.generate_text("system prompt", {"hello": "world"}) == "ok"
+
+    assert [event_type for event_type, _ in events] == [
+        "llm_call_started",
+        "llm_call_finished",
+    ]
+    started, finished = events[0][1], events[1][1]
+    assert started["span_id"] == finished["span_id"]
+    assert finished["operation"] == "router.scene"
+    assert finished["model"] == "demo-model"
+    assert finished["attempt"] == 1
+    assert finished["retry_count"] == 0
+    assert finished["output_chars"] == 2
+    assert finished["duration_ms"] >= 0
+    assert finished["ttft_ms"] >= 0
+
+
 def test_generate_text_retries_empty_response():
     client = object.__new__(LLMClient)
     client.client = _FakeOpenAIClient()
@@ -124,6 +153,28 @@ def test_generate_text_retries_empty_response():
 
     assert client.generate_text("system prompt", {"hello": "world"}) == "ok"
     assert len(client.client.chat.completions.calls) == 3
+
+
+def test_generate_text_records_each_empty_response_retry():
+    client = object.__new__(LLMClient)
+    client.client = _FakeOpenAIClient()
+    client.model = "demo-model"
+    client.base_url = "https://example.test/v1"
+    client.temperature = 0.2
+    client.max_output_tokens = 256
+    contents = iter(["", None, "ok"])
+    events: list[tuple[str, dict]] = []
+
+    client.client.chat.completions.create = lambda **_kwargs: _completion_with_content(
+        next(contents)
+    )
+    with bind_span_sink(lambda event_type, payload: events.append((event_type, payload))):
+        assert client.generate_text("system prompt", {"hello": "world"}) == "ok"
+
+    finished = [payload for event_type, payload in events if event_type == "llm_call_finished"]
+    assert [item["status"] for item in finished] == ["empty", "empty", "success"]
+    assert [item["attempt"] for item in finished] == [1, 2, 3]
+    assert [item["retry_count"] for item in finished] == [0, 1, 2]
 
 
 def test_generate_text_empty_response_reports_provider_diagnostics():
@@ -208,6 +259,39 @@ def test_generate_text_stream_reports_empty_stream_diagnostics():
     assert "reasoning_chars=14" in detail
     assert len(client.client.chat.completions.calls) == 3
     assert all(call["messages"][0] == {"role": "system", "content": "system prompt"} for call in client.client.chat.completions.calls)
+
+
+def test_generate_text_stream_records_ttft_and_output_volume():
+    client = object.__new__(LLMClient)
+    client.client = _FakeOpenAIClient()
+    client.model = "demo-model"
+    client.base_url = "https://example.test/v1"
+    client.temperature = 0.2
+    client.max_output_tokens = 256
+    events: list[tuple[str, dict]] = []
+
+    def chunk(content, finish_reason=None):  # noqa: ANN001
+        delta = type("Delta", (), {"content": content, "reasoning_content": None})()
+        choice = type("Choice", (), {"delta": delta, "finish_reason": finish_reason})()
+        return type("Chunk", (), {"id": "chunk_demo", "choices": [choice]})()
+
+    client.client.chat.completions.create = lambda **_kwargs: iter(
+        [chunk("你"), chunk("好", "stop")]
+    )
+
+    with bind_span_sink(lambda event_type, payload: events.append((event_type, payload))):
+        with llm_operation("response.generate_stream"):
+            assert "".join(client.generate_text_stream("system", {"hello": "world"})) == "你好"
+
+    finished = next(
+        payload for event_type, payload in events if event_type == "llm_call_finished"
+    )
+    assert finished["operation"] == "response.generate_stream"
+    assert finished["stream"] is True
+    assert finished["ttft_ms"] is not None
+    assert finished["output_chars"] == 2
+    assert finished["stream_chunks"] == 2
+    assert finished["finish_reasons"] == ["stop"]
 
 
 def test_generate_text_projects_conversation_context_messages():
