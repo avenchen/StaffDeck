@@ -6,7 +6,6 @@ import {
   type CSSProperties,
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
-import { useNavigate } from "react-router-dom";
 
 import AppHeader from "../components/AppHeader";
 import BrandLogo from "../components/BrandLogo";
@@ -108,7 +107,6 @@ const ADVANTAGES = [
 ];
 
 export default function LandingPage() {
-  const navigate = useNavigate();
   const rootRef = useRef<HTMLDivElement>(null);
   const sectionRefs = useRef<Array<HTMLElement | null>>([]);
   const stepRefs = useRef<Array<HTMLDivElement | null>>([]);
@@ -125,8 +123,6 @@ export default function LandingPage() {
   const overviewRef = useRef<HTMLDivElement>(null);
   const personaFromCache = useRef<DOMRect | null>(null);
   const prevActiveRef = useRef(0);
-
-  const goLogin = () => navigate("/");
 
   const scrollToScene = (index: number) => {
     sectionRefs.current[index]?.scrollIntoView({ behavior: "smooth" });
@@ -535,7 +531,7 @@ export default function LandingPage() {
             <p className="lp-subtitle">
               StaffDeck 用三层能力，让 AI 从「会聊天」进化为「能上岗」。像看真人员工的绩效档案一样，随时了解数字员工干了多少活、又学会了什么。
             </p>
-            <button className="lp-cta" type="button" onClick={goLogin}>
+            <button className="lp-cta" type="button">
               下载
             </button>
           </div>

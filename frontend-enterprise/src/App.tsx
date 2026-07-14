@@ -43,7 +43,6 @@ import GeneralSkillsPage, {
   GeneralSkillNewPage,
 } from "./pages/GeneralSkillsPage";
 import KnowledgeManagePage, { KnowledgeAddPage } from "./pages/KnowledgePage";
-import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/LoginPage";
 import ModelsPage from "./pages/ModelsPage";
 import OpenPlatformPage from "./pages/OpenPlatformPage";
@@ -905,7 +904,6 @@ export default function App() {
     <TooltipProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/site" element={<LandingPage />} />
           <Route
             path="/*"
             element={
