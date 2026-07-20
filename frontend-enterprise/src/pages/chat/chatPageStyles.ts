@@ -156,6 +156,10 @@ export const CHAT_FEEDBACK_BTN_CLASS =
 export const CHAT_FEEDBACK_BTN_ACTIVE_CLASS = 'bg-[#eef0f4] text-[#18181a]';
 export const CHAT_FEEDBACK_BTN_DISLIKE_ACTIVE_CLASS = 'bg-[#fce7e7] text-[#d20b0b] hover:bg-[#fce7e7] hover:text-[#d20b0b]';
 
+// Blinking caret shown at the tail of a streaming assistant message.
+export const CHAT_STREAM_CARET_CLASS =
+  'ml-[2px] inline-block h-[14px] w-[7px] translate-y-[2px] animate-pulse rounded-[1px] bg-[#18181a] align-baseline';
+
 // ---------------------------------------------------------------------------
 // Empty state (Hello {name})
 // ---------------------------------------------------------------------------

@@ -34,6 +34,7 @@ import {
   CHAT_QUEUED_MESSAGE_ITEM_CLASS,
   CHAT_QUEUED_STATUS_CLASS,
   CHAT_QUEUED_STATUS_ROW_CLASS,
+  CHAT_STREAM_CARET_CLASS,
   chatBubbleClass,
   chatRowClass,
 } from '../chatPageStyles';
@@ -45,6 +46,7 @@ import {
 } from '../chatHelpers';
 import type { TraceLine } from '../chatTypes';
 import type { UseChatSession } from '../useChatSession';
+import CopyMessageButton from './CopyMessageButton';
 import ExecutionRecord from './ExecutionRecord';
 import ScheduledDraftCard from './ScheduledDraftCard';
 
@@ -109,6 +111,7 @@ export default function MessageBubble({ chat, item, render }: MessageBubbleProps
             item.role === 'assistant' ? (
               <div data-i18n-ignore>
                 <MarkdownMessage content={visibleContent} />
+                {item.isStreaming && <span className={CHAT_STREAM_CARET_CLASS} aria-hidden="true" />}
               </div>
             ) : (
               <div className={CHAT_PLAIN_ANSWER_CLASS}>
@@ -177,27 +180,32 @@ export default function MessageBubble({ chat, item, render }: MessageBubbleProps
             />
           )}
 
-          {canRateMessage(item) && (
+          {item.role === 'assistant' && !statusOnly && visibleContent && !item.isStreaming && (
             <div className={CHAT_FEEDBACK_CLASS}>
-              <button
-                type="button"
-                className={cn(CHAT_FEEDBACK_BTN_CLASS, item.feedback_rating === 'up' && CHAT_FEEDBACK_BTN_ACTIVE_CLASS)}
-                aria-label="点赞"
-                onClick={() => rateMessage(item, 'up')}
-              >
-                <IconThumbUp width={15} height={15} />
-              </button>
-              <button
-                type="button"
-                className={cn(
-                  CHAT_FEEDBACK_BTN_CLASS,
-                  item.feedback_rating === 'down' && CHAT_FEEDBACK_BTN_DISLIKE_ACTIVE_CLASS,
-                )}
-                aria-label="点踩"
-                onClick={() => rateMessage(item, 'down')}
-              >
-                <IconThumbDown width={15} height={15} />
-              </button>
+              <CopyMessageButton text={visibleContent} />
+              {canRateMessage(item) && (
+                <>
+                  <button
+                    type="button"
+                    className={cn(CHAT_FEEDBACK_BTN_CLASS, item.feedback_rating === 'up' && CHAT_FEEDBACK_BTN_ACTIVE_CLASS)}
+                    aria-label="点赞"
+                    onClick={() => rateMessage(item, 'up')}
+                  >
+                    <IconThumbUp width={15} height={15} />
+                  </button>
+                  <button
+                    type="button"
+                    className={cn(
+                      CHAT_FEEDBACK_BTN_CLASS,
+                      item.feedback_rating === 'down' && CHAT_FEEDBACK_BTN_DISLIKE_ACTIVE_CLASS,
+                    )}
+                    aria-label="点踩"
+                    onClick={() => rateMessage(item, 'down')}
+                  >
+                    <IconThumbDown width={15} height={15} />
+                  </button>
+                </>
+              )}
             </div>
           )}
         </div>

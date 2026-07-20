@@ -44,6 +44,7 @@ import GeneralSkillsPage, {
   GeneralSkillNewPage,
 } from "./pages/GeneralSkillsPage";
 import KnowledgeManagePage, { KnowledgeAddPage } from "./pages/KnowledgePage";
+import WikiPage from "./pages/WikiPage";
 import LoginPage from "./pages/LoginPage";
 import ModelsPage from "./pages/ModelsPage";
 import OpenPlatformPage from "./pages/OpenPlatformPage";
@@ -583,6 +584,15 @@ function Shell({
                 path="/enterprise/knowledge/new"
                 element={
                   <KnowledgeAddPage
+                    currentUser={auth.user}
+                    onLogout={onLogout}
+                  />
+                }
+              />
+              <Route
+                path="/enterprise/wiki"
+                element={
+                  <WikiPage
                     currentUser={auth.user}
                     onLogout={onLogout}
                   />

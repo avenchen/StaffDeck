@@ -70,6 +70,7 @@ const PROFILE_NAV: NavItem[] = [
 
 const CAPABILITY_NAV: NavItem[] = [
   { route: EnterpriseRoute.Knowledge, label: '知识库', Icon: IconFolder },
+  { route: EnterpriseRoute.Wiki, label: '知识 Wiki', Icon: IconGlobe },
   { route: EnterpriseRoute.GeneralSkills, label: '技能', Icon: IconMagicWand },
   { route: EnterpriseRoute.Skills, label: 'SOP', Icon: IconClipboard },
   { route: EnterpriseRoute.Tools, label: '工具', Icon: IconBriefcase },
