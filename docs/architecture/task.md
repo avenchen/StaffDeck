@@ -14,9 +14,9 @@
 - ✅ 後端驗證：512 個測試全數通過；OpenAPI 160 端點與重構前逐一比對一致
 - ✅ 前端：`streamRequest` 收斂重複 SSE 解析；共用 `SectionCard`/`Field`；`useApiQuery` hook + `ToolTestPage` 示範
 
-## 進行中
-
-- 🔄 前端驗證：`npm ci` + `tsc -b` + `vite build`（通過後提交 Phase 0 程式碼）
+- ✅ 前端驗證：`npm ci` + `tsc -b` + `vite build` 全數通過，Phase 0 程式碼已提交
+- ✅ Phase 1.3（首個領域）：建立 `src/api/endpoints/`（`shared.ts` / `tools.ts` / `agents.ts`），
+  ToolsPage 19 處內嵌 URL 全數收編、`currentAgentQuery` 字串拼接改為型別化參數
 
 ## 未完成 / 可安排工作
 
@@ -26,7 +26,7 @@
 | --- | --- | --- | --- |
 | 1.1 | ⬜ `api/chat.py` 業務邏輯下沉（標題摘要、排程草稿偵測、接管恢復 → service） | 後端 | 中 |
 | 1.2 | ⬜ `api/agents.py`、`api/general_skills.py`、`api/skills.py` 下沉 service，單檔 < 400 行 | 後端 | 中 |
-| 1.3 | ⬜ 建立 `src/api/endpoints/<domain>.ts`，逐域收編 167 處內嵌 URL（tools → knowledge → skills → chat 順序） | 前端 | 大 |
+| 1.3 | 🔄 建立 `src/api/endpoints/<domain>.ts`，逐域收編 167 處內嵌 URL（✅ tools/agents ・ ⬜ knowledge → skills → chat） | 前端 | 大 |
 | 1.4 | ⬜ `app/AuthProvider.tsx` 上線，移除 `currentUser`/`onLogout` prop drilling | 前端 | 小 |
 | 1.5 | ⬜ 路由表抽出 `app/routes.tsx` + `<ProtectedRoute>`，`App.tsx` 縮為組裝根 | 前端 | 中 |
 

@@ -5,7 +5,9 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Copy, FlaskConical, Users } from 'lucide-react';
 import { pinyin } from 'pinyin-pro';
 
-import { api, TENANT_ID } from '../api/client';
+import { TENANT_ID } from '../api/client';
+import { mcpServersApi, toolsApi } from '../api/endpoints/tools';
+import { agentsApi } from '../api/endpoints/agents';
 import { isEnterpriseAdmin, type EnterpriseAuthUser } from '../auth';
 import AppHeader from '@/components/AppHeader';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
@@ -152,10 +154,8 @@ export default function ToolsPage({ currentUser, onLogout }: ToolPageProps = {})
     }
     setLoading(true);
     return Promise.all([
-      api.get<ToolRead[]>(`/api/enterprise/tools?tenant_id=${TENANT_ID}${agentQuery}`),
-      api
-        .get<MCPServerRead[]>(`/api/enterprise/mcp-servers?tenant_id=${TENANT_ID}`)
-        .catch(() => [] as MCPServerRead[]),
+      toolsApi.list(agentId),
+      mcpServersApi.list().catch(() => [] as MCPServerRead[]),
     ])
       .then(([toolRows, serverRows]) => {
         setRows(toolRows);
@@ -174,7 +174,7 @@ export default function ToolsPage({ currentUser, onLogout }: ToolPageProps = {})
   useEffect(() => {
     const loadAgentScope = async () => {
       try {
-        const agents = await api.get<AgentProfileRead[]>(`/api/enterprise/agents?tenant_id=${TENANT_ID}`);
+        const agents = await agentsApi.list();
         setAgents(agents);
         const exactSelectedAgent = agents.find((agent) => agent.id === agentId) || null;
         const selectedAgent = exactSelectedAgent || agents.find((agent) => agent.is_overall) || null;
@@ -254,8 +254,7 @@ export default function ToolsPage({ currentUser, onLogout }: ToolPageProps = {})
     if (!row) return;
     setDeleting(true);
     try {
-      const agentSuffix = agentId ? `&agent_id=${encodeURIComponent(agentId)}` : '';
-      await api.delete(`/api/enterprise/tools/${row.id}?tenant_id=${TENANT_ID}${agentSuffix}`);
+      await toolsApi.remove(row.id, agentId);
       notify.success(isOverallAgent ? '已删除工具' : '已从当前员工移除');
       setDeleteTarget(null);
       await load();
@@ -289,9 +288,7 @@ export default function ToolsPage({ currentUser, onLogout }: ToolPageProps = {})
     if (!row || deletingServer) return;
     setDeletingServer(true);
     try {
-      await api.delete(
-        `/api/enterprise/mcp-servers/${row.id}?tenant_id=${TENANT_ID}${agentQuery}&remove_tools=true`,
-      );
+      await mcpServersApi.remove(row.id, { agentId, removeTools: true });
       notify.success('已删除');
       setServerDeleteTarget(null);
       void load();
@@ -304,9 +301,7 @@ export default function ToolsPage({ currentUser, onLogout }: ToolPageProps = {})
 
   async function openImportTools(mode: 'plaza' | 'employee' = 'plaza', selectedResourceId?: string) {
     try {
-      const agentRows = agents.length
-        ? agents
-        : await api.get<AgentProfileRead[]>(`/api/enterprise/agents?tenant_id=${TENANT_ID}`);
+      const agentRows = agents.length ? agents : await agentsApi.list();
       setAgents(agentRows);
       setImportMode(mode);
       const targetCandidates = importTargetCandidates(agentRows);
@@ -343,9 +338,7 @@ export default function ToolsPage({ currentUser, onLogout }: ToolPageProps = {})
     setImportSelectedToolIds([]);
     if (!sourceAgentId) return [];
     try {
-      const sourceRows = await api.get<ToolRead[]>(
-        `/api/enterprise/tools?tenant_id=${TENANT_ID}&agent_id=${encodeURIComponent(sourceAgentId)}`,
-      );
+      const sourceRows = await toolsApi.list(sourceAgentId);
       const enabledRows = sourceRows.filter((item) => item.enabled);
       setImportSourceTools(enabledRows);
       return enabledRows;
@@ -371,15 +364,11 @@ export default function ToolsPage({ currentUser, onLogout }: ToolPageProps = {})
     }
     setImportLoading(true);
     try {
-      const result = await api.post<{ imported: Array<Record<string, unknown>>; missing: Array<Record<string, unknown>> }>(
-        `/api/enterprise/agents/${targetAgentId}/resources/import`,
-        {
-          tenant_id: TENANT_ID,
-          source_agent_id: importSourceAgentId,
-          resource_type: 'tool',
-          resource_ids: importSelectedToolIds,
-        },
-      );
+      const result = await agentsApi.importResources(targetAgentId, {
+        source_agent_id: importSourceAgentId,
+        resource_type: 'tool',
+        resource_ids: importSelectedToolIds,
+      });
       const importedCount = result.imported?.length || 0;
       const missingCount = result.missing?.length || 0;
       notify.success(`已复制 ${importedCount} 个工具${missingCount ? `，${missingCount} 个未复制` : ''}`);
@@ -988,9 +977,8 @@ function ToolEditorPage({ mode, currentUser, onLogout }: { mode: 'new' | 'edit' 
     }
     if (!toolId) return;
     setLoading(true);
-    const agentQuery = currentAgentQuery();
-    api
-      .get<ToolRead>(`/api/enterprise/tools/${toolId}?tenant_id=${TENANT_ID}${agentQuery}`)
+    toolsApi
+      .get(toolId, currentAgentId())
       .then((row) => {
         setTool(row);
         setValues(toolToFormValues(row));
@@ -1012,10 +1000,9 @@ function ToolEditorPage({ mode, currentUser, onLogout }: { mode: 'new' | 'edit' 
     if (!payload) return;
     setLoading(true);
     try {
-      const agentQuery = currentAgentQuery();
       const saved = isEdit && toolId
-        ? await api.put<ToolRead>(`/api/enterprise/tools/${toolId}${agentQuery ? `?${agentQuery.slice(1)}` : ''}`, payload)
-        : await api.post<ToolRead>(`/api/enterprise/tools${agentQuery ? `?${agentQuery.slice(1)}` : ''}`, payload);
+        ? await toolsApi.update(toolId, payload, currentAgentId())
+        : await toolsApi.create(payload, currentAgentId());
       notify.success('已保存');
       setTool(saved);
       setValues(toolToFormValues(saved));
@@ -1103,9 +1090,7 @@ export function ToolTestPage({ currentUser, onLogout }: ToolPageProps = {}) {
   const { toolId } = useParams();
 
   const { data: tool, loading } = useApiQuery<ToolRead>(
-    toolId
-      ? () => api.get<ToolRead>(`/api/enterprise/tools/${toolId}?tenant_id=${TENANT_ID}${currentAgentQuery()}`)
-      : null,
+    toolId ? () => toolsApi.get(toolId, currentAgentId()) : null,
     [toolId],
     { onError: (error) => notify.error(error.message || '加载工具失败') },
   );
@@ -1259,8 +1244,8 @@ function McpServerEditorPage({ mode, currentUser, onLogout }: { mode: 'new' | 'e
     }
     if (!serverId) return;
     setLoading(true);
-    api
-      .get<MCPServerRead>(`/api/enterprise/mcp-servers/${serverId}?tenant_id=${TENANT_ID}`)
+    mcpServersApi
+      .get(serverId)
       .then((row) => {
         setServer(row);
         setValues(serverToFormValues(row));
@@ -1333,8 +1318,8 @@ function McpServerEditorPage({ mode, currentUser, onLogout }: { mode: 'new' | 'e
     setSaving(true);
     try {
       const saved = isEdit && serverId
-        ? await api.put<MCPServerRead>(`/api/enterprise/mcp-servers/${serverId}`, built.payload)
-        : await api.post<MCPServerRead>('/api/enterprise/mcp-servers', built.payload);
+        ? await mcpServersApi.update(serverId, built.payload)
+        : await mcpServersApi.create(built.payload);
       notify.success('已保存');
       setServer(saved);
       setValues(serverToFormValues(saved));
@@ -1353,15 +1338,7 @@ function McpServerEditorPage({ mode, currentUser, onLogout }: { mode: 'new' | 'e
     if (!built) return;
     setDiscovering(true);
     try {
-      const response = server
-        ? await api.post<MCPDiscoverResponse>(`/api/enterprise/mcp-servers/${server.id}/discover`, {
-            tenant_id: TENANT_ID,
-            connection: built.connection,
-          })
-        : await api.post<MCPDiscoverResponse>('/api/enterprise/mcp-servers/discover', {
-            tenant_id: TENANT_ID,
-            connection: built.connection,
-          });
+      const response = await mcpServersApi.discover(built.connection, server?.id);
       if (!response.success) {
         notify.error(response.error?.message || '发现工具失败');
         return;
@@ -1387,13 +1364,10 @@ function McpServerEditorPage({ mode, currentUser, onLogout }: { mode: 'new' | 'e
     }
     setSyncing(true);
     try {
-      const agentQuery = currentAgentQuery();
-      const response = await api.post<MCPSyncResponse>(
-        `/api/enterprise/mcp-servers/${server.id}/sync${agentQuery ? `?${agentQuery.slice(1)}` : ''}`,
-        {
-          tenant_id: TENANT_ID,
-          tool_names: discovered.length ? selectedNames : null,
-        },
+      const response = await mcpServersApi.sync(
+        server.id,
+        discovered.length ? selectedNames : null,
+        currentAgentId(),
       );
       if (!response.success) {
         notify.error(response.error?.message || '同步失败');
@@ -1401,9 +1375,7 @@ function McpServerEditorPage({ mode, currentUser, onLogout }: { mode: 'new' | 'e
       }
       notify.success(`同步完成：新增 ${response.imported.length}，更新 ${response.updated.length}`);
       try {
-        const refreshed = await api.get<MCPServerRead>(
-          `/api/enterprise/mcp-servers/${server.id}?tenant_id=${TENANT_ID}`,
-        );
+        const refreshed = await mcpServersApi.get(server.id);
         setServer(refreshed);
       } catch {
         // ignore refresh failure
@@ -1844,8 +1816,7 @@ function ToolProbeCard({ values }: { values: ToolFormValues }) {
     }
     setLoading(true);
     try {
-      const response = await api.post('/api/enterprise/tools/probe', {
-        tenant_id: TENANT_ID,
+      const response = await toolsApi.probe({
         name: payload.name,
         display_name: payload.display_name,
         description: payload.description,
@@ -1924,11 +1895,7 @@ function SavedToolTestCard({ tool, standalone = false }: { tool: ToolRead; stand
     }
     setLoading(true);
     try {
-      const agentQuery = currentAgentQuery();
-      const response = await api.post(`/api/enterprise/tools/${tool.id}/test${agentQuery ? `?${agentQuery.slice(1)}` : ''}`, {
-        tenant_id: TENANT_ID,
-        arguments: argumentsJson,
-      });
+      const response = await toolsApi.test(tool.id, argumentsJson, currentAgentId());
       setTestResult(JSON.stringify(response, null, 2));
     } catch (error) {
       notify.error(error instanceof Error ? error.message : '调用失败');
@@ -1989,14 +1956,13 @@ function SavedToolTestCard({ tool, standalone = false }: { tool: ToolRead; stand
 }
 
 async function loadBucketOptions() {
-  const rows = await api.get<ToolRead[]>(`/api/enterprise/tools?tenant_id=${TENANT_ID}${currentAgentQuery()}`);
+  const rows = await toolsApi.list(currentAgentId());
   return Array.from(new Set(['未分桶', ...rows.map((row) => row.bucket || '未分桶')]))
     .map((value) => ({ value, label: value }));
 }
 
-function currentAgentQuery() {
-  const agentId = window.localStorage.getItem(ENTERPRISE_AGENT_STORAGE_KEY) || '';
-  return agentId ? `&agent_id=${encodeURIComponent(agentId)}` : '';
+function currentAgentId(): string {
+  return window.localStorage.getItem(ENTERPRISE_AGENT_STORAGE_KEY) || '';
 }
 
 function toolToFormValues(row: ToolRead): ToolFormValues {
