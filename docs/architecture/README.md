@@ -8,5 +8,6 @@
 | [02-minimal-component-redesign.md](./02-minimal-component-redesign.md) | 目標架構：分層、模組契約、上帝物件拆解方案、元件邊界守則 |
 | [03-migration-plan.md](./03-migration-plan.md) | 分階段遷移計畫（Phase 0–3）與風險控管 |
 | [04-technical-spec.md](./04-technical-spec.md) | 細節技術規格：原架構完整技術細節 + 各元件開發規格（介面契約、守則、驗收） |
+| [task.md](./task.md) | 重構工作清單：已完成 / 進行中 / 可安排工作與建議執行順序 |
 
 Phase 0（組裝根 + 共用最小元件）已在本分支實作完成，詳見 04 文件 B.4 節。
