@@ -16,6 +16,7 @@ from app.llm import LLMClient
 from app.llm.stage_protocol import stage_payload, unified_system_prompt
 from app.observability.spans import llm_operation
 from app.session.session_schema import RouterDecision, StepAgentResult
+from app.session.slot_policy import slot_has_value
 from app.tools.tool_schema import ToolResult
 
 
@@ -400,14 +401,14 @@ class ResponseGenerator:
         return [
             str(field)
             for field in step.get("expected_user_info", [])
-            if not self._slot_has_value(session.slots_json or {}, str(field))
+            if not slot_has_value(session.slots_json or {}, str(field))
         ]
 
     def _missing_required_info(self, session: ChatSession, skill: Skill) -> list[str]:
         return [
             str(field)
             for field in (skill.content_json or {}).get("required_info", [])
-            if not self._slot_has_value(session.slots_json or {}, str(field))
+            if not slot_has_value(session.slots_json or {}, str(field))
         ]
 
     def _current_step(self, session: ChatSession, skill: Skill) -> dict | None:
@@ -422,10 +423,6 @@ class ResponseGenerator:
                     "allowed_actions": node.get("allowed_actions", []),
                 }
         return None
-
-    def _slot_has_value(self, slots: dict, field: str) -> bool:
-        value = slots.get(field)
-        return value is not None and value != ""
 
     def _completion_fallback(self) -> str:
         return "已记录完整信息。请问还有其他需要帮助的吗？"

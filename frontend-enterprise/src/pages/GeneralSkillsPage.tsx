@@ -9,7 +9,7 @@ import {
   TeamOutlined,
   UploadOutlined,
 } from '../icons';
-import type { ChangeEvent, DragEvent, HTMLAttributes, ReactNode } from 'react';
+import type { ChangeEvent, DragEvent, ReactNode } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Ban, CircleCheck, Copy, Users } from 'lucide-react';
@@ -41,6 +41,11 @@ import {
 import { Button as UIButton } from '@/components/ui/button';
 import { notify } from '@/components/ui/app-toast';
 import { cn } from '@/lib/utils';
+import {
+  Field,
+  SectionCard as BaseSectionCard,
+  type SectionCardProps,
+} from '@/components/form/SectionCard';
 import {
   MENU_CONTENT_CLASS,
   MENU_ITEM_CLASS,
@@ -94,7 +99,6 @@ const EMPTY_SKILL_MARKDOWN = `# 技能说明
 const SECTION_CARD_CLASS =
   'flex flex-col gap-[24px] rounded-[20px_20px_0_0] bg-[#FFF] p-[18px] shadow-[0_-4px_16px_0_rgba(0,0,0,0.05)]';
 const SECTION_CARD_TITLE_CLASS = 'text-[14px] font-medium text-[#18181a]';
-const FIELD_LABEL_CLASS = 'text-[13px] font-medium text-[#18181a]';
 const RETURN_BUTTON_CLASS =
   'h-8 gap-1 rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-5 text-[12px] font-normal text-[#757f9c] hover:border-[#cbd3e6]! hover:bg-white! hover:text-[#18181a]! aria-expanded:border-[#cbd3e6]! aria-expanded:bg-white! aria-expanded:text-[#18181a]!';
 const PRIMARY_BUTTON_CLASS =
@@ -1113,47 +1117,15 @@ function normalizedSkillFiles(files: GeneralSkillFile[] = []): string {
   );
 }
 
-function SectionCard({
-  className,
-  bodyClassName,
-  title,
-  extra,
-  loading,
-  children,
-  ...rest
-}: {
-  className?: string;
-  bodyClassName?: string;
-  title?: ReactNode;
-  extra?: ReactNode;
-  loading?: boolean;
-  children?: ReactNode;
-} & Omit<HTMLAttributes<HTMLDivElement>, 'title'>) {
+function SectionCard({ className, bodyClassName, ...props }: SectionCardProps) {
   return (
-    <section className={cn(SECTION_CARD_CLASS, 'overflow-hidden', className)} {...rest}>
-      {(title || extra) && (
-        <div className="flex min-h-[40px] items-center justify-between gap-[12px]">
-          <div className={cn('min-w-0', SECTION_CARD_TITLE_CLASS)}>{title}</div>
-          {extra ? <div className="shrink-0">{extra}</div> : null}
-        </div>
-      )}
-      <div className={cn('min-h-0 flex-1', bodyClassName)}>
-        {loading ? (
-          <div className="py-[24px] text-center text-[13px] text-[#858b9c]">加载中…</div>
-        ) : (
-          children
-        )}
-      </div>
-    </section>
-  );
-}
-
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div className="flex flex-col gap-[6px]">
-      <span className={FIELD_LABEL_CLASS}>{label}</span>
-      {children}
-    </div>
+    <BaseSectionCard
+      {...props}
+      className={cn(SECTION_CARD_CLASS, className)}
+      headerClassName="min-h-[40px]"
+      titleClassName={SECTION_CARD_TITLE_CLASS}
+      bodyClassName={cn('min-h-0 flex-1', bodyClassName)}
+    />
   );
 }
 

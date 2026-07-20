@@ -70,6 +70,7 @@ from app.session.attachments import (
     message_images_from_metadata,
 )
 from app.session.helpers import public_session
+from app.session.slot_policy import slot_has_value
 from app.session.session_schema import (
     ChatTurnRequest,
     ChatTurnResponse,
@@ -159,11 +160,6 @@ def _normalize_action(action: object) -> str:
         tool_name = text.split(":", 1)[1].strip().strip("`'\"").strip()
         return f"call_tool:{tool_name}" if tool_name else ""
     return text
-
-
-def _slot_has_value(slots: dict[str, Any], field: str) -> bool:
-    value = slots.get(field)
-    return value is not None and value != "" and value != []
 
 
 def _skill_expected_fields(skill: Skill) -> set[str]:
@@ -325,7 +321,7 @@ class AgentLoop:
             return {}
         expected_fields = _skill_expected_fields(skill)
         patch: dict[str, Any] = {}
-        if "user_name" in expected_fields and not _slot_has_value(slots, "user_name"):
+        if "user_name" in expected_fields and not slot_has_value(slots, "user_name"):
             profile_name = _profile_name_from_memory(memory_context)
             if profile_name:
                 patch["user_name"] = profile_name
@@ -340,7 +336,7 @@ class AgentLoop:
         remaining = [
             field
             for field in router_decision.awaiting_input.expected_fields
-            if not _slot_has_value(slots, field)
+            if not slot_has_value(slots, field)
         ]
         if remaining == original:
             return None
@@ -5552,7 +5548,7 @@ class AgentLoop:
             return None
         arguments = self._build_tool_arguments_from_slots(tool, chat_session.slots_json or {})
         required = [str(field) for field in (tool.input_schema or {}).get("required", [])]
-        if any(not self._slot_has_value(arguments, field) for field in required):
+        if any(not slot_has_value(arguments, field) for field in required):
             return None
         return ToolCall(name=tool.name, arguments=arguments)
 
@@ -5566,7 +5562,7 @@ class AgentLoop:
 
         arguments: dict[str, Any] = {}
         for field in fields:
-            if self._slot_has_value(slots, field):
+            if slot_has_value(slots, field):
                 arguments[field] = slots[field]
         used_signatures = {
             self._tool_history_signature(item) for item in self._tool_call_history(slots)
@@ -5870,13 +5866,9 @@ class AgentLoop:
         normalized = field.strip()
         if not normalized:
             return True
-        if self._slot_has_value(slots, normalized):
+        if slot_has_value(slots, normalized):
             return True
         return False
-
-    def _slot_has_value(self, slots: dict[str, Any], field: str) -> bool:
-        value = slots.get(field)
-        return value is not None and value != ""
 
     def _complete_active_skill(
         self, tenant_id: str, chat_session: ChatSession, skill: Skill, reason: str

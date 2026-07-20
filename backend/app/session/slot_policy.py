@@ -4,6 +4,20 @@ from collections.abc import Mapping
 from typing import Any
 
 
+def slot_has_value(slots: Mapping[str, Any] | None, field: str) -> bool:
+    """Single source of truth for "is this slot filled?".
+
+    ``None``, ``""``, ``[]`` and ``{}`` all count as missing — an empty
+    collection carries no user-provided information.
+    """
+    if not isinstance(slots, Mapping):
+        return False
+    value = slots.get(field)
+    if value is None:
+        return False
+    return value not in ("", [], {})
+
+
 ROUTER_GENERATED_MESSAGE_SLOT_KEYS = {
     "message_content",
     "user_message",

@@ -18,6 +18,7 @@ from app.llm.stage_protocol import (
 )
 from app.observability.spans import llm_operation
 from app.session.session_schema import RouterDecision, StepAgentResult
+from app.session.slot_policy import slot_has_value
 
 
 PROMPT_PATH = paths.resource_dir() / "app" / "llm" / "prompts" / "step_agent_prompt.md"
@@ -196,7 +197,7 @@ def _available_tools_for_step(
         if str(field).strip()
     ]
     slot_values = slots if isinstance(slots, dict) else {}
-    if any(not _slot_has_value(slot_values, field) for field in current_expected):
+    if any(not slot_has_value(slot_values, field) for field in current_expected):
         candidate_steps = [current_step]
     else:
         candidate_steps = [
@@ -238,11 +239,6 @@ def _available_tools_for_step(
             }
         )
     return projected
-
-
-def _slot_has_value(slots: dict[str, object], field: str) -> bool:
-    value = slots.get(field)
-    return value is not None and value != "" and value != [] and value != {}
 
 
 def _infer_action(

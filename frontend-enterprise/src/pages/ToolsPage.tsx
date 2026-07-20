@@ -33,6 +33,12 @@ import { Button as UIButton } from '@/components/ui/button';
 import { notify } from '@/components/ui/app-toast';
 import { cn } from '@/lib/utils';
 import {
+  Field,
+  SectionCard as BaseSectionCard,
+  type SectionCardProps,
+} from '@/components/form/SectionCard';
+import { useApiQuery } from '@/hooks/useApiQuery';
+import {
   MENU_CONTENT_CLASS,
   MENU_ITEM_CLASS,
   MENU_ITEM_DANGER_CLASS,
@@ -1080,78 +1086,29 @@ const RETURN_BUTTON_CLASS =
 const PRIMARY_BUTTON_CLASS =
   'h-8 gap-1 rounded-[10px] bg-[#18181a] px-5 text-[12px] font-normal text-white hover:bg-[#303030]';
 
-function SectionCard({
-  title,
-  extra,
-  loading,
-  children,
-  className,
-  bodyClassName,
-}: {
-  title?: ReactNode;
-  extra?: ReactNode;
-  loading?: boolean;
-  children?: ReactNode;
-  className?: string;
-  bodyClassName?: string;
-}) {
+function SectionCard({ className, bodyClassName, ...props }: SectionCardProps) {
   return (
-    <section className={cn(CARD_CLASS, 'overflow-hidden', className)}>
-      {(title || extra) && (
-        <div className="flex min-h-[54px] items-center justify-between gap-[12px] border-b border-[#eceef1] px-[20px] py-[10px]">
-          <div className={cn('min-w-0', CARD_TITLE_CLASS)}>{title}</div>
-          {extra ? <div className="shrink-0">{extra}</div> : null}
-        </div>
-      )}
-      <div className={cn('p-[20px]', bodyClassName)}>
-        {loading ? (
-          <div className="py-[24px] text-center text-[13px] text-[#858b9c]">加载中…</div>
-        ) : (
-          children
-        )}
-      </div>
-    </section>
-  );
-}
-
-function Field({
-  label,
-  htmlFor,
-  hint,
-  children,
-}: {
-  label: string;
-  htmlFor?: string;
-  hint?: ReactNode;
-  children: ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-[6px]">
-      <label htmlFor={htmlFor} className={FIELD_LABEL_CLASS}>
-        {label}
-      </label>
-      {children}
-      {hint ? <span className={HINT_CLASS}>{hint}</span> : null}
-    </div>
+    <BaseSectionCard
+      {...props}
+      className={cn(CARD_CLASS, className)}
+      headerClassName="min-h-[54px] border-b border-[#eceef1] px-[20px] py-[10px]"
+      titleClassName={CARD_TITLE_CLASS}
+      bodyClassName={cn('p-[20px]', bodyClassName)}
+    />
   );
 }
 
 export function ToolTestPage({ currentUser, onLogout }: ToolPageProps = {}) {
-  const [tool, setTool] = useState<ToolRead | null>(null);
-  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toolId } = useParams();
 
-  useEffect(() => {
-    if (!toolId) return;
-    setLoading(true);
-    const agentQuery = currentAgentQuery();
-    api
-      .get<ToolRead>(`/api/enterprise/tools/${toolId}?tenant_id=${TENANT_ID}${agentQuery}`)
-      .then(setTool)
-      .catch((error) => notify.error(error instanceof Error ? error.message : '加载工具失败'))
-      .finally(() => setLoading(false));
-  }, [toolId]);
+  const { data: tool, loading } = useApiQuery<ToolRead>(
+    toolId
+      ? () => api.get<ToolRead>(`/api/enterprise/tools/${toolId}?tenant_id=${TENANT_ID}${currentAgentQuery()}`)
+      : null,
+    [toolId],
+    { onError: (error) => notify.error(error.message || '加载工具失败') },
+  );
 
   return (
     <div className="min-h-full box-border px-[48px] pt-[32px] pb-[43px] max-[900px]:px-[16px]" aria-busy={loading}>

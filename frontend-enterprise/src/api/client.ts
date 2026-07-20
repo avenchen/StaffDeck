@@ -124,53 +124,38 @@ export type StreamEvent = {
   data: Record<string, unknown>;
 };
 
-export async function streamPost(
+export function streamPost(
   path: string,
   body: Record<string, unknown>,
   onEvent: (item: StreamEvent) => void,
   signal?: AbortSignal,
 ): Promise<void> {
-  const response = await fetch(`${API_BASE}${path}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...authHeader() },
-    body: JSON.stringify(body),
-    signal,
-  });
-  if (!response.ok) {
-    const text = await response.text();
-    throw new ApiError(response.status, text, response.statusText);
-  }
-  if (!response.body) {
-    throw new Error('当前浏览器不支持流式响应');
-  }
-
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder('utf-8');
-  let buffer = '';
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const blocks = buffer.split('\n\n');
-    buffer = blocks.pop() || '';
-    blocks.forEach((block) => {
-      const parsed = parseSseBlock(block);
-      if (parsed) onEvent(parsed);
-    });
-  }
-
-  buffer += decoder.decode();
-  const parsed = parseSseBlock(buffer);
-  if (parsed) onEvent(parsed);
+  return streamRequest(
+    path,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+      body: JSON.stringify(body),
+      signal,
+    },
+    onEvent,
+  );
 }
 
-export async function streamGet(
+export function streamGet(
   path: string,
   onEvent: (item: StreamEvent) => void,
   signal?: AbortSignal,
 ): Promise<void> {
-  const response = await fetch(`${API_BASE}${path}`, { headers: { ...authHeader() }, signal });
+  return streamRequest(path, { headers: { ...authHeader() }, signal }, onEvent);
+}
+
+async function streamRequest(
+  path: string,
+  init: RequestInit,
+  onEvent: (item: StreamEvent) => void,
+): Promise<void> {
+  const response = await fetch(`${API_BASE}${path}`, init);
   if (!response.ok) {
     const text = await response.text();
     throw new ApiError(response.status, text, response.statusText);
