@@ -22,6 +22,14 @@ import OnboardingGuide from "./components/OnboardingGuide";
 import StaffdeckIcon from "./components/StaffdeckIcon";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { EnterpriseRoute } from "./enums/routes";
+import AgentCreateDialog from "./app/AgentCreateDialog";
+import {
+  EMPTY_AGENT_FORM,
+  ENTERPRISE_SIDEBAR_STORAGE_KEY,
+  MODEL_CONFIGS_UPDATED_EVENT,
+  type AgentCreateFormState,
+} from "./app/appTypes";
+import { deriveSelectedRoute } from "./app/routeSelection";
 import {
   employeeBlankMetadata,
   canAccessEmployeeAgent,
@@ -92,26 +100,6 @@ import {
 import type { AgentProfileRead, ModelConfigRead } from "./types";
 import { useI18n } from "./i18n";
 
-const ENTERPRISE_SIDEBAR_STORAGE_KEY = "ultrarag_enterprise_sidebar_expanded";
-const MODEL_CONFIGS_UPDATED_EVENT = "ultrarag-enterprise-model-configs-updated";
-type AgentCreateMode = "copy" | "blank";
-
-type AgentCreateFormState = {
-  name: string;
-  description: string;
-  roleName: string;
-  sourceMode: AgentCreateMode;
-  copyFromAgentId: string;
-};
-
-const EMPTY_AGENT_FORM: AgentCreateFormState = {
-  name: "",
-  description: "",
-  roleName: "",
-  sourceMode: "copy",
-  copyFromAgentId: "",
-};
-
 function Shell({
   auth,
   onLogout,
@@ -140,22 +128,7 @@ function Shell({
   const isAdmin = isEnterpriseAdmin(auth.user);
   const accountRoleLabel = isAdmin ? "管理員" : "";
   const isDistillRoute = location.pathname === "/enterprise/skills/distill";
-  const selected =
-    location.pathname === "/enterprise"
-      ? "/enterprise/dashboard"
-      : location.pathname.startsWith("/enterprise/platform")
-        ? "/enterprise/platform"
-        : location.pathname.startsWith("/enterprise/knowledge")
-          ? "/enterprise/knowledge"
-          : location.pathname.startsWith("/enterprise/general-skills")
-            ? "/enterprise/general-skills"
-            : location.pathname.startsWith("/enterprise/tools")
-              ? "/enterprise/tools"
-              : location.pathname.startsWith("/enterprise/scheduled-tasks")
-                ? "/enterprise/scheduled-tasks"
-                : isDistillRoute
-                  ? "/enterprise/skills"
-                  : location.pathname;
+  const selected = deriveSelectedRoute(location.pathname);
   const isAgentRosterRoute = location.pathname.startsWith("/enterprise/agents");
   const [lastDistillSearch, setLastDistillSearch] = useState(() =>
     isDistillRoute ? location.search : "",
@@ -745,143 +718,14 @@ function Shell({
           )}
         </div>
       </div>
-      <Dialog open={agentCreateOpen} onOpenChange={setAgentCreateOpen}>
-        <DialogContent className="flex max-h-[calc(100dvh-32px)] w-[calc(100%-32px)] flex-col gap-0 overflow-hidden rounded-[16px] p-0 sm:max-w-[520px]">
-          <DialogTitle className="shrink-0 px-[24px] py-[16px] text-[16px] font-semibold text-foreground">
-            新建數字員工
-          </DialogTitle>
-          <div className="agent-editor-form min-h-0 flex-1 overflow-y-auto px-[24px] pb-[16px]">
-            <label>
-              創建方式
-              <div className="inline-flex w-fit gap-[4px] rounded-[10px] border border-border p-[2px]">
-                {[
-                  { label: "從廣場複製", value: "copy" as const },
-                  { label: "從空白開始", value: "blank" as const },
-                ].map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    className={cn(
-                      "rounded-[8px] px-[14px] py-[5px] text-[13px] font-medium transition-colors",
-                      agentForm.sourceMode === option.value
-                        ? "bg-[#18181a] text-white"
-                        : "text-[#5b6273] hover:text-foreground",
-                    )}
-                    onClick={() =>
-                      setAgentForm((prev) => ({
-                        ...prev,
-                        sourceMode: option.value,
-                        copyFromAgentId:
-                          option.value === "blank" ? "" : prev.copyFromAgentId,
-                      }))
-                    }
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-            </label>
-            <label>
-              職位
-              <Input
-                value={agentForm.roleName}
-                onChange={(event) =>
-                  setAgentForm((prev) => ({
-                    ...prev,
-                    roleName: event.target.value,
-                  }))
-                }
-                placeholder="例如 研發工程師、財務助理"
-              />
-            </label>
-            <div className="grid content-start gap-[6px]">
-            {agentForm.sourceMode === "copy" && (
-              <label>
-                複製來源
-                <UISelect
-                  value={agentForm.copyFromAgentId || undefined}
-                  onValueChange={(value) =>
-                    setAgentForm((prev) => {
-                      const nextSource = sourceAgents.find(
-                        (item) => item.id === value,
-                      );
-                      return {
-                        ...prev,
-                        copyFromAgentId: value,
-                        roleName:
-                          prev.roleName ||
-                          (nextSource && !nextSource.is_overall
-                            ? employeeProfile(nextSource).roleName
-                            : ""),
-                      };
-                    })
-                  }
-                >
-                  <SelectTrigger className={cn(SELECT_TRIGGER_CLASS, "w-full")}>
-                    <SelectValue placeholder="選擇複製來源" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {sourceAgents.map((agent) => (
-                      <SelectItem key={agent.id} value={agent.id}>
-                        {agent.is_overall
-                          ? "開放廣場"
-                          : `${employeeDisplayNameWithCreator(agent)} · ${employeeProfile(agent).roleName}${isGalleryEmployee(agent) ? " · 廣場" : ""}`}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </UISelect>
-              </label>
-            )}
-            {agentForm.sourceMode === "blank" && (
-              <div className="agent-definition-note">
-                從空白開始創建，不繼承任何已有配置。
-              </div>
-            )}
-            </div>
-            <label>
-              數字員工姓名
-              <Input
-                value={agentForm.name}
-                onChange={(event) =>
-                  setAgentForm((prev) => ({
-                    ...prev,
-                    name: event.target.value,
-                  }))
-                }
-              />
-            </label>
-            <label>
-              崗位描述
-              <Textarea
-                rows={3}
-                value={agentForm.description}
-                onChange={(event) =>
-                  setAgentForm((prev) => ({
-                    ...prev,
-                    description: event.target.value,
-                  }))
-                }
-                placeholder="概括這個數字員工的崗位邊界、服務風格和執行重點"
-              />
-            </label>
-          </div>
-          <div className={cn(DIALOG_FOOTER_CLASS, "shrink-0 border-t border-border")}>
-            <UIButton
-              variant="outline"
-              className={DIALOG_CANCEL_BUTTON_CLASS}
-              onClick={() => setAgentCreateOpen(false)}
-            >
-              取消
-            </UIButton>
-            <UIButton
-              className={DIALOG_PRIMARY_BUTTON_CLASS}
-              onClick={() => void saveAgentCreateModal()}
-            >
-              創建
-            </UIButton>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <AgentCreateDialog
+        open={agentCreateOpen}
+        onOpenChange={setAgentCreateOpen}
+        form={agentForm}
+        onFormChange={setAgentForm}
+        sourceAgents={sourceAgents}
+        onSubmit={() => void saveAgentCreateModal()}
+      />
     </SidebarProvider>
   );
 }
