@@ -23,6 +23,6 @@ export function TaskStatusBadge({ status }: { status: string }) {
 }
 
 export function TaskRunResultBadge({ status }: { status: string }) {
-  const preset = RUN_STATUS_BADGE[status] || { tone: 'gray' as BadgeTone, text: status || '暂无' };
+  const preset = RUN_STATUS_BADGE[status] || { tone: 'gray' as BadgeTone, text: status || '暫無' };
   return <StatusBadge tone={preset.tone}>{preset.text}</StatusBadge>;
 }

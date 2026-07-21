@@ -142,7 +142,7 @@ export default function Composer({ chat }: { chat: UseChatSession }) {
             <HoverCardTrigger asChild>
               <button
                 type="button"
-                aria-label="员工信息"
+                aria-label="員工信息"
                 className={cn(CHAT_COMPOSER_AVATAR_CLASS, 'block cursor-pointer outline-none')}
               >
                 <EmployeeAvatar profile={displayedProfile} size={44} className="size-full" />
@@ -232,7 +232,7 @@ export default function Composer({ chat }: { chat: UseChatSession }) {
             multiple
             onChange={handleComposerFileChange}
           />
-          {composerDragActive && <div className={CHAT_COMPOSER_DROP_HINT_CLASS}>松开上传文件</div>}
+          {composerDragActive && <div className={CHAT_COMPOSER_DROP_HINT_CLASS}>鬆開上傳文件</div>}
 
           {composerAttachments.length > 0 && (
             <div className={CHAT_COMPOSER_ATTACHMENTS_CLASS}>
@@ -254,7 +254,7 @@ export default function Composer({ chat }: { chat: UseChatSession }) {
                     <span className={CHAT_COMPOSER_ATTACHMENT_STATUS_CLASS}>
                       {attachment.uploadStatus === 'uploading' && '解析中'}
                       {attachment.uploadStatus === 'ready' && attachmentTypeLabel(attachment)}
-                      {attachment.uploadStatus === 'error' && (attachment.error || '上传失败')}
+                      {attachment.uploadStatus === 'error' && (attachment.error || '上傳失敗')}
                     </span>
                   </span>
                   <button
@@ -275,7 +275,7 @@ export default function Composer({ chat }: { chat: UseChatSession }) {
             className={CHAT_COMPOSER_TEXTAREA_CLASS}
             value={input}
             rows={2}
-            placeholder={t('输入消息，按 Enter 发送...')}
+            placeholder={t('輸入消息，按 Enter 發送...')}
             onChange={(event) => setInput(event.target.value)}
             onPaste={handleComposerPaste}
             onCompositionStart={() => setIsComposing(true)}
@@ -311,11 +311,11 @@ export default function Composer({ chat }: { chat: UseChatSession }) {
                 <DropdownMenuContent align="start" side="top" className={cn(CHAT_MENU_CONTENT_CLASS, 'min-w-[160px]')}>
                   <DropdownMenuItem className={CHAT_MENU_ITEM_CLASS} onSelect={() => handleComposerPlusAction('upload')}>
                     <StaffdeckIcon name="upload" size={16} />
-                    <span>上传文件</span>
+                    <span>上傳文件</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem className={CHAT_MENU_ITEM_CLASS} onSelect={() => handleComposerPlusAction('scheduled_task')}>
                     <StaffdeckIcon name="clock" size={16} />
-                    <span>定时任务</span>
+                    <span>定時任務</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -328,8 +328,8 @@ export default function Composer({ chat }: { chat: UseChatSession }) {
                   onFocus={() => setScheduleIntentHovered(true)}
                   onBlur={() => setScheduleIntentHovered(false)}
                   onClick={() => setComposerIntent(null)}
-                  aria-label="取消定时任务"
-                  title="取消定时任务"
+                  aria-label="取消定時任務"
+                  title="取消定時任務"
                 >
                   <span className={cn(
                     'relative inline-grid size-[16px] shrink-0 place-items-center rounded-full transition-colors',
@@ -348,10 +348,10 @@ export default function Composer({ chat }: { chat: UseChatSession }) {
                       style={{ width: 9, height: 9 }}
                     />
                   </span>
-                  <span>定时任务</span>
+                  <span>定時任務</span>
                 </button>
               )}
-              <div className={CHAT_COMPOSER_HINT_CLASS}>Enter 发送 / Shift+Enter 换行</div>
+              <div className={CHAT_COMPOSER_HINT_CLASS}>Enter 發送 / Shift+Enter 換行</div>
             </div>
             <div className={CHAT_COMPOSER_ACTIONS_ROW_CLASS}>
               <DropdownMenu>
@@ -361,13 +361,13 @@ export default function Composer({ chat }: { chat: UseChatSession }) {
                     className={CHAT_COMPOSER_MODEL_BTN_CLASS}
                     disabled={!enabledModelConfigs.length}
                   >
-                    <span>{selectedModelConfig ? modelDisplayName(selectedModelConfig) : '默认模型'}</span>
+                    <span>{selectedModelConfig ? modelDisplayName(selectedModelConfig) : '默認模型'}</span>
                     <StaffdeckIcon name="arrow" size={14} style={{ transform: 'rotate(90deg)' }} />
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" side="top" className={cn(CHAT_MENU_CONTENT_CLASS, 'max-h-[360px] min-w-[240px] overflow-y-auto')}>
                   {enabledModelConfigs.length === 0 ? (
-                    <DropdownMenuItem className={CHAT_MENU_ITEM_CLASS} disabled>暂无可用模型</DropdownMenuItem>
+                    <DropdownMenuItem className={CHAT_MENU_ITEM_CLASS} disabled>暫無可用模型</DropdownMenuItem>
                   ) : (
                     enabledModelConfigs.map((model) => (
                       <DropdownMenuItem
@@ -400,8 +400,8 @@ export default function Composer({ chat }: { chat: UseChatSession }) {
                 type="submit"
                 className={CHAT_COMPOSER_SEND_BTN_CLASS}
                 disabled={sendDisabled}
-                aria-label={currentSessionRunning ? '加入发送队列' : '发送'}
-                title={currentSessionRunning ? '加入发送队列' : '发送'}
+                aria-label={currentSessionRunning ? '加入發送隊列' : '發送'}
+                title={currentSessionRunning ? '加入發送隊列' : '發送'}
               >
                 <StaffdeckIcon name="send" size={18} />
               </button>

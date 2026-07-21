@@ -18,7 +18,7 @@ def test_reflection_switches_wrong_active_skill_without_suspending() -> None:
     decision = loop._router_decision_from_reflection(
         ReflectionDecision(
             needs_retry=True,
-            reason="用户要报修，不是办理访客证。",
+            reason="用戶要報修，不是辦理訪客證。",
             target_skill_id="repair_ticket",
         ),
         session,
@@ -44,7 +44,7 @@ def test_reflection_does_not_restart_completed_skill_in_same_turn() -> None:
     decision = loop._router_decision_from_reflection(
         ReflectionDecision(
             needs_retry=True,
-            reason="同一轮已经完成过该技能，不应再次启动。",
+            reason="同一輪已經完成過該技能，不應再次啟動。",
             target_skill_id="price_compare",
         ),
         session,
@@ -73,7 +73,7 @@ def test_reflection_can_continue_completed_skill_when_still_active() -> None:
     decision = loop._router_decision_from_reflection(
         ReflectionDecision(
             needs_retry=True,
-            reason="当前 active skill 需要继续修正。",
+            reason="當前 active skill 需要繼續修正。",
             target_skill_id="price_compare",
         ),
         session,
@@ -93,7 +93,7 @@ def test_reflection_builds_tool_call_from_slots() -> None:
         id="session_test",
         tenant_id="tenant_demo",
         active_skill_id="repair_ticket",
-        slots_json={"customer_name": "张三", "asset_id": "EQ-9", "issue": "无法启动"},
+        slots_json={"customer_name": "張三", "asset_id": "EQ-9", "issue": "無法啟動"},
     )
 
     tool_call = loop._tool_call_from_reflection(
@@ -104,9 +104,9 @@ def test_reflection_builds_tool_call_from_slots() -> None:
 
     assert tool_call is not None
     assert tool_call.name == "ticket.create"
-    assert tool_call.arguments["customer_name"] == "张三"
+    assert tool_call.arguments["customer_name"] == "張三"
     assert tool_call.arguments["asset_id"] == "EQ-9"
-    assert tool_call.arguments["issue"] == "无法启动"
+    assert tool_call.arguments["issue"] == "無法啟動"
 
 
 def test_reflection_builds_archive_order_tool_call_from_order_slot() -> None:
@@ -170,7 +170,7 @@ def test_reflection_tool_retry_preserves_router_decision_and_streams_tool_events
         decision="continue_active",
         target_skill_id="after_sales_refund",
         target_step_id="check_refund_eligibility",
-        user_intent="申请退款",
+        user_intent="申請退款",
     )
     stream_events: list[tuple[str, dict[str, object]]] = []
 
@@ -181,7 +181,7 @@ def test_reflection_tool_retry_preserves_router_decision_and_streams_tool_events
             None,
             decision,
             ToolCall(name="order.archive_query", arguments={"order_id": "ARCHIVE-1001"}),
-            "主工具未命中，尝试历史订单查询",
+            "主工具未命中，嘗試歷史訂單查詢",
             stream_events,
         )
     )
@@ -202,7 +202,7 @@ def test_zero_reflection_rounds_skips_reflection_agent() -> None:
     loop.events = _FakeEvents()
     loop.reflection_agent = _RaisingReflectionAgent()
     session = ChatSession(id="session_test", tenant_id="tenant_demo")
-    decision = RouterDecision(decision="continue_active", user_intent="申请退款")
+    decision = RouterDecision(decision="continue_active", user_intent="申請退款")
     step_result = StepAgentResult(is_step_completed=True)
     tool_result = ToolResult(tool_name="order.query", success=True, data={"found": False})
 
@@ -229,7 +229,7 @@ def test_clarify_greeting_does_not_trigger_reflection() -> None:
     loop.reflection_agent = _RaisingReflectionAgent()
     session = ChatSession(id="session_test", tenant_id="tenant_demo")
     decision = RouterDecision(decision="clarify", user_intent="greeting")
-    step_result = StepAgentResult(reply="您好，请问有什么可以帮您？")
+    step_result = StepAgentResult(reply="您好，請問有什麼可以幫您？")
 
     returned = loop._run_reflection_rounds(
         ChatTurnRequest(tenant_id="tenant_demo", message="你好"),
@@ -252,12 +252,12 @@ def test_successful_expected_tool_result_can_pass_reflection() -> None:
     loop.reflection_agent = _PassingReflectionAgent()
     loop.events = _FakeEvents()
     session = ChatSession(id="session_test", tenant_id="tenant_demo")
-    decision = RouterDecision(decision="continue_active", user_intent="查询订单")
+    decision = RouterDecision(decision="continue_active", user_intent="查詢訂單")
     step_result = StepAgentResult(is_step_completed=True)
     tool_result = ToolResult(tool_name="order.query", success=True, data={"found": True})
 
     returned = loop._run_reflection_rounds(
-        ChatTurnRequest(tenant_id="tenant_demo", message="查订单"),
+        ChatTurnRequest(tenant_id="tenant_demo", message="查訂單"),
         session,
         [],
         [],
@@ -302,7 +302,7 @@ def test_reflection_target_skill_is_scheduled_instead_of_skipped() -> None:
                 slots=chat_session.slots_json,
             )
         ]
-        return StepAgentResult(reply="已切换到比价流程。", is_step_completed=True)
+        return StepAgentResult(reply="已切換到比價流程。", is_step_completed=True)
 
     loop._get_active_skill = lambda tenant_id, skill_id, agent_id=None: skills_by_id.get(skill_id)  # type: ignore[method-assign]
     loop._run_step_agent_with_context_repair = run_step  # type: ignore[method-assign]
@@ -318,7 +318,7 @@ def test_reflection_target_skill_is_scheduled_instead_of_skipped() -> None:
     previous_decision = RouterDecision(
         decision="continue_active",
         target_skill_id="purchase",
-        user_intent="购买前比价",
+        user_intent="購買前比價",
     )
     previous_step = StepAgentResult(
         tool_call=ToolCall(name="product.price_query", arguments={"product_name": "A1"}),
@@ -327,11 +327,11 @@ def test_reflection_target_skill_is_scheduled_instead_of_skipped() -> None:
     previous_tool_result = ToolResult(
         tool_name="product.price_query",
         success=False,
-        error={"code": "NOT_ALLOWED", "message": "当前技能不允许调用该工具。"},
+        error={"code": "NOT_ALLOWED", "message": "當前技能不允許調用該工具。"},
     )
 
     active_skill, router_decision, step_result, tool_result, retried = loop._reflect_and_retry(
-        ChatTurnRequest(tenant_id="tenant_demo", message="买 A1 前跟 A3 比下价格"),
+        ChatTurnRequest(tenant_id="tenant_demo", message="買 A1 前跟 A3 比下價格"),
         session,
         skills,
         [_price_query_tool()],
@@ -350,7 +350,7 @@ def test_reflection_target_skill_is_scheduled_instead_of_skipped() -> None:
     assert router_decision.target_skill_id == "price_compare"
     assert session.active_skill_id == "price_compare"
     assert session.active_step_id == "collect_products"
-    assert step_result.reply == "已切换到比价流程。"
+    assert step_result.reply == "已切換到比價流程。"
     assert tool_result is None
     assert captured["active_skill_id"] == "price_compare"
     assert captured["tool_names"] == []
@@ -410,7 +410,7 @@ class _TargetSkillReflectionAgent:
         return ReflectionDecision(
             action="try_other_tool",
             needs_retry=True,
-            reason="当前技能不能调用目标工具，切到可执行技能。",
+            reason="當前技能不能調用目標工具，切到可執行技能。",
             target_skill_id=self.target_skill_id,
         )
 
@@ -427,7 +427,7 @@ def _skill(skill_id: str) -> Skill:
                 {
                     "node_id": "start",
                     "type": "collect_info",
-                    "name": "开始",
+                    "name": "開始",
                     "allowed_actions": ["ask_user"],
                 }
             ],
@@ -443,15 +443,15 @@ def _purchase_skill() -> Skill:
     return Skill(
         tenant_id="tenant_demo",
         skill_id="purchase",
-        name="购买商品",
+        name="購買商品",
         content_json={
             "skill_id": "purchase",
-            "name": "购买商品",
+            "name": "購買商品",
             "nodes": [
                 {
                     "node_id": "collect_purchase",
                     "type": "collect_info",
-                    "name": "收集购买信息",
+                    "name": "收集購買信息",
                     "allowed_actions": ["ask_user", "continue_flow"],
                 }
             ],
@@ -467,21 +467,21 @@ def _price_compare_skill() -> Skill:
     return Skill(
         tenant_id="tenant_demo",
         skill_id="price_compare",
-        name="商品比价",
+        name="商品比價",
         content_json={
             "skill_id": "price_compare",
-            "name": "商品比价",
+            "name": "商品比價",
             "nodes": [
                 {
                     "node_id": "collect_products",
                     "type": "collect_info",
-                    "name": "收集待比价商品",
+                    "name": "收集待比價商品",
                     "allowed_actions": ["ask_user", "continue_flow"],
                 },
                 {
                     "node_id": "query_prices",
                     "type": "tool_call",
-                    "name": "查询商品价格",
+                    "name": "查詢商品價格",
                     "allowed_actions": ["call_tool:product.price_query", "continue_flow"],
                 },
             ],
@@ -490,7 +490,7 @@ def _price_compare_skill() -> Skill:
                     "source_node_id": "collect_products",
                     "next_node_id": "query_prices",
                     "priority": 0,
-                    "label": "默认推进",
+                    "label": "默認推進",
                 }
             ],
             "start_node_id": "collect_products",
@@ -504,7 +504,7 @@ def _price_query_tool() -> Tool:
     return Tool(
         tenant_id="tenant_demo",
         name="product.price_query",
-        display_name="商品价格查询",
+        display_name="商品價格查詢",
         method="POST",
         url="http://localhost:8000/api/mock/product/price-query",
         input_schema={
@@ -521,7 +521,7 @@ def _ticket_tool() -> Tool:
     return Tool(
         tenant_id="tenant_demo",
         name="ticket.create",
-        display_name="创建工单",
+        display_name="創建工單",
         method="POST",
         url="http://localhost:8000/api/mock/ticket/create",
         input_schema={
@@ -542,7 +542,7 @@ def _archive_order_tool() -> Tool:
     return Tool(
         tenant_id="tenant_demo",
         name="order.archive_query",
-        display_name="历史订单查询",
+        display_name="歷史訂單查詢",
         method="POST",
         url="http://localhost:8000/api/mock/order/archive-query",
         input_schema={

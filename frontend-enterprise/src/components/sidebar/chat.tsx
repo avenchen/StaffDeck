@@ -52,7 +52,7 @@ import { AppSidebarChatProps, AppSidebarManagementProps, AppSidebarProps, CAPABI
 
 // ---------------------------------------------------------------------------
 // Chat variant (Figma node 38:5767) — reuses the sidebar shell + brand chrome
-// while swapping the body for the "员工会话" session list.
+// while swapping the body for the "員工會話" session list.
 // ---------------------------------------------------------------------------
 
 export function sessionAgentFor(session: ChatSession, agents: AgentProfileRead[]): AgentProfileRead | null {
@@ -62,12 +62,12 @@ export function sessionAgentFor(session: ChatSession, agents: AgentProfileRead[]
 
 export function sessionTitleFor(session: ChatSession, _agent: AgentProfileRead | null): string {
   if (session.title) return staffdeckDisplayText(session.title);
-  return session.id || '新对话';
+  return session.id || '新對話';
 }
 
 export function sessionSubtitleFor(session: ChatSession, _agent: AgentProfileRead | null): string {
-  const recent = (session.last_agent_question || session.summary || '').replace(/^最近回复[:：]\s*/, '');
-  return recent ? staffdeckDisplayText(recent) : '新对话';
+  const recent = (session.last_agent_question || session.summary || '').replace(/^最近回覆[:：]\s*/, '');
+  return recent ? staffdeckDisplayText(recent) : '新對話';
 }
 
 export function ChatSessionFilter({
@@ -81,7 +81,7 @@ export function ChatSessionFilter({
   const current = sessionFilterOptions.find((option) => option.value === sessionFilter) || sessionFilterOptions[0];
   const [namePart, countPart] = current
     ? current.label.split('·').map((part) => part.trim())
-    : ['全部员工', ''];
+    : ['全部員工', ''];
 
   return (
     <DropdownMenu>
@@ -89,7 +89,7 @@ export function ChatSessionFilter({
         {collapsed ? (
           <button
             type="button"
-            aria-label="筛选会话"
+            aria-label="篩選會話"
             className="flex h-[32px] w-full items-center justify-center rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-[#f6f6f6] transition-colors hover:border-[#c9d2e4]"
           >
             <IconSort className="size-[14px]! shrink-0 text-[#858b9c]" />
@@ -97,7 +97,7 @@ export function ChatSessionFilter({
         ) : (
           <button
             type="button"
-            aria-label="筛选会话"
+            aria-label="篩選會話"
             className="flex h-[40px] w-full items-center justify-between rounded-[14px] border-[0.5px] border-[#e3e7f1] bg-[#f6f6f6] px-[20px] py-[10px] text-left transition-colors hover:border-[#c9d2e4]"
           >
             <span className="flex min-w-0 items-center gap-[6px]">
@@ -273,12 +273,12 @@ export function ChatSessionRow({
         </span>
       </span>
       {unread && (
-        <span className="ml-[2px] size-[7px] shrink-0 rounded-full bg-[#f5483b]" aria-label="未读回复" />
+        <span className="ml-[2px] size-[7px] shrink-0 rounded-full bg-[#f5483b]" aria-label="未讀回覆" />
       )}
       <span className="ml-auto hidden shrink-0 items-center gap-[6px] group-hover/session:flex">
         <button
           type="button"
-          aria-label="重命名会话"
+          aria-label="重命名會話"
           onClick={(event) => {
             event.stopPropagation();
             onRenameSession(session);
@@ -289,7 +289,7 @@ export function ChatSessionRow({
         </button>
         <button
           type="button"
-          aria-label="删除会话"
+          aria-label="刪除會話"
           onClick={(event) => {
             event.stopPropagation();
             onDeleteSession(session);
@@ -340,8 +340,8 @@ export function ChatFooterActions({ onOpenAdmin }: { onOpenAdmin: () => void }) 
       <button
         type="button"
         onClick={onOpenAdmin}
-        title="切换到管理端"
-        aria-label="切换到管理端"
+        title="切換到管理端"
+        aria-label="切換到管理端"
         className="flex size-[32px] shrink-0 items-center justify-center rounded-[8px] rotate-90 text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
       >
         <IconToggle className="size-[16px]!" />
@@ -373,7 +373,7 @@ export function CollapsedChatSidebar({
   return (
     <div className="flex h-full w-(--sidebar-width-icon) shrink-0 flex-col items-center gap-[32px] px-[20px] py-[10px]">
       <div className="flex w-full flex-col items-center gap-[10px]">
-        <button type="button" title="数字员工广场" onClick={onOpenGallery} className="flex items-center justify-center p-[10px]">
+        <button type="button" title="數字員工廣場" onClick={onOpenGallery} className="flex items-center justify-center p-[10px]">
           <BrandLogo markOnly />
         </button>
         <Tooltip>
@@ -381,14 +381,14 @@ export function CollapsedChatSidebar({
             <button
               type="button"
               onClick={onToggle}
-              aria-label="展开边栏"
+              aria-label="展開邊欄"
               className="flex size-[16px] items-center justify-center text-sidebar-foreground transition-colors hover:text-sidebar-accent-foreground"
             >
               <IconHeaderCollapse className="size-[16px]! -rotate-90" />
             </button>
           </TooltipTrigger>
           <TooltipContent side="right" align="center">
-            展开边栏
+            展開邊欄
           </TooltipContent>
         </Tooltip>
       </div>
@@ -399,7 +399,7 @@ export function CollapsedChatSidebar({
             <button
               type="button"
               onClick={onOpenGallery}
-              aria-label="数字员工广场"
+              aria-label="數字員工廣場"
               aria-current={galleryActive ? 'page' : undefined}
               className={cn(
                 'flex h-[32px] w-full items-center justify-center rounded-[8px] transition-colors',
@@ -412,7 +412,7 @@ export function CollapsedChatSidebar({
             </button>
           </TooltipTrigger>
           <TooltipContent side="right" align="center">
-            数字员工广场
+            數字員工廣場
           </TooltipContent>
         </Tooltip>
 
@@ -427,7 +427,7 @@ export function CollapsedChatSidebar({
           onSessionFilterChange={onSessionFilterChange}
         />
 
-        <span className="text-[10px] leading-none text-[#464c5e]">会话</span>
+        <span className="text-[10px] leading-none text-[#464c5e]">會話</span>
 
         <div className="no-scrollbar mx-[-8px] flex min-h-0 w-[calc(100%+16px)] flex-1 flex-col items-center gap-[10px] overflow-y-auto py-[2px]">
           {sessionsLoading
@@ -459,7 +459,7 @@ export function CollapsedChatSidebar({
                           <IconChatBubble className="size-[18px]!" />
                         )}
                         {unread && (
-                          <span className="absolute right-[2px] top-[2px] size-[7px] rounded-full bg-[#f5483b] ring-[1.5px] ring-white" aria-label="未读回复" />
+                          <span className="absolute right-[2px] top-[2px] size-[7px] rounded-full bg-[#f5483b] ring-[1.5px] ring-white" aria-label="未讀回覆" />
                         )}
                       </button>
                     </TooltipTrigger>
@@ -478,14 +478,14 @@ export function CollapsedChatSidebar({
             <button
               type="button"
               onClick={onOpenAdmin}
-              aria-label="切换到管理端"
+              aria-label="切換到管理端"
               className="flex size-[32px] shrink-0 items-center justify-center rounded-[10px] border-[0.5px] border-[#E3E7F1] bg-[#F6F6F6] text-[#858b9c] transition-opacity hover:opacity-70"
             >
               <IconViewMasonry className="size-[16px]!" />
             </button>
           </TooltipTrigger>
           <TooltipContent side="right" align="center">
-            切换到管理端
+            切換到管理端
           </TooltipContent>
         </Tooltip>
       </div>
@@ -544,14 +544,14 @@ export function ChatSidebarVariant({
       <div className="flex h-full w-(--sidebar-width) shrink-0 flex-col">
         <SidebarHeader className="gap-[24px] px-[20px] pt-[10px]">
           <div className="flex items-center justify-between">
-            <button type="button" title="数字员工广场" onClick={onOpenGallery}>
+            <button type="button" title="數字員工廣場" onClick={onOpenGallery}>
               <BrandLogo />
             </button>
             <button
               type="button"
               onClick={toggleSidebar}
-              title="收起边栏"
-              aria-label="收起边栏"
+              title="收起邊欄"
+              aria-label="收起邊欄"
               className="flex size-[28px] shrink-0 items-center justify-center rounded-[8px] text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
             >
               <IconHeaderCollapse className="size-[14px]! -rotate-90" />
@@ -571,7 +571,7 @@ export function ChatSidebarVariant({
               )}
             >
               <IconGlobe className="size-[16px]! shrink-0" />
-              <span className="truncate">数字员工广场</span>
+              <span className="truncate">數字員工廣場</span>
             </button>
             <ChatHandoffButton count={handoffCount} onOpen={onOpenHandoffs} />
             <div className="h-px w-full bg-sidebar-border" />
@@ -580,7 +580,7 @@ export function ChatSidebarVariant({
               sessionFilterOptions={sessionFilterOptions}
               onSessionFilterChange={onSessionFilterChange}
             />
-            <span className="text-[12px] leading-none text-[#858b9c]">员工会话</span>
+            <span className="text-[12px] leading-none text-[#858b9c]">員工會話</span>
           </div>
         </SidebarHeader>
 
@@ -591,7 +591,7 @@ export function ChatSidebarVariant({
             ) : sessions.length === 0 ? (
               <div className="flex flex-col items-center gap-[8px] py-[28px] text-center text-[12px] text-[#a2a8b8]">
                 <StaffdeckIcon name="inbox" size={22} />
-                <span>暂无历史会话</span>
+                <span>暫無歷史會話</span>
               </div>
             ) : (
               <div className="flex flex-col gap-[2px]">

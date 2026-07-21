@@ -128,7 +128,7 @@ def knowledge_citations_from_results(
             section_path = str(item.get("section_path") or "").strip()
             source_path = str(item.get("source_path") or "").strip()
             chunk_id = str(item.get("chunk_id") or "").strip()
-            title = _display_title(section_path or source_path or summary or "知识片段")
+            title = _display_title(section_path or source_path or summary or "知識片段")
             identity = _semantic_identity(section_path or summary or f"{source_path}:{excerpt[:120]}" or chunk_id)
             add(
                 "evidence",

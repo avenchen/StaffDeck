@@ -56,7 +56,7 @@ export default function EmployeeGalleryPage({
       const rows = await api.get<AgentProfileRead[]>(`/api/enterprise/agents?tenant_id=${TENANT_ID}`);
       setAgents(rows);
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '加载员工失败');
+      notify.error(error instanceof Error ? error.message : '加載員工失敗');
     } finally {
       setLoading(false);
     }
@@ -67,9 +67,9 @@ export default function EmployeeGalleryPage({
   }, []);
 
   // Keep these tabs aligned with the rest of the app:
-  // - 所有员工: employees the current user can access and chat with
-  // - 我的数字员工: employees the current user can manage/edit
-  // - 数字员工广场: public employees not already listed as mine
+  // - 所有員工: employees the current user can access and chat with
+  // - 我的數字員工: employees the current user can manage/edit
+  // - 數字員工廣場: public employees not already listed as mine
   const availableAgents = useMemo(
     () => visibleEmployeeAgents(agents, currentUser, { activeOnly: true }),
     [agents, currentUser],
@@ -113,7 +113,7 @@ export default function EmployeeGalleryPage({
       }
       navigate(`/workspace/chat/draft/${row.id}`);
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '发起对话失败');
+      notify.error(error instanceof Error ? error.message : '發起對話失敗');
     } finally {
       setStartingAgentId(null);
     }
@@ -126,11 +126,11 @@ export default function EmployeeGalleryPage({
         status,
         metadata: row.metadata || {},
       });
-      notify.success(status === 'active' ? '员工已上线' : '员工已下线');
+      notify.success(status === 'active' ? '員工已上線' : '員工已下線');
       await load();
       window.dispatchEvent(new Event('ultrarag-enterprise-agent-scope-refresh'));
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '更新员工状态失败');
+      notify.error(error instanceof Error ? error.message : '更新員工狀態失敗');
     }
   }
 
@@ -146,11 +146,11 @@ export default function EmployeeGalleryPage({
         tenant_id: TENANT_ID,
         metadata,
       });
-      notify.success(published ? '已发布到广场' : '已从广场下架');
+      notify.success(published ? '已發佈到廣場' : '已從廣場下架');
       await load();
       window.dispatchEvent(new Event('ultrarag-enterprise-agent-scope-refresh'));
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '更新广场状态失败');
+      notify.error(error instanceof Error ? error.message : '更新廣場狀態失敗');
     }
   }
 
@@ -171,12 +171,12 @@ export default function EmployeeGalleryPage({
           window.dispatchEvent(new CustomEvent('ultrarag-enterprise-agent-scope-change', { detail: { agentId: '' } }));
         }
       }
-      notify.success('员工已删除');
+      notify.success('員工已刪除');
       setDeleteTarget(null);
       await load();
       window.dispatchEvent(new Event('ultrarag-enterprise-agent-scope-refresh'));
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '删除员工失败');
+      notify.error(error instanceof Error ? error.message : '刪除員工失敗');
     } finally {
       setDeleting(false);
     }
@@ -187,16 +187,16 @@ export default function EmployeeGalleryPage({
   }
 
   const galleryTabs: UnderlineTabItem<GalleryScope>[] = [
-    { value: 'all', label: '所有员工' },
-    { value: 'mine', label: '我的数字员工' },
-    { value: 'gallery', label: '数字员工广场' },
+    { value: 'all', label: '所有員工' },
+    { value: 'mine', label: '我的數字員工' },
+    { value: 'gallery', label: '數字員工廣場' },
   ];
 
   const hasSearchTerm = Boolean(searchTerm.trim());
-  const emptyText = hasSearchTerm ? '没有匹配的数字员工' : '暂无数字员工';
+  const emptyText = hasSearchTerm ? '沒有匹配的數字員工' : '暫無數字員工';
   const emptyDescription = hasSearchTerm
-    ? '换个关键词，或切换员工分类再试试'
-    : '当前分类还没有可用员工';
+    ? '換個關鍵詞，或切換員工分類再試試'
+    : '當前分類還沒有可用員工';
 
   return (
     <div className="min-h-full box-border px-[48px] pt-[32px] pb-[43px] max-[900px]:px-[16px]" aria-busy={loading}>
@@ -210,7 +210,7 @@ export default function EmployeeGalleryPage({
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
               placeholder="搜索"
-              aria-label="搜索数字员工"
+              aria-label="搜索數字員工"
               className="min-w-0 flex-1 border-0 bg-transparent text-[14px] text-[#18181A] outline-none placeholder:text-[#757F9C]"
             />
           </div>
@@ -219,7 +219,7 @@ export default function EmployeeGalleryPage({
 
       <UnderlineTabs
         className="mt-[36px] mb-[16px] max-[560px]:w-full"
-        aria-label="数字员工分类"
+        aria-label="數字員工分類"
         value={scope}
         onChange={setScope}
         items={galleryTabs}
@@ -267,8 +267,8 @@ export default function EmployeeGalleryPage({
           if (!open) setDeleteTarget(null);
         }}
         loading={deleting}
-        title={`删除员工「${deleteTarget ? employeeDisplayName(deleteTarget) : ''}」？`}
-        description="删除后该员工的所有配置将一并移除，操作不可撤销。"
+        title={`刪除員工「${deleteTarget ? employeeDisplayName(deleteTarget) : ''}」？`}
+        description="刪除後該員工的所有配置將一併移除，操作不可撤銷。"
         onConfirm={() => void confirmDelete()}
       />
     </div>

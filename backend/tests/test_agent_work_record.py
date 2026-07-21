@@ -30,14 +30,14 @@ def test_work_record_returns_timezone_aware_reply_and_activity_times(monkeypatch
         agent = AgentProfile(
             id="agent_work_record",
             tenant_id="tenant_demo",
-            name="工作记录员工",
+            name="工作記錄員工",
             metadata_json={"owner_user_id": owner.id, "owner_username": owner.username},
         )
         skill = Skill(
             id="skill_bound",
             tenant_id="tenant_demo",
             skill_id="travel_v1",
-            name="差旅报销",
+            name="差旅報銷",
             description="差旅流程",
             content_json={},
             status="published",
@@ -46,7 +46,7 @@ def test_work_record_returns_timezone_aware_reply_and_activity_times(monkeypatch
             id="general_bound",
             tenant_id="tenant_demo",
             slug="weather",
-            name="天气查询",
+            name="天氣查詢",
             skill_markdown="# weather",
             status="published",
         )
@@ -60,7 +60,7 @@ def test_work_record_returns_timezone_aware_reply_and_activity_times(monkeypatch
             id="tool_bound",
             tenant_id="tenant_demo",
             name="expense.query",
-            display_name="额度查询",
+            display_name="額度查詢",
             method="POST",
             url="http://example.test/query",
             enabled=True,
@@ -121,7 +121,7 @@ def test_work_record_returns_timezone_aware_reply_and_activity_times(monkeypatch
                 tenant_id="tenant_demo",
                 session_id="session_owner",
                 role="assistant",
-                content="当天",
+                content="當天",
                 created_at=datetime(2026, 7, 14, 16, 30, 0),
             )
         )
@@ -131,7 +131,7 @@ def test_work_record_returns_timezone_aware_reply_and_activity_times(monkeypatch
                 tenant_id="tenant_demo",
                 session_id="session_owner",
                 role="user",
-                content="不计入回复",
+                content="不計入回覆",
                 created_at=datetime(2026, 7, 14, 16, 31, 0),
             )
         )
@@ -141,7 +141,7 @@ def test_work_record_returns_timezone_aware_reply_and_activity_times(monkeypatch
                 tenant_id="tenant_demo",
                 session_id="session_other",
                 role="assistant",
-                content="不可见",
+                content="不可見",
                 created_at=datetime(2026, 7, 14, 16, 32, 0),
             )
         )
@@ -151,8 +151,8 @@ def test_work_record_returns_timezone_aware_reply_and_activity_times(monkeypatch
                 tenant_id="tenant_demo",
                 agent_id=agent.id,
                 created_by_user_id=owner.id,
-                title="每日汇报",
-                prompt="生成汇报",
+                title="每日彙報",
+                prompt="生成彙報",
                 last_run_at=datetime(2026, 7, 14, 1, 0, 0),
                 next_run_at=datetime(2026, 7, 15, 1, 0, 0),
             )
@@ -198,7 +198,7 @@ def test_work_record_rejects_invalid_timezone_and_private_agent_access() -> None
         agent = AgentProfile(
             id="agent_private",
             tenant_id="tenant_demo",
-            name="私有员工",
+            name="私有員工",
             metadata_json={"owner_user_id": owner.id, "owner_username": owner.username},
         )
         db.add(agent)

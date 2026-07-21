@@ -56,12 +56,12 @@ type EmployeeAgentLike = {
 };
 
 export const EMPLOYEE_AVATAR_PRESETS: EmployeeAvatarPreset[] = [
-  { key: 'service-orbit', label: '研发员工', text: '研', tone: 'teal' },
-  { key: 'after-sales-seal', label: '行政员工', text: '行', tone: 'copper' },
-  { key: 'knowledge-node', label: '知识运营员工', text: '知', tone: 'olive' },
-  { key: 'commerce-compass', label: '财务员工', text: '财', tone: 'blue' },
-  { key: 'ops-grid', label: '人事员工', text: '人', tone: 'ink' },
-  { key: 'quality-star', label: '法务员工', text: '法', tone: 'gold' },
+  { key: 'service-orbit', label: '研發員工', text: '研', tone: 'teal' },
+  { key: 'after-sales-seal', label: '行政員工', text: '行', tone: 'copper' },
+  { key: 'knowledge-node', label: '知識運營員工', text: '知', tone: 'olive' },
+  { key: 'commerce-compass', label: '財務員工', text: '財', tone: 'blue' },
+  { key: 'ops-grid', label: '人事員工', text: '人', tone: 'ink' },
+  { key: 'quality-star', label: '法務員工', text: '法', tone: 'gold' },
 ];
 
 export const DEFAULT_AVATAR_PRESET = 'service-orbit';
@@ -91,14 +91,14 @@ export function employeeAvatarImage(profile: AvatarSource): string {
 export const EMPLOYEE_TEMPLATES: EmployeeTemplate[] = [
   {
     key: 'service-specialist',
-    roleName: '研发',
+    roleName: '研發',
     avatarText: '研',
     avatarTone: 'teal',
     avatarPreset: 'service-orbit',
-    description: '负责研发资料查询、代码任务拆解、SOP 执行和交付记录沉淀。',
-    workStyles: ['目标明确', '证据优先', '动作可追溯'],
-    expertiseTags: ['研发协作', '代码检索', 'SOP 执行'],
-    workModes: ['理解需求', '检索资料', '推进执行'],
+    description: '負責研發資料查詢、代碼任務拆解、SOP 執行和交付記錄沉澱。',
+    workStyles: ['目標明確', '證據優先', '動作可追溯'],
+    expertiseTags: ['研發協作', '代碼檢索', 'SOP 執行'],
+    workModes: ['理解需求', '檢索資料', '推進執行'],
   },
   {
     key: 'after-sales',
@@ -106,32 +106,32 @@ export const EMPLOYEE_TEMPLATES: EmployeeTemplate[] = [
     avatarText: '行',
     avatarTone: 'copper',
     avatarPreset: 'after-sales-seal',
-    description: '负责会议纪要、资料归档、跨部门事务跟进和结果同步。',
-    workStyles: ['流程推进', '及时追问', '留痕复盘'],
-    expertiseTags: ['资料归档', '会议纪要', '事务跟进'],
-    workModes: ['确认事项', '拆解步骤', '同步结果'],
+    description: '負責會議紀要、資料歸檔、跨部門事務跟進和結果同步。',
+    workStyles: ['流程推進', '及時追問', '留痕復盤'],
+    expertiseTags: ['資料歸檔', '會議紀要', '事務跟進'],
+    workModes: ['確認事項', '拆解步驟', '同步結果'],
   },
   {
     key: 'knowledge-operator',
-    roleName: '知识运营',
+    roleName: '知識運營',
     avatarText: '知',
     avatarTone: 'olive',
     avatarPreset: 'knowledge-node',
-    description: '负责知识库检索、资料结构化归档、信息核对和答案沉淀。',
-    workStyles: ['证据优先', '结构清晰', '持续沉淀'],
-    expertiseTags: ['知识检索', '资料归档', '信息结构化'],
-    workModes: ['查资料', '做归档', '给答案'],
+    description: '負責知識庫檢索、資料結構化歸檔、信息核對和答案沉澱。',
+    workStyles: ['證據優先', '結構清晰', '持續沉澱'],
+    expertiseTags: ['知識檢索', '資料歸檔', '信息結構化'],
+    workModes: ['查資料', '做歸檔', '給答案'],
   },
   {
     key: 'commerce-guide',
-    roleName: '财务',
-    avatarText: '财',
+    roleName: '財務',
+    avatarText: '財',
     avatarTone: 'blue',
     avatarPreset: 'commerce-compass',
-    description: '负责报销核对、预算口径、财务资料检索和风险提示。',
-    workStyles: ['证据优先', '口径统一', '风险克制'],
-    expertiseTags: ['报销核对', '预算口径', '数据复盘'],
-    workModes: ['查规则', '核凭证', '给结论'],
+    description: '負責報銷核對、預算口徑、財務資料檢索和風險提示。',
+    workStyles: ['證據優先', '口徑統一', '風險剋制'],
+    expertiseTags: ['報銷核對', '預算口徑', '數據復盤'],
+    workModes: ['查規則', '核憑證', '給結論'],
   },
 ];
 
@@ -310,8 +310,8 @@ export function employeeProfile(agent?: AgentProfileRead | null): EmployeeProfil
     : 'preset';
   return {
     roleKey: stringFromMeta(metadata, 'role_key') || template?.key || '',
-    roleName: isOverall ? '开放广场' : stringFromMeta(metadata, 'role_name') || template?.roleName || '待补充岗位',
-    avatarText: isOverall ? '广' : stringFromMeta(metadata, 'avatar_text') || preset.text || template?.avatarText || '员',
+    roleName: isOverall ? '開放廣場' : stringFromMeta(metadata, 'role_name') || template?.roleName || '待補充崗位',
+    avatarText: isOverall ? '廣' : stringFromMeta(metadata, 'avatar_text') || preset.text || template?.avatarText || '員',
     avatarTone: isOverall ? 'overall' : stringFromMeta(metadata, 'avatar_tone') || preset.tone || template?.avatarTone || 'teal',
     avatarKind: isOverall ? 'preset' : avatarKind,
     avatarPreset: isOverall ? 'overall' : stringFromMeta(metadata, 'avatar_preset') || preset.key,
@@ -324,9 +324,9 @@ export function employeeProfile(agent?: AgentProfileRead | null): EmployeeProfil
 }
 
 export function employeeDisplayName(agent?: AgentProfileRead | null): string {
-  if (!agent) return '数字员工';
-  if (agent.is_overall) return '开放广场';
-  return agent.name || '数字员工';
+  if (!agent) return '數字員工';
+  if (agent.is_overall) return '開放廣場';
+  return agent.name || '數字員工';
 }
 
 export function employeeCreatorName(agent?: AgentProfileRead | null): string {
@@ -398,8 +398,8 @@ export function employeeBlankMetadata(currentMetadata: Record<string, unknown> =
     ...currentMetadata,
     blank_onboarding: true,
     role_key: stringFromMeta(currentMetadata, 'role_key'),
-    role_name: stringFromMeta(currentMetadata, 'role_name') || '待补充职位',
-    avatar_text: stringFromMeta(currentMetadata, 'avatar_text') || '员',
+    role_name: stringFromMeta(currentMetadata, 'role_name') || '待補充職位',
+    avatar_text: stringFromMeta(currentMetadata, 'avatar_text') || '員',
     avatar_tone: stringFromMeta(currentMetadata, 'avatar_tone') || 'teal',
     avatar_kind: stringFromMeta(currentMetadata, 'avatar_kind') || 'preset',
     avatar_preset: stringFromMeta(currentMetadata, 'avatar_preset') || EMPLOYEE_AVATAR_PRESETS[0].key,

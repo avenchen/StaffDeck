@@ -87,7 +87,7 @@ class ToolProbeRequest(BaseModel):
     name: str
     display_name: Optional[str] = None
     description: Optional[str] = None
-    bucket: str = "技能自发现工具"
+    bucket: str = "技能自發現工具"
     tool_type: Literal["http", "mcp"] = "http"
     method: Literal["GET", "POST", "PUT", "PATCH", "DELETE"] = "POST"
     url: str
@@ -111,7 +111,7 @@ MCPTransport = Literal["stdio", "streamable_http", "sse", "builtin"]
 
 
 class MCPServerConnection(BaseModel):
-    """MCP Server 连接配置（对齐标准 MCP Client 的连接语义）。"""
+    """MCP Server 連接配置（對齊標準 MCP Client 的連接語義）。"""
 
     transport: MCPTransport = "streamable_http"
     url: Optional[str] = None
@@ -141,7 +141,7 @@ class MCPDiscoveredTool(BaseModel):
     description: str = ""
     input_schema: dict[str, Any] = Field(default_factory=dict)
     output_schema: dict[str, Any] = Field(default_factory=dict)
-    # 该工具是否已同步为 Tool 行
+    # 該工具是否已同步為 Tool 行
     imported: bool = False
     tool_id: Optional[str] = None
     enabled: Optional[bool] = None
@@ -164,7 +164,7 @@ class MCPServerRead(BaseModel):
 
 class MCPDiscoverRequest(BaseModel):
     tenant_id: str
-    # 未保存前用连接配置直接探测；已保存则可只传 server_id
+    # 未保存前用連接配置直接探測；已保存則可只傳 server_id
     connection: Optional[MCPServerConnection] = None
 
 
@@ -176,7 +176,7 @@ class MCPDiscoverResponse(BaseModel):
 
 class MCPSyncRequest(BaseModel):
     tenant_id: str
-    # 需要导入/更新的工具名；为空表示导入全部发现到的工具
+    # 需要導入/更新的工具名；為空表示導入全部發現到的工具
     tool_names: Optional[list[str]] = None
 
 

@@ -168,7 +168,7 @@ def test_generate_text_preserves_plain_user_content_without_json_encoding():
     client.temperature = 0.2
     client.max_output_tokens = 256
 
-    content = "技能标题：新SOP\n原始流程：\n收集报销事由并提交审批。"
+    content = "技能標題：新SOP\n原始流程：\n收集報銷事由並提交審批。"
 
     assert client.generate_text("system prompt", content) == "ok"
     assert client.client.chat.completions.calls[0]["messages"] == [
@@ -420,7 +420,7 @@ def test_generate_text_projects_conversation_context_messages():
     output = client.generate_text(
         "system prompt",
         {
-            "user_message": "买两个",
+            "user_message": "買兩個",
             "execution_state": {
                 "active_skill_id": "purchase",
                 "active_step_id": None,
@@ -429,9 +429,9 @@ def test_generate_text_projects_conversation_context_messages():
             },
             "conversation_context": {
                 "messages": [
-                    {"role": "user", "content": "我是 hx，我要买 A2"},
-                    {"role": "assistant", "content": "请问买几个？"},
-                    {"role": "user", "content": "买两个"},
+                    {"role": "user", "content": "我是 hx，我要買 A2"},
+                    {"role": "assistant", "content": "請問買幾個？"},
+                    {"role": "user", "content": "買兩個"},
                 ],
                 "metadata": {"total_messages": 3},
             },
@@ -443,13 +443,13 @@ def test_generate_text_projects_conversation_context_messages():
     assert call["messages"][0] == {"role": "system", "content": "system prompt"}
     assert sum(message["role"] == "system" for message in call["messages"]) == 1
     assert call["messages"][1:4] == [
-        {"role": "user", "content": "我是 hx，我要买 A2"},
-        {"role": "assistant", "content": "请问买几个？"},
-        {"role": "user", "content": "买两个"},
+        {"role": "user", "content": "我是 hx，我要買 A2"},
+        {"role": "assistant", "content": "請問買幾個？"},
+        {"role": "user", "content": "買兩個"},
     ]
     current_input = call["messages"][-1]
     assert current_input["role"] == "user"
-    assert current_input["content"].startswith("本轮输入（仅用于当前调用，不写入对话历史）：")
+    assert current_input["content"].startswith("本輪輸入（僅用於當前調用，不寫入對話歷史）：")
     assert '"execution_state": {"active_skill_id": "purchase"}' in current_input["content"]
     assert '"user_message"' not in current_input["content"]
     assert '"conversation_context"' not in current_input["content"]
@@ -466,19 +466,19 @@ def test_stage_input_uses_stable_history_and_puts_memory_time_and_question_first
     client.max_output_tokens = 256
     payload = stage_payload(
         phase="Router",
-        user_message="我想申请报销",
+        user_message="我想申請報銷",
         conversation_context={
             "messages": [
-                {"role": "user", "content": "历史的信息可以被总结为：\n用户是研发人员"},
-                {"role": "user", "content": "近期的历史信息总结为：\n正在咨询差旅"},
-                {"role": "assistant", "content": "请说明本次需求"},
-                {"role": "user", "content": "我想申请报销"},
+                {"role": "user", "content": "歷史的信息可以被總結為：\n用戶是研發人員"},
+                {"role": "user", "content": "近期的歷史信息總結為：\n正在諮詢差旅"},
+                {"role": "assistant", "content": "請說明本次需求"},
+                {"role": "user", "content": "我想申請報銷"},
             ],
             "metadata": {"current_turn_time": "2026-07-13T20:30:00+08:00"},
         },
-        memory_context=[{"content": "用户偏好简洁回复", "id": "memory_internal"}],
-        instructions="只根据技能摘要路由。",
-        stage_data={"available_skills": [{"skill_id": "travel", "name": "差旅报销"}]},
+        memory_context=[{"content": "用戶偏好簡潔回覆", "id": "memory_internal"}],
+        instructions="只根據技能摘要路由。",
+        stage_data={"available_skills": [{"skill_id": "travel", "name": "差旅報銷"}]},
         output_contract={"decision": "start_new_task | answer_only"},
     )
 
@@ -487,20 +487,20 @@ def test_stage_input_uses_stable_history_and_puts_memory_time_and_question_first
     messages = client.client.chat.completions.calls[0]["messages"]
     assert messages[0] == {"role": "system", "content": "stable unified system"}
     assert messages[1:4] == [
-        {"role": "user", "content": "历史的信息可以被总结为：\n用户是研发人员"},
-        {"role": "user", "content": "近期的历史信息总结为：\n正在咨询差旅"},
-        {"role": "assistant", "content": "请说明本次需求"},
+        {"role": "user", "content": "歷史的信息可以被總結為：\n用戶是研發人員"},
+        {"role": "user", "content": "近期的歷史信息總結為：\n正在諮詢差旅"},
+        {"role": "assistant", "content": "請說明本次需求"},
     ]
     current = messages[-1]["content"]
-    assert current.startswith("用户记忆：\n- 用户偏好简洁回复\n\n本轮时间：")
-    assert "本轮时间：\n2026-07-13T20:30:00+08:00" in current
-    assert "本轮用户输入：\n我想申请报销" in current
-    assert "当前阶段：\nRouter" in current
+    assert current.startswith("用戶記憶：\n- 用戶偏好簡潔回覆\n\n本輪時間：")
+    assert "本輪時間：\n2026-07-13T20:30:00+08:00" in current
+    assert "本輪用戶輸入：\n我想申請報銷" in current
+    assert "當前階段：\nRouter" in current
     assert "思考要求：" in current
-    assert "保留完成当前阶段所需的简短思考" in current
+    assert "保留完成當前階段所需的簡短思考" in current
     assert "available_skills" in current
     assert "memory_internal" not in current
-    assert sum("我想申请报销" in str(message["content"]) for message in messages) == 1
+    assert sum("我想申請報銷" in str(message["content"]) for message in messages) == 1
 
 
 def test_stage_requests_append_each_input_and_output_to_one_turn_context() -> None:
@@ -512,7 +512,7 @@ def test_stage_requests_append_each_input_and_output_to_one_turn_context() -> No
     outputs = iter(
         [
             '{"decision":"answer_only","confidence":0.9}',
-            '{"reply":"已处理","is_step_completed":true}',
+            '{"reply":"已處理","is_step_completed":true}',
         ]
     )
 
@@ -523,8 +523,8 @@ def test_stage_requests_append_each_input_and_output_to_one_turn_context() -> No
     client.client.chat.completions.create = fake_create
     stable_messages = [
         {"role": "user", "content": "你好"},
-        {"role": "assistant", "content": "请说明需求"},
-        {"role": "user", "content": "查询报销规则"},
+        {"role": "assistant", "content": "請說明需求"},
+        {"role": "user", "content": "查詢報銷規則"},
     ]
     context = {
         "messages": stable_messages.copy(),
@@ -533,25 +533,25 @@ def test_stage_requests_append_each_input_and_output_to_one_turn_context() -> No
 
     router_payload = stage_payload(
         phase="Router",
-        user_message="查询报销规则",
+        user_message="查詢報銷規則",
         conversation_context=context,
         memory_context=[],
-        instructions="选择处理路径。",
+        instructions="選擇處理路徑。",
         stage_data={"available_skills": []},
         output_contract={"decision": "answer_only"},
     )
     step_payload = stage_payload(
         phase="Step Agent",
-        user_message="查询报销规则",
+        user_message="查詢報銷規則",
         conversation_context=context,
         memory_context=[],
-        instructions="执行当前步骤。",
+        instructions="執行當前步驟。",
         stage_data={"current_step": {"node_id": "start"}},
         output_contract={"reply": "string"},
     )
 
     assert client.generate_json("stable unified system", router_payload)["decision"] == "answer_only"
-    assert client.generate_json("stable unified system", step_payload)["reply"] == "已处理"
+    assert client.generate_json("stable unified system", step_payload)["reply"] == "已處理"
 
     first_request = client.client.chat.completions.calls[0]["messages"]
     second_request = client.client.chat.completions.calls[1]["messages"]
@@ -566,10 +566,10 @@ def test_stage_requests_append_each_input_and_output_to_one_turn_context() -> No
         "content": '{"decision":"answer_only","confidence":0.9}',
     }
     assert second_request[5]["role"] == "user"
-    assert "当前阶段：\nStep Agent" in second_request[5]["content"]
-    assert "本轮用户输入：" not in second_request[5]["content"]
+    assert "當前階段：\nStep Agent" in second_request[5]["content"]
+    assert "本輪用戶輸入：" not in second_request[5]["content"]
     assert sum(
-        "本轮用户输入：" in str(message["content"])
+        "本輪用戶輸入：" in str(message["content"])
         for message in second_request
     ) == 1
     assert context["messages"] == stable_messages
@@ -579,7 +579,7 @@ def test_stage_requests_append_each_input_and_output_to_one_turn_context() -> No
         second_request[-1],
         {
             "role": "assistant",
-            "content": '{"reply":"已处理","is_step_completed":true}',
+            "content": '{"reply":"已處理","is_step_completed":true}',
         },
     ]
 
@@ -606,7 +606,7 @@ def test_stage_json_repair_continues_in_the_same_turn_context() -> None:
         user_message="你好",
         conversation_context=context,
         memory_context=[],
-        instructions="输出路由 JSON。",
+        instructions="輸出路由 JSON。",
         stage_data={"available_skills": []},
         output_contract={"decision": "answer_only"},
     )
@@ -621,7 +621,7 @@ def test_stage_json_repair_continues_in_the_same_turn_context() -> None:
     assert repair_request[2] == {"role": "assistant", "content": "not json"}
     assert repair_request[-1]["role"] == "user"
     assert '"_json_repair"' in repair_request[-1]["content"]
-    assert "本轮用户输入：" not in repair_request[-1]["content"]
+    assert "本輪用戶輸入：" not in repair_request[-1]["content"]
     assert context[TURN_STAGE_MESSAGES_KEY] == [
         first_request[-1],
         {"role": "assistant", "content": "not json"},
@@ -639,14 +639,14 @@ def test_generate_text_keeps_append_only_history_prefix_for_kv_cache() -> None:
     stable_history = [
         {"role": "user", "content": "你好"},
         {"role": "assistant", "content": "您好"},
-        {"role": "user", "content": "查询退款规则"},
+        {"role": "user", "content": "查詢退款規則"},
     ]
 
     client.generate_text(
         "stable system",
         {
             "conversation_context": {"messages": stable_history},
-            "retrieved_knowledge": [{"label": "检索到的知识 1", "content": "七天内"}],
+            "retrieved_knowledge": [{"label": "檢索到的知識 1", "content": "七天內"}],
         },
     )
     client.generate_text(
@@ -655,8 +655,8 @@ def test_generate_text_keeps_append_only_history_prefix_for_kv_cache() -> None:
             "conversation_context": {
                 "messages": [
                     *stable_history,
-                    {"role": "assistant", "content": "七天内可申请退款。"},
-                    {"role": "user", "content": "需要什么材料？"},
+                    {"role": "assistant", "content": "七天內可申請退款。"},
+                    {"role": "user", "content": "需要什麼材料？"},
                 ]
             },
             "slots": {"topic": "退款材料"},
@@ -667,8 +667,8 @@ def test_generate_text_keeps_append_only_history_prefix_for_kv_cache() -> None:
     second_messages = client.client.chat.completions.calls[1]["messages"]
     assert first_messages[:4] == second_messages[:4]
     assert first_messages[0] == {"role": "system", "content": "stable system"}
-    assert "检索到的知识 1" in first_messages[-1]["content"]
-    assert "检索到的知识 1" not in str(second_messages)
+    assert "檢索到的知識 1" in first_messages[-1]["content"]
+    assert "檢索到的知識 1" not in str(second_messages)
 
 
 def test_generate_text_projects_conversation_context_images_for_vision_model():
@@ -681,12 +681,12 @@ def test_generate_text_projects_conversation_context_images_for_vision_model():
     output = client.generate_text(
         "system prompt",
         {
-            "user_message": "看这张图",
+            "user_message": "看這張圖",
             "conversation_context": {
                 "messages": [
                     {
                         "role": "user",
-                        "content": "看这张图",
+                        "content": "看這張圖",
                         "images": [
                             {
                                 "type": "image_url",
@@ -707,7 +707,7 @@ def test_generate_text_projects_conversation_context_images_for_vision_model():
     assert call["messages"][1] == {
         "role": "user",
         "content": [
-            {"type": "text", "text": "看这张图"},
+            {"type": "text", "text": "看這張圖"},
             {"type": "image_url", "image_url": {"url": "data:image/png;base64,AAAA", "detail": "auto"}},
         ],
     }
@@ -726,8 +726,8 @@ def test_generate_text_keeps_memory_capture_history_as_role_messages() -> None:
         {
             "conversation_context": {
                 "messages": [
-                    {"role": "user", "content": "我32岁"},
-                    {"role": "assistant", "content": "已记录"},
+                    {"role": "user", "content": "我32歲"},
+                    {"role": "assistant", "content": "已記錄"},
                 ]
             },
             "existing_memories": "- profile/age: 32",
@@ -739,8 +739,8 @@ def test_generate_text_keeps_memory_capture_history_as_role_messages() -> None:
     assert sum(message["role"] == "system" for message in messages) == 1
     assert messages[0] == {"role": "system", "content": "memory prompt"}
     assert messages[1:3] == [
-        {"role": "user", "content": "我32岁"},
-        {"role": "assistant", "content": "已记录"},
+        {"role": "user", "content": "我32歲"},
+        {"role": "assistant", "content": "已記錄"},
     ]
     assert messages[-1]["role"] == "user"
     assert '"existing_memories": "- profile/age: 32"' in messages[-1]["content"]
@@ -761,7 +761,7 @@ def test_generate_text_does_not_guess_image_support_from_model_name():
                 "messages": [
                     {
                         "role": "user",
-                        "content": "看图",
+                        "content": "看圖",
                         "images": [{"type": "image_url", "image_url": {"url": "data:image/jpeg;base64,AAAA"}}],
                     }
                 ],
@@ -952,8 +952,8 @@ def test_generate_json_retry_keeps_original_payload(monkeypatch):
 
     monkeypatch.setattr(client, "generate_text", fake_generate_text)
 
-    assert client.generate_json("prompt", {"query": "廊坊天气", "skill": {"slug": "weather-zh"}}) == {"ok": True}
-    assert payloads[1]["query"] == "廊坊天气"
+    assert client.generate_json("prompt", {"query": "廊坊天氣", "skill": {"slug": "weather-zh"}}) == {"ok": True}
+    assert payloads[1]["query"] == "廊坊天氣"
     assert payloads[1]["skill"]["slug"] == "weather-zh"
     assert payloads[1]["_json_repair"]["previous_output"] == "not json"
 
@@ -966,18 +966,18 @@ def test_generate_json_repairs_unescaped_string_quotes_without_retry(monkeypatch
         payloads.append(payload)
         return (
             '{"decision": "start_new_task", "target_skill_id": "purchase", '
-            '"reason": "user_name 在 memory 中已明确为"hm"，不需要追问", '
+            '"reason": "user_name 在 memory 中已明確為"hm"，不需要追問", '
             '"slot_hints": {"user_name": "hm"}}'
         )
 
     monkeypatch.setattr(client, "generate_text", fake_generate_text)
 
-    result = client.generate_json("prompt", {"query": "我想买东西"})
+    result = client.generate_json("prompt", {"query": "我想買東西"})
 
     assert result == {
         "decision": "start_new_task",
         "target_skill_id": "purchase",
-        "reason": 'user_name 在 memory 中已明确为"hm"，不需要追问',
+        "reason": 'user_name 在 memory 中已明確為"hm"，不需要追問',
         "slot_hints": {"user_name": "hm"},
     }
     assert len(payloads) == 1
@@ -998,7 +998,7 @@ def test_generate_json_repairs_trailing_commas_and_string_newlines(monkeypatch):
 def test_generate_json_allows_multiple_repair_attempts(monkeypatch):
     client = object.__new__(LLMClient)
     payloads = []
-    calls = iter(["not json", '{"reason": "用户称呼为"', '{"ok": true}'])
+    calls = iter(["not json", '{"reason": "用戶稱呼為"', '{"ok": true}'])
 
     def fake_generate_text(_system_prompt, payload):
         payloads.append(payload)

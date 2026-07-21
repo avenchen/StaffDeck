@@ -35,13 +35,13 @@ export type ResourceImportDialogProps = {
   sourcePlaceholder: string;
   sources: ImportSourceOption[];
   sourceId: string;
-  /** Caption above the checkbox list, e.g. "选择 SOP" / "选择技能". */
+  /** Caption above the checkbox list, e.g. "選擇 SOP" / "選擇技能". */
   itemsLabel: string;
   items: ImportChoiceItem[];
   selectedIds: string[];
   /** Shown when a source is selected but has no importable items. */
   emptyText: string;
-  /** Shown before any source is selected. Defaults to "请先选择复制来源". */
+  /** Shown before any source is selected. Defaults to "請先選擇複製來源". */
   emptySourceText?: string;
   /** Explanatory footer note. */
   note: ReactNode;
@@ -63,7 +63,7 @@ export function ResourceImportDialog({
   icon,
   title,
   targetPlaceholder,
-  targetLabel = '复制到',
+  targetLabel = '複製到',
   targets,
   targetId,
   sourcePlaceholder,
@@ -73,9 +73,9 @@ export function ResourceImportDialog({
   items,
   selectedIds,
   emptyText,
-  emptySourceText = '请先选择复制来源',
+  emptySourceText = '請先選擇複製來源',
   note,
-  submitText = '复制',
+  submitText = '複製',
   onTargetChange,
   onSourceChange,
   onSelectedChange,
@@ -126,7 +126,7 @@ export function ResourceImportDialog({
           )}
 
           <div className="flex flex-col gap-[6px]">
-            <span className="text-[11px] font-semibold text-[#858b9c]">复制来源</span>
+            <span className="text-[11px] font-semibold text-[#858b9c]">複製來源</span>
             <div className="relative">
               <select
                 value={effectiveSourceId}

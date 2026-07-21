@@ -156,22 +156,22 @@ def render_stage_user_message(
     if include_turn_header:
         sections.extend(
             [
-                f"用户记忆：\n{stage.get('memory') or '无'}",
-                f"本轮时间：\n{stage.get('turn_time') or '未提供'}",
-                f"本轮用户输入：\n{user_message or '（空）'}",
+                f"用戶記憶：\n{stage.get('memory') or '無'}",
+                f"本輪時間：\n{stage.get('turn_time') or '未提供'}",
+                f"本輪用戶輸入：\n{user_message or '（空）'}",
             ]
         )
     sections.extend(
         [
-            f"当前阶段：\n{stage.get('phase') or '未指定'}",
+            f"當前階段：\n{stage.get('phase') or '未指定'}",
             (
-                "思考要求：\n保留完成当前阶段所需的简短思考；不要复述上下文、逐字段展开检查、"
-                "罗列无关备选方案或反复验证已明确的信息。得到可靠结论后立即按输出约束作答。"
+                "思考要求：\n保留完成當前階段所需的簡短思考；不要複述上下文、逐字段展開檢查、"
+                "羅列無關備選方案或反覆驗證已明確的信息。得到可靠結論後立即按輸出約束作答。"
             ),
-            f"阶段规则：\n{str(stage.get('instructions') or '').strip()}",
-            "当前阶段独有内容：\n"
+            f"階段規則：\n{str(stage.get('instructions') or '').strip()}",
+            "當前階段獨有內容：\n"
             + json.dumps(projected, ensure_ascii=False, separators=(",", ":")),
-            f"输出约束：\n{output_contract}",
+            f"輸出約束：\n{output_contract}",
         ]
     )
     return "\n\n".join(sections)

@@ -12,14 +12,14 @@ def test_feedback_analysis_uses_model_bucket(monkeypatch) -> None:
 
     def fake_generate_json(self, system_prompt, payload):  # noqa: ANN001
         assert payload["feedback"]["rating"] == "down"
-        assert payload["target_message"]["content"] == "请稍候"
+        assert payload["target_message"]["content"] == "請稍候"
         return {
             "bucket": "skill_issue",
             "confidence": 0.82,
-            "reason": "技能步骤停在请稍候，没有闭环。",
-            "summary": "下单流程缺少完成回复。",
-            "evidence": ["助手回复没有最终结果"],
-            "suggested_action": "补充最终反馈步骤。",
+            "reason": "技能步驟停在請稍候，沒有閉環。",
+            "summary": "下單流程缺少完成回覆。",
+            "evidence": ["助手回覆沒有最終結果"],
+            "suggested_action": "補充最終反饋步驟。",
         }
 
     monkeypatch.setattr(LLMClient, "__init__", fake_init)
@@ -33,7 +33,7 @@ def test_feedback_analysis_uses_model_bucket(monkeypatch) -> None:
     assert analyzed.analysis_status == "analyzed"
     assert analyzed.analysis_bucket == "skill_issue"
     assert analyzed.analysis_confidence == 0.82
-    assert "下单流程" in (analyzed.analysis_summary or "")
+    assert "下單流程" in (analyzed.analysis_summary or "")
 
 
 def test_feedback_analysis_without_model_marks_needs_model() -> None:
@@ -55,7 +55,7 @@ def test_feedback_summary_buckets_downvotes() -> None:
             user_id="user_demo",
             rating="down",
             analysis_bucket="model_issue",
-            analysis_summary="回复理解错了。",
+            analysis_summary="回覆理解錯了。",
         ),
         MessageFeedback(
             tenant_id="tenant_demo",
@@ -81,7 +81,7 @@ def test_feedback_summary_buckets_downvotes() -> None:
     assert summary["up_count"] == 1
     assert summary["bucket_counts"][0]["bucket"] == "model_issue"
     assert summary["bucket_counts"][0]["count"] == 2
-    assert "模型问题" in summary["summary"]
+    assert "模型問題" in summary["summary"]
 
 
 def _seed_feedback(db: Session, with_model: bool) -> MessageFeedback:
@@ -94,9 +94,9 @@ def _seed_feedback(db: Session, with_model: bool) -> MessageFeedback:
         password_hash="hash",
     )
     db.add(user)
-    db.add(ChatSession(id="session_1", tenant_id="tenant_demo", user_id=user.id, title="测试会话"))
-    db.add(Message(id="msg_user", tenant_id="tenant_demo", session_id="session_1", role="user", content="我要买东西"))
-    db.add(Message(id="msg_assistant", tenant_id="tenant_demo", session_id="session_1", role="assistant", content="请稍候"))
+    db.add(ChatSession(id="session_1", tenant_id="tenant_demo", user_id=user.id, title="測試會話"))
+    db.add(Message(id="msg_user", tenant_id="tenant_demo", session_id="session_1", role="user", content="我要買東西"))
+    db.add(Message(id="msg_assistant", tenant_id="tenant_demo", session_id="session_1", role="assistant", content="請稍候"))
     if with_model:
         db.add(
             ModelConfig(

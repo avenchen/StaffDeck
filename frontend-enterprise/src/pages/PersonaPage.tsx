@@ -134,13 +134,13 @@ export default function PersonaPage() {
         return rows.find((agent) => agent.is_overall)?.id || rows[0]?.id || '';
       });
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '加载员工域失败');
+      notify.error(error instanceof Error ? error.message : '加載員工域失敗');
     }
   }
 
   async function save() {
     if (!form.system_prompt.trim() || (selectedAgent && !form.agent_name.trim())) {
-      notify.error('请填写必填项');
+      notify.error('請填寫必填項');
       return;
     }
     setLoading(true);
@@ -162,17 +162,17 @@ export default function PersonaPage() {
           });
         }
         window.dispatchEvent(new CustomEvent('ultrarag-enterprise-agent-scope-change', { detail: { agentId: row.id } }));
-        notify.success('岗位人设已保存');
+        notify.success('崗位人設已保存');
       } else {
         const row = await api.put<PersonaRead>('/api/enterprise/persona', {
           tenant_id: TENANT_ID,
           system_prompt: form.system_prompt,
         });
         setUpdatedAt(row.updated_at);
-        notify.success('组织默认岗位人设已保存');
+        notify.success('組織默認崗位人設已保存');
       }
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '保存失败');
+      notify.error(error instanceof Error ? error.message : '保存失敗');
     } finally {
       setLoading(false);
     }
@@ -182,7 +182,7 @@ export default function PersonaPage() {
     const reflectionMaxRounds = Number(uiForm.reflection_max_rounds);
     const agentLoopMaxActions = Number(uiForm.agent_loop_max_actions);
     if (Number.isNaN(reflectionMaxRounds) || Number.isNaN(agentLoopMaxActions)) {
-      notify.error('反思轮数与单轮最大动作数必须是数字');
+      notify.error('反思輪數與單輪最大動作數必須是數字');
       return;
     }
     setUiLoading(true);
@@ -196,9 +196,9 @@ export default function PersonaPage() {
         agent_loop_max_actions: agentLoopMaxActions,
       });
       setUiUpdatedAt(row.updated_at);
-      notify.success('展示设置已保存');
+      notify.success('展示設置已保存');
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '保存失败');
+      notify.error(error instanceof Error ? error.message : '保存失敗');
     } finally {
       setUiLoading(false);
     }
@@ -208,7 +208,7 @@ export default function PersonaPage() {
     <>
       <div className="page-title">
         <div>
-          <h3>岗位人设</h3>
+          <h3>崗位人設</h3>
         </div>
         <UIButton disabled={loading} onClick={() => void save()}>
           <SaveOutlined />
@@ -217,36 +217,36 @@ export default function PersonaPage() {
       </div>
       <Card className="editor-card">
         <CardHeader>
-          <CardTitle className="flex items-center gap-[6px]"><UserOutlined /> 岗位人设</CardTitle>
+          <CardTitle className="flex items-center gap-[6px]"><UserOutlined /> 崗位人設</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-[14px]">
-          <LabeledField label="名称">
-            <Input value={form.agent_name} placeholder="数字员工姓名" onChange={(event) => updatePersona({ agent_name: event.target.value })} />
+          <LabeledField label="名稱">
+            <Input value={form.agent_name} placeholder="數字員工姓名" onChange={(event) => updatePersona({ agent_name: event.target.value })} />
           </LabeledField>
           <LabeledField label="描述">
-            <Textarea rows={2} value={form.agent_description} placeholder="员工岗位描述" onChange={(event) => updatePersona({ agent_description: event.target.value })} />
+            <Textarea rows={2} value={form.agent_description} placeholder="員工崗位描述" onChange={(event) => updatePersona({ agent_description: event.target.value })} />
           </LabeledField>
-          <LabeledField label="岗位 Prompt">
+          <LabeledField label="崗位 Prompt">
             <Textarea
               className="persona-editor"
               rows={12}
               value={form.system_prompt}
-              placeholder={isOverallPersona ? '输入组织默认岗位人设' : '输入仅当前员工可见的岗位人设'}
+              placeholder={isOverallPersona ? '輸入組織默認崗位人設' : '輸入僅當前員工可見的崗位人設'}
               onChange={(event) => updatePersona({ system_prompt: event.target.value })}
             />
           </LabeledField>
-          {updatedAt && <span className="text-[12px] text-muted-foreground">最后更新：{formatDateOnly(updatedAt)}</span>}
+          {updatedAt && <span className="text-[12px] text-muted-foreground">最後更新：{formatDateOnly(updatedAt)}</span>}
         </CardContent>
       </Card>
       <Card className="editor-card settings-card">
         <CardHeader>
-          <CardTitle>执行记录与展示设置</CardTitle>
+          <CardTitle>執行記錄與展示設置</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-[16px]">
-          <SwitchRow label="展示思考状态" checked={uiForm.show_thinking_trace} onChange={(next) => updateUiConfig({ show_thinking_trace: next })} />
-          <SwitchRow label="展示执行技能" checked={uiForm.show_skill_trace} onChange={(next) => updateUiConfig({ show_skill_trace: next })} />
-          <SwitchRow label="展示工具调用" checked={uiForm.show_tool_trace} onChange={(next) => updateUiConfig({ show_tool_trace: next })} />
-          <LabeledField label="反思轮数" hint="设为 0 时关闭反思；每轮允许模型检查当前技能和工具结果，并决定是否重试其他技能或工具。">
+          <SwitchRow label="展示思考狀態" checked={uiForm.show_thinking_trace} onChange={(next) => updateUiConfig({ show_thinking_trace: next })} />
+          <SwitchRow label="展示執行技能" checked={uiForm.show_skill_trace} onChange={(next) => updateUiConfig({ show_skill_trace: next })} />
+          <SwitchRow label="展示工具調用" checked={uiForm.show_tool_trace} onChange={(next) => updateUiConfig({ show_tool_trace: next })} />
+          <LabeledField label="反思輪數" hint="設為 0 時關閉反思；每輪允許模型檢查當前技能和工具結果，並決定是否重試其他技能或工具。">
             <Input
               type="number"
               min={0}
@@ -256,7 +256,7 @@ export default function PersonaPage() {
               onChange={(event) => updateUiConfig({ reflection_max_rounds: event.target.value })}
             />
           </LabeledField>
-          <LabeledField label="单轮最大动作数" hint="控制一次用户输入内员工可连续决策和调用工具的最大次数，用于避免无限循环。">
+          <LabeledField label="單輪最大動作數" hint="控制一次用戶輸入內員工可連續決策和調用工具的最大次數，用於避免無限循環。">
             <Input
               type="number"
               min={1}
@@ -268,9 +268,9 @@ export default function PersonaPage() {
           </LabeledField>
           <UIButton className="self-start" disabled={uiLoading} onClick={() => void saveUiConfig()}>
             <SaveOutlined />
-            保存设置
+            保存設置
           </UIButton>
-          {uiUpdatedAt && <span className="text-[12px] text-muted-foreground">最后更新：{formatDateOnly(uiUpdatedAt)}</span>}
+          {uiUpdatedAt && <span className="text-[12px] text-muted-foreground">最後更新：{formatDateOnly(uiUpdatedAt)}</span>}
         </CardContent>
       </Card>
     </>

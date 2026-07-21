@@ -12,11 +12,11 @@ from app.observability.spans import llm_operation
 
 
 FEEDBACK_BUCKET_LABELS: dict[str, str] = {
-    "model_issue": "模型问题",
-    "skill_issue": "技能问题",
-    "tool_or_system_issue": "工具/系统问题",
-    "user_random_or_unclear": "用户随意或上下文不足",
-    "positive_or_resolved": "正向反馈",
+    "model_issue": "模型問題",
+    "skill_issue": "技能問題",
+    "tool_or_system_issue": "工具/系統問題",
+    "user_random_or_unclear": "用戶隨意或上下文不足",
+    "positive_or_resolved": "正向反饋",
     "needs_model_analysis": "待模型分析",
     "unknown": "未知",
 }
@@ -26,27 +26,27 @@ FEEDBACK_ANALYSIS_MAX_ATTEMPTS = 3
 FEEDBACK_ANALYSIS_RETRY_DELAY_SECONDS = 0.6
 
 FEEDBACK_ANALYSIS_PROMPT = """
-你是客服 Agent 质量分析器。请根据用户反馈、消息上下文和执行轨迹，判断反馈原因。
+你是客服 Agent 質量分析器。請根據用戶反饋、消息上下文和執行軌跡，判斷反饋原因。
 
-你只输出 JSON，字段：
+你只輸出 JSON，字段：
 {
   "bucket": "model_issue | skill_issue | tool_or_system_issue | user_random_or_unclear | positive_or_resolved | unknown",
   "confidence": 0.0,
-  "reason": "一句话原因，不超过 80 字",
-  "summary": "给运营看的简短总结，不超过 120 字",
-  "evidence": ["最多 3 条依据"],
-  "suggested_action": "建议动作，不超过 80 字"
+  "reason": "一句話原因，不超過 80 字",
+  "summary": "給運營看的簡短總結，不超過 120 字",
+  "evidence": ["最多 3 條依據"],
+  "suggested_action": "建議動作，不超過 80 字"
 }
 
-分类标准：
-- model_issue：模型理解、推理、回复组织、语气或事实引用有问题。
-- skill_issue：技能定义、步骤、槽位、确认规则或工具编排设计导致问题。
-- tool_or_system_issue：工具未配置、调用失败、系统异常、返回值不足或错误。
-- user_random_or_unclear：用户点踩缺少可解释问题，或上下文不足以判断。
-- positive_or_resolved：点赞或正向确认。
-- unknown：仍无法判断。
+分類標準：
+- model_issue：模型理解、推理、回覆組織、語氣或事實引用有問題。
+- skill_issue：技能定義、步驟、槽位、確認規則或工具編排設計導致問題。
+- tool_or_system_issue：工具未配置、調用失敗、系統異常、返回值不足或錯誤。
+- user_random_or_unclear：用戶點踩缺少可解釋問題，或上下文不足以判斷。
+- positive_or_resolved：點贊或正向確認。
+- unknown：仍無法判斷。
 
-不要把执行轨迹逐字复述为原因；要判断根因。
+不要把執行軌跡逐字複述為原因；要判斷根因。
 """.strip()
 
 
@@ -100,10 +100,10 @@ class FeedbackAnalysisService:
         analysis = {
             "bucket": "needs_model_analysis",
             "confidence": 0.0,
-            "reason": "没有可用默认模型，无法完成自动归因。",
-            "summary": "反馈已记录，等待配置模型后重新分析。",
+            "reason": "沒有可用默認模型，無法完成自動歸因。",
+            "summary": "反饋已記錄，等待配置模型後重新分析。",
             "evidence": [],
-            "suggested_action": "配置默认模型后重新触发分析。",
+            "suggested_action": "配置默認模型後重新觸發分析。",
         }
         self._apply_analysis(feedback, analysis, "needs_model")
         self.db.add(feedback)
@@ -118,10 +118,10 @@ class FeedbackAnalysisService:
             {
                 "bucket": "unknown",
                 "confidence": None,
-                "reason": f"模型分析失败：{error_message}",
-                "summary": "反馈已记录，后台分析暂时失败，可重新分析。",
+                "reason": f"模型分析失敗：{error_message}",
+                "summary": "反饋已記錄，後臺分析暫時失敗，可重新分析。",
                 "evidence": [],
-                "suggested_action": "稍后重新分析。",
+                "suggested_action": "稍後重新分析。",
                 "error_type": "llm_error",
                 "retryable": True,
                 "attempts": attempts,
@@ -289,13 +289,13 @@ def _normalize_analysis(raw: dict[str, Any], rating: str) -> dict[str, Any]:
 
 def _compact_overall_summary(bucket_counts: Counter[str], top_summaries: list[dict[str, Any]]) -> str:
     if not bucket_counts:
-        return "暂无点踩归因数据。"
+        return "暫無點踩歸因數據。"
     leader, count = bucket_counts.most_common(1)[0]
     label = FEEDBACK_BUCKET_LABELS.get(leader, leader)
     detail = next((item.get("summary") or item.get("reason") for item in top_summaries if item.get("bucket") == leader), "")
     if detail:
-        return f"当前点踩主要集中在「{label}」（{count} 次）：{detail}"
-    return f"当前点踩主要集中在「{label}」（{count} 次）。"
+        return f"當前點踩主要集中在「{label}」（{count} 次）：{detail}"
+    return f"當前點踩主要集中在「{label}」（{count} 次）。"
 
 
 def _float_in_range(value: Any, minimum: float, maximum: float) -> float:

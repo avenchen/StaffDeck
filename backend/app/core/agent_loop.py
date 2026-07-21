@@ -96,15 +96,15 @@ CANCELLED_ASSISTANT_REPLY = "已停止生成"
 IDEMPOTENT_WRITE_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
 ERROR_TRACEBACK_CHAR_LIMIT = 6000
 AGENT_PERSONA_METADATA_FIELDS: tuple[tuple[str, str], ...] = (
-    ("role_name", "岗位"),
-    ("position", "岗位"),
-    ("job_title", "岗位"),
+    ("role_name", "崗位"),
+    ("position", "崗位"),
+    ("job_title", "崗位"),
     ("role", "角色"),
-    ("title", "职务"),
-    ("department", "部门"),
-    ("team", "团队"),
-    ("work_styles", "工作风格"),
-    ("expertise_tags", "擅长领域"),
+    ("title", "職務"),
+    ("department", "部門"),
+    ("team", "團隊"),
+    ("work_styles", "工作風格"),
+    ("expertise_tags", "擅長領域"),
     ("work_modes", "工作方式"),
 )
 
@@ -114,25 +114,25 @@ ExecutionFinalizeState = Literal["continued", "completed", "handoff"]
 def _agent_identity_prompt(agent: AgentProfile) -> str:
     metadata = agent.metadata_json if isinstance(agent.metadata_json, dict) else {}
     lines = [
-        "你正在扮演一个企业数字员工。请始终以该员工的身份、岗位和职责口径回复用户，不要自称其他员工。",
-        f"员工名称：{_single_line_text(agent.name)}",
+        "你正在扮演一個企業數字員工。請始終以該員工的身份、崗位和職責口徑回覆用戶，不要自稱其他員工。",
+        f"員工名稱：{_single_line_text(agent.name)}",
     ]
     description = _single_line_text(agent.description)
     if description:
-        lines.append(f"员工描述：{description}")
+        lines.append(f"員工描述：{description}")
     seen_labels: set[str] = set()
     for key, label in AGENT_PERSONA_METADATA_FIELDS:
         value = _metadata_prompt_text(metadata.get(key))
         if not value:
             continue
-        if label in seen_labels and label in {"岗位"}:
+        if label in seen_labels and label in {"崗位"}:
             continue
         seen_labels.add(label)
         lines.append(f"{label}：{value}")
     persona = str(agent.persona_prompt or "").strip()
     if persona:
         lines.append("")
-        lines.append("员工角色补充要求：")
+        lines.append("員工角色補充要求：")
         lines.append(persona)
     return "\n".join(lines)
 
@@ -516,7 +516,7 @@ class AgentLoop:
                 {"code": "LLM_ERROR", "message": str(exc)},
             )
             reply = format_runtime_failure_reply(
-                "模型调用失败", exc, "LLM_ERROR", model_failure_suggestion(exc)
+                "模型調用失敗", exc, "LLM_ERROR", model_failure_suggestion(exc)
             )
         except Exception as exc:
             chat_session = chat_session or self._get_or_create_session(request)
@@ -527,10 +527,10 @@ class AgentLoop:
                 {"code": "AGENT_LOOP_ERROR", "message": str(exc)},
             )
             reply = format_runtime_failure_reply(
-                "Agent Loop 出错",
+                "Agent Loop 出錯",
                 exc,
                 "AGENT_LOOP_ERROR",
-                "请查看执行记录或服务日志定位具体原因。",
+                "請查看執行記錄或服務日誌定位具體原因。",
             )
 
         if not chat_session:
@@ -802,7 +802,7 @@ class AgentLoop:
         yield self._stream_status(
             chat_session,
             "general_skill_intent",
-            "正在判断意图",
+            "正在判斷意圖",
             {"skill_slug": skill.slug, "skill_name": skill.name, "reason": selection.reason},
             user_message_id=user_message_id,
         )
@@ -812,7 +812,7 @@ class AgentLoop:
             self._turn_payload(
                 {
                     "phase": "intent_checked",
-                    "message": "判断意图",
+                    "message": "判斷意圖",
                     "skill_slug": skill.slug,
                     "skill_name": skill.name,
                     "reason": selection.reason,
@@ -824,7 +824,7 @@ class AgentLoop:
         yield self._stream_status(
             chat_session,
             "general_skill_routing",
-            "正在选择通用技能",
+            "正在選擇通用技能",
             {"skill_slug": skill.slug, "skill_name": skill.name},
             user_message_id=user_message_id,
         )
@@ -839,7 +839,7 @@ class AgentLoop:
         yield self._stream_status(
             chat_session,
             "general_skill_running",
-            "正在运行通用技能",
+            "正在運行通用技能",
             {"skill_slug": skill.slug, "skill_name": skill.name},
             user_message_id=user_message_id,
         )
@@ -926,7 +926,7 @@ class AgentLoop:
             return
         step_result, tool_result = self._general_skill_agent_outputs(run_response)
         resolved_router_decision = router_decision or RouterDecision(
-            decision="answer_only", user_intent="通用技能执行结果回复"
+            decision="answer_only", user_intent="通用技能執行結果回覆"
         )
         knowledge_stream_events: list[tuple[str, dict[str, object]]] = []
         knowledge_step = self._auto_knowledge_step_result(
@@ -945,7 +945,7 @@ class AgentLoop:
                 self._turn_payload(payload, user_message_id),
             )
         yield self._stream_status(
-            chat_session, "responding", "正在生成回复", user_message_id=user_message_id
+            chat_session, "responding", "正在生成回覆", user_message_id=user_message_id
         )
         active_skill = self._get_active_skill(
             request.tenant_id, chat_session.active_skill_id, chat_session.agent_id
@@ -1069,7 +1069,7 @@ class AgentLoop:
             yield self._stream_status(
                 chat_session,
                 "routing",
-                "正在继续后续任务",
+                "正在繼續後續任務",
                 {"queue_round": queue_round + 1},
                 user_message_id=user_message_id,
             )
@@ -1089,7 +1089,7 @@ class AgentLoop:
                     else self._router_decision_from_task_frame(
                         chat_session,
                         task_id,
-                        "按 Router 已确定的任务顺序继续执行。",
+                        "按 Router 已確定的任務順序繼續執行。",
                     )
                 )
                 if not router_decision:
@@ -1542,7 +1542,7 @@ class AgentLoop:
             self.db.refresh(user_message)
             model_config = self._get_request_model(request, chat_session.agent_id)
             if not model_config:
-                raise AgentLoopPreconditionError("missing_model_config", "没有默认模型配置。")
+                raise AgentLoopPreconditionError("missing_model_config", "沒有默認模型配置。")
             memory_model_config = model_config
             skills = self._list_published_skills(request.tenant_id, chat_session.agent_id)
             tools = self._tools_with_general_skills(
@@ -1564,7 +1564,7 @@ class AgentLoop:
                         user_message_id=user_message_id,
                     )
                 yield self._stream_status(
-                    chat_session, "routing", "正在判断用户意图", user_message_id=user_message_id
+                    chat_session, "routing", "正在判斷用戶意圖", user_message_id=user_message_id
                 )
                 capability = self._select_general_capability(
                     request.message,
@@ -1610,7 +1610,7 @@ class AgentLoop:
                         event_name, chat_session, self._turn_payload(payload, user_message_id)
                     )
                 yield self._stream_status(
-                    chat_session, "responding", "正在生成回复", user_message_id=user_message_id
+                    chat_session, "responding", "正在生成回覆", user_message_id=user_message_id
                 )
                 reply = ""
                 for chunk in self._generate_reply_stream_segment(
@@ -1683,7 +1683,7 @@ class AgentLoop:
                 )
 
             yield self._stream_status(
-                chat_session, "routing", "正在判断用户意图", user_message_id=user_message_id
+                chat_session, "routing", "正在判斷用戶意圖", user_message_id=user_message_id
             )
             router_decision = self.router.decide(
                 request.message,
@@ -1775,7 +1775,7 @@ class AgentLoop:
                         event_name, chat_session, self._turn_payload(payload, user_message_id)
                     )
                 yield self._stream_status(
-                    chat_session, "responding", "正在生成回复", user_message_id=user_message_id
+                    chat_session, "responding", "正在生成回覆", user_message_id=user_message_id
                 )
                 for chunk in self._generate_reply_stream_segment(
                     request.message,
@@ -2057,7 +2057,7 @@ class AgentLoop:
                     )
 
             yield self._stream_status(
-                chat_session, "responding", "正在生成回复", user_message_id=user_message_id
+                chat_session, "responding", "正在生成回覆", user_message_id=user_message_id
             )
             chunks: list[str] = []
             for chunk in self._generate_reply_stream_segment(
@@ -2117,25 +2117,25 @@ class AgentLoop:
             raise
         except AgentLoopPreconditionError as exc:
             yield from stream_failure_response(
-                "系统配置错误",
+                "系統配置錯誤",
                 exc.message,
                 exc.code,
-                "请在管理端补齐配置后重试。",
+                "請在管理端補齊配置後重試。",
                 message=exc.message,
             )
             return
         except LLMError as exc:
             yield from stream_failure_response(
-                "模型调用失败", exc, "LLM_ERROR", model_failure_suggestion(exc)
+                "模型調用失敗", exc, "LLM_ERROR", model_failure_suggestion(exc)
             )
             return
         except Exception as exc:
             turn_finalized = False
             yield from stream_failure_response(
-                "Agent Loop 出错",
+                "Agent Loop 出錯",
                 exc,
                 "AGENT_LOOP_ERROR",
-                "请查看执行记录或服务日志定位具体原因。",
+                "請查看執行記錄或服務日誌定位具體原因。",
             )
             return
 
@@ -2174,10 +2174,10 @@ class AgentLoop:
             if not turn_commit_completed:
                 turn_finalized = False
             yield from stream_failure_response(
-                "Agent Loop 出错",
+                "Agent Loop 出錯",
                 exc,
                 "AGENT_LOOP_ERROR",
-                "请查看执行记录或服务日志定位具体原因。",
+                "請查看執行記錄或服務日誌定位具體原因。",
             )
 
     def _stream_status(
@@ -2280,7 +2280,7 @@ class AgentLoop:
             chat_session.agent_id,
         )
         if not model_config:
-            raise AgentLoopPreconditionError("missing_model_config", "没有默认模型配置。")
+            raise AgentLoopPreconditionError("missing_model_config", "沒有默認模型配置。")
         self._drop_unavailable_skill_state(request.tenant_id, chat_session, skills)
         if not skills:
             no_skill_context = self._conversation_context(
@@ -2740,7 +2740,7 @@ class AgentLoop:
             text = re.sub(r"\s+", " ", str(candidate or "")).strip()
             if text:
                 return text[:600]
-        return "当前 SOP 需要人工确认后继续执行。"
+        return "當前 SOP 需要人工確認後繼續執行。"
 
     def _generate_reply_segment(
         self,
@@ -2808,7 +2808,7 @@ class AgentLoop:
     ) -> dict[str, object]:
         return {
             "task": router_decision.user_intent
-            or (active_skill.name if active_skill else "当前任务"),
+            or (active_skill.name if active_skill else "當前任務"),
             "current_step_id": chat_session.active_step_id,
             "skill_content": dict(active_skill.content_json or {}) if active_skill else None,
             "slots": dict(chat_session.slots_json or {}),
@@ -2877,7 +2877,7 @@ class AgentLoop:
                     else self._router_decision_from_task_frame(
                         chat_session,
                         task_id,
-                        "按 Router 已确定的任务顺序继续执行。",
+                        "按 Router 已確定的任務順序繼續執行。",
                     )
                 )
                 if not router_decision:
@@ -3166,7 +3166,7 @@ class AgentLoop:
             target_step_id=frame.target_step_id,
             confidence=frame.confidence,
             user_intent=frame.user_intent,
-            reason=frame.reason or "按 Router 本轮 task_frames 顺序继续执行。",
+            reason=frame.reason or "按 Router 本輪 task_frames 順序繼續執行。",
             source_message=frame.source_message,
             slot_hints=dict(frame.slot_hints or {}),
             task_frames=[frame],
@@ -3210,7 +3210,7 @@ class AgentLoop:
             if self._should_try_reflection(router_decision, step_result, tool_result):
                 payload = {
                     "needs_retry": False,
-                    "reason": "企业端反思轮数配置为 0，已跳过反思。",
+                    "reason": "企業端反思輪數配置為 0，已跳過反思。",
                     "target_skill_id": None,
                     "target_step_id": None,
                     "target_tool_name": None,
@@ -3298,7 +3298,7 @@ class AgentLoop:
 
             payload = {
                 "phase": "skill",
-                "text": "继续推进 SOP 分支",
+                "text": "繼續推進 SOP 分支",
                 "active_skill_id": chat_session.active_skill_id,
                 "active_step_id": chat_session.active_step_id,
                 "pending_step_ids": self._graph_pending_steps(chat_session),
@@ -3320,8 +3320,8 @@ class AgentLoop:
                 target_skill_id=active_skill.skill_id,
                 target_step_id=chat_session.active_step_id,
                 confidence=max(router_decision.confidence, 0.7),
-                user_intent=router_decision.user_intent or "继续执行 SOP 图",
-                reason="SOP 图还有可自动执行的后续节点。",
+                user_intent=router_decision.user_intent or "繼續執行 SOP 圖",
+                reason="SOP 圖還有可自動執行的後續節點。",
                 source_message=router_decision.source_message or request.message,
                 slot_hints={},
             )
@@ -3467,7 +3467,7 @@ class AgentLoop:
                         "reflection_decision",
                         {
                             "needs_retry": False,
-                            "reason": f"反思失败：{exc}",
+                            "reason": f"反思失敗：{exc}",
                             "target_skill_id": None,
                             "target_step_id": None,
                             "target_tool_name": None,
@@ -3922,7 +3922,7 @@ class AgentLoop:
             return step_result
         payload = {
             "phase": "knowledge",
-            "text": "正在检索知识",
+            "text": "正在檢索知識",
             "query": query.model_dump(mode="json"),
             "active_skill_id": chat_session.active_skill_id,
             "active_step_id": chat_session.active_step_id,
@@ -4004,7 +4004,7 @@ class AgentLoop:
             repair_context={
                 "reason": "knowledge_continuation",
                 "knowledge_results": knowledge_items,
-                "instruction": "基于知识结果继续判断下一步动作；如果知识足够，推进、调用工具或回复；如果不足，由模型决定是否继续追问或停止。",
+                "instruction": "基於知識結果繼續判斷下一步動作；如果知識足夠，推進、調用工具或回覆；如果不足，由模型決定是否繼續追問或停止。",
             },
             memory_context=memory_context,
             conversation_context=conversation_context,
@@ -4032,13 +4032,13 @@ class AgentLoop:
         query_text = (selection.knowledge_query or request.message).strip()
         query = KnowledgeQuery(
             query=query_text,
-            reason=selection.reason or "第二轮能力选择判断需要企业知识",
+            reason=selection.reason or "第二輪能力選擇判斷需要企業知識",
             max_chunks=8,
             max_depth=3,
         )
         payload = {
             "phase": "knowledge",
-            "text": "正在检索业务资料",
+            "text": "正在檢索業務資料",
             "query": query.model_dump(mode="json"),
             "auto": True,
         }
@@ -4095,7 +4095,7 @@ class AgentLoop:
             return None
         knowledge_query = query or KnowledgeQuery(
             query=message,
-            reason="用户要求基于业务资料或规则回答",
+            reason="用戶要求基於業務資料或規則回答",
             max_chunks=8,
             max_depth=3,
         )
@@ -4154,10 +4154,10 @@ class AgentLoop:
             "completed_tool_actions_this_turn": completed_actions,
             "max_tool_actions_per_turn": max_actions,
             "instruction": (
-                "基于工具结果、slots、当前技能步骤和用户目标判断是否已经完成。"
-                "如果还需要工具调用，由模型输出下一次 tool_call；"
-                "如果已经足够回复，输出无 tool_call 的结果并推进到可回复步骤。"
-                "不要重复调用 tool_call_history 中相同 name + arguments 的工具。"
+                "基於工具結果、slots、當前技能步驟和用戶目標判斷是否已經完成。"
+                "如果還需要工具調用，由模型輸出下一次 tool_call；"
+                "如果已經足夠回覆，輸出無 tool_call 的結果並推進到可回覆步驟。"
+                "不要重複調用 tool_call_history 中相同 name + arguments 的工具。"
             ),
         }
 
@@ -4170,7 +4170,7 @@ class AgentLoop:
     ) -> None:
         payload = {
             "phase": "tool",
-            "text": f"正在调用工具 {tool_call.name}",
+            "text": f"正在調用工具 {tool_call.name}",
             "tool_name": tool_call.name,
             "tool_call_id": tool_call_id,
             "tool_call": tool_call.model_dump(mode="json"),
@@ -5060,7 +5060,7 @@ class AgentLoop:
                 tool_name=tool_call.name,
                 success=False,
                 data=None,
-                error=ToolError(code="NOT_ALLOWED", message="当前员工未启用该工具。"),
+                error=ToolError(code="NOT_ALLOWED", message="當前員工未啟用該工具。"),
             )
             started_payload = tool_call.model_dump(mode="json")
             if tool_call_id:
@@ -5137,7 +5137,7 @@ class AgentLoop:
                     data=None,
                     error=ToolError(
                         code="GENERAL_SKILL_REQUIRES_SCENE_SKILL",
-                        message="通用技能只能作为当前场景技能的辅助工具调用。",
+                        message="通用技能只能作為當前場景技能的輔助工具調用。",
                     ),
                 )
                 finished_payload = tool_result.model_dump(mode="json")
@@ -5199,7 +5199,7 @@ class AgentLoop:
                 tool_name=tool_call.name,
                 success=False,
                 data=None,
-                error=ToolError(code="INVALID_GENERAL_SKILL", message="通用技能名称为空。"),
+                error=ToolError(code="INVALID_GENERAL_SKILL", message="通用技能名稱為空。"),
             )
         skill = next(
             (
@@ -5214,7 +5214,7 @@ class AgentLoop:
                 tool_name=tool_call.name,
                 success=False,
                 data=None,
-                error=ToolError(code="GENERAL_SKILL_NOT_FOUND", message="通用技能不存在或未发布。"),
+                error=ToolError(code="GENERAL_SKILL_NOT_FOUND", message="通用技能不存在或未發佈。"),
             )
         try:
             model_config = self._get_request_model(request, agent_id)
@@ -5230,7 +5230,7 @@ class AgentLoop:
                 tool_name=tool_call.name,
                 success=False,
                 data=None,
-                error=ToolError(code="MISSING_MODEL_CONFIG", message="没有默认模型配置。"),
+                error=ToolError(code="MISSING_MODEL_CONFIG", message="沒有默認模型配置。"),
             )
         query = str(tool_call.arguments.get("query") or request.message).strip()
         guard_result = self._validate_general_skill_tool_match(
@@ -5320,7 +5320,7 @@ class AgentLoop:
             data=data,
             error=ToolError(
                 code=str(structured.get("error") or "GENERAL_SKILL_FAILED"),
-                message=str(structured.get("message") or response.reply or "通用技能执行失败。"),
+                message=str(structured.get("message") or response.reply or "通用技能執行失敗。"),
             ),
         )
 
@@ -5351,10 +5351,10 @@ class AgentLoop:
                 data={
                     "requested_slug": requested_skill.slug,
                     "selected_slug": None,
-                    "reason": "通用技能调用缺少自然语言任务。",
+                    "reason": "通用技能調用缺少自然語言任務。",
                 },
                 error=ToolError(
-                    code="GENERAL_SKILL_MISMATCH", message="通用技能调用缺少自然语言任务。"
+                    code="GENERAL_SKILL_MISMATCH", message="通用技能調用缺少自然語言任務。"
                 ),
             )
         candidates = self._list_published_general_skills(request.tenant_id, agent_id)
@@ -5365,10 +5365,10 @@ class AgentLoop:
                 data={
                     "requested_slug": requested_skill.slug,
                     "selected_slug": None,
-                    "reason": "当前员工没有可用通用技能。",
+                    "reason": "當前員工沒有可用通用技能。",
                 },
                 error=ToolError(
-                    code="GENERAL_SKILL_NOT_FOUND", message="当前员工没有可用通用技能。"
+                    code="GENERAL_SKILL_NOT_FOUND", message="當前員工沒有可用通用技能。"
                 ),
             )
         try:
@@ -5400,7 +5400,7 @@ class AgentLoop:
             data=payload,
             error=ToolError(
                 code="GENERAL_SKILL_MISMATCH",
-                message="通用技能与当前子任务不匹配，已取消调用。",
+                message="通用技能與當前子任務不匹配，已取消調用。",
             ),
         )
 
@@ -5517,7 +5517,7 @@ class AgentLoop:
             target_step_id=reflection.target_step_id or self._first_step_id(target_skill),
             confidence=0.7,
             user_intent=previous_decision.user_intent,
-            reason=f"反思重试：{reflection.reason or '当前技能或工具可能不匹配用户诉求'}",
+            reason=f"反思重試：{reflection.reason or '當前技能或工具可能不匹配用戶訴求'}",
         )
 
     def _tool_call_from_reflection(
@@ -5898,9 +5898,9 @@ class AgentLoop:
         if request.model_config_id:
             row = self.db.get(ModelConfig, request.model_config_id)
             if not row or row.tenant_id != request.tenant_id:
-                raise AgentLoopPreconditionError("invalid_model_config", "选中的模型配置不存在。")
+                raise AgentLoopPreconditionError("invalid_model_config", "選中的模型配置不存在。")
             if not row.enabled:
-                raise AgentLoopPreconditionError("disabled_model_config", "选中的模型配置已停用。")
+                raise AgentLoopPreconditionError("disabled_model_config", "選中的模型配置已停用。")
             return row
         return self._get_default_model(request.tenant_id, agent_id, role)
 
@@ -6037,15 +6037,15 @@ class AgentLoop:
                     display_name=skill.name,
                     description=(
                         f"通用技能：{skill.description or skill.name}。"
-                        "仅当当前子任务与该名称、描述和能力边界直接匹配时才能调用；"
-                        "不得把它作为场景工具、已有工具结果、知识查询或追问用户的兜底替代。"
+                        "僅噹噹前子任務與該名稱、描述和能力邊界直接匹配時才能調用；"
+                        "不得把它作為場景工具、已有工具結果、知識查詢或追問用戶的兜底替代。"
                     ),
                     input_schema={
                         "type": "object",
                         "properties": {
                             "query": {
                                 "type": "string",
-                                "description": "传给通用技能的自然语言任务或问题。",
+                                "description": "傳給通用技能的自然語言任務或問題。",
                             }
                         },
                         "required": ["query"],
@@ -6220,17 +6220,17 @@ class AgentLoop:
         def summarize(label: str, source: str, token_budget: int) -> str:
             payload = stage_payload(
                 phase="Context Compression",
-                user_message=f"请压缩{label}",
+                user_message=f"請壓縮{label}",
                 conversation_context={},
                 memory_context=None,
                 instructions=(
-                    "把输入的历史对话压缩成一段可供后续对话继续使用的中文事实摘要。"
-                    "保留用户身份与偏好、已确认事实、未完成任务、关键约束、工具或知识结论；"
-                    "删除寒暄、重复内容、内部 ID、时间戳和推理过程，不新增原文没有的信息。"
+                    "把輸入的歷史對話壓縮成一段可供後續對話繼續使用的中文事實摘要。"
+                    "保留用戶身份與偏好、已確認事實、未完成任務、關鍵約束、工具或知識結論；"
+                    "刪除寒暄、重複內容、內部 ID、時間戳和推理過程，不新增原文沒有的信息。"
                 ),
                 stage_data={"history_to_compress": source},
                 output_contract=(
-                    f"只输出一段纯文本摘要，控制在约 {token_budget} tokens 以内。"
+                    f"只輸出一段純文本摘要，控制在約 {token_budget} tokens 以內。"
                 ),
             )
             with llm_operation("context.compact"):
@@ -6363,7 +6363,7 @@ class AgentLoop:
 
         chat_session.updated_at = utc_now()
         chat_session.status = "active"
-        chat_session.summary = f"最近回复：{CANCELLED_ASSISTANT_REPLY}"
+        chat_session.summary = f"最近回覆：{CANCELLED_ASSISTANT_REPLY}"
         assistant_message = self._append_message(
             tenant_id,
             chat_session.id,
@@ -6617,10 +6617,10 @@ class AgentLoop:
         self, chat_session: ChatSession, code: str, message: str
     ) -> ChatTurnResponse:
         reply = format_runtime_failure_reply(
-            "系统配置错误",
+            "系統配置錯誤",
             message,
             code,
-            "请在管理端补齐配置后重试。",
+            "請在管理端補齊配置後重試。",
         )
         self.events.record(
             chat_session.tenant_id,
@@ -6666,7 +6666,7 @@ class AgentLoop:
             fallback_title = self._fallback_session_title_from_message(source_message)
             if fallback_title:
                 chat_session.title = fallback_title
-        chat_session.summary = f"最近回复：{reply[:120]}"
+        chat_session.summary = f"最近回覆：{reply[:120]}"
         assistant_metadata = dict(metadata or {})
         if user_message_id:
             assistant_metadata.setdefault("user_message_id", user_message_id)
@@ -6733,7 +6733,7 @@ class AgentLoop:
 
     def _strip_trailing_citation_summary(self, reply: str) -> str:
         return re.sub(
-            r"(?:\n|\s){0,3}(?:参考资料|引用来源|资料来源)\s*[:：]\s*(?:\[\d+\]\s*)+$",
+            r"(?:\n|\s){0,3}(?:參考資料|引用來源|資料來源)\s*[:：]\s*(?:\[\d+\]\s*)+$",
             "",
             reply.rstrip(),
         ).rstrip()

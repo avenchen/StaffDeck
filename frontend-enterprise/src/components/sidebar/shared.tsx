@@ -57,27 +57,27 @@ export type NavItem = {
 };
 
 export const PRIMARY_NAV: NavItem[] = [
-  { route: EnterpriseRoute.Platform, label: '开放广场平台', Icon: IconPlatform },
-  { route: EnterpriseRoute.Agents, label: '我的数字员工', Icon: IconAgents },
+  { route: EnterpriseRoute.Platform, label: '開放廣場平臺', Icon: IconPlatform },
+  { route: EnterpriseRoute.Agents, label: '我的數字員工', Icon: IconAgents },
 ];
 
 export const PROFILE_NAV: NavItem[] = [
-  { route: EnterpriseRoute.Dashboard, label: '员工档案', Icon: IconFile },
-  { route: EnterpriseRoute.ScheduledTasks, label: '定时任务', Icon: IconAlarm },
-  { route: EnterpriseRoute.Memories, label: '记忆', Icon: IconHistory },
-  { route: EnterpriseRoute.Feedback, label: '对话日志', Icon: IconCalendar },
+  { route: EnterpriseRoute.Dashboard, label: '員工檔案', Icon: IconFile },
+  { route: EnterpriseRoute.ScheduledTasks, label: '定時任務', Icon: IconAlarm },
+  { route: EnterpriseRoute.Memories, label: '記憶', Icon: IconHistory },
+  { route: EnterpriseRoute.Feedback, label: '對話日誌', Icon: IconCalendar },
 ];
 
 export const CAPABILITY_NAV: NavItem[] = [
-  { route: EnterpriseRoute.Knowledge, label: '知识库', Icon: IconFolder },
-  { route: EnterpriseRoute.Wiki, label: '知识 Wiki', Icon: IconGlobe },
+  { route: EnterpriseRoute.Knowledge, label: '知識庫', Icon: IconFolder },
+  { route: EnterpriseRoute.Wiki, label: '知識 Wiki', Icon: IconGlobe },
   { route: EnterpriseRoute.GeneralSkills, label: '技能', Icon: IconMagicWand },
   { route: EnterpriseRoute.Skills, label: 'SOP', Icon: IconClipboard },
   { route: EnterpriseRoute.Tools, label: '工具', Icon: IconBriefcase },
 ];
 
 export const SYSTEM_NAV: NavItem[] = [
-  { route: EnterpriseRoute.Accounts, label: '账号管理', Icon: IconAccounts },
+  { route: EnterpriseRoute.Accounts, label: '賬號管理', Icon: IconAccounts },
   { route: EnterpriseRoute.Models, label: '模型配置', Icon: IconModels },
 ];
 
@@ -115,7 +115,7 @@ export type AppSidebarChatProps = {
   isSessionUnread: (session: ChatSession) => boolean;
   onOpenSession: (id: string) => void;
   onOpenGallery: () => void;
-  /** Highlights the 数字员工广场 entry as the active menu (chat gallery route). */
+  /** Highlights the 數字員工廣場 entry as the active menu (chat gallery route). */
   galleryActive?: boolean;
   handoffCount?: number;
   onOpenHandoffs?: () => void;

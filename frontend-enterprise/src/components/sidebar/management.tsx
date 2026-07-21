@@ -130,7 +130,7 @@ export function AgentSwitcher({
 }: Pick<AppSidebarManagementProps, 'sidebarAgent' | 'scopeAgents' | 'selectedAgentId' | 'onSelectAgent'>) {
   const employeeAgents = scopeAgents.filter((agent) => !agent.is_overall);
   const currentAgent = sidebarAgent && !sidebarAgent.is_overall ? sidebarAgent : undefined;
-  const caption = currentAgent ? '当前员工' : '未选择';
+  const caption = currentAgent ? '當前員工' : '未選擇';
   const nameLabel = currentAgent
     ? employeeDisplayNameWithCreator(currentAgent)
     : '-';
@@ -139,7 +139,7 @@ export function AgentSwitcher({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <div
-          aria-label="切换当前员工"
+          aria-label="切換當前員工"
           className={cn(
             'flex w-full items-center gap-[12px] rounded-[18px] px-[8px] pt-[8px] pb-[4px] text-left transition-colors',
             'group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:py-0',
@@ -207,20 +207,20 @@ export function SidebarFooterActions({ onOpenChat }: { onOpenChat: () => void })
       <button
         type="button"
         onClick={onOpenChat}
-        title="对话端"
+        title="對話端"
         className={cn(
           'flex h-[40px] w-[130px] items-center justify-center gap-[6px] rounded-[10px] border-[0.5px] border-[#E3E7F1] bg-[#F6F6F6] px-[20px] py-[4px] text-[14px] text-sidebar-accent-foreground transition-opacity hover:opacity-70',
           'group-data-[collapsible=icon]:size-[40px] group-data-[collapsible=icon]:w-[40px] group-data-[collapsible=icon]:px-0',
         )}
       >
         <IconChat className="size-[16px]!" />
-        <span className="group-data-[collapsible=icon]:hidden">对话端</span>
+        <span className="group-data-[collapsible=icon]:hidden">對話端</span>
       </button>
       <button
         type="button"
         onClick={onOpenChat}
-        title="切换到对话端"
-        aria-label="切换到对话端"
+        title="切換到對話端"
+        aria-label="切換到對話端"
         className="flex size-[32px] shrink-0 items-center justify-center rounded-[8px] rotate-90 text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
       >
         <IconToggle className="size-[16px]!" />
@@ -297,7 +297,7 @@ export function CollapsedAgentSwitcher({
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          aria-label="切换当前员工"
+          aria-label="切換當前員工"
           className="flex flex-col items-center gap-[2px] pt-[8px]"
         >
           {currentAgent ? (
@@ -353,15 +353,15 @@ export function CollapsedSidebar({
 > & { onToggle: () => void }) {
   const nameLabel = sidebarAgent
     ? sidebarAgent.is_overall
-      ? '未选择'
+      ? '未選擇'
       : employeeDisplayNameWithCreator(sidebarAgent)
-    : '未选择';
+    : '未選擇';
   const primaryItems = primaryNavItems(isAdmin);
 
   return (
     <div className="flex h-full w-(--sidebar-width-icon) shrink-0 flex-col items-center gap-[32px] px-[16px] py-[10px]">
       <div className="flex w-full flex-col items-center gap-[10px]">
-        <button type="button" title="开放广场" className="flex items-center justify-center p-[10px]">
+        <button type="button" title="開放廣場" className="flex items-center justify-center p-[10px]">
           <BrandLogo markOnly />
         </button>
         <Tooltip>
@@ -369,14 +369,14 @@ export function CollapsedSidebar({
             <button
               type="button"
               onClick={onToggle}
-              aria-label="展开边栏"
+              aria-label="展開邊欄"
               className="flex size-[16px] items-center justify-center text-sidebar-foreground transition-colors hover:text-sidebar-accent-foreground"
             >
               <IconHeaderCollapse className="size-[16px]! -rotate-90" />
             </button>
           </TooltipTrigger>
           <TooltipContent side="right" align="center">
-            展开边栏
+            展開邊欄
           </TooltipContent>
         </Tooltip>
       </div>
@@ -409,7 +409,7 @@ export function CollapsedSidebar({
           <div className="h-px w-[28px] bg-sidebar-border" />
 
           <div className="flex flex-col items-center gap-[4px]">
-            <CollapsedGroupLabel>资料</CollapsedGroupLabel>
+            <CollapsedGroupLabel>資料</CollapsedGroupLabel>
             {PROFILE_NAV.map((item) => (
               <CollapsedNavButton
                 key={item.route}
@@ -441,14 +441,14 @@ export function CollapsedSidebar({
               <button
                 type="button"
                 onClick={onOpenChat}
-                aria-label="切换到对话端"
+                aria-label="切換到對話端"
                 className="flex size-[32px] shrink-0 items-center justify-center rounded-[10px] border-[0.5px] border-[#E3E7F1] bg-[#F6F6F6] text-sidebar-accent-foreground transition-opacity hover:opacity-70"
               >
                 <IconChat className="size-[16px]!" />
               </button>
             </TooltipTrigger>
             <TooltipContent side="right" align="center">
-              切换到对话端
+              切換到對話端
             </TooltipContent>
           </Tooltip>
         </div>
@@ -496,15 +496,15 @@ export function ManagementSidebar({
       <div className="flex h-full w-(--sidebar-width) shrink-0 flex-col">
       <SidebarHeader className="gap-[24px] px-[20px] pt-[10px] group-data-[collapsible=icon]:px-[20px]">
         <div className="flex items-center justify-between">
-          <button type="button" title="开放广场">
+          <button type="button" title="開放廣場">
             <BrandLogo wordmarkClassName="group-data-[collapsible=icon]:hidden" />
           </button>
           {!brandCollapsed && (
             <button
               type="button"
               onClick={toggleSidebar}
-              title="收起边栏"
-              aria-label="收起边栏"
+              title="收起邊欄"
+              aria-label="收起邊欄"
               className="flex size-[28px] shrink-0 items-center justify-center rounded-[8px] text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
             >
               <IconHeaderCollapse className="size-[14px]! -rotate-90" />
@@ -544,14 +544,14 @@ export function ManagementSidebar({
           <div className="mx-[8px] h-px bg-sidebar-border group-data-[collapsible=icon]:hidden" />
 
           <div className="flex flex-col gap-[2px] px-[10px] group-data-[collapsible=icon]:px-0">
-            <GroupLabel>基本资料</GroupLabel>
+            <GroupLabel>基本資料</GroupLabel>
             <SidebarMenu className="gap-[2px]">
               {PROFILE_NAV.map((item) => (
                 <CardNavButton key={item.route} item={item} selected={selected} onNavigate={onNavigate} />
               ))}
             </SidebarMenu>
 
-            <GroupLabel>员工能力</GroupLabel>
+            <GroupLabel>員工能力</GroupLabel>
             <SidebarMenu className="gap-[2px]">
               {CAPABILITY_NAV.map((item) => (
                 <CardNavButton key={item.route} item={item} selected={selected} onNavigate={onNavigate} />

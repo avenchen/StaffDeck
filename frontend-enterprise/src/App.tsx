@@ -138,7 +138,7 @@ function Shell({
   const [modelConfigsLoaded, setModelConfigsLoaded] = useState(false);
   const isMobile = useIsMobile();
   const isAdmin = isEnterpriseAdmin(auth.user);
-  const accountRoleLabel = isAdmin ? "管理员" : "";
+  const accountRoleLabel = isAdmin ? "管理員" : "";
   const isDistillRoute = location.pathname === "/enterprise/skills/distill";
   const selected =
     location.pathname === "/enterprise"
@@ -328,8 +328,8 @@ function Shell({
   const hasUsableModelConfig = modelConfigs.some((item) => item.enabled);
   const showModelSetupNotice = modelConfigsLoaded && !hasUsableModelConfig;
   const modelSetupNoticeText = isAdmin
-    ? t("还没有可用模型配置，数字员工暂不能调用模型。请先完成模型配置。")
-    : t("系统管理员尚未配置可用模型，数字员工暂不能调用模型。请联系管理员完成模型配置。");
+    ? t("還沒有可用模型配置，數字員工暫不能調用模型。請先完成模型配置。")
+    : t("系統管理員尚未配置可用模型，數字員工暫不能調用模型。請聯繫管理員完成模型配置。");
   const selectedAgent = scopeAgents.find((item) => item.id === selectedAgentId);
   const sidebarAgent = selectedAgent;
   // Routes that operate on a specific employee; show the empty guide when none exist.
@@ -357,10 +357,10 @@ function Shell({
   );
   const selectedAgentName = selectedAgent
     ? employeeDisplayName(selectedAgent)
-    : "未选择";
+    : "未選擇";
   const selectedAgentCaption = selectedAgent
     ? selectedAgent.is_overall
-      ? "开放广场"
+      ? "開放廣場"
       : employeeProfile(selectedAgent).roleName
     : "-";
   function openCreateAgentModal() {
@@ -374,7 +374,7 @@ function Shell({
   async function saveAgentCreateModal() {
     const name = agentForm.name.trim();
     if (!name) {
-      notify.error("请填写数字员工姓名");
+      notify.error("請填寫數字員工姓名");
       return;
     }
     const isBlankOnboarding = agentForm.sourceMode === "blank";
@@ -390,7 +390,7 @@ function Shell({
     const roleName =
       agentForm.roleName.trim() ||
       (!isBlankOnboarding ? sourceRoleName : "") ||
-      "待补充职位";
+      "待補充職位";
     const description =
       agentForm.description.trim() ||
       (!isBlankOnboarding
@@ -434,9 +434,9 @@ function Shell({
       await loadAgents();
       changeAgentScope(created.id);
       setAgentCreateOpen(false);
-      notify.success("数字员工创建成功");
+      notify.success("數字員工創建成功");
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : "创建数字员工失败");
+      notify.error(error instanceof Error ? error.message : "創建數字員工失敗");
     }
   }
 
@@ -748,15 +748,15 @@ function Shell({
       <Dialog open={agentCreateOpen} onOpenChange={setAgentCreateOpen}>
         <DialogContent className="flex max-h-[calc(100dvh-32px)] w-[calc(100%-32px)] flex-col gap-0 overflow-hidden rounded-[16px] p-0 sm:max-w-[520px]">
           <DialogTitle className="shrink-0 px-[24px] py-[16px] text-[16px] font-semibold text-foreground">
-            新建数字员工
+            新建數字員工
           </DialogTitle>
           <div className="agent-editor-form min-h-0 flex-1 overflow-y-auto px-[24px] pb-[16px]">
             <label>
-              创建方式
+              創建方式
               <div className="inline-flex w-fit gap-[4px] rounded-[10px] border border-border p-[2px]">
                 {[
-                  { label: "从广场复制", value: "copy" as const },
-                  { label: "从空白开始", value: "blank" as const },
+                  { label: "從廣場複製", value: "copy" as const },
+                  { label: "從空白開始", value: "blank" as const },
                 ].map((option) => (
                   <button
                     key={option.value}
@@ -782,7 +782,7 @@ function Shell({
               </div>
             </label>
             <label>
-              职位
+              職位
               <Input
                 value={agentForm.roleName}
                 onChange={(event) =>
@@ -791,13 +791,13 @@ function Shell({
                     roleName: event.target.value,
                   }))
                 }
-                placeholder="例如 研发工程师、财务助理"
+                placeholder="例如 研發工程師、財務助理"
               />
             </label>
             <div className="grid content-start gap-[6px]">
             {agentForm.sourceMode === "copy" && (
               <label>
-                复制来源
+                複製來源
                 <UISelect
                   value={agentForm.copyFromAgentId || undefined}
                   onValueChange={(value) =>
@@ -818,14 +818,14 @@ function Shell({
                   }
                 >
                   <SelectTrigger className={cn(SELECT_TRIGGER_CLASS, "w-full")}>
-                    <SelectValue placeholder="选择复制来源" />
+                    <SelectValue placeholder="選擇複製來源" />
                   </SelectTrigger>
                   <SelectContent>
                     {sourceAgents.map((agent) => (
                       <SelectItem key={agent.id} value={agent.id}>
                         {agent.is_overall
-                          ? "开放广场"
-                          : `${employeeDisplayNameWithCreator(agent)} · ${employeeProfile(agent).roleName}${isGalleryEmployee(agent) ? " · 广场" : ""}`}
+                          ? "開放廣場"
+                          : `${employeeDisplayNameWithCreator(agent)} · ${employeeProfile(agent).roleName}${isGalleryEmployee(agent) ? " · 廣場" : ""}`}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -834,12 +834,12 @@ function Shell({
             )}
             {agentForm.sourceMode === "blank" && (
               <div className="agent-definition-note">
-                从空白开始创建，不继承任何已有配置。
+                從空白開始創建，不繼承任何已有配置。
               </div>
             )}
             </div>
             <label>
-              数字员工姓名
+              數字員工姓名
               <Input
                 value={agentForm.name}
                 onChange={(event) =>
@@ -851,7 +851,7 @@ function Shell({
               />
             </label>
             <label>
-              岗位描述
+              崗位描述
               <Textarea
                 rows={3}
                 value={agentForm.description}
@@ -861,7 +861,7 @@ function Shell({
                     description: event.target.value,
                   }))
                 }
-                placeholder="概括这个数字员工的岗位边界、服务风格和执行重点"
+                placeholder="概括這個數字員工的崗位邊界、服務風格和執行重點"
               />
             </label>
           </div>
@@ -877,7 +877,7 @@ function Shell({
               className={DIALOG_PRIMARY_BUTTON_CLASS}
               onClick={() => void saveAgentCreateModal()}
             >
-              创建
+              創建
             </UIButton>
           </div>
         </DialogContent>

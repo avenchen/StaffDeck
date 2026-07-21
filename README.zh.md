@@ -1,100 +1,100 @@
 <div align="center">
 
-<img src="packaging/assets/staffdeck_banner_cn.png" alt="StaffDeck 标志"  />
+<img src="packaging/assets/staffdeck_banner_cn.png" alt="StaffDeck 標誌"  />
 
 <p align="center">
   <a href="https://staffdeck.openbmb.cn/"><img src="https://img.shields.io/badge/Website-staffdeck.openbmb.cn-FF6B35?style=flat-square&logo=googlechrome&logoColor=white" alt="Official Website"/></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-AGPL_3.0-blue.svg?style=flat-square" alt="License"/></a>
   <a href="https://github.com/OpenBMB/StaffDeck/stargazers"><img src="https://img.shields.io/github/stars/OpenBMB/StaffDeck?style=flat-square" alt="Stars"/></a>
   <br/>
-  <a href="#-联系我们"><img src="https://img.shields.io/badge/Discord-社群-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord"/></a>
+  <a href="#-聯繫我們"><img src="https://img.shields.io/badge/Discord-社群-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord"/></a>
   &nbsp;
-  <a href="#-联系我们"><img src="https://img.shields.io/badge/飞书-交流群-00D6B9?style=for-the-badge&logo=bytedance&logoColor=white" alt="Feishu"/></a>
+  <a href="#-聯繫我們"><img src="https://img.shields.io/badge/飛書-交流群-00D6B9?style=for-the-badge&logo=bytedance&logoColor=white" alt="Feishu"/></a>
   &nbsp;
-  <a href="#-联系我们"><img src="https://img.shields.io/badge/微信-交流群-07C160?style=for-the-badge&logo=wechat&logoColor=white" alt="WeChat"/></a>
+  <a href="#-聯繫我們"><img src="https://img.shields.io/badge/微信-交流群-07C160?style=for-the-badge&logo=wechat&logoColor=white" alt="WeChat"/></a>
   <br/>
 </p>
 
-[English](./README.md) | **简体中文**
+[English](./README.md) | **簡體中文**
 
 
 </div>
 
 
-## 更新日志
+## 更新日誌
 
-  - **2026-07-15**：StaffDeck正式开源！欢迎大家使用反馈与Star支持。
+  - **2026-07-15**：StaffDeck正式開源！歡迎大家使用反饋與Star支持。
 
-# 💡 关于StaffDeck
+# 💡 關於StaffDeck
 
-StaffDeck是一套面向企业的数字员工构建与管理平台，帮助专业员工将工作经验、业务流程和判断标准固化为可以持续工作的数字员工，接手重复性任务，并将个人能力沉淀为可复用、可迭代、可追溯的组织资产。StaffDeck由[面壁智能](https://modelbest.cn/)，[东北大学-面壁智能数据智能联合实验室](https://neuir.github.io/)，[清华大学THUNLP实验室](https://nlp.csai.tsinghua.edu.cn/)，[OpenBMB](https://www.openbmb.cn/home)与[AI9Stars](https://github.com/AI9Stars)联合研发，面向希望将 AI 从个人效率工具升级为组织生产力的企业与机构。
+StaffDeck是一套面向企業的數字員工構建與管理平臺，幫助專業員工將工作經驗、業務流程和判斷標準固化為可以持續工作的數字員工，接手重複性任務，並將個人能力沉澱為可複用、可迭代、可追溯的組織資產。StaffDeck由[面壁智能](https://modelbest.cn/)，[東北大學-面壁智能數據智能聯合實驗室](https://neuir.github.io/)，[清華大學THUNLP實驗室](https://nlp.csai.tsinghua.edu.cn/)，[OpenBMB](https://www.openbmb.cn/home)與[AI9Stars](https://github.com/AI9Stars)聯合研發，面向希望將 AI 從個人效率工具升級為組織生產力的企業與機構。
 
-## 核心亮点
+## 核心亮點
 
-- 🧑‍💼 **数字员工构建与管理**：将专业员工的经验、流程和判断标准固化为拥有岗位、工号、能力档案和工作记录的数字员工；支持能力成长、权限隔离及发布复用。
-- 🧩 **状态机驱动的流程型技能**：通过自然语言生成结构化 SOP，以状态机保证复杂流程准确执行；支持多个流程实时切换、上下文保留、可视化编辑、版本管理和分支演化。
-- 📚 **文档结构感知的知识检索**：基于文档、章节、页面和摘要等层级构建可导航索引，让数字员工先判断信息可能位于哪里，再逐层定位原文；支持知识分桶、定向检索、来源引用和检索调试。
-- 🔌 **自主执行与持续迭代**：通过 HTTP API、MCP 和定时任务执行真实业务操作，并结合长期记忆、完整 Trace、真人接管、用户反馈和反馈分析形成持续迭代闭环。
+- 🧑‍💼 **數字員工構建與管理**：將專業員工的經驗、流程和判斷標準固化為擁有崗位、工號、能力檔案和工作記錄的數字員工；支持能力成長、權限隔離及發佈複用。
+- 🧩 **狀態機驅動的流程型技能**：通過自然語言生成結構化 SOP，以狀態機保證複雜流程準確執行；支持多個流程實時切換、上下文保留、可視化編輯、版本管理和分支演化。
+- 📚 **文檔結構感知的知識檢索**：基於文檔、章節、頁面和摘要等層級構建可導航索引，讓數字員工先判斷信息可能位於哪裡，再逐層定位原文；支持知識分桶、定向檢索、來源引用和檢索調試。
+- 🔌 **自主執行與持續迭代**：通過 HTTP API、MCP 和定時任務執行真實業務操作，並結合長期記憶、完整 Trace、真人接管、用戶反饋和反饋分析形成持續迭代閉環。
 
-## 客户端下载
+## 客戶端下載
 
-访问 [StaffDeck 官方网站](https://staffdeck.openbmb.cn/)，或直接下载最新桌面客户端：
+訪問 [StaffDeck 官方網站](https://staffdeck.openbmb.cn/)，或直接下載最新桌面客戶端：
 
-| 平台 | 架构 | 下载 |
+| 平臺 | 架構 | 下載 |
 | --- | --- | --- |
-| macOS | Apple Silicon（arm64） | [下载 `.dmg`](https://github.com/OpenBMB/StaffDeck/releases/latest/download/StaffDeck-macos-arm64.dmg) |
-| Windows | x64 | [下载安装程序 `.exe`](https://github.com/OpenBMB/StaffDeck/releases/latest/download/StaffDeck-windows-x64-setup.exe) |
-| Linux | x86_64（Debian/Ubuntu） | [下载 `.deb`](https://github.com/OpenBMB/StaffDeck/releases/latest/download/StaffDeck-linux-x86_64.deb) |
+| macOS | Apple Silicon（arm64） | [下載 `.dmg`](https://github.com/OpenBMB/StaffDeck/releases/latest/download/StaffDeck-macos-arm64.dmg) |
+| Windows | x64 | [下載安裝程序 `.exe`](https://github.com/OpenBMB/StaffDeck/releases/latest/download/StaffDeck-windows-x64-setup.exe) |
+| Linux | x86_64（Debian/Ubuntu） | [下載 `.deb`](https://github.com/OpenBMB/StaffDeck/releases/latest/download/StaffDeck-linux-x86_64.deb) |
 
-## Agent 一键部署
+## Agent 一鍵部署
 
-将下面的 Prompt 粘贴给 Cursor、Claude Code 或 Codex：
+將下面的 Prompt 粘貼給 Cursor、Claude Code 或 Codex：
 
 ```text
-阅读 https://raw.githubusercontent.com/OpenBMB/StaffDeck/main/README.zh.md。
-克隆 OpenBMB/StaffDeck 私有仓库，准备 Python 3.11 和 Node.js 20，创建
-backend/.venv，安装前后端依赖，将 backend/.env.example 复制为
-backend/.env；缺少 OpenAI 兼容模型地址或 API Key 时向我询问；运行
-DETACH=1 scripts/dev_up.sh，并验证 /api/health 和 /workspace/gallery 后再报告完成。
+閱讀 https://raw.githubusercontent.com/OpenBMB/StaffDeck/main/README.zh.md。
+克隆 OpenBMB/StaffDeck 私有倉庫，準備 Python 3.11 和 Node.js 20，創建
+backend/.venv，安裝前後端依賴，將 backend/.env.example 複製為
+backend/.env；缺少 OpenAI 兼容模型地址或 API Key 時向我詢問；運行
+DETACH=1 scripts/dev_up.sh，並驗證 /api/health 和 /workspace/gallery 後再報告完成。
 ```
 
 
-## 目录
+## 目錄
 
-- [💡 关于StaffDeck](#-关于staffdeck)
-  - [核心亮点](#核心亮点)
-  - [客户端下载](#客户端下载)
-  - [Agent 一键部署](#agent-一键部署)
-  - [目录](#目录)
-  - [快速开始](#快速开始)
-    - [环境要求](#环境要求)
-    - [1. 克隆并安装](#1-克隆并安装)
+- [💡 關於StaffDeck](#-關於staffdeck)
+  - [核心亮點](#核心亮點)
+  - [客戶端下載](#客戶端下載)
+  - [Agent 一鍵部署](#agent-一鍵部署)
+  - [目錄](#目錄)
+  - [快速開始](#快速開始)
+    - [環境要求](#環境要求)
+    - [1. 克隆並安裝](#1-克隆並安裝)
     - [2. 配置模型](#2-配置模型)
-    - [3. 启动 Web Demo](#3-启动-web-demo)
-    - [4. 验证安装](#4-验证安装)
+    - [3. 啟動 Web Demo](#3-啟動-web-demo)
+    - [4. 驗證安裝](#4-驗證安裝)
     - [常用命令](#常用命令)
   - [核心流程](#核心流程)
-  - [项目结构](#项目结构)
-  - [常见问题](#常见问题)
-  - [路线图](#路线图)
-- [💬 联系我们](#-联系我们)
-  - [参与贡献](#参与贡献)
-  - [风险与限制](#风险与限制)
+  - [項目結構](#項目結構)
+  - [常見問題](#常見問題)
+  - [路線圖](#路線圖)
+- [💬 聯繫我們](#-聯繫我們)
+  - [參與貢獻](#參與貢獻)
+  - [風險與限制](#風險與限制)
   - [引用](#引用)
-  - [许可证](#许可证)
-  - [致谢](#致谢)
+  - [許可證](#許可證)
+  - [致謝](#致謝)
 
-## 快速开始
+## 快速開始
 
-### 环境要求
+### 環境要求
 
-- 使用开发脚本时需要 macOS、Linux 或 WSL
+- 使用開發腳本時需要 macOS、Linux 或 WSL
 - Python **3.11+**
-- Node.js **20+** 与 npm
+- Node.js **20+** 與 npm
 - OpenAI Chat Completions 兼容的模型接口和 API Key
-- 应用本身不要求 CUDA；硬件要求由所选择的模型服务决定
+- 應用本身不要求 CUDA；硬件要求由所選擇的模型服務決定
 
-### 1. 克隆并安装
+### 1. 克隆並安裝
 
 ```bash
 git clone https://github.com/OpenBMB/StaffDeck.git
@@ -108,147 +108,147 @@ cp backend/.env.example backend/.env
 
 ### 2. 配置模型
 
-首次启动前编辑 `backend/.env`：
+首次啟動前編輯 `backend/.env`：
 
 ```dotenv
-APP_SECRET="请替换为足够长的随机字符串"
+APP_SECRET="請替換為足夠長的隨機字符串"
 DEMO_MODEL_BASE_URL="https://你的OpenAI兼容接口/v1"
 DEMO_MODEL_NAME="你的模型名"
 DEMO_MODEL_API_KEY="你的API-Key"
 ```
 
-API Key 用于创建初始模型配置，存入数据库前会被加密。请勿提交 `backend/.env`。服务启动后也可以在**管理员 → 模型配置**中管理模型服务。
+API Key 用於創建初始模型配置，存入數據庫前會被加密。請勿提交 `backend/.env`。服務啟動後也可以在**管理員 → 模型配置**中管理模型服務。
 
-### 3. 启动 Web Demo
+### 3. 啟動 Web Demo
 
 ```bash
 DETACH=1 scripts/dev_up.sh
 ```
 
-脚本会构建 StaffDeck 前端，并由一个 FastAPI 进程在 `5173` 端口同时提供 UI、API 与 Swagger 文档。默认管理员账号为 `admin` / `admin`，请在首次登录后通过账号配置修改密码。
+腳本會構建 StaffDeck 前端，並由一個 FastAPI 進程在 `5173` 端口同時提供 UI、API 與 Swagger 文檔。默認管理員賬號為 `admin` / `admin`，請在首次登錄後通過賬號配置修改密碼。
 
-### 4. 验证安装
+### 4. 驗證安裝
 
 ```bash
 curl http://127.0.0.1:5173/api/health
 ```
 
-预期输出：
+預期輸出：
 
 ```json
 {"status":"ok"}
 ```
 
-打开 [http://127.0.0.1:5173/workspace/gallery](http://127.0.0.1:5173/workspace/gallery)，选择一个数字员工并发送首条消息。回答和执行记录应该在同一个对话轮次中流式显示。
+打開 [http://127.0.0.1:5173/workspace/gallery](http://127.0.0.1:5173/workspace/gallery)，選擇一個數字員工併發送首條消息。回答和執行記錄應該在同一個對話輪次中流式顯示。
 
 ### 常用命令
 
 ```bash
-scripts/dev_status.sh       # 查看服务状态
-scripts/dev_down.sh         # 停止本地服务
-scripts/dev_up.sh           # 前台运行
+scripts/dev_status.sh       # 查看服務狀態
+scripts/dev_down.sh         # 停止本地服務
+scripts/dev_up.sh           # 前臺運行
 ```
 
-> 完整说明 → [StaffDeck 使用教程](https://staffdeck.openbmb.cn/#/docs/introduce?lang=zh)
+> 完整說明 → [StaffDeck 使用教程](https://staffdeck.openbmb.cn/#/docs/introduce?lang=zh)
 
 
 
 
 ## 核心流程
 
-1. **创建数字员工**：设置职位、岗位边界、服务风格、创建者与访问范围。
-2. **配置员工能力**：从广场复制或自行创建知识库、通用技能、SOP 与工具，不修改广场原件。
-3. **发起会话**：从数字员工广场或员工列表进入；发送首条消息后持久化正式 Session。
-4. **执行并观测**：在执行记录中查看流式意图、检索、技能、工具、校验和回答事件。
-5. **必要时介入**：继续排队请求、取消运行、转人工或处理待回答内容。
-6. **持续运营**：利用记忆、反馈、对话日志和定时任务长期优化员工能力。
+1. **創建數字員工**：設置職位、崗位邊界、服務風格、創建者與訪問範圍。
+2. **配置員工能力**：從廣場複製或自行創建知識庫、通用技能、SOP 與工具，不修改廣場原件。
+3. **發起會話**：從數字員工廣場或員工列表進入；發送首條消息後持久化正式 Session。
+4. **執行並觀測**：在執行記錄中查看流式意圖、檢索、技能、工具、校驗和回答事件。
+5. **必要時介入**：繼續排隊請求、取消運行、轉人工或處理待回答內容。
+6. **持續運營**：利用記憶、反饋、對話日誌和定時任務長期優化員工能力。
 
-## 项目结构
+## 項目結構
 
 ```text
 StaffDeck/
-├── backend/                  # FastAPI 接口、Agent 运行时、存储与任务 Worker
-├── frontend-enterprise/      # React/TypeScript StaffDeck 工作台
-├── docs/                     # 教程、API、Schema 与示例流程
-├── scripts/                  # 单端口服务生命周期与校验脚本
-├── packaging/                # macOS、Linux 与 Windows 打包资源
+├── backend/                  # FastAPI 接口、Agent 運行時、存儲與任務 Worker
+├── frontend-enterprise/      # React/TypeScript StaffDeck 工作臺
+├── docs/                     # 教程、API、Schema 與示例流程
+├── scripts/                  # 單端口服務生命週期與校驗腳本
+├── packaging/                # macOS、Linux 與 Windows 打包資源
 ├── README.md                 # English
-└── README.zh.md              # 简体中文
+└── README.zh.md              # 簡體中文
 ```
 
 
-## 常见问题
+## 常見問題
 
 <details>
-<summary><strong>页面可以打开，但数字员工不回答。</strong></summary>
+<summary><strong>頁面可以打開，但數字員工不回答。</strong></summary>
 
-检查所选模型配置、API Key、模型名和模型服务网络。随后查看执行记录与 `.dev/logs/app.log`，定位模型服务返回的具体错误。
+檢查所選模型配置、API Key、模型名和模型服務網絡。隨後查看執行記錄與 `.dev/logs/app.log`，定位模型服務返回的具體錯誤。
 </details>
 
 <details>
-<summary><strong>没有本地 GPU 可以运行吗？</strong></summary>
+<summary><strong>沒有本地 GPU 可以運行嗎？</strong></summary>
 
-可以。应用调用 OpenAI 兼容模型接口，GPU 要求由你自行部署或使用的模型服务决定。
+可以。應用調用 OpenAI 兼容模型接口，GPU 要求由你自行部署或使用的模型服務決定。
 </details>
 
 <details>
-<summary><strong>为什么普通用户可以使用广场资源，但不能编辑？</strong></summary>
+<summary><strong>為什麼普通用戶可以使用廣場資源，但不能編輯？</strong></summary>
 
-广场资源是可复用模板。普通用户可将有权限的资源复制或绑定到自己的员工，原始资源仍由创建者与管理员权限保护。
+廣場資源是可複用模板。普通用戶可將有權限的資源複製或綁定到自己的員工，原始資源仍由創建者與管理員權限保護。
 </details>
 
-## 路线图
+## 路線圖
 
-- [ ] 群聊，多数字员工沟通/分工
-- [ ] 更多企业连接器与经过审核的广场资源
-- [ ] 面向高风险工具动作的细粒度审批策略
+- [ ] 群聊，多數字員工溝通/分工
+- [ ] 更多企業連接器與經過審核的廣場資源
+- [ ] 面向高風險工具動作的細粒度審批策略
 
-路线优先级由真实部署需求驱动。请通过 [Issue](https://github.com/OpenBMB/StaffDeck/issues) 提供可复现的场景和预期行为。
+路線優先級由真實部署需求驅動。請通過 [Issue](https://github.com/OpenBMB/StaffDeck/issues) 提供可復現的場景和預期行為。
 
-# 💬 联系我们
-- 关于技术问题及功能请求，请提交 [GitHub Issues](https://github.com/OpenBMB/StaffDeck/issues)。
-- 商业合作，请联系：
+# 💬 聯繫我們
+- 關於技術問題及功能請求，請提交 [GitHub Issues](https://github.com/OpenBMB/StaffDeck/issues)。
+- 商業合作，請聯繫：
   ```
   business@modelbest.cn
   ```
-- 欢迎加入我们的社区与我们交流：
+- 歡迎加入我們的社區與我們交流：
 
 <table width="100%">
 <tr>
 <td width="33%" align="center"><b>微信交流群</b></td>
-<td width="33%" align="center"><b>飞书交流群</b></td>
-<td width="33%" align="center"><b>Discord 社区</b></td>
+<td width="33%" align="center"><b>飛書交流群</b></td>
+<td width="33%" align="center"><b>Discord 社區</b></td>
 </tr>
 <tr>
-<td align="center"><img src="packaging/assets/qr-wechat.png" width="200" alt="微信二维码"/></td>
-<td align="center"><img src="packaging/assets/qr-feishu.jpg" width="200" alt="飞书二维码"/></td>
-<td align="center"><img src="packaging/assets/qr-discord.png" width="200" alt="Discord 二维码"/></td>
+<td align="center"><img src="packaging/assets/qr-wechat.png" width="200" alt="微信二維碼"/></td>
+<td align="center"><img src="packaging/assets/qr-feishu.jpg" width="200" alt="飛書二維碼"/></td>
+<td align="center"><img src="packaging/assets/qr-discord.png" width="200" alt="Discord 二維碼"/></td>
 </tr>
 </table>
 
-## 参与贡献
+## 參與貢獻
 
-欢迎获得仓库权限的协作者参与：
+歡迎獲得倉庫權限的協作者參與：
 
-- 提交可复现的 Bug 与权限问题
-- 提议数字员工、知识、技能、SOP 或工具流程
-- 提交范围清晰、包含测试与浏览器校验的 PR
-- 改进文档和中英翻译
+- 提交可復現的 Bug 與權限問題
+- 提議數字員工、知識、技能、SOP 或工具流程
+- 提交範圍清晰、包含測試與瀏覽器校驗的 PR
+- 改進文檔和中英翻譯
 
-请保留工作区中与任务无关的修改，根据影响范围补充测试，并在 PR 中写明完成 UI 校验的路由与用户角色。
+請保留工作區中與任務無關的修改，根據影響範圍補充測試，並在 PR 中寫明完成 UI 校驗的路由與用戶角色。
 
-## 风险与限制
+## 風險與限制
 
-- 模型回答可能不正确、不完整或不一致；执行记录可以提高可审计性，但不能保证结论正确。
-- 知识检索效果受原始文档质量、解析、索引、权限与模型能力共同影响。
-- 外部工具与生成的 Runner 可能产生真实副作用。应使用最小权限凭据，并为高风险动作配置人工审批。
-- 定时任务依赖持续运行的 Worker 与正确的用户时区设置。
-- 本项目不能替代法律、医疗、金融、安全及其他受监管领域的专业审核。
-- 未获得适当授权、隐私保护与人工监督时，不得使用本平台处理数据或自动作出重要决定。
+- 模型回答可能不正確、不完整或不一致；執行記錄可以提高可審計性，但不能保證結論正確。
+- 知識檢索效果受原始文檔質量、解析、索引、權限與模型能力共同影響。
+- 外部工具與生成的 Runner 可能產生真實副作用。應使用最小權限憑據，併為高風險動作配置人工審批。
+- 定時任務依賴持續運行的 Worker 與正確的用戶時區設置。
+- 本項目不能替代法律、醫療、金融、安全及其他受監管領域的專業審核。
+- 未獲得適當授權、隱私保護與人工監督時，不得使用本平臺處理數據或自動作出重要決定。
 
 ## 引用
 
-在内部研究或经授权的公开材料中使用 StaffDeck 时，可引用：
+在內部研究或經授權的公開材料中使用 StaffDeck 時，可引用：
 
 ```bibtex
 @software{StaffDeck2026,
@@ -260,10 +260,10 @@ StaffDeck/
 ```
 
 
-## 许可证
+## 許可證
 
-本项目基于 GNU Affero General Public License v3.0 开源。
+本項目基於 GNU Affero General Public License v3.0 開源。
 
-## 致谢
+## 致謝
 
-StaffDeck 由 [OpenBMB](https://www.openbmb.cn/) 生态孵化。
+StaffDeck 由 [OpenBMB](https://www.openbmb.cn/) 生態孵化。

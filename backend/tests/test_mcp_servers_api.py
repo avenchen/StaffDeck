@@ -79,14 +79,14 @@ def test_discover_stdio_mcp_server_lists_tools() -> None:
 def test_sync_mcp_tools_imports_tools_and_executes() -> None:
     with _test_session() as db:
         db.add(Tenant(id="tenant_demo", name="Demo"))
-        db.add(AgentProfile(id="agent_overall", tenant_id="tenant_demo", name="整体智能体", is_overall=True))
+        db.add(AgentProfile(id="agent_overall", tenant_id="tenant_demo", name="整體智能體", is_overall=True))
         db.commit()
 
         server = create_mcp_server(
             MCPServerCreateRequest(
                 tenant_id="tenant_demo",
                 name="builtin_demo",
-                display_name="内置 Demo MCP",
+                display_name="內置 Demo MCP",
                 connection=MCPServerConnection(transport="builtin"),
             ),
             db,
@@ -110,10 +110,10 @@ def test_sync_mcp_tools_imports_tools_and_executes() -> None:
         assert imported.tool_type == "mcp"
         assert imported.config_json == {"tool": "echo"}
         assert imported.input_schema["properties"]["text"]["type"] == "string"
-        # display_name 应为工具名（leaf），不能是描述文本（否则列表里名字/描述会叠加）。
+        # display_name 應為工具名（leaf），不能是描述文本（否則列表里名字/描述會疊加）。
         assert imported.display_name == "echo"
         assert imported.description and imported.description != imported.display_name
-        # 同步的工具应建立 open gallery 绑定，才能在工具广场列表中可见。
+        # 同步的工具應建立 open gallery 綁定，才能在工具廣場列表中可見。
         binding = db.exec(
             select(AgentResourceBinding).where(
                 AgentResourceBinding.tenant_id == "tenant_demo",
@@ -122,7 +122,7 @@ def test_sync_mcp_tools_imports_tools_and_executes() -> None:
             )
         ).first()
         assert binding is not None
-        # 端到端：工具广场列表应能查到这个同步进来的工具。
+        # 端到端：工具廣場列表應能查到這個同步進來的工具。
         listed = list_tools(tenant_id="tenant_demo", bucket=None, agent_id="agent_overall", db=db)
         assert any(item.name == "builtin_demo.echo" for item in listed)
 
@@ -137,8 +137,8 @@ def test_sync_mcp_tools_imports_tools_and_executes() -> None:
 def test_sync_mcp_tools_scoped_to_employee_binds_privately() -> None:
     with _test_session() as db:
         db.add(Tenant(id="tenant_demo", name="Demo"))
-        db.add(AgentProfile(id="agent_overall", tenant_id="tenant_demo", name="整体智能体", is_overall=True))
-        db.add(AgentProfile(id="agent_employee", tenant_id="tenant_demo", name="数字员工", is_overall=False))
+        db.add(AgentProfile(id="agent_overall", tenant_id="tenant_demo", name="整體智能體", is_overall=True))
+        db.add(AgentProfile(id="agent_employee", tenant_id="tenant_demo", name="數字員工", is_overall=False))
         db.commit()
 
         server = create_mcp_server(
@@ -164,7 +164,7 @@ def test_sync_mcp_tools_scoped_to_employee_binds_privately() -> None:
         imported = db.exec(select(Tool).where(Tool.mcp_server_id == server.id)).first()
         assert imported is not None
 
-        # 员工范围内同步应建立私有绑定，工具只对该员工可见，不出现在工具广场。
+        # 員工範圍內同步應建立私有綁定，工具只對該員工可見，不出現在工具廣場。
         employee_tools = list_tools(tenant_id="tenant_demo", bucket=None, agent_id="agent_employee", db=db)
         assert any(item.id == imported.id for item in employee_tools)
 

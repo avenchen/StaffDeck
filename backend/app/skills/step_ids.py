@@ -32,13 +32,13 @@ def skill_card_with_unique_step_ids(card: SkillCard) -> tuple[SkillCard, list[st
 
 
 def ensure_unique_step_ids(steps: list[Any]) -> tuple[list[dict[str, Any]], list[str]]:
-    return ensure_unique_node_ids(steps, id_field="step_id", label="步骤")
+    return ensure_unique_node_ids(steps, id_field="step_id", label="步驟")
 
 
 def ensure_unique_node_ids(
     nodes: list[Any],
     id_field: str = "node_id",
-    label: str = "节点",
+    label: str = "節點",
 ) -> tuple[list[dict[str, Any]], list[str]]:
     used: set[str] = set()
     normalized_nodes: list[dict[str, Any]] = []
@@ -56,9 +56,9 @@ def ensure_unique_node_ids(
             suffix += 1
         if candidate != original:
             if original:
-                warnings.append(f"{label} {index + 1} 的 {id_field} 已修正为 `{candidate}`。")
+                warnings.append(f"{label} {index + 1} 的 {id_field} 已修正為 `{candidate}`。")
             else:
-                warnings.append(f"{label} {index + 1} 的 {id_field} 已补全为 `{candidate}`。")
+                warnings.append(f"{label} {index + 1} 的 {id_field} 已補全為 `{candidate}`。")
             node[id_field] = candidate
         else:
             node[id_field] = original

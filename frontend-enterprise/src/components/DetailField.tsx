@@ -9,8 +9,8 @@ export type DetailFieldProps = {
 };
 
 /**
- * Labelled read-only field used inside detail dialogs (员工记忆 / 对话日志 /
- * SOP 版本详情 …): a bordered light card with an 11px caption and its value.
+ * Labelled read-only field used inside detail dialogs (員工記憶 / 對話日誌 /
+ * SOP 版本詳情 …): a bordered light card with an 11px caption and its value.
  */
 export function DetailField({ label, children, className }: DetailFieldProps) {
   return (

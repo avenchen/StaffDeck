@@ -59,7 +59,7 @@ export default function WikiPage({ currentUser, onLogout }: WikiPageProps = {}) 
   const { data: bases, loading: basesLoading } = useApiQuery<KnowledgeBaseRead[]>(
     () => knowledgeApi.listBases(agentId),
     [agentId],
-    { onError: (error) => notify.error(error.message || '加载知识库失败') },
+    { onError: (error) => notify.error(error.message || '加載知識庫失敗') },
   );
 
   const effectiveKbId = selectedKbId || bases?.[0]?.id || '';
@@ -67,13 +67,13 @@ export default function WikiPage({ currentUser, onLogout }: WikiPageProps = {}) 
   const { data: outline, loading: outlineLoading } = useApiQuery<WikiOutline>(
     effectiveKbId ? () => knowledgeApi.wikiOutline(effectiveKbId, agentId) : null,
     [effectiveKbId, agentId],
-    { onError: (error) => notify.error(error.message || '加载 Wiki 大纲失败') },
+    { onError: (error) => notify.error(error.message || '加載 Wiki 大綱失敗') },
   );
 
   const { data: chunks, loading: chunksLoading } = useApiQuery<KnowledgeChunkRead[]>(
     activeBucket ? () => knowledgeApi.bucketChunks(activeBucket.id, agentId) : null,
     [activeBucket?.id, agentId],
-    { onError: (error) => notify.error(error.message || '加载章节内容失败') },
+    { onError: (error) => notify.error(error.message || '加載章節內容失敗') },
   );
 
   // ---- ask panel ---------------------------------------------------------
@@ -86,7 +86,7 @@ export default function WikiPage({ currentUser, onLogout }: WikiPageProps = {}) 
   async function ask() {
     const query = question.trim();
     if (!query) {
-      notify.warning('请输入问题');
+      notify.warning('請輸入問題');
       return;
     }
     abortRef.current?.abort();
@@ -114,14 +114,14 @@ export default function WikiPage({ currentUser, onLogout }: WikiPageProps = {}) 
               setCitations(event.data.citations as WikiCitation[]);
             }
           } else if (event.event === 'error') {
-            notify.error(String(event.data.message || '提问失败'));
+            notify.error(String(event.data.message || '提問失敗'));
           }
         },
         controller.signal,
       );
     } catch (error) {
       if (!controller.signal.aborted) {
-        notify.error(error instanceof Error ? error.message : '提问失败');
+        notify.error(error instanceof Error ? error.message : '提問失敗');
       }
     } finally {
       if (abortRef.current === controller) abortRef.current = null;
@@ -136,12 +136,12 @@ export default function WikiPage({ currentUser, onLogout }: WikiPageProps = {}) 
       <AppHeader
         onLogout={onLogout}
         userName={currentUser?.username}
-        title="知识 Wiki"
-        description="像浏览百科一样阅读知识库，并让 AI 基于知识内容回答问题、给出引用。"
+        title="知識 Wiki"
+        description="像瀏覽百科一樣閱讀知識庫，並讓 AI 基於知識內容回答問題、給出引用。"
       />
 
       <div className="mt-[20px] mb-[16px] flex flex-wrap items-center gap-[12px]">
-        <span className="text-[13px] text-[#858b9c]">知识库</span>
+        <span className="text-[13px] text-[#858b9c]">知識庫</span>
         <select
           value={effectiveKbId}
           onChange={(e) => {
@@ -151,7 +151,7 @@ export default function WikiPage({ currentUser, onLogout }: WikiPageProps = {}) 
           disabled={basesLoading || kbOptions.length === 0}
           className="h-[34px] min-w-[220px] rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-[12px] text-[13px] text-[#18181a]"
         >
-          {kbOptions.length === 0 && <option value="">暂无知识库</option>}
+          {kbOptions.length === 0 && <option value="">暫無知識庫</option>}
           {kbOptions.map((kb) => (
             <option key={kb.id} value={kb.id}>
               {kb.name}
@@ -160,7 +160,7 @@ export default function WikiPage({ currentUser, onLogout }: WikiPageProps = {}) 
         </select>
         {outline && (
           <span className="text-[12px] text-[#a4abbb]">
-            {outline.document_count} 篇文档 · {outline.bucket_count} 个章节 · {outline.chunk_count} 段内容
+            {outline.document_count} 篇文檔 · {outline.bucket_count} 個章節 · {outline.chunk_count} 段內容
           </span>
         )}
       </div>
@@ -168,7 +168,7 @@ export default function WikiPage({ currentUser, onLogout }: WikiPageProps = {}) 
       <div className="grid grid-cols-1 items-start gap-[16px] xl:grid-cols-[280px_minmax(0,1fr)_360px]">
         {/* Outline tree */}
         <SectionCard
-          title="目录"
+          title="目錄"
           loading={outlineLoading && !outline}
           className={cn(CARD_CLASS, 'overflow-hidden')}
           headerClassName="min-h-[48px] border-b border-[#eceef1] px-[16px] py-[10px]"
@@ -176,7 +176,7 @@ export default function WikiPage({ currentUser, onLogout }: WikiPageProps = {}) 
           bodyClassName="max-h-[calc(100vh-260px)] overflow-y-auto p-[10px]"
         >
           {outline && outline.documents.length === 0 && (
-            <p className="px-[6px] py-[12px] text-[12px] text-[#a4abbb]">该知识库还没有已处理的文档。</p>
+            <p className="px-[6px] py-[12px] text-[12px] text-[#a4abbb]">該知識庫還沒有已處理的文檔。</p>
           )}
           {outline?.documents.map((doc) => (
             <div key={doc.id} className="mb-[10px]">
@@ -217,13 +217,13 @@ export default function WikiPage({ currentUser, onLogout }: WikiPageProps = {}) 
         >
           {!activeBucket && (
             <p className="py-[40px] text-center text-[13px] text-[#a4abbb]">
-              从左侧目录选择一个章节开始阅读。
+              從左側目錄選擇一個章節開始閱讀。
             </p>
           )}
           {activeBucket && (
             <div className="flex flex-col gap-[16px]">
               <div className="rounded-[10px] bg-[#fafbfc] p-[14px] text-[13px] leading-[1.7] text-[#5b6270]">
-                {activeBucket.summary || '（本章节暂无摘要）'}
+                {activeBucket.summary || '（本章節暫無摘要）'}
               </div>
               {(chunks ?? []).map((chunk) => (
                 <div key={chunk.id} className="border-l-[2px] border-[#eceef1] pl-[14px]">
@@ -231,12 +231,12 @@ export default function WikiPage({ currentUser, onLogout }: WikiPageProps = {}) 
                     {chunk.content}
                   </p>
                   {chunk.source_ref && (
-                    <p className="mt-[6px] font-mono text-[11px] text-[#a4abbb]">来源：{chunk.source_ref}</p>
+                    <p className="mt-[6px] font-mono text-[11px] text-[#a4abbb]">來源：{chunk.source_ref}</p>
                   )}
                 </div>
               ))}
               {!chunksLoading && (chunks ?? []).length === 0 && (
-                <p className="text-[12px] text-[#a4abbb]">该章节暂无正文内容。</p>
+                <p className="text-[12px] text-[#a4abbb]">該章節暫無正文內容。</p>
               )}
             </div>
           )}
@@ -244,13 +244,13 @@ export default function WikiPage({ currentUser, onLogout }: WikiPageProps = {}) 
 
         {/* Ask panel */}
         <SectionCard
-          title="问 Wiki"
+          title="問 Wiki"
           className={cn(CARD_CLASS, 'overflow-hidden xl:sticky xl:top-[18px]')}
           headerClassName="min-h-[48px] border-b border-[#eceef1] px-[16px] py-[10px]"
           titleClassName={CARD_TITLE_CLASS}
           bodyClassName="flex flex-col gap-[12px] p-[16px]"
         >
-          <Field label="向当前知识库提问">
+          <Field label="向當前知識庫提問">
             <textarea
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
@@ -261,7 +261,7 @@ export default function WikiPage({ currentUser, onLogout }: WikiPageProps = {}) 
                 }
               }}
               rows={3}
-              placeholder="例如：退款需要几天？（⌘/Ctrl + Enter 发送）"
+              placeholder="例如：退款需要幾天？（⌘/Ctrl + Enter 發送）"
               className="w-full resize-y rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white p-[10px] text-[13px] leading-[1.6] text-[#18181a] outline-none focus:border-[#cbd3e6]"
             />
           </Field>
@@ -271,7 +271,7 @@ export default function WikiPage({ currentUser, onLogout }: WikiPageProps = {}) 
               disabled={asking || !effectiveKbId}
               className="h-[32px] gap-[4px] rounded-[10px] bg-[#18181a] px-[18px] text-[12px] font-normal text-white hover:bg-[#303030]"
             >
-              {asking ? '思考中…' : '提问'}
+              {asking ? '思考中…' : '提問'}
             </UIButton>
           </div>
 
@@ -280,14 +280,14 @@ export default function WikiPage({ currentUser, onLogout }: WikiPageProps = {}) 
               {answer ? (
                 <AnswerText text={answer} />
               ) : (
-                <p className="text-[12px] text-[#a4abbb]">正在检索知识并生成回答…</p>
+                <p className="text-[12px] text-[#a4abbb]">正在檢索知識並生成回答…</p>
               )}
             </div>
           )}
 
           {citations.length > 0 && (
             <div className="flex flex-col gap-[8px]">
-              <p className="text-[12px] font-medium text-[#858b9c]">引用来源</p>
+              <p className="text-[12px] font-medium text-[#858b9c]">引用來源</p>
               {citations.map((c) => (
                 <div key={c.index} className="rounded-[8px] border border-[#eceef1] p-[10px]">
                   <p className="text-[12px] font-medium text-[#18181a]">

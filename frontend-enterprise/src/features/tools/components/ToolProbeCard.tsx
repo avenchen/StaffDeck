@@ -19,11 +19,11 @@ export function ToolProbeCard({ values }: { values: ToolFormValues }) {
 
   async function probe() {
     if (!String(values.name || '').trim()) {
-      notify.error('请填写工具名称');
+      notify.error('請填寫工具名稱');
       return;
     }
     if (!String(values.url || '').trim()) {
-      notify.error('请填写 URL');
+      notify.error('請填寫 URL');
       return;
     }
     const payload = buildToolPayload(values);
@@ -32,7 +32,7 @@ export function ToolProbeCard({ values }: { values: ToolFormValues }) {
     try {
       sampleArguments = parseJson(sampleJson, {});
     } catch {
-      notify.error('测试参数不是合法 JSON');
+      notify.error('測試參數不是合法 JSON');
       return;
     }
     if (
@@ -41,7 +41,7 @@ export function ToolProbeCard({ values }: { values: ToolFormValues }) {
       && payload.url.includes('?')
       && Object.keys(sampleArguments).length === 0
     ) {
-      notify.error('URL 已包含查询参数时请把 HTTP Method 切换为 GET；POST 会把测试参数作为 JSON Body 发送。');
+      notify.error('URL 已包含查詢參數時請把 HTTP Method 切換為 GET；POST 會把測試參數作為 JSON Body 發送。');
       return;
     }
     setLoading(true);
@@ -63,7 +63,7 @@ export function ToolProbeCard({ values }: { values: ToolFormValues }) {
       });
       setResult(JSON.stringify(response, null, 2));
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '探测失败');
+      notify.error(error instanceof Error ? error.message : '探測失敗');
     } finally {
       setLoading(false);
     }
@@ -71,24 +71,24 @@ export function ToolProbeCard({ values }: { values: ToolFormValues }) {
 
   return (
     <SectionCard
-      title="配置探测"
+      title="配置探測"
       bodyClassName="flex flex-col gap-[14px]"
       extra={(
         <UIButton variant="outline" disabled={loading} onClick={() => void probe()} className={RETURN_BUTTON_CLASS}>
           <ExperimentOutlined />
-          探测
+          探測
         </UIButton>
       )}
     >
-      <p className={HINT_CLASS}>无需保存，直接用当前配置测试连接。</p>
+      <p className={HINT_CLASS}>無需保存，直接用當前配置測試連接。</p>
       <div className="flex flex-col gap-[8px]">
         <span className={SUBSECTION_TITLE_CLASS}>
-          {isGetMethod ? '测试参数 JSON（拼到 URL Query）' : '测试参数 JSON（作为请求 Body）'}
+          {isGetMethod ? '測試參數 JSON（拼到 URL Query）' : '測試參數 JSON（作為請求 Body）'}
         </span>
         <p className={HINT_CLASS}>
           {isGetMethod
-            ? 'GET 会把这里的字段作为查询参数追加到 URL；参数值填写未编码原文，例如 timezone 用 Asia/Shanghai。'
-            : '非 GET 请求会把这里的 JSON 作为请求体发送；仅 URL 查询串不会变成请求 Body。'}
+            ? 'GET 會把這裡的字段作為查詢參數追加到 URL；參數值填寫未編碼原文，例如 timezone 用 Asia/Shanghai。'
+            : '非 GET 請求會把這裡的 JSON 作為請求體發送；僅 URL 查詢串不會變成請求 Body。'}
         </p>
         <Textarea
           rows={5}
@@ -98,7 +98,7 @@ export function ToolProbeCard({ values }: { values: ToolFormValues }) {
         />
       </div>
       <div className="flex flex-col gap-[8px]">
-        <span className={SUBSECTION_TITLE_CLASS}>探测结果</span>
+        <span className={SUBSECTION_TITLE_CLASS}>探測結果</span>
         <Textarea rows={8} readOnly className={MONO_INPUT_CLASS} value={result} />
       </div>
     </SectionCard>

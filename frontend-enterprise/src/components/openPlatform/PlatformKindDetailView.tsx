@@ -82,7 +82,7 @@ function DetailSkeleton({ kind }: { kind: PlatformDetailKind }) {
 }
 
 /**
- * Full-list view for a single 开放广场 module (/enterprise/platform/:kind).
+ * Full-list view for a single 開放廣場 module (/enterprise/platform/:kind).
  * Mirrors the main platform page card system inside the standard enterprise page shell.
  */
 export default function PlatformKindDetailView({
@@ -126,7 +126,7 @@ export default function PlatformKindDetailView({
       <div className="mt-[20px] mb-[16px] flex flex-wrap justify-end gap-[16px]">
         <UIButton variant="outline" onClick={onBack} className={RETURN_BUTTON_CLASS}>
           <IconArrowRight className="size-3.5 rotate-180" />
-          返回开放广场
+          返回開放廣場
         </UIButton>
         <UIButton
           variant="outline"
@@ -140,7 +140,7 @@ export default function PlatformKindDetailView({
       </div>
 
       <div className="flex flex-col gap-[24px] rounded-[20px] bg-white p-[18px_18px_24px_18px] shadow-[0_-4px_16px_0_rgba(0,0,0,0.05)]">
-        <div className="flex flex-wrap items-stretch gap-[20px]" aria-label={`${title}统计`}>
+        <div className="flex flex-wrap items-stretch gap-[20px]" aria-label={`${title}統計`}>
           <StatCard value={items.length} label={countLabel} className="max-w-[220px]" />
         </div>
 
@@ -178,7 +178,7 @@ export default function PlatformKindDetailView({
           ) : filteredItems.length === 0 ? (
             <div className="grid min-h-[180px] w-full place-items-center content-center gap-[10px] rounded-[18px] border border-dashed border-[#dfe4ec] bg-[#fbfcfd] px-[20px] py-[40px] text-center font-bold text-[#8b94aa]">
               <IconSearch className="size-[20px] shrink-0" />
-              <span>{items.length === 0 ? '暂无开放内容' : '没有匹配的广场内容'}</span>
+              <span>{items.length === 0 ? '暫無開放內容' : '沒有匹配的廣場內容'}</span>
             </div>
           ) : kind === 'agents' ? (
             <div className="grid grid-cols-1 gap-[16px] sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">

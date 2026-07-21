@@ -73,7 +73,7 @@ PRODUCT_NAME_CATALOG = {
     },
     "a1": {
         "product_id": "A1",
-        "display_name": "A1 标准商品",
+        "display_name": "A1 標準商品",
         "brand": "Mock",
         "price": Decimal("129.00"),
         "currency": "CNY",
@@ -81,7 +81,7 @@ PRODUCT_NAME_CATALOG = {
     },
     "a3": {
         "product_id": "A3",
-        "display_name": "A3 高阶商品",
+        "display_name": "A3 高階商品",
         "brand": "Mock",
         "price": Decimal("239.00"),
         "currency": "CNY",
@@ -99,8 +99,8 @@ ARCHIVE_ORDER_CENTER = {
         "status": "signed",
         "signed_days": 4,
         "refundable": True,
-        "archive_reason": "订单已归档到历史订单中心",
-        "recommendation": "该历史订单签收 4 天，当前可继续发起售后退款审核。",
+        "archive_reason": "訂單已歸檔到歷史訂單中心",
+        "recommendation": "該歷史訂單簽收 4 天，當前可繼續發起售後退款審核。",
     }
 }
 
@@ -225,7 +225,7 @@ def mock_member_benefit_reconcile(request: MockBenefitReconcileRequest) -> dict[
         {
             "benefit_id": f"{benefit_type}_vip_shipping_delay",
             "benefit_type": benefit_type,
-            "display_name": "会员履约保障券",
+            "display_name": "會員履約保障券",
             "amount": 30,
             "currency": "CNY",
         }
@@ -263,7 +263,7 @@ def mock_fulfillment_reroute_plan(request: MockFulfillmentReroutePlanRequest) ->
                 "plan_type": "upgrade_priority",
                 "carrier": "mock_same_city",
                 "estimated_delivery_time": request.expected_delivery_time or "2026-06-04T21:00:00+08:00",
-                "risk": "可能受同城仓库存和骑手排班影响",
+                "risk": "可能受同城倉庫存和騎手排班影響",
                 "extra_fee": 0,
                 "requires_split_package": bool(request.allow_split_package),
             },
@@ -272,7 +272,7 @@ def mock_fulfillment_reroute_plan(request: MockFulfillmentReroutePlanRequest) ->
                 "plan_type": "keep_route_with_urge",
                 "carrier": "mock_standard",
                 "estimated_delivery_time": "2026-06-05T12:00:00+08:00",
-                "risk": "无需改仓，时效较慢但稳定",
+                "risk": "無需改倉，時效較慢但穩定",
                 "extra_fee": 0,
                 "requires_split_package": False,
             },
@@ -381,7 +381,7 @@ def _product_miss(product_name: str) -> dict[str, Any]:
         "found": False,
         "results": [],
         "miss_reason": "product_not_found",
-        "hint": "可尝试使用 iPhone 15、三星S24、小米14、A1、A3 或 SKU-001/SKU-002/SKU-003 作为 mock 商品名。",
+        "hint": "可嘗試使用 iPhone 15、三星S24、小米14、A1、A3 或 SKU-001/SKU-002/SKU-003 作為 mock 商品名。",
     }
 
 
@@ -409,7 +409,7 @@ def _order_miss(order_id: str, source: str) -> dict[str, Any]:
         "source": source,
         "results": [],
         "miss_reason": "source_miss",
-        "hint": "当前订单中心未命中，可尝试其他已配置的订单查询工具。",
+        "hint": "當前訂單中心未命中，可嘗試其他已配置的訂單查詢工具。",
     }
 
 
@@ -432,7 +432,7 @@ def _find_dynamic_order(db: object, order_id: str) -> dict[str, Any] | None:
         "total_amount": row.total_amount,
         "currency": row.currency,
         "created_at": row.created_at.isoformat(),
-        "recommendation": "该订单已在 mock 订单中心创建，可继续进行订单查询、取消或售后流程。",
+        "recommendation": "該訂單已在 mock 訂單中心創建，可繼續進行訂單查詢、取消或售後流程。",
         **(row.metadata_json or {}),
     }
 

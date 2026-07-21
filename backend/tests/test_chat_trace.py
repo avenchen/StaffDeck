@@ -27,11 +27,11 @@ def test_event_log_binds_all_execution_events_to_current_turn() -> None:
             "tenant_demo",
             "session_test",
             "step_agent_result_created",
-            {"reply": "请补充退款原因"},
+            {"reply": "請補充退款原因"},
         )
 
         assert event.payload_json == {
-            "reply": "请补充退款原因",
+            "reply": "請補充退款原因",
             "turn_id": "msg_user",
             "user_message_id": "msg_user",
             "client_turn_id": "client_turn",
@@ -107,7 +107,7 @@ def test_turn_trace_uses_router_skill_hint_when_events_have_turn_id() -> None:
             tenant_id="tenant_demo",
             session_id="session_test",
             role="user",
-            content="帮我下单a2，实际发货a3",
+            content="幫我下單a2，實際發貨a3",
             created_at=started_at,
         )
     ]
@@ -116,7 +116,7 @@ def test_turn_trace_uses_router_skill_hint_when_events_have_turn_id() -> None:
             tenant_id="tenant_demo",
             session_id="session_test",
             event_type="user_message_received",
-            payload_json={"message_id": "msg_user", "message": "帮我下单a2，实际发货a3"},
+            payload_json={"message_id": "msg_user", "message": "幫我下單a2，實際發貨a3"},
             created_at=started_at,
         ),
         AgentEvent(
@@ -127,8 +127,8 @@ def test_turn_trace_uses_router_skill_hint_when_events_have_turn_id() -> None:
                 "decision": "continue_active",
                 "target_skill_id": "skill_purchase_001",
                 "target_step_id": "confirm_purchase",
-                "user_intent": "下单",
-                "reason": "继续购买流程",
+                "user_intent": "下單",
+                "reason": "繼續購買流程",
                 "user_message_id": "msg_user",
             },
             created_at=started_at + timedelta(seconds=1),
@@ -153,15 +153,15 @@ def test_turn_trace_uses_router_skill_hint_when_events_have_turn_id() -> None:
         ),
     ]
 
-    traces = _build_turn_traces(messages, events, {"skill_purchase_001": "购买商品流程"})
+    traces = _build_turn_traces(messages, events, {"skill_purchase_001": "購買商品流程"})
 
     skill_lines = [
         line
         for line in traces[0]["lines"]
-        if line["kind"] == "skill" and "购买商品流程" in line["text"]
+        if line["kind"] == "skill" and "購買商品流程" in line["text"]
     ]
     assert skill_lines
-    assert skill_lines[0]["text"] == "推进SOP 购买商品流程"
+    assert skill_lines[0]["text"] == "推進SOP 購買商品流程"
     assert skill_lines[0]["detail"] == "step end"
     router_line = next(line for line in traces[0]["lines"] if line["id"] == "decision_router")
     assert router_line["icon"] == "judge"
@@ -176,7 +176,7 @@ def test_turn_trace_recovers_persisted_skill_state_for_current_turn() -> None:
             tenant_id="tenant_demo",
             session_id="session_test",
             role="user",
-            content="先查询天气，再购买 a1",
+            content="先查詢天氣，再購買 a1",
             created_at=started_at,
         )
     ]
@@ -185,7 +185,7 @@ def test_turn_trace_recovers_persisted_skill_state_for_current_turn() -> None:
             tenant_id="tenant_demo",
             session_id="session_test",
             event_type="user_message_received",
-            payload_json={"message_id": "msg_user", "message": "先查询天气，再购买 a1"},
+            payload_json={"message_id": "msg_user", "message": "先查詢天氣，再購買 a1"},
             created_at=started_at,
         ),
         AgentEvent(
@@ -198,13 +198,13 @@ def test_turn_trace_recovers_persisted_skill_state_for_current_turn() -> None:
                 "currentSkills": [
                     {
                         "skillId": "skill_purchase_001",
-                        "name": "购买商品流程",
+                        "name": "購買商品流程",
                         "stepId": "collect_user_name",
                         "state": "active",
                     },
                     {
                         "skillId": "skill_weather_001",
-                        "name": "天气查询流程",
+                        "name": "天氣查詢流程",
                         "stepId": "collect_city",
                         "state": "pending",
                     },
@@ -217,14 +217,14 @@ def test_turn_trace_recovers_persisted_skill_state_for_current_turn() -> None:
         ),
     ]
 
-    traces = _build_turn_traces(messages, events, {"skill_purchase_001": "购买商品流程"})
+    traces = _build_turn_traces(messages, events, {"skill_purchase_001": "購買商品流程"})
 
     skill_lines = [line for line in traces[0]["lines"] if line["kind"] == "skill"]
     assert skill_lines[0]["id"] == "skill_state_skill_purchase_001_active_collect_user_name"
-    assert skill_lines[0]["text"] == "选择SOP 购买商品流程"
-    assert skill_lines[0]["detail"] == "当前步骤 collect_user_name"
+    assert skill_lines[0]["text"] == "選擇SOP 購買商品流程"
+    assert skill_lines[0]["detail"] == "當前步驟 collect_user_name"
     assert skill_lines[1]["id"] == "skill_state_skill_weather_001_pending_collect_city"
-    assert skill_lines[1]["text"] == "等待SOP 天气查询流程"
+    assert skill_lines[1]["text"] == "等待SOP 天氣查詢流程"
 
 
 def test_turn_trace_merges_skill_started_with_matching_state_snapshot() -> None:
@@ -235,7 +235,7 @@ def test_turn_trace_merges_skill_started_with_matching_state_snapshot() -> None:
             tenant_id="tenant_demo",
             session_id="session_test",
             role="user",
-            content="帮我查询本月报销额度",
+            content="幫我查詢本月報銷額度",
             created_at=started_at,
         )
     ]
@@ -244,7 +244,7 @@ def test_turn_trace_merges_skill_started_with_matching_state_snapshot() -> None:
             tenant_id="tenant_demo",
             session_id="session_test",
             event_type="user_message_received",
-            payload_json={"message_id": "msg_user", "message": "帮我查询本月报销额度"},
+            payload_json={"message_id": "msg_user", "message": "幫我查詢本月報銷額度"},
             created_at=started_at,
         ),
         AgentEvent(
@@ -268,7 +268,7 @@ def test_turn_trace_merges_skill_started_with_matching_state_snapshot() -> None:
                 "currentSkills": [
                     {
                         "skillId": "skill_expense_quota_query",
-                        "name": "报销额度查询",
+                        "name": "報銷額度查詢",
                         "stepId": "node_collect_info",
                         "state": "active",
                     }
@@ -282,7 +282,7 @@ def test_turn_trace_merges_skill_started_with_matching_state_snapshot() -> None:
     traces = _build_turn_traces(
         messages,
         events,
-        {"skill_expense_quota_query": "报销额度查询"},
+        {"skill_expense_quota_query": "報銷額度查詢"},
     )
 
     skill_lines = [line for line in traces[0]["lines"] if line["kind"] == "skill"]
@@ -290,8 +290,8 @@ def test_turn_trace_merges_skill_started_with_matching_state_snapshot() -> None:
         {
             "id": "skill_state_skill_expense_quota_query_active_node_collect_info",
             "kind": "skill",
-            "text": "选择SOP 报销额度查询",
-            "detail": "当前步骤 node_collect_info",
+            "text": "選擇SOP 報銷額度查詢",
+            "detail": "當前步驟 node_collect_info",
             "state": "running",
             "icon": "advance",
         }
@@ -306,7 +306,7 @@ def test_turn_trace_uses_live_stream_ids_for_persisted_status_events() -> None:
             tenant_id="tenant_demo",
             session_id="session_test",
             role="user",
-            content="查询报销额度",
+            content="查詢報銷額度",
             created_at=started_at,
         )
     ]
@@ -315,7 +315,7 @@ def test_turn_trace_uses_live_stream_ids_for_persisted_status_events() -> None:
             tenant_id="tenant_demo",
             session_id="session_test",
             event_type="user_message_received",
-            payload_json={"message_id": "msg_user", "message": "查询报销额度"},
+            payload_json={"message_id": "msg_user", "message": "查詢報銷額度"},
             created_at=started_at,
         ),
         AgentEvent(
@@ -336,7 +336,7 @@ def test_turn_trace_uses_live_stream_ids_for_persisted_status_events() -> None:
             tenant_id="tenant_demo",
             session_id="session_test",
             event_type="stream_status",
-            payload_json={"phase": "knowledge", "text": "查询业务资料", "turn_id": "msg_user"},
+            payload_json={"phase": "knowledge", "text": "查詢業務資料", "turn_id": "msg_user"},
             created_at=started_at + timedelta(seconds=3),
         ),
         AgentEvent(
@@ -345,7 +345,7 @@ def test_turn_trace_uses_live_stream_ids_for_persisted_status_events() -> None:
             event_type="stream_status",
             payload_json={
                 "phase": "tool",
-                "text": "正在调用工具",
+                "text": "正在調用工具",
                 "tool_name": "expense.quota_query",
                 "tool_call_id": "call_1",
                 "turn_id": "msg_user",
@@ -366,7 +366,7 @@ def test_turn_trace_uses_live_stream_ids_for_persisted_status_events() -> None:
 
 def test_turn_trace_merges_knowledge_lifecycle_events_for_same_query() -> None:
     started_at = datetime(2026, 7, 15, 14, 33, 9)
-    query = "招待客户的餐费是否计入差旅费报销范围"
+    query = "招待客戶的餐費是否計入差旅費報銷範圍"
     messages = [
         Message(
             id="msg_user",
@@ -417,8 +417,8 @@ def test_turn_trace_merges_knowledge_lifecycle_events_for_same_query() -> None:
             "id": f"knowledge_lookup_{query}",
             "kind": "knowledge",
             "phase": "result",
-            "text": "读取业务资料",
-            "detail": "命中 Wiki 1 个",
+            "text": "讀取業務資料",
+            "detail": "命中 Wiki 1 個",
             "state": "completed",
             "icon": "advance",
         }
@@ -433,7 +433,7 @@ def test_turn_trace_merges_created_and_relayed_reflection_decisions() -> None:
             tenant_id="tenant_demo",
             session_id="session_test",
             role="user",
-            content="继续处理",
+            content="繼續處理",
             created_at=started_at,
         )
     ]
@@ -442,7 +442,7 @@ def test_turn_trace_merges_created_and_relayed_reflection_decisions() -> None:
             tenant_id="tenant_demo",
             session_id="session_test",
             event_type="user_message_received",
-            payload_json={"message_id": "msg_user", "message": "继续处理"},
+            payload_json={"message_id": "msg_user", "message": "繼續處理"},
             created_at=started_at,
         ),
         AgentEvent(
@@ -465,7 +465,7 @@ def test_turn_trace_merges_created_and_relayed_reflection_decisions() -> None:
 
     reflection_lines = [line for line in traces[0]["lines"] if line["id"] == "reflection"]
     assert len(reflection_lines) == 1
-    assert reflection_lines[0]["text"] == "反思通过"
+    assert reflection_lines[0]["text"] == "反思通過"
 
 
 def test_turn_trace_ignores_noop_skill_step_change() -> None:
@@ -476,7 +476,7 @@ def test_turn_trace_ignores_noop_skill_step_change() -> None:
             tenant_id="tenant_demo",
             session_id="session_test",
             role="user",
-            content="我的工号是2472063",
+            content="我的工號是2472063",
             created_at=started_at,
         )
     ]
@@ -485,7 +485,7 @@ def test_turn_trace_ignores_noop_skill_step_change() -> None:
             tenant_id="tenant_demo",
             session_id="session_test",
             event_type="user_message_received",
-            payload_json={"message_id": "msg_user", "message": "我的工号是2472063"},
+            payload_json={"message_id": "msg_user", "message": "我的工號是2472063"},
             created_at=started_at,
         ),
         AgentEvent(
@@ -507,7 +507,7 @@ def test_turn_trace_ignores_noop_skill_step_change() -> None:
     traces = _build_turn_traces(
         messages,
         events,
-        {"expense_travel_reimbursement": "差旅报销申请"},
+        {"expense_travel_reimbursement": "差旅報銷申請"},
     )
 
     assert not any(line["kind"] == "skill" for line in traces[0]["lines"])
@@ -520,7 +520,7 @@ def test_message_read_hydrates_knowledge_citation_content_from_concept() -> None
         poolclass=StaticPool,
     )
     SQLModel.metadata.create_all(engine)
-    content = "完整 Content 正文。\n\n第二段继续保留。"
+    content = "完整 Content 正文。\n\n第二段繼續保留。"
     with Session(engine) as db:
         db.add(
             KnowledgeConcept(
@@ -530,9 +530,9 @@ def test_message_read_hydrates_knowledge_citation_content_from_concept() -> None
                 document_id="kdoc_demo",
                 concept_id="sources/demo/sections/sec-4",
                 concept_type="Source Section",
-                title="段落组 1",
+                title="段落組 1",
                 description="不完整 summary",
-                content_md=f"---\ntitle: 段落组 1\n---\n{content}",
+                content_md=f"---\ntitle: 段落組 1\n---\n{content}",
             )
         )
         db.commit()
@@ -548,7 +548,7 @@ def test_message_read_hydrates_knowledge_citation_content_from_concept() -> None
                         "id": "kref_1",
                         "label": "[1]",
                         "kind": "concept",
-                        "title": "段落组 1",
+                        "title": "段落組 1",
                         "concept_id": "sources/demo/sections/sec-4",
                         "summary": "不完整 summary",
                         "excerpt": "不完整 summary",
@@ -571,18 +571,18 @@ def test_message_read_compacts_historical_knowledge_citation_labels() -> None:
         tenant_id="tenant_demo",
         session_id="session_test",
         role="assistant",
-        content="先参考排查手册。[1] 区域故障则提交报修。[4]",
+        content="先參考排查手冊。[1] 區域故障則提交報修。[4]",
         metadata_json={
             "knowledge_citations": [
-                {"id": "kref_1", "label": "[1]", "title": "排查手册"},
-                {"id": "kref_4", "label": "[4]", "title": "网络故障"},
+                {"id": "kref_1", "label": "[1]", "title": "排查手冊"},
+                {"id": "kref_4", "label": "[4]", "title": "網絡故障"},
             ]
         },
     )
 
     read = message_read(row)
 
-    assert read.content == "先参考排查手册。[1] 区域故障则提交报修。[2]"
+    assert read.content == "先參考排查手冊。[1] 區域故障則提交報修。[2]"
     assert [item["label"] for item in read.metadata["knowledge_citations"]] == ["[1]", "[2]"]
 
 
@@ -594,7 +594,7 @@ def test_turn_trace_does_not_reconstruct_events_from_message_metadata() -> None:
             tenant_id="tenant_demo",
             session_id="session_citation",
             role="user",
-            content="引用规则是什么？",
+            content="引用規則是什麼？",
             created_at=started_at,
         ),
         Message(
@@ -602,11 +602,11 @@ def test_turn_trace_does_not_reconstruct_events_from_message_metadata() -> None:
             tenant_id="tenant_demo",
             session_id="session_citation",
             role="assistant",
-            content="回答需要展示知识引用。[1]",
+            content="回答需要展示知識引用。[1]",
             metadata_json={
                 "knowledge_citations": [
                     {
-                        "title": "知识引用测试说明 / 引用规则",
+                        "title": "知識引用測試說明 / 引用規則",
                         "source_title": "citation-demo.md",
                     }
                 ]
@@ -644,7 +644,7 @@ def test_turn_trace_keeps_running_routing_status_for_refresh() -> None:
             tenant_id="tenant_demo",
             session_id="session_running",
             event_type="stream_status",
-            payload_json={"turn_id": "msg_user", "user_message_id": "msg_user", "phase": "routing", "text": "正在判断用户意图"},
+            payload_json={"turn_id": "msg_user", "user_message_id": "msg_user", "phase": "routing", "text": "正在判斷用戶意圖"},
             created_at=started_at + timedelta(milliseconds=100),
         ),
     ]
@@ -654,7 +654,7 @@ def test_turn_trace_keeps_running_routing_status_for_refresh() -> None:
     assert traces[0]["completed_at"] is None
     assert any(
         line["id"] == "decision_router"
-        and line["text"] == "判断意图"
+        and line["text"] == "判斷意圖"
         and line["state"] == "running"
         and line["icon"] == "judge"
         for line in traces[0]["lines"]
@@ -669,7 +669,7 @@ def test_turn_trace_marks_model_and_intermediate_errors_failed() -> None:
             tenant_id="tenant_demo",
             session_id="session_error",
             role="user",
-            content="总结一下",
+            content="總結一下",
             created_at=started_at,
         )
     ]
@@ -678,7 +678,7 @@ def test_turn_trace_marks_model_and_intermediate_errors_failed() -> None:
             tenant_id="tenant_demo",
             session_id="session_error",
             event_type="user_message_received",
-            payload_json={"message_id": "msg_user", "message": "总结一下"},
+            payload_json={"message_id": "msg_user", "message": "總結一下"},
             created_at=started_at,
         ),
         AgentEvent(
@@ -691,7 +691,7 @@ def test_turn_trace_marks_model_and_intermediate_errors_failed() -> None:
                 "phase": "error",
                 "code": "LLM_ERROR",
                 "message": "upstream timeout",
-                "text": "模型调用失败",
+                "text": "模型調用失敗",
             },
             created_at=started_at + timedelta(milliseconds=100),
         ),
@@ -703,7 +703,7 @@ def test_turn_trace_marks_model_and_intermediate_errors_failed() -> None:
                 "turn_id": "msg_user",
                 "user_message_id": "msg_user",
                 "phase": "plan_failed",
-                "message": "模型生成 runner 失败",
+                "message": "模型生成 runner 失敗",
                 "error": "invalid json",
             },
             created_at=started_at + timedelta(milliseconds=200),
@@ -727,14 +727,14 @@ def test_turn_trace_marks_model_and_intermediate_errors_failed() -> None:
 
     assert traces[0]["completed_at"] == events[-1].created_at.isoformat()
     assert any(
-        line["text"] == "模型调用失败"
+        line["text"] == "模型調用失敗"
         and line["state"] == "failed"
         and line["icon"] == "loading"
         and "upstream timeout" in line["detail"]
         for line in lines
     )
     assert any(
-        line["text"] == "模型生成 runner 失败"
+        line["text"] == "模型生成 runner 失敗"
         and line["state"] == "failed"
         and line["icon"] == "generated"
         and "invalid json" in line["detail"]
@@ -750,7 +750,7 @@ def test_turn_trace_cancel_event_closes_running_status_for_refresh() -> None:
             tenant_id="tenant_demo",
             session_id="session_cancelled",
             role="user",
-            content="暂停测试",
+            content="暫停測試",
             created_at=started_at,
         )
     ]
@@ -759,14 +759,14 @@ def test_turn_trace_cancel_event_closes_running_status_for_refresh() -> None:
             tenant_id="tenant_demo",
             session_id="session_cancelled",
             event_type="user_message_received",
-            payload_json={"message_id": "msg_user", "message": "暂停测试"},
+            payload_json={"message_id": "msg_user", "message": "暫停測試"},
             created_at=started_at,
         ),
         AgentEvent(
             tenant_id="tenant_demo",
             session_id="session_cancelled",
             event_type="stream_status",
-            payload_json={"turn_id": "msg_user", "user_message_id": "msg_user", "phase": "routing", "text": "正在判断用户意图"},
+            payload_json={"turn_id": "msg_user", "user_message_id": "msg_user", "phase": "routing", "text": "正在判斷用戶意圖"},
             created_at=started_at + timedelta(milliseconds=100),
         ),
         AgentEvent(
@@ -784,7 +784,7 @@ def test_turn_trace_cancel_event_closes_running_status_for_refresh() -> None:
     assert all(line["state"] != "running" for line in traces[0]["lines"])
     assert any(
         line["id"] == "generation_stopped"
-        and line["text"] == "用户已停止生成"
+        and line["text"] == "用戶已停止生成"
         and line["state"] == "completed"
         for line in traces[0]["lines"]
     )
@@ -818,7 +818,7 @@ def test_scheduled_task_draft_trace_restores_config_stages_for_refresh() -> None
             tenant_id="tenant_demo",
             session_id="session_schedule",
             role="assistant",
-            content="我已按你选择的定时项目整理成自动任务草案。",
+            content="我已按你選擇的定時項目整理成自動任務草案。",
             metadata_json={"turn_id": "msg_user", "user_message_id": "msg_user", "scheduled_task_draft": draft},
             created_at=started_at + timedelta(milliseconds=500),
         ),
@@ -839,7 +839,7 @@ def test_scheduled_task_draft_trace_restores_config_stages_for_refresh() -> None
                 "turn_id": "msg_user",
                 "user_message_id": "msg_user",
                 "phase": "scheduled_task_intent",
-                "text": "识别定时任务需求",
+                "text": "識別定時任務需求",
             },
             created_at=started_at + timedelta(milliseconds=100),
         ),
@@ -851,7 +851,7 @@ def test_scheduled_task_draft_trace_restores_config_stages_for_refresh() -> None
                 "turn_id": "msg_user",
                 "user_message_id": "msg_user",
                 "phase": "scheduled_task_parse",
-                "text": "解析执行计划",
+                "text": "解析執行計劃",
             },
             created_at=started_at + timedelta(milliseconds=200),
         ),
@@ -880,16 +880,16 @@ def test_scheduled_task_draft_trace_restores_config_stages_for_refresh() -> None
         "scheduled_task_draft",
     ]
     assert all(line["state"] == "completed" for line in traces[0]["lines"])
-    assert traces[0]["lines"][1]["detail"] == "计划：每天 16:50"
+    assert traces[0]["lines"][1]["detail"] == "計劃：每天 16:50"
     assert "提醒我喝咖啡" in traces[0]["lines"][2]["detail"]
 
 
 def test_scheduled_task_schedule_formatter_preserves_fallbacks() -> None:
     assert (
         _format_scheduled_task_schedule("weekly", {"time": "18:30", "weekdays": ["1", "x", 6, 7, -1]})
-        == "每周 周二、周日 18:30"
+        == "每週 週二、週日 18:30"
     )
-    assert _format_scheduled_task_schedule("monthly", {"day_of_month": 21}) == "每月 21 号 09:00"
+    assert _format_scheduled_task_schedule("monthly", {"day_of_month": 21}) == "每月 21 號 09:00"
     assert _format_scheduled_task_schedule("unknown", {"time": "08:15"}) == "每天 08:15"
 
 
@@ -904,7 +904,7 @@ def test_cancel_endpoint_persists_terminal_trace_for_client_turn_id() -> None:
             tenant_id="tenant_demo",
             session_id=session_row.id,
             role="user",
-            content="暂停测试",
+            content="暫停測試",
             created_at=started_at,
         )
     )
@@ -916,7 +916,7 @@ def test_cancel_endpoint_persists_terminal_trace_for_client_turn_id() -> None:
             payload_json={
                 "message_id": "msg_user",
                 "client_turn_id": "turn_local_1",
-                "message": "暂停测试",
+                "message": "暫停測試",
             },
             created_at=started_at,
         )
@@ -930,7 +930,7 @@ def test_cancel_endpoint_persists_terminal_trace_for_client_turn_id() -> None:
                 "turn_id": "msg_user",
                 "user_message_id": "msg_user",
                 "phase": "routing",
-                "text": "正在判断用户意图",
+                "text": "正在判斷用戶意圖",
             },
             created_at=started_at + timedelta(milliseconds=100),
         )
@@ -968,7 +968,7 @@ def test_cancel_endpoint_persists_terminal_trace_for_client_turn_id() -> None:
     assert all(line["state"] != "running" for line in traces[0]["lines"])
     assert any(
         line["id"] == "generation_stopped"
-        and line["text"] == "用户已停止生成"
+        and line["text"] == "用戶已停止生成"
         and line["state"] == "completed"
         for line in traces[0]["lines"]
     )
@@ -1013,7 +1013,7 @@ def test_stream_interrupted_persists_terminal_trace_and_message() -> None:
             tenant_id="tenant_demo",
             session_id=session_row.id,
             role="user",
-            content="你是谁",
+            content="你是誰",
             created_at=started_at,
         )
     )
@@ -1025,7 +1025,7 @@ def test_stream_interrupted_persists_terminal_trace_and_message() -> None:
             payload_json={
                 "message_id": "msg_user",
                 "client_turn_id": "turn_interrupted",
-                "message": "你是谁",
+                "message": "你是誰",
             },
             created_at=started_at,
         )
@@ -1039,7 +1039,7 @@ def test_stream_interrupted_persists_terminal_trace_and_message() -> None:
                 "turn_id": "msg_user",
                 "user_message_id": "msg_user",
                 "phase": "responding",
-                "text": "正在生成回复",
+                "text": "正在生成回覆",
             },
             created_at=started_at + timedelta(milliseconds=100),
         )
@@ -1074,7 +1074,7 @@ def test_stream_interrupted_persists_terminal_trace_and_message() -> None:
     assert all(line["state"] != "running" for line in traces[0]["lines"])
     assert any(
         line["id"] == "generation_interrupted"
-        and line["text"] == "响应生成中断"
+        and line["text"] == "響應生成中斷"
         and line["state"] == "failed"
         for line in traces[0]["lines"]
     )
@@ -1086,7 +1086,7 @@ def test_relay_event_payload_maps_persisted_router_and_status_events() -> None:
         tenant_id="tenant_demo",
         session_id="session_relay",
         event_type="stream_status",
-        payload_json={"turn_id": "msg_user", "phase": "routing", "text": "正在判断用户意图"},
+        payload_json={"turn_id": "msg_user", "phase": "routing", "text": "正在判斷用戶意圖"},
         created_at=datetime(2026, 7, 4, 9, 9, 0),
     )
     router_event = AgentEvent(
@@ -1116,7 +1116,7 @@ def test_turn_trace_without_terminal_event_stays_open_for_refresh_recovery() -> 
             tenant_id="tenant_demo",
             session_id="session_refresh",
             role="user",
-            content="你是谁",
+            content="你是誰",
             created_at=started_at,
         )
     ]
@@ -1125,7 +1125,7 @@ def test_turn_trace_without_terminal_event_stays_open_for_refresh_recovery() -> 
             tenant_id="tenant_demo",
             session_id="session_refresh",
             event_type="user_message_received",
-            payload_json={"message_id": "msg_user", "message": "你是谁"},
+            payload_json={"message_id": "msg_user", "message": "你是誰"},
             created_at=started_at,
         ),
         AgentEvent(
@@ -1136,7 +1136,7 @@ def test_turn_trace_without_terminal_event_stays_open_for_refresh_recovery() -> 
                 "turn_id": "msg_user",
                 "user_message_id": "msg_user",
                 "phase": "routing",
-                "text": "正在判断用户意图",
+                "text": "正在判斷用戶意圖",
             },
             created_at=started_at + timedelta(milliseconds=100),
         ),
@@ -1157,7 +1157,7 @@ def test_turn_trace_ignores_trace_events_without_turn_id() -> None:
             tenant_id="tenant_demo",
             session_id="session_general_skill",
             role="user",
-            content="北京今天天气如何",
+            content="北京今天天氣如何",
             created_at=started_at,
         ),
         Message(
@@ -1174,7 +1174,7 @@ def test_turn_trace_ignores_trace_events_without_turn_id() -> None:
             tenant_id="tenant_demo",
             session_id="session_general_skill",
             event_type="user_message_received",
-            payload_json={"message_id": "msg_user", "message": "北京今天天气如何"},
+            payload_json={"message_id": "msg_user", "message": "北京今天天氣如何"},
             created_at=started_at,
         ),
         AgentEvent(
@@ -1185,8 +1185,8 @@ def test_turn_trace_ignores_trace_events_without_turn_id() -> None:
                 "turn_id": "msg_user",
                 "user_message_id": "msg_user",
                 "decision": "answer_only",
-                "user_intent": "查询天气",
-                "reason": "实时信息查询",
+                "user_intent": "查詢天氣",
+                "reason": "實時信息查詢",
             },
             created_at=started_at + timedelta(seconds=2),
         ),
@@ -1197,7 +1197,7 @@ def test_turn_trace_ignores_trace_events_without_turn_id() -> None:
             payload_json={
                 "skill_slug": "maomao-weather",
                 "skill_name": "weather",
-                "reason": "匹配天气查询能力",
+                "reason": "匹配天氣查詢能力",
             },
             created_at=started_at + timedelta(seconds=3),
         ),
@@ -1220,7 +1220,7 @@ def test_turn_trace_ignores_trace_events_without_turn_id() -> None:
             payload_json={
                 "skill_slug": "maomao-weather",
                 "phase": "planning",
-                "message": "正在根据 SKILL.md 生成 runner",
+                "message": "正在根據 SKILL.md 生成 runner",
             },
             created_at=started_at + timedelta(seconds=4),
         ),
@@ -1231,8 +1231,8 @@ def test_turn_trace_ignores_trace_events_without_turn_id() -> None:
             payload_json={
                 "skill_slug": "maomao-weather",
                 "phase": "reflection_reviewed",
-                "message": "已完成运行结果校验",
-                "review": {"reason": "结果可用"},
+                "message": "已完成運行結果校驗",
+                "review": {"reason": "結果可用"},
             },
             created_at=started_at + timedelta(seconds=5),
         ),
@@ -1260,11 +1260,11 @@ def test_turn_trace_ignores_trace_events_without_turn_id() -> None:
 
     texts = [line["text"] for line in traces[0]["lines"]]
     assert traces[0]["turn_id"] == "msg_user"
-    assert "选择通用技能 weather" not in texts
-    assert "调用工具 weather" not in texts
-    assert "正在根据 SKILL.md 生成 runner" not in texts
-    assert "已完成运行结果校验" not in texts
-    assert "通用技能运行完成" not in texts
+    assert "選擇通用技能 weather" not in texts
+    assert "調用工具 weather" not in texts
+    assert "正在根據 SKILL.md 生成 runner" not in texts
+    assert "已完成運行結果校驗" not in texts
+    assert "通用技能運行完成" not in texts
 
 
 def test_turn_trace_restores_stream_tool_and_skill_events_with_turn_id() -> None:
@@ -1275,7 +1275,7 @@ def test_turn_trace_restores_stream_tool_and_skill_events_with_turn_id() -> None
             tenant_id="tenant_demo",
             session_id="session_stream_trace",
             role="user",
-            content="北京今天天气如何",
+            content="北京今天天氣如何",
             created_at=started_at,
         ),
         Message(
@@ -1293,7 +1293,7 @@ def test_turn_trace_restores_stream_tool_and_skill_events_with_turn_id() -> None
             tenant_id="tenant_demo",
             session_id="session_stream_trace",
             event_type="user_message_received",
-            payload_json={"message_id": "msg_user", "message": "北京今天天气如何"},
+            payload_json={"message_id": "msg_user", "message": "北京今天天氣如何"},
             created_at=started_at,
         ),
         AgentEvent(
@@ -1305,7 +1305,7 @@ def test_turn_trace_restores_stream_tool_and_skill_events_with_turn_id() -> None
                 "user_message_id": "msg_user",
                 "skill_slug": "maomao-weather",
                 "phase": "planning",
-                "message": "正在根据 SKILL.md 生成 runner",
+                "message": "正在根據 SKILL.md 生成 runner",
             },
             created_at=started_at + timedelta(seconds=1),
         ),
@@ -1350,9 +1350,9 @@ def test_turn_trace_restores_stream_tool_and_skill_events_with_turn_id() -> None
     traces = _build_turn_traces(messages, events, {})
 
     texts = [line["text"] for line in traces[0]["lines"]]
-    assert "正在根据 SKILL.md 生成 runner" in texts
-    assert "调用工具 weather" in texts
-    assert "重新分析执行动作" in texts
+    assert "正在根據 SKILL.md 生成 runner" in texts
+    assert "調用工具 weather" in texts
+    assert "重新分析執行動作" in texts
 
 
 def test_turn_trace_uses_message_id_for_repeated_user_text() -> None:
@@ -1387,7 +1387,7 @@ def test_turn_trace_uses_message_id_for_repeated_user_text() -> None:
             tenant_id="tenant_demo",
             session_id="session_repeat",
             role="assistant",
-            content="请问有什么可以帮您？",
+            content="請問有什麼可以幫您？",
             created_at=started_at + timedelta(seconds=12),
         ),
     ]
@@ -1420,8 +1420,8 @@ def test_turn_trace_uses_message_id_for_repeated_user_text() -> None:
             payload_json={
                 "user_message_id": "msg_user_second",
                 "decision": "answer_only",
-                "user_intent": "问候",
-                "reason": "第二轮问候",
+                "user_intent": "問候",
+                "reason": "第二輪問候",
             },
             created_at=started_at + timedelta(seconds=11),
         ),
@@ -1429,7 +1429,7 @@ def test_turn_trace_uses_message_id_for_repeated_user_text() -> None:
             tenant_id="tenant_demo",
             session_id="session_repeat",
             event_type="assistant_message_created",
-            payload_json={"user_message_id": "msg_user_second", "reply": "请问有什么可以帮您？"},
+            payload_json={"user_message_id": "msg_user_second", "reply": "請問有什麼可以幫您？"},
             created_at=started_at + timedelta(seconds=12),
         ),
     ]
@@ -1438,7 +1438,7 @@ def test_turn_trace_uses_message_id_for_repeated_user_text() -> None:
 
     assert [trace["turn_id"] for trace in traces] == ["msg_user_first", "msg_user_second"]
     assert traces[1]["user_message_id"] == "msg_user_second"
-    assert any(line["text"] == "判断意图 问候" and line["detail"] == "第二轮问候" for line in traces[1]["lines"])
+    assert any(line["text"] == "判斷意圖 問候" and line["detail"] == "第二輪問候" for line in traces[1]["lines"])
 
 
 def test_turn_trace_keeps_late_trace_events_after_assistant_event() -> None:
@@ -1474,7 +1474,7 @@ def test_turn_trace_keeps_late_trace_events_after_assistant_event() -> None:
             tenant_id="tenant_demo",
             session_id="session_late_trace",
             event_type="stream_status",
-            payload_json={"user_message_id": "msg_user", "turn_id": "msg_user", "phase": "routing", "text": "正在判断用户意图"},
+            payload_json={"user_message_id": "msg_user", "turn_id": "msg_user", "phase": "routing", "text": "正在判斷用戶意圖"},
             created_at=started_at + timedelta(milliseconds=200),
         ),
         AgentEvent(
@@ -1492,8 +1492,8 @@ def test_turn_trace_keeps_late_trace_events_after_assistant_event() -> None:
                 "user_message_id": "msg_user",
                 "turn_id": "msg_user",
                 "decision": "answer_only",
-                "user_intent": "问候",
-                "reason": "晚到的意图明细也要保留",
+                "user_intent": "問候",
+                "reason": "晚到的意圖明細也要保留",
             },
             created_at=started_at + timedelta(seconds=3),
         ),
@@ -1504,7 +1504,7 @@ def test_turn_trace_keeps_late_trace_events_after_assistant_event() -> None:
             payload_json={
                 "user_message_id": "msg_user",
                 "turn_id": "msg_user",
-                "reply": "直接回复问候",
+                "reply": "直接回復問候",
             },
             created_at=started_at + timedelta(seconds=4),
         ),
@@ -1515,10 +1515,10 @@ def test_turn_trace_keeps_late_trace_events_after_assistant_event() -> None:
     assert len(traces) == 1
     assert traces[0]["completed_at"] == (started_at + timedelta(seconds=2)).isoformat()
     assert any(
-        line["text"] == "判断意图 问候" and line["detail"] == "晚到的意图明细也要保留"
+        line["text"] == "判斷意圖 問候" and line["detail"] == "晚到的意圖明細也要保留"
         for line in traces[0]["lines"]
     )
-    assert any(line["text"] == "完成步骤判断" and line["detail"] == "直接回复问候" for line in traces[0]["lines"])
+    assert any(line["text"] == "完成步驟判斷" and line["detail"] == "直接回復問候" for line in traces[0]["lines"])
     assert all(line["state"] != "running" for line in traces[0]["lines"])
 
 
@@ -1538,7 +1538,7 @@ def test_turn_trace_does_not_merge_interleaved_repeated_turns() -> None:
             tenant_id="tenant_demo",
             session_id="session_interleaved",
             role="assistant",
-            content="我是第一个回答。",
+            content="我是第一個回答。",
             created_at=started_at + timedelta(seconds=12),
         ),
         Message(
@@ -1554,7 +1554,7 @@ def test_turn_trace_does_not_merge_interleaved_repeated_turns() -> None:
             tenant_id="tenant_demo",
             session_id="session_interleaved",
             role="assistant",
-            content="我是第二个回答。",
+            content="我是第二個回答。",
             created_at=started_at + timedelta(seconds=14),
         ),
     ]
@@ -1573,8 +1573,8 @@ def test_turn_trace_does_not_merge_interleaved_repeated_turns() -> None:
             payload_json={
                 "user_message_id": "msg_user_first",
                 "decision": "answer_only",
-                "user_intent": "问候",
-                "reason": "第一轮问候",
+                "user_intent": "問候",
+                "reason": "第一輪問候",
             },
             created_at=started_at + timedelta(seconds=1),
         ),
@@ -1592,8 +1592,8 @@ def test_turn_trace_does_not_merge_interleaved_repeated_turns() -> None:
             payload_json={
                 "user_message_id": "msg_user_second",
                 "decision": "answer_only",
-                "user_intent": "问候",
-                "reason": "第二轮问候",
+                "user_intent": "問候",
+                "reason": "第二輪問候",
             },
             created_at=started_at + timedelta(seconds=3),
         ),
@@ -1604,7 +1604,7 @@ def test_turn_trace_does_not_merge_interleaved_repeated_turns() -> None:
             payload_json={
                 "message_id": "msg_assistant_first",
                 "user_message_id": "msg_user_first",
-                "reply": "我是第一个回答。",
+                "reply": "我是第一個回答。",
             },
             created_at=started_at + timedelta(seconds=12),
         ),
@@ -1615,7 +1615,7 @@ def test_turn_trace_does_not_merge_interleaved_repeated_turns() -> None:
             payload_json={
                 "message_id": "msg_assistant_second",
                 "user_message_id": "msg_user_second",
-                "reply": "我是第二个回答。",
+                "reply": "我是第二個回答。",
             },
             created_at=started_at + timedelta(seconds=14),
         ),
@@ -1628,10 +1628,10 @@ def test_turn_trace_does_not_merge_interleaved_repeated_turns() -> None:
     assert traces[1]["completed_at"] == (started_at + timedelta(seconds=14)).isoformat()
     first_details = [line.get("detail") for line in traces[0]["lines"]]
     second_details = [line.get("detail") for line in traces[1]["lines"]]
-    assert "第一轮问候" in first_details
-    assert "第二轮问候" not in first_details
-    assert "第二轮问候" in second_details
-    assert "第一轮问候" not in second_details
+    assert "第一輪問候" in first_details
+    assert "第二輪問候" not in first_details
+    assert "第二輪問候" in second_details
+    assert "第一輪問候" not in second_details
 
 
 def test_turn_trace_without_message_id_does_not_bind_user_messages() -> None:
@@ -1722,7 +1722,7 @@ def test_message_turn_ids_from_events_use_ids_not_message_text() -> None:
             payload_json={
                 "message_id": "msg_assistant_second",
                 "turn_id": "msg_user_second",
-                "reply": "请问有什么可以帮您？",
+                "reply": "請問有什麼可以幫您？",
             },
             created_at=started_at + timedelta(seconds=11),
         ),
@@ -1737,7 +1737,7 @@ def test_message_turn_ids_from_events_use_ids_not_message_text() -> None:
             tenant_id="tenant_demo",
             session_id="session_repeat",
             event_type="assistant_message_created",
-            payload_json={"message_id": "msg_assistant_without_user_id", "reply": "旧事件不应猜测归属"},
+            payload_json={"message_id": "msg_assistant_without_user_id", "reply": "舊事件不應猜測歸屬"},
             created_at=started_at + timedelta(seconds=21),
         ),
     ]

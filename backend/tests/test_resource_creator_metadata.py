@@ -31,7 +31,7 @@ def test_user_created_resource_metadata_is_bound_to_current_user() -> None:
         assert agent is not None
 
         knowledge = create_knowledge_base(
-            KnowledgeBaseCreateRequest(tenant_id="tenant_demo", name="用户知识库"),
+            KnowledgeBaseCreateRequest(tenant_id="tenant_demo", name="用戶知識庫"),
             agent_id=agent.id,
             db=db,
             current_user=user,
@@ -46,7 +46,7 @@ def test_user_created_resource_metadata_is_bound_to_current_user() -> None:
             ToolCreateRequest(
                 tenant_id="tenant_demo",
                 name="user.weather",
-                display_name="用户天气",
+                display_name="用戶天氣",
                 url="https://example.com/weather",
             ),
             agent_id=agent.id,
@@ -77,9 +77,9 @@ def test_user_created_resource_metadata_is_bound_to_current_user() -> None:
             GeneralSkillImportRequest(
                 tenant_id="tenant_demo",
                 agent_id=agent.id,
-                name="用户通用技能",
+                name="用戶通用技能",
                 slug="user-general-skill",
-                markdown="# 用户通用技能\n\n用于测试 creator metadata。",
+                markdown="# 用戶通用技能\n\n用於測試 creator metadata。",
             ),
             db=db,
             current_user=user,
@@ -118,7 +118,7 @@ def test_user_created_resource_metadata_is_bound_to_current_user() -> None:
             ToolUpdateRequest(
                 tenant_id="tenant_demo",
                 name="user.weather",
-                display_name="更新后的用户天气",
+                display_name="更新後的用戶天氣",
                 url="https://example.com/weather",
             ),
             agent_id=agent.id,
@@ -131,10 +131,10 @@ def test_user_created_resource_metadata_is_bound_to_current_user() -> None:
             GeneralSkillImportRequest(
                 tenant_id="tenant_demo",
                 agent_id=agent.id,
-                name="更新后的用户通用技能",
+                name="更新後的用戶通用技能",
                 slug="user-general-skill",
                 original_slug="user-general-skill",
-                markdown="# 更新后的用户通用技能\n\n用于测试 creator metadata。",
+                markdown="# 更新後的用戶通用技能\n\n用於測試 creator metadata。",
             ),
             db=db,
             current_user=editor,
@@ -160,7 +160,7 @@ def _seed_user_and_agent(db: Session) -> User:
         AgentProfile(
             id="agent_owner",
             tenant_id="tenant_demo",
-            name="研发员工",
+            name="研發員工",
             is_overall=False,
             metadata_json={
                 "owner_user_id": user.id,
@@ -178,14 +178,14 @@ def _seed_user_and_agent(db: Session) -> User:
 def _skill_card() -> SkillCard:
     return SkillCard(
         skill_id="skill_user_creator",
-        name="用户 SOP",
-        description="测试 creator metadata",
+        name="用戶 SOP",
+        description="測試 creator metadata",
         nodes=[
             {
                 "node_id": "start",
                 "type": "response",
-                "name": "回复",
-                "instruction": "回复用户",
+                "name": "回覆",
+                "instruction": "回覆用戶",
                 "allowed_actions": ["answer_user"],
             }
         ],

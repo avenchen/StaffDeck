@@ -102,10 +102,10 @@ export default function WorkRecordTab({
   const capabilityCards = [
     {
       route: '/enterprise/knowledge',
-      title: '知识库',
+      title: '知識庫',
       tone: 'knowledge',
       count: activeKnowledge.length,
-      body: activeKnowledge.slice(0, 3).map((item) => staffdeckDisplayText(item.name)).join(' / ') || '暂无知识库',
+      body: activeKnowledge.slice(0, 3).map((item) => staffdeckDisplayText(item.name)).join(' / ') || '暫無知識庫',
       icon: <IconCapFolder className={capabilityGlyphClass} />,
       dark: false,
     },
@@ -114,7 +114,7 @@ export default function WorkRecordTab({
       title: '技能',
       tone: 'skill',
       count: activeGeneralSkills.length,
-      body: activeGeneralSkills.slice(0, 3).map((item) => staffdeckDisplayText(item.name)).join(' / ') || '暂无启用技能',
+      body: activeGeneralSkills.slice(0, 3).map((item) => staffdeckDisplayText(item.name)).join(' / ') || '暫無啟用技能',
       icon: <IconCapMagicWand className={capabilityGlyphClass} />,
       dark: false,
     },
@@ -123,7 +123,7 @@ export default function WorkRecordTab({
       title: 'SOP',
       tone: 'sop',
       count: activeSkills.length,
-      body: activeSkills.slice(0, 3).map((item) => staffdeckDisplayText(item.name)).join(' / ') || '暂无启用 SOP',
+      body: activeSkills.slice(0, 3).map((item) => staffdeckDisplayText(item.name)).join(' / ') || '暫無啟用 SOP',
       icon: <IconCapClipboard className={capabilityGlyphClass} />,
       dark: false,
     },
@@ -132,27 +132,27 @@ export default function WorkRecordTab({
       title: '工具',
       tone: 'tools',
       count: activeTools.length,
-      body: activeTools.slice(0, 3).map((item) => staffdeckDisplayText(item.display_name || item.name)).join(' / ') || '暂无启用工具',
+      body: activeTools.slice(0, 3).map((item) => staffdeckDisplayText(item.display_name || item.name)).join(' / ') || '暫無啟用工具',
       icon: <IconCapBriefcase className={capabilityGlyphClass} />,
       dark: true,
       illustration: capabilityTools,
     },
     {
       route: '/enterprise/scheduled-tasks',
-      title: '定时任务',
+      title: '定時任務',
       tone: 'tasks',
       count: activeScheduledTasks.length,
-      body: activeScheduledTasks.slice(0, 2).map((item) => staffdeckDisplayText(item.title)).join(' / ') || '暂无启用定时任务',
+      body: activeScheduledTasks.slice(0, 2).map((item) => staffdeckDisplayText(item.title)).join(' / ') || '暫無啟用定時任務',
       icon: <IconProfileAlarm className={capabilityGlyphClass} />,
       dark: true,
       illustration: capabilityTasks,
     },
     {
       route: `/enterprise/feedback?agent_id=${encodeURIComponent(selectedAgent.id)}`,
-      title: '对话日志',
+      title: '對話日誌',
       tone: 'logs',
       count: replyStats.total,
-      body: staffdeckDisplayText(employeeSessions[0]?.summary || employeeSessions[0]?.last_agent_question || '暂无对话任务'),
+      body: staffdeckDisplayText(employeeSessions[0]?.summary || employeeSessions[0]?.last_agent_question || '暫無對話任務'),
       icon: <IconProfileCalendar className={capabilityGlyphClass} />,
       dark: true,
       illustration: capabilityLogs,
@@ -164,16 +164,16 @@ export default function WorkRecordTab({
   return (
     <section className="relative flex w-full min-w-0 max-w-full mt-[-2px] flex-col gap-[24px] overflow-hidden rounded-[18px] shadow-[0_20px_42px_rgba(21,26,38,0.045)] bg-white p-[14px] *:min-w-0 min-[521px]:p-[18px] in-data-[theme=dark]:border-[#343741] in-data-[theme=dark]:bg-[#202126] in-data-[theme=dark]:text-[#f0f2f6]">
       <div className="flex w-full items-stretch gap-[16px]">
-        <ClickableMetric label="今日对话" value={replyStats.today} onClick={goToLogs} />
-        <ClickableMetric label="累计对话" value={replyStats.total} onClick={goToLogs} />
-        <ClickableMetric label="好评率" value={positiveRate} suffix="%" tone="positive" onClick={goToLogs} />
-        <ClickableMetric label="差评率" value={negativeRate} suffix="%" tone="negative" onClick={goToLogs} />
+        <ClickableMetric label="今日對話" value={replyStats.today} onClick={goToLogs} />
+        <ClickableMetric label="累計對話" value={replyStats.total} onClick={goToLogs} />
+        <ClickableMetric label="好評率" value={positiveRate} suffix="%" tone="positive" onClick={goToLogs} />
+        <ClickableMetric label="差評率" value={negativeRate} suffix="%" tone="negative" onClick={goToLogs} />
       </div>
       <ActivityTimeline events={activityEvents} />
       <div className="flex w-full min-w-0 max-w-full flex-col gap-[10px] mt-[20px]">
         <div className="inline-flex items-center gap-[6px] self-start text-[14px] capitalize leading-none text-[#757f9c] in-data-[theme=dark]:text-[#8b93a6]">
           <IconGrowthArrow className="size-[14px] shrink-0" />
-          成长记录
+          成長記錄
         </div>
         {growthItems.length ? (
           <div className="relative w-full min-w-0 max-w-full overflow-x-auto">
@@ -197,7 +197,7 @@ export default function WorkRecordTab({
             </div>
           </div>
         ) : (
-          <div className="employee-memory-empty">暂无成长轨迹</div>
+          <div className="employee-memory-empty">暫無成長軌跡</div>
         )}
       </div>
       <div className="w-full min-w-0 max-w-full overflow-x-auto">
@@ -300,43 +300,43 @@ type TimelineTrackConfig = {
 const TIMELINE_TRACKS: TimelineTrackConfig[] = [
   {
     key: 'chat',
-    label: '对话',
-    unit: '次对话',
+    label: '對話',
+    unit: '次對話',
     dot: ACTIVITY_DOT.chat,
     bar: 'bg-[#e8f0ff] in-data-[theme=dark]:bg-[#1d2c47]',
   },
   {
     key: 'task',
-    label: '定时任务',
-    unit: '个任务',
+    label: '定時任務',
+    unit: '個任務',
     dot: ACTIVITY_DOT.task,
     bar: 'bg-[#fff1e3] in-data-[theme=dark]:bg-[#3a2c1a]',
   },
   {
     key: 'sop',
     label: '新增SOP',
-    unit: '个 SOP',
+    unit: '個 SOP',
     dot: ACTIVITY_DOT.sop,
     bar: 'bg-[#e9f7ef] in-data-[theme=dark]:bg-[#173a29]',
   },
   {
     key: 'tool',
     label: '新增工具',
-    unit: '个工具',
+    unit: '個工具',
     dot: ACTIVITY_DOT.tool,
     bar: 'bg-[#f1ecff] in-data-[theme=dark]:bg-[#2c2544]',
   },
   {
     key: 'knowledge',
-    label: '新增知识',
-    unit: '个知识',
+    label: '新增知識',
+    unit: '個知識',
     dot: ACTIVITY_DOT.knowledge,
     bar: 'bg-[#e2f6f9] in-data-[theme=dark]:bg-[#123037]',
   },
   {
     key: 'skill',
     label: '新增技能',
-    unit: '个技能',
+    unit: '個技能',
     dot: ACTIVITY_DOT.skill,
     bar: 'bg-[#fde8f1] in-data-[theme=dark]:bg-[#3d1e2e]',
   },
@@ -401,7 +401,7 @@ function ActivityTimeline({ events }: ActivityTimelineProps) {
             type="button"
             onClick={() => shift(-1)}
             className="flex size-[14px] items-center justify-center text-[#464c5e] transition-colors hover:text-[#18181a] in-data-[theme=dark]:text-[#c9cede]"
-            aria-label="上一个周期"
+            aria-label="上一個週期"
           >
             <TimelineChevron direction="left" />
           </button>
@@ -415,7 +415,7 @@ function ActivityTimeline({ events }: ActivityTimelineProps) {
             type="button"
             onClick={() => shift(1)}
             className="flex size-[14px] items-center justify-center text-[#464c5e] transition-colors hover:text-[#18181a] in-data-[theme=dark]:text-[#c9cede]"
-            aria-label="下一个周期"
+            aria-label="下一個週期"
           >
             <TimelineChevron direction="right" />
           </button>
@@ -443,7 +443,7 @@ function ActivityTimeline({ events }: ActivityTimelineProps) {
       ) : mode === 'week' ? (
         <WeekCalendar anchor={anchor} itemsByDay={itemsByDay} />
       ) : activeTracks.length === 0 ? (
-        <TimelineEmptyState text="当日暂无活动记录" />
+        <TimelineEmptyState text="當日暫無活動記錄" />
       ) : (
         <div className="flex min-h-[178px] w-full flex-col gap-[16px]">
           <div className="relative flex flex-1 w-full flex-col justify-center overflow-hidden rounded-[20px] px-[12px] py-[16px]">
@@ -496,7 +496,7 @@ function ActivityTimeline({ events }: ActivityTimelineProps) {
                               </div>
                             ))}
                             {segment.events.length > 12 && (
-                              <div className="text-[11px] text-[#858b9c]">…等{segment.events.length}项</div>
+                              <div className="text-[11px] text-[#858b9c]">…等{segment.events.length}項</div>
                             )}
                           </div>
                         </HoverCardContent>
@@ -553,7 +553,7 @@ function WeekCalendar({
 
   const hasActivity = days.some((date) => (itemsByDay[dateKey(date)] || []).length > 0);
   if (!hasActivity) {
-    return <TimelineEmptyState text="本周暂无活动记录" />;
+    return <TimelineEmptyState text="本週暫無活動記錄" />;
   }
 
   return (
@@ -610,7 +610,7 @@ function WeekCalendar({
                     className="flex items-center gap-[6px] rounded-[8px] p-[4px] text-left transition-colors hover:bg-[#f6f6f6] in-data-[theme=dark]:hover:bg-[#2b2d33]"
                   >
                     <span className="truncate text-[10px] leading-none text-[#757f9c] in-data-[theme=dark]:text-[#8b93a6]">
-                      还有{overflow}项
+                      還有{overflow}項
                     </span>
                   </button>
                 )}
@@ -648,7 +648,7 @@ function MonthCalendar({
   return (
     <div className="w-full overflow-hidden rounded-[20px] border border-[#eef1f7] in-data-[theme=dark]:border-[#2c2f38]">
       <div className="grid grid-cols-7">
-        {['周日', '周一', '周二', '周三', '周四', '周五', '周六'].map((day) => (
+        {['週日', '週一', '週二', '週三', '週四', '週五', '週六'].map((day) => (
           <div
             key={day}
             className="px-[12px] py-[8px] text-[12px] leading-none text-[#757f9c] in-data-[theme=dark]:text-[#8b93a6]"
@@ -709,7 +709,7 @@ function MonthCalendar({
                       className="flex items-center gap-[6px] rounded-[8px] p-[4px] text-left transition-colors hover:bg-[#f6f6f6] in-data-[theme=dark]:hover:bg-[#2b2d33]"
                     >
                       <span className="truncate text-[10px] leading-none text-[#757f9c] in-data-[theme=dark]:text-[#8b93a6]">
-                        还有{overflow}项
+                        還有{overflow}項
                       </span>
                     </button>
                   )}
@@ -789,9 +789,9 @@ function trackBarLabel(
   track: TimelineTrackConfig,
   bar: { count: number; names: string[] },
 ): string {
-  if (track.key === 'chat') return `对话${bar.count}条`;
+  if (track.key === 'chat') return `對話${bar.count}條`;
   if (!bar.names.length) return track.label;
-  const suffix = bar.names.length > 1 ? ` 等${bar.names.length}项` : '';
+  const suffix = bar.names.length > 1 ? ` 等${bar.names.length}項` : '';
   return `${track.label} ${bar.names[0]}${suffix}`;
 }
 
@@ -911,8 +911,8 @@ function TimelineDatePicker({
         ]
       : mode === 'week'
         ? [
-            { label: '本周', date: now },
-            { label: '上周', date: new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7) },
+            { label: '本週', date: now },
+            { label: '上週', date: new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7) },
           ]
         : [
             { label: '本月', date: now },
@@ -935,7 +935,7 @@ function TimelineDatePicker({
             type="button"
             onClick={() => shiftView(mode === 'month' ? 0 : -1, mode === 'month' ? -1 : 0)}
             className="flex size-[24px] items-center justify-center rounded-[6px] text-[#464c5e] transition-colors hover:bg-[#f6f6f6] in-data-[theme=dark]:text-[#c9cede] in-data-[theme=dark]:hover:bg-[#2b2d33]"
-            aria-label="上一页"
+            aria-label="上一頁"
           >
             <TimelineChevron direction="left" />
           </button>
@@ -948,7 +948,7 @@ function TimelineDatePicker({
             type="button"
             onClick={() => shiftView(mode === 'month' ? 0 : 1, mode === 'month' ? 1 : 0)}
             className="flex size-[24px] items-center justify-center rounded-[6px] text-[#464c5e] transition-colors hover:bg-[#f6f6f6] in-data-[theme=dark]:text-[#c9cede] in-data-[theme=dark]:hover:bg-[#2b2d33]"
-            aria-label="下一页"
+            aria-label="下一頁"
           >
             <TimelineChevron direction="right" />
           </button>
@@ -1085,7 +1085,7 @@ function buildDayActivities(events: AgentWorkRecordEventRead[]): Record<string, 
     chatByDay[key] = (chatByDay[key] || 0) + 1;
   });
   Object.entries(chatByDay).forEach(([dayKey, count]) => {
-    (map[dayKey] ||= []).unshift({ label: `对话${count}条`, dot: ACTIVITY_DOT.chat });
+    (map[dayKey] ||= []).unshift({ label: `對話${count}條`, dot: ACTIVITY_DOT.chat });
   });
 
   events.filter((item) => item.kind !== 'chat').forEach((item) => {
@@ -1094,7 +1094,7 @@ function buildDayActivities(events: AgentWorkRecordEventRead[]): Record<string, 
       : item.kind === 'tool'
         ? '新增工具 '
         : item.kind === 'knowledge'
-          ? '新增知识 '
+          ? '新增知識 '
           : item.kind === 'skill'
             ? '新增技能 '
             : '';
@@ -1122,11 +1122,11 @@ function growthTimeline(
     const evolved = Boolean(item.branch_head_version && item.branch_head_version !== item.branch_base_version);
     events.push({
       id: `sop-${item.id}`,
-      kind: evolved ? 'SOP 进化' : '新增 SOP',
+      kind: evolved ? 'SOP 進化' : '新增 SOP',
       title: item.name,
       description: evolved
-        ? `本地版本从 ${item.branch_base_version || item.version} 进化到 ${item.branch_head_version || item.version}`
-        : `新增 ${item.version} 版业务流程`,
+        ? `本地版本從 ${item.branch_base_version || item.version} 進化到 ${item.branch_head_version || item.version}`
+        : `新增 ${item.version} 版業務流程`,
       timestamp: stableGrowthTimestamp(item),
       icon: <StaffdeckIcon name="filter" />,
       tone: 'mint',
@@ -1137,9 +1137,9 @@ function growthTimeline(
     const upgraded = isMeaningfullyUpdated(item.created_at, item.updated_at);
     events.push({
       id: `general-${item.id}`,
-      kind: upgraded ? '技能升级' : '新增技能',
+      kind: upgraded ? '技能升級' : '新增技能',
       title: item.name,
-      description: upgraded ? '技能说明、权限或运行配置有更新' : `新增 ${item.slug} 通用能力`,
+      description: upgraded ? '技能說明、權限或運行配置有更新' : `新增 ${item.slug} 通用能力`,
       timestamp: stableGrowthTimestamp(item),
       icon: <StaffdeckIcon name="spark" />,
       tone: 'teal',
@@ -1151,7 +1151,7 @@ function growthTimeline(
       id: `tool-${item.id}`,
       kind: '新增工具',
       title: item.display_name || item.name,
-      description: `${item.bucket || '工具'} · ${item.tool_type.toUpperCase()} 调用能力`,
+      description: `${item.bucket || '工具'} · ${item.tool_type.toUpperCase()} 調用能力`,
       timestamp: stableGrowthTimestamp(item),
       icon: <StaffdeckIcon name="tool" />,
       tone: 'green',

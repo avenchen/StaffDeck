@@ -43,13 +43,13 @@ export default function TracesPage() {
 
   const truncateCell = 'block truncate';
   const columns: DataTableColumn<TraceSummary>[] = [
-    { key: 'session_id', title: '会话 ID', width: 230, render: (row) => <span className={truncateCell}>{row.session_id}</span> },
-    { key: 'user_id', title: '用户 ID', width: 150, render: (row) => <span className={truncateCell}>{row.user_id || '-'}</span> },
-    { key: 'active_skill_id', title: '当前技能', width: 190, render: (row) => <span className={truncateCell}>{row.active_skill_id || '-'}</span> },
-    { key: 'active_step_id', title: '当前 Step', width: 190, render: (row) => <span className={truncateCell}>{row.active_step_id || '-'}</span> },
-    { key: 'tool_call_count', title: '工具调用', width: 96, render: (row) => row.tool_call_count },
-    { key: 'status', title: '状态', width: 96, render: (row) => row.status },
-    { key: 'updated_at', title: '更新时间', width: 210, render: (row) => <span className={truncateCell}>{row.updated_at}</span> },
+    { key: 'session_id', title: '會話 ID', width: 230, render: (row) => <span className={truncateCell}>{row.session_id}</span> },
+    { key: 'user_id', title: '用戶 ID', width: 150, render: (row) => <span className={truncateCell}>{row.user_id || '-'}</span> },
+    { key: 'active_skill_id', title: '當前技能', width: 190, render: (row) => <span className={truncateCell}>{row.active_skill_id || '-'}</span> },
+    { key: 'active_step_id', title: '當前 Step', width: 190, render: (row) => <span className={truncateCell}>{row.active_step_id || '-'}</span> },
+    { key: 'tool_call_count', title: '工具調用', width: 96, render: (row) => row.tool_call_count },
+    { key: 'status', title: '狀態', width: 96, render: (row) => row.status },
+    { key: 'updated_at', title: '更新時間', width: 210, render: (row) => <span className={truncateCell}>{row.updated_at}</span> },
     {
       key: 'actions',
       title: '操作',
@@ -78,22 +78,22 @@ export default function TracesPage() {
       </div>
       <Card className="data-card">
         <CardHeader>
-          <CardTitle>会话 Trace</CardTitle>
+          <CardTitle>會話 Trace</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-[16px]">
           <div className="overflow-x-auto">
             <DataTable
-              aria-label="会话 Trace"
+              aria-label="會話 Trace"
               columns={columns}
               data={pagination.pagedItems}
               rowKey={(row) => row.session_id}
               className="min-w-[1308px]"
-              emptyText="暂无 Trace"
+              emptyText="暫無 Trace"
             />
           </div>
           {rows.length > 0 && (
             <Paginator
-              aria-label="Trace 分页"
+              aria-label="Trace 分頁"
               className="mt-0"
               page={pagination.page}
               pageCount={pagination.pageCount}

@@ -43,7 +43,7 @@ export function fileToBase64(file: File): Promise<string> {
       const value = String(reader.result || '');
       resolve(value.includes(',') ? value.split(',', 2)[1] : value);
     };
-    reader.onerror = () => reject(reader.error || new Error('读取文件失败'));
+    reader.onerror = () => reject(reader.error || new Error('讀取文件失敗'));
     reader.readAsDataURL(file);
   });
 }

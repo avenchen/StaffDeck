@@ -7,13 +7,13 @@ export const GENERAL_SKILL_RUN_MODEL_STORAGE_KEY = 'general-skill-run-model';
 
 export const STATUS_BADGE: Record<GeneralSkillRead['status'], { tone: BadgeTone; text: string }> = {
   draft: { tone: 'blue', text: '草稿' },
-  published: { tone: 'green', text: '已启用' },
+  published: { tone: 'green', text: '已啟用' },
   archived: { tone: 'gray', text: '已停用' },
 };
 
-export const EMPTY_SKILL_MARKDOWN = `# 技能说明
+export const EMPTY_SKILL_MARKDOWN = `# 技能說明
 
-在这里编写技能文档。名称、Slug 和描述由上方表单维护，系统不会从文档中自动抽取。`;
+在這裡編寫技能文檔。名稱、Slug 和描述由上方表單維護，系統不會從文檔中自動抽取。`;
 
 
 export const GENERAL_SKILL_RUN_TIMEOUT_MS = 120_000;
@@ -58,24 +58,24 @@ export type SkillDirectoryEntry = SkillFileSystemEntry & {
 };
 
 export const PHASE_LABELS: Record<string, string> = {
-  skill_loaded: '加载技能',
-  planning: '生成执行方案',
-  plan_created: '生成代码',
-  attempt_started: '开始运行',
-  running_code: '运行代码',
-  stdout_chunk: '运行输出',
-  stderr_chunk: '错误输出',
-  code_finished: '读取运行结果',
-  code_timeout: '运行超时',
-  reflection_passed: '校验通过',
-  reflection_retrying: '反思修复',
-  reflection_stopped: '停止重试',
-  repair_planning: '重新生成代码',
-  repair_failed: '修复失败',
-  plan_failed: '生成失败',
-  replying: '生成回复',
-  reply_created: '完成回复',
-  reply_failed: '回复失败',
+  skill_loaded: '加載技能',
+  planning: '生成執行方案',
+  plan_created: '生成代碼',
+  attempt_started: '開始運行',
+  running_code: '運行代碼',
+  stdout_chunk: '運行輸出',
+  stderr_chunk: '錯誤輸出',
+  code_finished: '讀取運行結果',
+  code_timeout: '運行超時',
+  reflection_passed: '校驗通過',
+  reflection_retrying: '反思修復',
+  reflection_stopped: '停止重試',
+  repair_planning: '重新生成代碼',
+  repair_failed: '修復失敗',
+  plan_failed: '生成失敗',
+  replying: '生成回覆',
+  reply_created: '完成回覆',
+  reply_failed: '回覆失敗',
 };
 
 

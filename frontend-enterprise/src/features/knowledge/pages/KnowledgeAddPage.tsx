@@ -91,7 +91,7 @@ import type {
 } from '@/types';
 
 import { DEFAULT_INGEST_STEPS, IngestStepView, KNOWLEDGE_PAGE_SIZE, KNOWLEDGE_SEARCH_MODEL_STORAGE_KEY, KnowledgeBaseVersionRead, KnowledgePageProps, OkfLintIssue, TERMINAL_KNOWLEDGE_JOB_STATUSES } from '../types';
-import { CONCEPT_TYPE_LABELS, DiscoveryColumn, EmptyState, FileDropzone, KCard, KDialog, KDialogCancelButton, KDialogPrimaryButton, KTAG_TONE_CLASS, KTag, KnowledgeBucketLinks, KnowledgeContentView, KnowledgeDetailView, KnowledgeJobCard, KnowledgeOverviewItem, KnowledgeRelationChip, KnowledgeSearchDebug, MarkdownPreview, OKF_PREVIEW_LIMIT, STRUCTURE_PREVIEW_LIMIT, SmoothProgress, WikiConceptViewer, WikiIndexGroup, WikiViewerTitle, bucketContentMarkdown, bucketRepresentativeChunks, bucketSourceSections, bucketStatusTag, buildWikiIndexGroups, conceptPath, conceptSummary, conceptTypeColor, conceptTypeLabel, documentSourceMarkdown, effectiveKnowledgeAgentId, fileToBase64, formatDateTime, ingestSteps, isEmptyDefaultKnowledgeBase, isRecord, knowledgeDetailTitle, knowledgeJobSortTime, normalizeMarkdownForDisplay, okfFrontmatterValue, previewEvidenceItems, previewRepresentativeChunkIds, recordLabel, resolveKnowledgeAgentScope, routePhaseLabel, sortWikiConcepts, stageLabelFallback, statusTag, stringFromMetadata, stripOkfFrontmatter, typeLabel, updateOkfFrontmatterValue, wikiIndexGroupDescription, wikiIndexGroupKey, wikiIndexGroupTitle, 目录索引Overview } from '../parts';
+import { CONCEPT_TYPE_LABELS, DiscoveryColumn, EmptyState, FileDropzone, KCard, KDialog, KDialogCancelButton, KDialogPrimaryButton, KTAG_TONE_CLASS, KTag, KnowledgeBucketLinks, KnowledgeContentView, KnowledgeDetailView, KnowledgeJobCard, KnowledgeOverviewItem, KnowledgeRelationChip, KnowledgeSearchDebug, MarkdownPreview, OKF_PREVIEW_LIMIT, STRUCTURE_PREVIEW_LIMIT, SmoothProgress, WikiConceptViewer, WikiIndexGroup, WikiViewerTitle, bucketContentMarkdown, bucketRepresentativeChunks, bucketSourceSections, bucketStatusTag, buildWikiIndexGroups, conceptPath, conceptSummary, conceptTypeColor, conceptTypeLabel, documentSourceMarkdown, effectiveKnowledgeAgentId, fileToBase64, formatDateTime, ingestSteps, isEmptyDefaultKnowledgeBase, isRecord, knowledgeDetailTitle, knowledgeJobSortTime, normalizeMarkdownForDisplay, okfFrontmatterValue, previewEvidenceItems, previewRepresentativeChunkIds, recordLabel, resolveKnowledgeAgentScope, routePhaseLabel, sortWikiConcepts, stageLabelFallback, statusTag, stringFromMetadata, stripOkfFrontmatter, typeLabel, updateOkfFrontmatterValue, wikiIndexGroupDescription, wikiIndexGroupKey, wikiIndexGroupTitle, 目錄索引Overview } from '../parts';
 
 export function KnowledgeAddPage({ currentUser }: KnowledgePageProps = {}) {
   const navigate = useNavigate();
@@ -199,7 +199,7 @@ export function KnowledgeAddPage({ currentUser }: KnowledgePageProps = {}) {
       const rows = await api.get<KnowledgeBaseRead[]>(`/api/enterprise/knowledge-bases?tenant_id=${TENANT_ID}${suffix}`);
       setKnowledgeBases(rows);
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '加载知识库失败');
+      notify.error(error instanceof Error ? error.message : '加載知識庫失敗');
     }
   }
 
@@ -221,7 +221,7 @@ export function KnowledgeAddPage({ currentUser }: KnowledgePageProps = {}) {
 
   async function uploadFile(file: File) {
     if (!isEnterpriseAdmin(currentUser) && !agentId) {
-      notify.warning('请先选择一个数字员工');
+      notify.warning('請先選擇一個數字員工');
       return;
     }
     try {
@@ -235,9 +235,9 @@ export function KnowledgeAddPage({ currentUser }: KnowledgePageProps = {}) {
       });
       setJobs((prev) => ({ ...prev, [job.id]: job }));
       await refreshKnowledgeBases();
-      notify.success('已创建知识库和入库任务');
+      notify.success('已創建知識庫和入庫任務');
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '上传失败');
+      notify.error(error instanceof Error ? error.message : '上傳失敗');
     }
   }
 
@@ -249,9 +249,9 @@ export function KnowledgeAddPage({ currentUser }: KnowledgePageProps = {}) {
         `/api/enterprise/knowledge/jobs/${job.id}/cancel?tenant_id=${TENANT_ID}`,
       );
       setJobs((prev) => ({ ...prev, [next.id]: next }));
-      notify.success(next.status === 'cancelled' ? '已取消入库任务' : '已发送取消请求');
+      notify.success(next.status === 'cancelled' ? '已取消入庫任務' : '已發送取消請求');
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '取消入库任务失败');
+      notify.error(error instanceof Error ? error.message : '取消入庫任務失敗');
     } finally {
       setCancellingJobIds((current) => current.filter((id) => id !== job.id));
     }
@@ -276,28 +276,28 @@ export function KnowledgeAddPage({ currentUser }: KnowledgePageProps = {}) {
       });
       setDiscoveryModalOpen(true);
     } catch (error) {
-      notify.warning(error instanceof Error ? error.message : '加载知识发现建议失败');
+      notify.warning(error instanceof Error ? error.message : '加載知識發現建議失敗');
     }
   }
 
   async function confirmDiscovery(item: KnowledgeDiscoveryRead) {
     try {
       await api.post(`/api/enterprise/knowledge/discoveries/${item.id}/confirm?tenant_id=${TENANT_ID}`);
-      notify.success('已确认建议');
+      notify.success('已確認建議');
       setPendingDiscoveries((current) => current.filter((entry) => entry.id !== item.id));
       await refreshKnowledgeBases();
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '确认失败');
+      notify.error(error instanceof Error ? error.message : '確認失敗');
     }
   }
 
   async function rejectDiscovery(item: KnowledgeDiscoveryRead) {
     try {
       await api.post(`/api/enterprise/knowledge/discoveries/${item.id}/reject?tenant_id=${TENANT_ID}`);
-      notify.success('已拒绝建议');
+      notify.success('已拒絕建議');
       setPendingDiscoveries((current) => current.filter((entry) => entry.id !== item.id));
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '拒绝失败');
+      notify.error(error instanceof Error ? error.message : '拒絕失敗');
     }
   }
 
@@ -306,9 +306,9 @@ export function KnowledgeAddPage({ currentUser }: KnowledgePageProps = {}) {
       <div className="knowledge-floating-shell">
         <div className="knowledge-floating-head">
           <div>
-            <span className="section-kicker">知识库 / 新建</span>
-            <h3 className="my-[4px] text-[20px] font-semibold text-foreground">新建知识库</h3>
-            <span className="text-[13px] text-[#858b9c]">上传业务文档后，系统会先生成知识图谱，再刷新目录索引、引用来源与自发现建议。</span>
+            <span className="section-kicker">知識庫 / 新建</span>
+            <h3 className="my-[4px] text-[20px] font-semibold text-foreground">新建知識庫</h3>
+            <span className="text-[13px] text-[#858b9c]">上傳業務文檔後，系統會先生成知識圖譜，再刷新目錄索引、引用來源與自發現建議。</span>
           </div>
             <UIButton variant="outline" onClick={() => navigate('/enterprise/knowledge')}>
               <RightOutlined />
@@ -319,10 +319,10 @@ export function KnowledgeAddPage({ currentUser }: KnowledgePageProps = {}) {
         <KCard className="knowledge-upload-card" bodyClassName="flex flex-col gap-[16px]">
           <div className="knowledge-upload-controls">
             <div>
-              <strong className="block text-[14px] font-semibold text-foreground">上传文档即创建知识库</strong>
-              <span className="text-[13px] text-[#858b9c]">一个文件对应一份独立知识库；回到知识库后可查看文档卡片、知识索引和知识图谱。</span>
+              <strong className="block text-[14px] font-semibold text-foreground">上傳文檔即創建知識庫</strong>
+              <span className="text-[13px] text-[#858b9c]">一個文件對應一份獨立知識庫；回到知識庫後可查看文檔卡片、知識索引和知識圖譜。</span>
             </div>
-            <UIButton variant="outline" onClick={() => navigate('/enterprise/knowledge')}>管理已有知识库</UIButton>
+            <UIButton variant="outline" onClick={() => navigate('/enterprise/knowledge')}>管理已有知識庫</UIButton>
           </div>
         {visibleKnowledgeBases.length > 0 && (
           <div className="knowledge-base-target-strip">
@@ -333,7 +333,7 @@ export function KnowledgeAddPage({ currentUser }: KnowledgePageProps = {}) {
               >
                 <span>{item.name}</span>
                 <small>
-                  {item.document_count} 文档 / {item.bucket_count} 目录 / {item.chunk_count} 引用
+                  {item.document_count} 文檔 / {item.bucket_count} 目錄 / {item.chunk_count} 引用
                 </small>
               </div>
             ))}
@@ -347,16 +347,16 @@ export function KnowledgeAddPage({ currentUser }: KnowledgePageProps = {}) {
           <div className="knowledge-upload-inner">
             <InboxOutlined />
             <div>
-              <strong>拖拽文档到这里，或点击上传</strong>
-              <span>支持 doc/docx/txt/md/html/pdf；旧版 doc 会提示转换为 docx。</span>
+              <strong>拖拽文檔到這裡，或點擊上傳</strong>
+              <span>支持 doc/docx/txt/md/html/pdf；舊版 doc 會提示轉換為 docx。</span>
             </div>
           </div>
         </FileDropzone>
         </KCard>
 
-        <KCard title="入库任务">
+        <KCard title="入庫任務">
           {sortedJobs.length === 0 ? (
-            <EmptyState description="上传后这里会显示原始资料、知识图谱和引用来源入库进度" />
+            <EmptyState description="上傳後這裡會顯示原始資料、知識圖譜和引用來源入庫進度" />
           ) : (
             <div className="knowledge-jobs">
               {sortedJobs.map((job) => (
@@ -374,14 +374,14 @@ export function KnowledgeAddPage({ currentUser }: KnowledgePageProps = {}) {
 
       <KDialog
         open={discoveryModalOpen && pendingDiscoveries.length > 0}
-        title="发现可新增资源"
+        title="發現可新增資源"
         width={820}
         className="knowledge-discovery-modal"
         onClose={() => setDiscoveryModalOpen(false)}
       >
         <DiscoveryColumn
-          title="可确认建议"
-          description="模型从本次上传的知识中发现了技能或工具草案，确认后才会写入系统。"
+          title="可確認建議"
+          description="模型從本次上傳的知識中發現了技能或工具草案，確認後才會寫入系統。"
           items={pendingDiscoveries}
           onConfirm={confirmDiscovery}
           onReject={rejectDiscovery}

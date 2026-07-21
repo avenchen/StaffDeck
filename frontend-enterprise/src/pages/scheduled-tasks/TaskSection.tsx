@@ -61,7 +61,7 @@ export function TaskSection<TFilter extends string, TRow>({
         <span className="text-[14px] font-normal leading-none">{title}</span>
       </div>
       <UnderlineTabs
-        aria-label={`${title}筛选`}
+        aria-label={`${title}篩選`}
         variant="line"
         className="mb-[16px]"
         value={filter}
@@ -89,7 +89,7 @@ export function TaskSection<TFilter extends string, TRow>({
         />
         {rows.length > 0 && (
           <Paginator
-            aria-label={`${title}分页`}
+            aria-label={`${title}分頁`}
             page={page}
             pageCount={pageCount}
             onChange={onPageChange}

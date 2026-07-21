@@ -58,13 +58,13 @@ type ConversationDetail = {
 
 const FILTER_TABS: UnderlineTabItem<LogFilter>[] = [
   { label: '全部', value: 'all' },
-  { label: '好评', value: 'up' },
-  { label: '差评', value: 'down' },
-  { label: '未评价', value: 'unrated' },
+  { label: '好評', value: 'up' },
+  { label: '差評', value: 'down' },
+  { label: '未評價', value: 'unrated' },
   { label: '能力不足', value: 'ability' },
-  { label: '工具问题', value: 'tool' },
-  { label: '知识缺失', value: 'knowledge' },
-  { label: 'SOP 问题', value: 'sop' },
+  { label: '工具問題', value: 'tool' },
+  { label: '知識缺失', value: 'knowledge' },
+  { label: 'SOP 問題', value: 'sop' },
 ];
 
 const MOBILE_CARD_CLASS =
@@ -119,7 +119,7 @@ export default function ConversationLogsTab() {
       (item): item is PromiseRejectedResult => item.status === 'rejected',
     );
     if (failure) {
-      notify.error(failure.reason instanceof Error ? failure.reason.message : '部分对话日志数据加载失败');
+      notify.error(failure.reason instanceof Error ? failure.reason.message : '部分對話日誌數據加載失敗');
     }
     setLoading(false);
   };
@@ -195,7 +195,7 @@ export default function ConversationLogsTab() {
         traces,
       });
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '加载对话详情失败');
+      notify.error(error instanceof Error ? error.message : '加載對話詳情失敗');
     } finally {
       setDetailLoading(false);
     }
@@ -212,11 +212,11 @@ export default function ConversationLogsTab() {
     setReanalyzingId(feedbackId);
     try {
       await api.post(`/api/enterprise/feedback/${feedbackId}/reanalyze?tenant_id=${TENANT_ID}`);
-      notify.success('已重新提交后台分析');
+      notify.success('已重新提交後臺分析');
       await reloadCurrentDetail();
       await load();
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '重新分析失败');
+      notify.error(error instanceof Error ? error.message : '重新分析失敗');
     } finally {
       setReanalyzingId(null);
     }
@@ -225,7 +225,7 @@ export default function ConversationLogsTab() {
   const columns: DataTableColumn<ConversationLogRow>[] = [
     {
       key: 'title',
-      title: '对话任务',
+      title: '對話任務',
       width: 200,
       className: 'whitespace-normal text-[#18181a]',
       render: (row) => (
@@ -236,37 +236,37 @@ export default function ConversationLogsTab() {
     },
     {
       key: 'agent',
-      title: '数字员工',
+      title: '數字員工',
       width: 180,
       render: (row) => <span className="block truncate" title={agentLabel(row)}>{agentLabel(row)}</span>,
     },
     {
       key: 'status',
-      title: '状态',
+      title: '狀態',
       width: 120,
       render: (row) => (
         <div className="flex flex-wrap gap-[4px]">
-          {row.downFeedback && <StatusBadge tone="red">差评</StatusBadge>}
-          {row.upFeedback && <StatusBadge tone="green">好评</StatusBadge>}
-          {!row.upFeedback && !row.downFeedback && <StatusBadge tone="blue">未评价</StatusBadge>}
+          {row.downFeedback && <StatusBadge tone="red">差評</StatusBadge>}
+          {row.upFeedback && <StatusBadge tone="green">好評</StatusBadge>}
+          {!row.upFeedback && !row.downFeedback && <StatusBadge tone="blue">未評價</StatusBadge>}
         </div>
       ),
     },
     {
       key: 'attribution',
-      title: '问题归因',
+      title: '問題歸因',
       width: 130,
       render: (row) => (
         <span>
           {row.downFeedback
             ? row.downFeedback.primary_bucket_label || row.downFeedback.primary_bucket || '待分析'
-            : '暂无缺口'}
+            : '暫無缺口'}
         </span>
       ),
     },
     {
       key: 'latest',
-      title: '最近内容',
+      title: '最近內容',
       className: 'whitespace-normal',
       render: (row) => (
         <span className="line-clamp-1 wrap-break-word">
@@ -280,7 +280,7 @@ export default function ConversationLogsTab() {
     },
     {
       key: 'updated',
-      title: '时间',
+      title: '時間',
       width: 170,
       render: (row) => formatDateTime(row.updated_at),
     },
@@ -308,9 +308,9 @@ export default function ConversationLogsTab() {
           {row.title || row.summary || row.last_agent_question || row.id}
         </strong>
         <div className="flex shrink-0 flex-wrap justify-end gap-[4px]">
-          {row.downFeedback && <StatusBadge tone="red">差评</StatusBadge>}
-          {row.upFeedback && <StatusBadge tone="green">好评</StatusBadge>}
-          {!row.upFeedback && !row.downFeedback && <StatusBadge tone="blue">未评价</StatusBadge>}
+          {row.downFeedback && <StatusBadge tone="red">差評</StatusBadge>}
+          {row.upFeedback && <StatusBadge tone="green">好評</StatusBadge>}
+          {!row.upFeedback && !row.downFeedback && <StatusBadge tone="blue">未評價</StatusBadge>}
         </div>
       </div>
       <p className="mt-[8px] line-clamp-2 text-[12px] leading-[1.55] text-[#858b9c]">
@@ -345,14 +345,14 @@ export default function ConversationLogsTab() {
       >
         <div className="flex items-center gap-[6px] px-[12px] text-[#757f9c]">
           <IconCalendar className="size-[14px] shrink-0" />
-          <span className="text-[14px] font-normal leading-none">对话记录</span>
+          <span className="text-[14px] font-normal leading-none">對話記錄</span>
         </div>
 
-        <div className="flex flex-wrap items-stretch gap-[20px]" aria-label="对话反馈统计">
-          <StatCard value={rows.length} label="对话" />
-          <StatCard value={summary?.total_feedback ?? 0} label="反馈" />
-          <StatCard value={summary?.up_count ?? 0} label="好评" tone="green" />
-          <StatCard value={summary?.down_count ?? 0} label="差评" tone="red" />
+        <div className="flex flex-wrap items-stretch gap-[20px]" aria-label="對話反饋統計">
+          <StatCard value={rows.length} label="對話" />
+          <StatCard value={summary?.total_feedback ?? 0} label="反饋" />
+          <StatCard value={summary?.up_count ?? 0} label="好評" tone="green" />
+          <StatCard value={summary?.down_count ?? 0} label="差評" tone="red" />
         </div>
 
         {summary && (summary.summary || summary.bucket_counts.length > 0) && (
@@ -376,7 +376,7 @@ export default function ConversationLogsTab() {
 
         <div className="overflow-x-auto">
           <UnderlineTabs
-            aria-label="对话日志筛选"
+            aria-label="對話日誌篩選"
             variant="line"
             value={filter}
             onChange={setFilter}
@@ -388,24 +388,24 @@ export default function ConversationLogsTab() {
           {filteredRows.length ? (
             pagination.pagedItems.map(renderMobileCard)
           ) : (
-            <div className="py-[40px] text-center text-[13px] text-[#858b9c]">暂无对话日志</div>
+            <div className="py-[40px] text-center text-[13px] text-[#858b9c]">暫無對話日誌</div>
           )}
         </div>
 
         <div className="hidden md:block">
           <DataTable
-            aria-label="对话日志"
+            aria-label="對話日誌"
             columns={columns}
             data={pagination.pagedItems}
             rowKey={(row) => row.id}
             loading={loading}
-            emptyText="暂无对话日志"
+            emptyText="暫無對話日誌"
           />
         </div>
 
         {filteredRows.length > 0 && (
           <Paginator
-            aria-label="对话日志分页"
+            aria-label="對話日誌分頁"
             className="mt-0 mb-[6px]"
             page={pagination.page}
             pageCount={pagination.pageCount}
@@ -447,26 +447,26 @@ function FeedbackDetailDialog({
         <div className="flex items-center gap-[6px] px-[12px] text-[#757f9c]">
           <Clock className="size-[14px] shrink-0" />
           <DialogTitle className="text-[14px] font-normal leading-none text-[#757f9c]">
-            对话日志详情
+            對話日誌詳情
           </DialogTitle>
         </div>
 
         {detail && (
           <div className="flex min-h-0 flex-1 flex-col gap-[16px] overflow-y-auto px-[12px]">
             <div className="grid grid-cols-2 gap-[10px] max-[520px]:grid-cols-1">
-              <DetailField label="任务 ID">
+              <DetailField label="任務 ID">
                 {String(detail.session.session_id || detail.session.id || '-')}
               </DetailField>
-              <DetailField label="数字员工">{agentLabelFromId(String(detail.session.agent_id || ''))}</DetailField>
-              <DetailField label="用户">{displayUser(detail.session)}</DetailField>
-              <DetailField label="状态">{String(detail.session.status || '-')}</DetailField>
-              <DetailField label="反馈" className="col-span-2 max-[520px]:col-span-1">
+              <DetailField label="數字員工">{agentLabelFromId(String(detail.session.agent_id || ''))}</DetailField>
+              <DetailField label="用戶">{displayUser(detail.session)}</DetailField>
+              <DetailField label="狀態">{String(detail.session.status || '-')}</DetailField>
+              <DetailField label="反饋" className="col-span-2 max-[520px]:col-span-1">
                 <div className="flex flex-wrap gap-[6px]">
                   <StatusBadge tone="green">
-                    好评 {detail.feedback.filter((item) => item.rating === 'up').length}
+                    好評 {detail.feedback.filter((item) => item.rating === 'up').length}
                   </StatusBadge>
                   <StatusBadge tone="red">
-                    差评 {detail.feedback.filter((item) => item.rating === 'down').length}
+                    差評 {detail.feedback.filter((item) => item.rating === 'down').length}
                   </StatusBadge>
                   {detail.feedback
                     .filter((item) => item.rating === 'down')
@@ -529,13 +529,13 @@ function FeedbackMessage({
     <div className={`feedback-message-row ${isUser ? 'user' : 'assistant'}`}>
       <div className="feedback-message-bubble">
         <div className="feedback-message-meta">
-          <span>{isUser ? '用户' : isAssistant ? '员工' : item.role}</span>
+          <span>{isUser ? '用戶' : isAssistant ? '員工' : item.role}</span>
           <span>{formatDateTime(item.created_at)}</span>
-          {item.feedback_rating === 'down' && <StatusBadge tone="red">差评</StatusBadge>}
-          {item.feedback_rating === 'up' && <StatusBadge tone="green">好评</StatusBadge>}
+          {item.feedback_rating === 'down' && <StatusBadge tone="red">差評</StatusBadge>}
+          {item.feedback_rating === 'up' && <StatusBadge tone="green">好評</StatusBadge>}
           {item.feedback_analysis &&
             (analysisFailed ? (
-              <StatusBadge tone="red">分析失败</StatusBadge>
+              <StatusBadge tone="red">分析失敗</StatusBadge>
             ) : (
               <StatusBadge tone={bucketTone(item.feedback_analysis.bucket)}>
                 {item.feedback_analysis.bucket_label || item.feedback_analysis.bucket || '待分析'}
@@ -547,7 +547,7 @@ function FeedbackMessage({
         {item.feedback_analysis && item.feedback_rating === 'down' && (
           <div className="feedback-analysis-box">
             <div>
-              <strong>状态：</strong>
+              <strong>狀態：</strong>
               {analysisStatusLabel(item.feedback_analysis.status)}
               {item.feedback_analysis.status !== 'failed' &&
                 typeof item.feedback_analysis.confidence === 'number' && (
@@ -556,7 +556,7 @@ function FeedbackMessage({
             </div>
             {item.feedback_analysis.summary && (
               <div>
-                <strong>改进项：</strong>
+                <strong>改進項：</strong>
                 {item.feedback_analysis.summary}
               </div>
             )}
@@ -615,8 +615,8 @@ function FeedbackTraceBlock({ trace }: { trace: TurnTraceRead }) {
     <div className="feedback-trace-block">
       <div className="feedback-trace-header">
         <Workflow className="size-[14px]" />
-        <span>执行记录</span>
-        <span>{trace.completed_at ? '已完成' : '执行中'}</span>
+        <span>執行記錄</span>
+        <span>{trace.completed_at ? '已完成' : '執行中'}</span>
       </div>
       <div className="feedback-trace-lines">
         {lines.map((line) => (
@@ -627,13 +627,13 @@ function FeedbackTraceBlock({ trace }: { trace: TurnTraceRead }) {
               {line.detail && <span className="feedback-trace-detail">{line.detail}</span>}
               {line.code && (
                 <details className="feedback-trace-code">
-                  <summary>查看代码</summary>
+                  <summary>查看代碼</summary>
                   <pre>{line.code}</pre>
                 </details>
               )}
               {line.output && (
                 <details className="feedback-trace-code">
-                  <summary>{line.outputTitle || '查看输出'}</summary>
+                  <summary>{line.outputTitle || '查看輸出'}</summary>
                   <pre>{line.output}</pre>
                 </details>
               )}
@@ -646,7 +646,7 @@ function FeedbackTraceBlock({ trace }: { trace: TurnTraceRead }) {
 }
 
 function traceDetails(lines: TraceLineRead[]): TraceLineRead[] {
-  const hiddenPlaceholders = new Set(['正在思考', '已完成思考', '正在执行', '执行记录']);
+  const hiddenPlaceholders = new Set(['正在思考', '已完成思考', '正在執行', '執行記錄']);
   return lines.filter((line) => {
     if (line.kind === 'thinking' && line.state !== 'failed') return false;
     if (hiddenPlaceholders.has(line.text) && !line.detail && !line.code && !line.output) return false;
@@ -677,7 +677,7 @@ function bucketTone(bucket?: string): BadgeTone {
 function analysisStatusLabel(status?: string): string {
   if (status === 'pending') return '等待分析';
   if (status === 'analyzed') return '已完成';
-  if (status === 'failed') return '分析失败';
+  if (status === 'failed') return '分析失敗';
   if (status === 'needs_model') return '未配置模型';
   return status || '未知';
 }

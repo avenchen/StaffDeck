@@ -12,9 +12,9 @@ from app.db import staffdeck_seed
 EXPECTED_KNOWLEDGE_COUNTS = {
     "IT": 2,
     "人事": 3,
-    "法务": 4,
+    "法務": 4,
     "行政": 2,
-    "财务": 3,
+    "財務": 3,
 }
 
 
@@ -71,7 +71,7 @@ def test_staffdeck_seed_exposes_selected_agents_with_knowledge_bases() -> None:
         assert not db.exec(
             select(AgentProfile).where(
                 AgentProfile.tenant_id == "tenant_demo",
-                AgentProfile.name == "默认智能体",
+                AgentProfile.name == "默認智能體",
                 AgentProfile.status == "active",
             )
         ).first()
@@ -143,7 +143,7 @@ def test_staffdeck_seed_does_not_overwrite_non_seed_employee_name_conflict() -> 
                 id="agent_custom_it",
                 tenant_id="tenant_demo",
                 name="IT",
-                description="用户原有的 IT 员工",
+                description="用戶原有的 IT 員工",
                 status="active",
                 metadata_json={
                     "owner_user_id": "user_custom",
@@ -160,7 +160,7 @@ def test_staffdeck_seed_does_not_overwrite_non_seed_employee_name_conflict() -> 
         row = db.get(AgentProfile, "agent_custom_it")
 
         assert row is not None
-        assert row.description == "用户原有的 IT 员工"
+        assert row.description == "用戶原有的 IT 員工"
         assert row.metadata_json.get("owner_user_id") == "user_custom"
         assert row.metadata_json.get("seed_source") is None
 
@@ -174,8 +174,8 @@ def test_staffdeck_seed_archives_legacy_default_agent() -> None:
             AgentProfile(
                 id="agent_tenant_demo_default",
                 tenant_id="tenant_demo",
-                name="默认智能体",
-                description="默认对话可见域",
+                name="默認智能體",
+                description="默認對話可見域",
                 status="active",
             )
         )

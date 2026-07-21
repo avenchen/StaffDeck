@@ -10,7 +10,7 @@ def is_frozen() -> bool:
 
 
 def app_root() -> Path:
-    # 开发态：backend/ 目录（app/paths.py 的上上级）
+    # 開發態：backend/ 目錄（app/paths.py 的上上級）
     return Path(__file__).resolve().parents[1]
 
 
@@ -21,7 +21,7 @@ def resource_dir() -> Path:
 
 
 def user_data_dir() -> Path:
-    # 环境变量前缀保留 ULTRARAG_（内部标识，不改）；目录名用对外品牌 StaffDeck
+    # 環境變量前綴保留 ULTRARAG_（內部標識，不改）；目錄名用對外品牌 StaffDeck
     override = os.environ.get("ULTRARAG_DATA_DIR", "").strip()
     if override:
         base = Path(override).expanduser()

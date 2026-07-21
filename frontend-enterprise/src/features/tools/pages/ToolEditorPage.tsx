@@ -55,17 +55,17 @@ function ToolEditorPage({ mode, currentUser, onLogout }: { mode: 'new' | 'edit' 
         setTool(row);
         setValues(toolToFormValues(row));
       })
-      .catch((error) => notify.error(error instanceof Error ? error.message : '加载工具失败'))
+      .catch((error) => notify.error(error instanceof Error ? error.message : '加載工具失敗'))
       .finally(() => setLoading(false));
   }, [isEdit, toolId]);
 
   async function save() {
     if (!String(values.name || '').trim()) {
-      notify.error('请填写工具名称');
+      notify.error('請填寫工具名稱');
       return;
     }
     if (!String(values.url || '').trim()) {
-      notify.error('请填写 URL');
+      notify.error('請填寫 URL');
       return;
     }
     const payload = buildToolPayload(values);
@@ -82,7 +82,7 @@ function ToolEditorPage({ mode, currentUser, onLogout }: { mode: 'new' | 'edit' 
         navigate(`/enterprise/tools/${saved.id}/edit`, { replace: true });
       }
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '保存失败');
+      notify.error(error instanceof Error ? error.message : '保存失敗');
     } finally {
       setLoading(false);
     }
@@ -93,11 +93,11 @@ function ToolEditorPage({ mode, currentUser, onLogout }: { mode: 'new' | 'edit' 
       <AppHeader
         onLogout={onLogout}
         userName={currentUser?.username}
-        title={isEdit ? '编辑工具' : '新建工具'}
+        title={isEdit ? '編輯工具' : '新建工具'}
         description={
           isEdit
-            ? '修改工具定义，并在右侧验证当前配置或已保存版本。'
-            : '选择工具类型并填写定义，可先用右侧探测区测试请求与返回结构。'
+            ? '修改工具定義，並在右側驗證當前配置或已保存版本。'
+            : '選擇工具類型並填寫定義，可先用右側探測區測試請求與返回結構。'
         }
       />
       <div className="mt-[20px] mb-[16px] flex flex-wrap justify-end gap-[16px]">
@@ -112,7 +112,7 @@ function ToolEditorPage({ mode, currentUser, onLogout }: { mode: 'new' | 'edit' 
             className={RETURN_BUTTON_CLASS}
           >
             <ExperimentOutlined />
-            打开测试页
+            打開測試頁
           </UIButton>
         )}
         <UIButton disabled={loading} onClick={() => void save()} className={PRIMARY_BUTTON_CLASS}>
@@ -121,7 +121,7 @@ function ToolEditorPage({ mode, currentUser, onLogout }: { mode: 'new' | 'edit' 
       </div>
       {!isEdit && <ToolTypeSwitcher active="http" />}
       <div className="grid grid-cols-1 items-start gap-[20px] xl:grid-cols-2">
-        <SectionCard title="工具定义" loading={loading && isEdit && !tool}>
+        <SectionCard title="工具定義" loading={loading && isEdit && !tool}>
           <ToolFormFields values={values} setField={setField} bucketOptions={bucketOptions} lockName={isEdit} />
         </SectionCard>
         <div className="flex w-full flex-col gap-[20px]">

@@ -26,7 +26,7 @@ export function ModelConfigDropdown({
   disabled = false,
   buttonClassName,
   align = 'end',
-  placeholder = '默认模型',
+  placeholder = '默認模型',
 }: ModelConfigDropdownProps) {
   const selected = models.find((item) => item.id === value) || null;
   const label = selected?.name || selected?.model || placeholder;
@@ -47,7 +47,7 @@ export function ModelConfigDropdown({
       <DropdownMenuContent align={align} className={MENU_CONTENT_CLASS}>
         {models.length === 0 ? (
           <DropdownMenuItem disabled className={MENU_ITEM_CLASS}>
-            暂无可用模型
+            暫無可用模型
           </DropdownMenuItem>
         ) : (
           models.map((model) => (
@@ -59,7 +59,7 @@ export function ModelConfigDropdown({
               <span className="flex min-w-0 flex-1 flex-col">
                 <strong className="truncate text-[13px] text-foreground">{model.name || model.model}</strong>
                 <em className="truncate text-[11px] not-italic text-[#858b9c]">
-                  {model.is_default ? `${model.model} · 默认` : model.model}
+                  {model.is_default ? `${model.model} · 默認` : model.model}
                 </em>
               </span>
               {value === model.id && <CheckOutlined />}

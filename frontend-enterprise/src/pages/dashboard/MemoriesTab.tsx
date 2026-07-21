@@ -60,7 +60,7 @@ export default function MemoriesTab() {
       const result = await api.get<MemoryRead[]>(`/api/enterprise/memories?${params.toString()}`);
       setRows(result);
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '查询失败');
+      notify.error(error instanceof Error ? error.message : '查詢失敗');
     } finally {
       setLoading(false);
     }
@@ -86,8 +86,8 @@ export default function MemoriesTab() {
   const groups = useMemo(() => groupMemories(rows), [rows]);
   const pagination = useClientPagination(groups, MEMORY_PAGE_SIZE, groups);
   const emptyText = agentId
-    ? '当前员工暂无用户记忆；新的对话记忆会按员工和用户隔离沉淀。'
-    : '暂无记忆';
+    ? '當前員工暫無用戶記憶；新的對話記憶會按員工和用戶隔離沉澱。'
+    : '暫無記憶';
 
   function resetFilter() {
     setFilter(EMPTY_FILTER);
@@ -95,8 +95,8 @@ export default function MemoriesTab() {
   }
 
   async function clearOwnMemories() {
-    const scopeText = agentId ? '当前员工下你的长期记忆' : '当前租户下你的长期记忆';
-    if (!window.confirm(`将清空${scopeText}，不会影响其他用户。确定继续？`)) {
+    const scopeText = agentId ? '當前員工下你的長期記憶' : '當前租戶下你的長期記憶';
+    if (!window.confirm(`將清空${scopeText}，不會影響其他用戶。確定繼續？`)) {
       return;
     }
     setClearing(true);
@@ -104,11 +104,11 @@ export default function MemoriesTab() {
       const params = new URLSearchParams({ tenant_id: TENANT_ID });
       if (agentId) params.set('agent_id', agentId);
       const result = await api.delete<{ deleted: number }>(`/api/enterprise/memories/me?${params.toString()}`);
-      notify.success(result.deleted > 0 ? `已清空 ${result.deleted} 条记忆` : '没有可清空的记忆');
+      notify.success(result.deleted > 0 ? `已清空 ${result.deleted} 條記憶` : '沒有可清空的記憶');
       setDetail(null);
       await load(filter);
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '清空失败');
+      notify.error(error instanceof Error ? error.message : '清空失敗');
     } finally {
       setClearing(false);
     }
@@ -117,20 +117,20 @@ export default function MemoriesTab() {
   const columns: DataTableColumn<MemoryUserGroup>[] = [
     {
       key: 'username',
-      title: '用户名',
+      title: '用戶名',
       width: 160,
       className: 'text-[#18181a]',
       render: (row) => <span className="truncate">{row.username || '-'}</span>,
     },
     {
       key: 'user_id',
-      title: '用户ID',
+      title: '用戶ID',
       width: 180,
       render: (row) => <span className="block truncate">{row.user_id}</span>,
     },
     {
       key: 'kinds',
-      title: '类型',
+      title: '類型',
       width: 120,
       render: (row) => (
         <div className="flex flex-wrap gap-[4px]">
@@ -142,7 +142,7 @@ export default function MemoriesTab() {
     },
     {
       key: 'count',
-      title: '记忆数',
+      title: '記憶數',
       width: 100,
       render: (row) => `${row.memories.length} 次`,
     },
@@ -195,7 +195,7 @@ export default function MemoriesTab() {
       </div>
       <p className="mt-[8px] line-clamp-2 text-[12px] leading-[1.55] text-[#858b9c]">{row.preview || '-'}</p>
       <div className="mt-[10px] flex items-center justify-between text-[12px] text-[#858b9c]">
-        <span>{row.memories.length} 条记忆</span>
+        <span>{row.memories.length} 條記憶</span>
         <span>{formatDateTime(row.latest_at)}</span>
       </div>
     </article>
@@ -210,7 +210,7 @@ export default function MemoriesTab() {
         <div className="flex flex-col gap-[18px]">
           <div className="flex items-center gap-[6px] px-[12px] text-[#757f9c]">
             <IconHistory className="size-[14px] shrink-0" />
-            <span className="text-[14px] font-normal leading-none">记忆查询</span>
+            <span className="text-[14px] font-normal leading-none">記憶查詢</span>
           </div>
 
           <form
@@ -221,20 +221,20 @@ export default function MemoriesTab() {
             }}
           >
             <PrefixInput
-              label="用户名"
+              label="用戶名"
               placeholder="如 user_demo"
               value={filter.username}
               onChange={(value) => setFilter((prev) => ({ ...prev, username: value }))}
             />
             <PrefixInput
-              label="用户ID"
+              label="用戶ID"
               placeholder="如 user_demo"
               value={filter.user_id}
               onChange={(value) => setFilter((prev) => ({ ...prev, user_id: value }))}
             />
             <PrefixInput
               label="搜索"
-              placeholder="用户名、用户 ID、记忆内容"
+              placeholder="用戶名、用戶 ID、記憶內容"
               value={filter.q}
               onChange={(value) => setFilter((prev) => ({ ...prev, q: value }))}
             />
@@ -244,7 +244,7 @@ export default function MemoriesTab() {
               className="h-[34px] w-[80px] gap-[4px] rounded-[10px] bg-[#18181a] px-[20px] text-[12px] font-normal text-white hover:bg-[#303030]"
             >
               <IconSearch className="size-[14px]" />
-              查询
+              查詢
             </UIButton>
             <UIButton
               type="button"
@@ -263,7 +263,7 @@ export default function MemoriesTab() {
               disabled={loading || clearing}
               className="h-[34px] w-[112px] rounded-[10px] border-[0.5px] border-[#f0d3d3] bg-white px-[16px] text-[12px] font-normal text-[#c43d3d] hover:border-[#e1a8a8] hover:bg-[#fff7f7] hover:text-[#a92d2d]"
             >
-              {clearing ? '清空中' : '清空我的记忆'}
+              {clearing ? '清空中' : '清空我的記憶'}
             </UIButton>
           </form>
 
@@ -277,7 +277,7 @@ export default function MemoriesTab() {
 
           <div className="hidden md:block">
             <DataTable
-              aria-label="员工记忆"
+              aria-label="員工記憶"
               columns={columns}
               data={pagination.pagedItems}
               rowKey={(row) => row.key}
@@ -288,7 +288,7 @@ export default function MemoriesTab() {
 
           {groups.length > 0 && (
             <Paginator
-              aria-label="员工记忆分页"
+              aria-label="員工記憶分頁"
               className="mt-0 mb-[6px]"
               page={pagination.page}
               pageCount={pagination.pageCount}
@@ -359,17 +359,17 @@ function MemoryDetailDialog({
         <div className="flex items-center gap-[6px] px-[12px] text-[#757f9c]">
           <IconListBulleted className="size-[14px] shrink-0" />
           <DialogTitle className="text-[14px] font-normal leading-none text-[#757f9c]">
-            员工记忆详情
+            員工記憶詳情
           </DialogTitle>
         </div>
 
         {detail && (
           <div className="flex min-h-0 flex-1 flex-col gap-[16px] overflow-y-auto px-[12px]">
             <div className="grid grid-cols-2 gap-[10px] max-[520px]:grid-cols-1">
-              <DetailField label="用户名">{detail.username || '-'}</DetailField>
-              <DetailField label="用户ID">{detail.user_id}</DetailField>
-              <DetailField label="记忆数">{detail.memories.length} 条</DetailField>
-              <DetailField label="类型">
+              <DetailField label="用戶名">{detail.username || '-'}</DetailField>
+              <DetailField label="用戶ID">{detail.user_id}</DetailField>
+              <DetailField label="記憶數">{detail.memories.length} 條</DetailField>
+              <DetailField label="類型">
                 <div className="flex flex-wrap gap-[4px]">
                   {detail.kinds.map((kind) => (
                     <MemoryKindBadge key={kind} kind={kind} />

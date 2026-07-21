@@ -40,7 +40,7 @@ type TestResult = {
 } | null;
 
 const INITIAL_FORM: ModelSetupForm = {
-  name: '默认模型',
+  name: '默認模型',
   provider: 'openai_compatible',
   baseUrl: '',
   model: '',
@@ -80,13 +80,13 @@ export default function ModelSetupDialog({
     const provider = form.provider.trim();
     const model = form.model.trim();
     if (!name || !provider || !model) {
-      notify.error(t('请填写配置名称、Provider 和 Model'));
+      notify.error(t('請填寫配置名稱、Provider 和 Model'));
       return;
     }
     const temperature = Number(form.temperature);
     const maxOutputTokens = Number(form.maxOutputTokens);
     if (!Number.isFinite(temperature) || !Number.isFinite(maxOutputTokens)) {
-      notify.error(t('Temperature 与 Max Tokens 必须是数字'));
+      notify.error(t('Temperature 與 Max Tokens 必須是數字'));
       return;
     }
 
@@ -114,7 +114,7 @@ export default function ModelSetupDialog({
         `/api/enterprise/model-configs/${saved.id}/test?tenant_id=${encodeURIComponent(tenantId)}`,
       );
       if (!result.success) {
-        setTestResult({ success: false, message: result.message ? t(result.message) : t('模型连接失败，请检查配置后重试。') });
+        setTestResult({ success: false, message: result.message ? t(result.message) : t('模型連接失敗，請檢查配置後重試。') });
         return;
       }
 
@@ -124,12 +124,12 @@ export default function ModelSetupDialog({
         is_default: true,
         enabled: true,
       });
-      setTestResult({ success: true, message: result.output || (result.message ? t(result.message) : t('模型连接成功。')) });
+      setTestResult({ success: true, message: result.output || (result.message ? t(result.message) : t('模型連接成功。')) });
       onConfigured(activated);
     } catch (error) {
       setTestResult({
         success: false,
-        message: error instanceof Error ? error.message : t('模型保存或连接测试失败，请检查配置后重试。'),
+        message: error instanceof Error ? error.message : t('模型保存或連接測試失敗，請檢查配置後重試。'),
       });
     } finally {
       setTesting(false);
@@ -145,13 +145,13 @@ export default function ModelSetupDialog({
           </div>
           <DialogTitle>需要先配置模型</DialogTitle>
           <DialogDescription>
-            当前没有可用模型。完成配置并通过连通性测试后，才能发送对话和执行任务。
+            當前沒有可用模型。完成配置並通過連通性測試後，才能發送對話和執行任務。
           </DialogDescription>
         </DialogHeader>
 
         {canConfigure ? (
           <div className="grid gap-[14px] py-[4px] sm:grid-cols-2">
-            <LabeledField label="配置名称">
+            <LabeledField label="配置名稱">
               <Input value={form.name} onChange={(event) => updateForm('name', event.target.value)} />
             </LabeledField>
             <LabeledField label="Provider">
@@ -175,7 +175,7 @@ export default function ModelSetupDialog({
               <Input
                 type="password"
                 value={form.apiKey}
-                placeholder={savedModelId ? '不修改请留空' : 'sk-...'}
+                placeholder={savedModelId ? '不修改請留空' : 'sk-...'}
                 onChange={(event) => updateForm('apiKey', event.target.value)}
               />
             </LabeledField>
@@ -204,7 +204,7 @@ export default function ModelSetupDialog({
         ) : (
           <div className="flex items-start gap-[10px] rounded-[8px] border border-[#f0d9a8] bg-[#fffaf0] p-[12px] text-[13px] text-[#7b5c16]">
             <AlertCircle className="mt-[1px] size-[16px] shrink-0" />
-            <span>当前账号没有模型管理权限，请联系管理员完成模型配置和连通性测试。</span>
+            <span>當前賬號沒有模型管理權限，請聯繫管理員完成模型配置和連通性測試。</span>
           </div>
         )}
 
@@ -229,17 +229,17 @@ export default function ModelSetupDialog({
               onClick={() => window.open('/enterprise/models', '_blank', 'noopener,noreferrer')}
             >
               <ExternalLink className="size-[15px]" />
-              打开模型管理
+              打開模型管理
             </Button>
           )}
           <div className="flex justify-end gap-[8px]">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              {testResult?.success ? '返回对话' : '稍后配置'}
+              {testResult?.success ? '返回對話' : '稍後配置'}
             </Button>
             {canConfigure && !testResult?.success && (
               <Button type="button" disabled={testing} onClick={() => void saveAndTest()}>
                 <FlaskConical className="size-[15px]" />
-                {testing ? '正在测试' : savedModelId ? '保存并重新测试' : '保存并测试'}
+                {testing ? '正在測試' : savedModelId ? '保存並重新測試' : '保存並測試'}
               </Button>
             )}
           </div>

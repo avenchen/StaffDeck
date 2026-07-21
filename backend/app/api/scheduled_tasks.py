@@ -148,7 +148,7 @@ def run_enterprise_scheduled_task_now(
 ) -> ScheduledTaskRunRead:
     row = _get_task(db, tenant_id, task_id, current_user)
     if row.status == "archived":
-        raise HTTPException(status_code=400, detail="已删除的自动任务不能运行")
+        raise HTTPException(status_code=400, detail="已刪除的自動任務不能運行")
     run = start_scheduled_task_async(db, row, scheduled_for=utc_now(), manual=True)
     return scheduled_task_run_read(run, row)
 
@@ -250,9 +250,9 @@ def _get_task(db: Session, tenant_id: str, task_id: str, current_user: User) -> 
     _ensure_request_tenant(tenant_id, current_user)
     row = db.get(ScheduledTask, task_id)
     if not row or row.tenant_id != tenant_id:
-        raise HTTPException(status_code=404, detail="自动任务不存在")
+        raise HTTPException(status_code=404, detail="自動任務不存在")
     if not _is_admin_user(current_user) and row.created_by_user_id != current_user.id:
-        raise HTTPException(status_code=403, detail="无权访问该自动任务")
+        raise HTTPException(status_code=403, detail="無權訪問該自動任務")
     return row
 
 

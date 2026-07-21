@@ -302,7 +302,7 @@ def update_skill(
             agent.id,
             row,
             normalized_content.model_dump(),
-            "技能分支改写",
+            "技能分支改寫",
         )
         _sync_skill_tool_bindings(
             db,
@@ -731,7 +731,7 @@ def cancel_skill_stream_job(
 ) -> dict[str, str]:
     _owned_stream_job(job_id, current_user)
     stream_jobs.cancel(job_id)
-    stream_jobs.append(job_id, "status", {"text": "已请求停止生成"})
+    stream_jobs.append(job_id, "status", {"text": "已請求停止生成"})
     return {"status": "cancel_requested", "job_id": job_id}
 
 
@@ -802,7 +802,7 @@ def _run_distill_stream_job(job_id: str, request_data: dict[str, object]) -> Non
             ensure_tenant(db, request.tenant_id)
             model_config = _get_request_model(db, request.tenant_id, request.model_config_id)
             enriched_request = _with_available_tools(db, request)
-            stream_jobs.append(job_id, "status", {"text": "正在调用模型生成新技能"})
+            stream_jobs.append(job_id, "status", {"text": "正在調用模型生成新技能"})
             for item in SkillDistiller().stream_text(enriched_request, model_config):
                 if stream_jobs.is_cancelled(job_id):
                     stream_jobs.append(job_id, "status", {"text": "已停止生成"})
@@ -824,10 +824,10 @@ def _run_rewrite_stream_job(job_id: str, skill_id: str, request_data: dict[str, 
             ensure_tenant(db, request.tenant_id)
             model_config = _get_request_model(db, request.tenant_id, request.model_config_id)
             enriched_request = _with_available_tools_for_rewrite(db, request)
-            stream_jobs.append(job_id, "status", {"text": "正在调用模型分析改写要求"})
+            stream_jobs.append(job_id, "status", {"text": "正在調用模型分析改寫要求"})
             for item in SkillEditor().stream_text(enriched_request, model_config):
                 if stream_jobs.is_cancelled(job_id):
-                    stream_jobs.append(job_id, "status", {"text": "已停止改写"})
+                    stream_jobs.append(job_id, "status", {"text": "已停止改寫"})
                     stream_jobs.complete(job_id)
                     return
                 stream_jobs.append(job_id, str(item["event"]), dict(item["data"]))

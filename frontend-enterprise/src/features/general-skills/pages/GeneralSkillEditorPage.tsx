@@ -156,14 +156,14 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
   const canManageCurrentScope = currentAgent
     ? canManageEmployeeAgent(currentAgent, currentUser)
     : isEnterpriseAdmin(currentUser) && isOverallAgent;
-  const pageTitle = isNew ? '新建空白技能' : '编辑技能';
+  const pageTitle = isNew ? '新建空白技能' : '編輯技能';
   const pageDescription = isOverallAgent
     ? (isNew
-      ? '填写技能定义并编辑 SKILL.md，保存后可在右侧运行测试。'
-      : '维护技能广场中的技能定义、文件包和运行测试。')
+      ? '填寫技能定義並編輯 SKILL.md，保存後可在右側運行測試。'
+      : '維護技能廣場中的技能定義、文件包和運行測試。')
     : (isNew
-      ? '为当前数字员工创建技能，填写基本信息并编辑技能文件。'
-      : '维护当前数字员工技能的定义、文件包和运行测试。');
+      ? '為當前數字員工創建技能，填寫基本信息並編輯技能文件。'
+      : '維護當前數字員工技能的定義、文件包和運行測試。');
 
   const load = () => {
     const agentSuffix = agentId ? `&agent_id=${encodeURIComponent(agentId)}` : '';
@@ -176,7 +176,7 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
           if (target) {
             editSkill(target);
           } else if (routeSlug) {
-            notify.error('未找到要编辑的技能');
+            notify.error('未找到要編輯的技能');
           }
         }
       })
@@ -263,11 +263,11 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
 
   async function importSkill(): Promise<GeneralSkillRead | null> {
     if (!canManageCurrentScope) {
-      notify.error('只有管理员可以编辑技能广场内容');
+      notify.error('只有管理員可以編輯技能廣場內容');
       return null;
     }
     if (!markdown.trim()) {
-      notify.warning('请先粘贴或上传 SKILL.md');
+      notify.warning('請先粘貼或上傳 SKILL.md');
       return null;
     }
     setSaving(true);
@@ -302,7 +302,7 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
       void load();
       return row;
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '保存技能失败');
+      notify.error(error instanceof Error ? error.message : '保存技能失敗');
       return null;
     } finally {
       setSaving(false);
@@ -352,7 +352,7 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
 
   async function setSkillPublished(row: GeneralSkillRead, published: boolean) {
     if (!canManageCurrentScope) {
-      notify.error('只有管理员可以编辑技能广场内容');
+      notify.error('只有管理員可以編輯技能廣場內容');
       return;
     }
     try {
@@ -361,9 +361,9 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
         `/api/enterprise/general-skills/${row.slug}/${published ? 'publish' : 'archive'}?tenant_id=${TENANT_ID}${agentSuffix}`,
       );
       replaceRow(next);
-      notify.success(published ? '已启用技能' : '已停用技能');
+      notify.success(published ? '已啟用技能' : '已停用技能');
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : published ? '发布失败' : '下线失败');
+      notify.error(error instanceof Error ? error.message : published ? '發佈失敗' : '下線失敗');
     }
   }
 
@@ -371,7 +371,7 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
     const row = deleteSkillTarget;
     if (!row) return;
     if (!canManageCurrentScope) {
-      notify.error('只有管理员可以编辑技能广场内容');
+      notify.error('只有管理員可以編輯技能廣場內容');
       return;
     }
     const branchMode = !isOverallAgent;
@@ -390,9 +390,9 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
           newSkill();
         }
       }
-      notify.success(branchMode ? '已移除技能' : '已删除技能');
+      notify.success(branchMode ? '已移除技能' : '已刪除技能');
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '删除失败');
+      notify.error(error instanceof Error ? error.message : '刪除失敗');
     } finally {
       setDeleteSkillTarget(null);
     }
@@ -474,7 +474,7 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
           setAgentImportSourceSkills([]);
         }
       } catch (error) {
-        notify.error(error instanceof Error ? error.message : '加载员工列表失败');
+        notify.error(error instanceof Error ? error.message : '加載員工列表失敗');
       }
     });
   }
@@ -490,21 +490,21 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
       const existingIds = new Set(rows.map((item) => item.id));
       setAgentImportSourceSkills(sourceRows.filter((item) => item.status === 'published' && !existingIds.has(item.id)));
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '加载来源技能失败');
+      notify.error(error instanceof Error ? error.message : '加載來源技能失敗');
     }
   }
 
   async function submitAgentImportSkills() {
     if (!agentId) {
-      notify.warning('请先选择一个数字员工');
+      notify.warning('請先選擇一個數字員工');
       return;
     }
     if (!agentImportSourceAgentId) {
-      notify.warning(agentImportMode === 'plaza' ? '请选择开放广场' : '请选择复制来源');
+      notify.warning(agentImportMode === 'plaza' ? '請選擇開放廣場' : '請選擇複製來源');
       return;
     }
     if (!agentImportSelectedSkillIds.length) {
-      notify.warning('请选择要复制的技能');
+      notify.warning('請選擇要複製的技能');
       return;
     }
     setAgentImportLoading(true);
@@ -515,11 +515,11 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
         resource_type: 'general_skill',
         resource_ids: agentImportSelectedSkillIds,
       });
-      notify.success(`已复制 ${agentImportSelectedSkillIds.length} 个技能`);
+      notify.success(`已複製 ${agentImportSelectedSkillIds.length} 個技能`);
       setAgentImportOpen(false);
       await load();
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '复制技能失败');
+      notify.error(error instanceof Error ? error.message : '複製技能失敗');
     } finally {
       setAgentImportLoading(false);
     }
@@ -527,7 +527,7 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
 
   async function importClawHubSource() {
     if (!clawhubSource.trim()) {
-      notify.warning('请输入开源平台地址、GitHub 仓库或 SKILL.md 链接');
+      notify.warning('請輸入開源平臺地址、GitHub 倉庫或 SKILL.md 鏈接');
       return;
     }
     const controller = new AbortController();
@@ -550,10 +550,10 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
       void load();
     } catch (error) {
       if (isAbortError(error)) {
-        notify.info('已取消导入');
+        notify.info('已取消導入');
         return;
       }
-      notify.error(error instanceof Error ? error.message : '从开源平台导入失败');
+      notify.error(error instanceof Error ? error.message : '從開源平臺導入失敗');
     } finally {
       if (clawhubAbortRef.current === controller) {
         clawhubAbortRef.current = null;
@@ -578,7 +578,7 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
         status: 'published',
       }, controller.signal);
       if (controller.signal.aborted) return;
-      notify.success(`已上传 ${row.name}`);
+      notify.success(`已上傳 ${row.name}`);
       setRows((current) => [row, ...current.filter((item) => item.id !== row.id && item.slug !== row.slug)]);
       setSelectedSlug(row.slug);
       editSkill(row);
@@ -586,10 +586,10 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
       void load();
     } catch (error) {
       if (isAbortError(error)) {
-        notify.info('已取消导入');
+        notify.info('已取消導入');
         return;
       }
-      notify.error(error instanceof Error ? error.message : '上传技能包失败');
+      notify.error(error instanceof Error ? error.message : '上傳技能包失敗');
     } finally {
       if (clawhubAbortRef.current === controller) {
         clawhubAbortRef.current = null;
@@ -629,7 +629,7 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
 
   function deleteSkillFile(target: GeneralSkillFile) {
     if (target.path.split('/').pop()?.toLowerCase() === 'skill.md') {
-      notify.warning('SKILL.md 是技能入口，不能删除');
+      notify.warning('SKILL.md 是技能入口，不能刪除');
       return;
     }
     setDeleteFileTarget(target);
@@ -655,7 +655,7 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
       {
         const normalized = normalizeSkillFilePath(nextPath);
         if (!normalized) {
-          notify.error('文件名不能为空');
+          notify.error('文件名不能為空');
           return;
         }
         if (normalized === target.path) {
@@ -682,11 +682,11 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
   async function runSkill() {
     const slug = selectedSkill?.slug;
     if (!slug) {
-      notify.warning('请先导入技能');
+      notify.warning('請先導入技能');
       return;
     }
     if (!query.trim()) {
-      notify.warning('请输入测试问题');
+      notify.warning('請輸入測試問題');
       return;
     }
     setLoading(true);
@@ -751,16 +751,16 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
             completed = true;
             setRunResult(result);
             setLiveResult(null);
-            notify.success('运行完成');
+            notify.success('運行完成');
           }
           if (item.event === 'error') {
-            const text = typeof item.data.message === 'string' ? item.data.message : '运行失败';
+            const text = typeof item.data.message === 'string' ? item.data.message : '運行失敗';
             completed = true;
             setLiveResult((current) => ({
               ...(current || { skill_slug: slug, execution_trace: [] }),
               stderr: text,
               structured_result: { success: false, error: text },
-              reply: '运行失败',
+              reply: '運行失敗',
             }));
             notify.error(text);
           }
@@ -768,17 +768,17 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
         controller.signal,
       );
       if (!completed) {
-        notify.warning('运行流已结束，但未收到最终结果');
+        notify.warning('運行流已結束，但未收到最終結果');
       }
     } catch (error) {
       const text = timedOut
-        ? '技能运行超时，请检查模型或稍后重试。'
-        : error instanceof Error ? error.message : '运行失败';
+        ? '技能運行超時，請檢查模型或稍後重試。'
+        : error instanceof Error ? error.message : '運行失敗';
       setLiveResult((current) => ({
         ...(current || { skill_slug: slug, execution_trace: [] }),
         stderr: text,
         structured_result: { success: false, error: text },
-        reply: '运行失败',
+        reply: '運行失敗',
       }));
       notify.error(text);
     } finally {
@@ -795,7 +795,7 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
     setSelectedFilePath('SKILL.md');
     setMarkdown(text);
     applyMetadata(text, { setSkillName, setSkillSlug, setSkillDescription, setSkillHomepage });
-    notify.success(`已读取 ${target.name}`);
+    notify.success(`已讀取 ${target.name}`);
   }
 
   async function importSkillPackage(targets: DroppedSkillFile[]) {
@@ -816,7 +816,7 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
       }
     }
     if (!nextFiles.length) {
-      notify.error('没有读取到可导入的技能文件');
+      notify.error('沒有讀取到可導入的技能文件');
       return;
     }
     nextFiles.sort((a, b) => a.path.localeCompare(b.path));
@@ -827,10 +827,10 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
       setMarkdown(skillFile.content);
       setSelectedFilePath(skillFile.path);
       applyMetadata(skillFile.content, { setSkillName, setSkillSlug, setSkillDescription, setSkillHomepage });
-      notify.success(`已读取 ${nextFiles.length} 个文件${failedCount ? `，跳过 ${failedCount} 个无法读取文件` : ''}`);
+      notify.success(`已讀取 ${nextFiles.length} 個文件${failedCount ? `，跳過 ${failedCount} 個無法讀取文件` : ''}`);
     } else {
       setSelectedFilePath(nextFiles[0]?.path || 'SKILL.md');
-      notify.warning('文件夹中没有找到 SKILL.md');
+      notify.warning('文件夾中沒有找到 SKILL.md');
     }
   }
 
@@ -904,26 +904,26 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
       <DropdownMenuTrigger asChild>
         <UIButton variant="outline" className={RETURN_BUTTON_CLASS}>
           <UploadOutlined className="size-[14px]!" />
-          导入
+          導入
         </UIButton>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className={MENU_CONTENT_CLASS}>
-        <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={() => requestImport('file')}>选择文件</DropdownMenuItem>
-        <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={() => requestImport('folder')}>选择文件夹</DropdownMenuItem>
+        <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={() => requestImport('file')}>選擇文件</DropdownMenuItem>
+        <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={() => requestImport('folder')}>選擇文件夾</DropdownMenuItem>
         {!isOverallAgent && (
           <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={() => requestAgentImport('plaza')}>
             <UploadOutlined />
-            从广场复制
+            從廣場複製
           </DropdownMenuItem>
         )}
         <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={() => requestClawHubImport()}>
           <GithubOutlined />
-          从开源平台导入
+          從開源平臺導入
         </DropdownMenuItem>
         {!isOverallAgent && (
           <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={() => requestAgentImport('employee')}>
             <TeamOutlined />
-            从数字员工复制技能
+            從數字員工複製技能
           </DropdownMenuItem>
         )}
       </DropdownMenuContent>
@@ -964,12 +964,12 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
       <div className="grid grid-cols-1 gap-[20px] xl:grid-cols-2 xl:grid-rows-[auto_minmax(0,1fr)] xl:items-stretch">
           <SectionCard title="基本信息">
             <div className="grid grid-cols-1 gap-[16px] md:grid-cols-2">
-              <Field label="技能名称">
+              <Field label="技能名稱">
                 <Input
                   value={skillName}
                   onChange={(event) => setSkillName(event.target.value)}
                   disabled={!canManageCurrentScope}
-                  placeholder="例如 天气查询、代码审查"
+                  placeholder="例如 天氣查詢、代碼審查"
                 />
               </Field>
               <Field label="Slug">
@@ -980,7 +980,7 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
                     setSkillSlug(event.target.value);
                   }}
                   disabled={!canManageCurrentScope || Boolean(editingSlug)}
-                  placeholder={editingSlug ? '创建后不可修改' : '用于路由和接口路径，例如 weather-zh'}
+                  placeholder={editingSlug ? '創建後不可修改' : '用於路由和接口路徑，例如 weather-zh'}
                 />
               </Field>
               <Field label="描述">
@@ -988,15 +988,15 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
                   value={skillDescription}
                   onChange={(event) => setSkillDescription(event.target.value)}
                   disabled={!canManageCurrentScope}
-                  placeholder="用于员工选择技能时的说明"
+                  placeholder="用於員工選擇技能時的說明"
                 />
               </Field>
-              <Field label="主页链接">
+              <Field label="主頁鏈接">
                 <Input
                   value={skillHomepage}
                   onChange={(event) => setSkillHomepage(event.target.value)}
                   disabled={!canManageCurrentScope}
-                  placeholder="可选，参考文档或项目主页"
+                  placeholder="可選，參考文檔或項目主頁"
                 />
               </Field>
             </div>
@@ -1004,7 +1004,7 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
 
           <SectionCard
             className="xl:col-start-2 xl:row-start-1"
-            title="运行测试"
+            title="運行測試"
             extra={(
               <div className="flex flex-wrap items-center justify-end gap-[8px]">
                 <ModelConfigDropdown
@@ -1017,16 +1017,16 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
                 />
                 <UIButton disabled={loading || !selectedSkill?.slug} className={PRIMARY_BUTTON_CLASS} onClick={() => void runSkill()}>
                   <ExperimentOutlined />
-                  运行
+                  運行
                 </UIButton>
               </div>
             )}
           >
             <div className="flex flex-col gap-[12px]">
-              <Field label="选择技能">
+              <Field label="選擇技能">
                 <UISelect value={selectedSkill?.slug} onValueChange={setSelectedSlug}>
                   <SelectTrigger className={cn(SELECT_TRIGGER_CLASS, 'w-full')}>
-                    <SelectValue placeholder={isNew && !selectedSkill ? '保存后可选择并测试' : '选择技能'} />
+                    <SelectValue placeholder={isNew && !selectedSkill ? '保存後可選擇並測試' : '選擇技能'} />
                   </SelectTrigger>
                   <SelectContent>
                     {rows.map((row) => (
@@ -1035,11 +1035,11 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
                   </SelectContent>
                 </UISelect>
               </Field>
-              <Field label="测试问题">
+              <Field label="測試問題">
                 <Input
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
-                  placeholder="输入要测试的问题"
+                  placeholder="輸入要測試的問題"
                 />
               </Field>
             </div>
@@ -1086,7 +1086,7 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
             {dragActive && (
               <div className={SKILL_DROP_HINT_CLASS}>
                 <UploadOutlined />
-                <span>释放以导入 SKILL.md、zip 技能包或完整技能文件夹</span>
+                <span>釋放以導入 SKILL.md、zip 技能包或完整技能文件夾</span>
               </div>
             )}
             <div className={SKILL_FILE_EDITOR_CLASS}>
@@ -1118,7 +1118,7 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
                           </ContextMenu.Item>
                           <ContextMenu.Item className={MENU_ITEM_DANGER_CLASS} onSelect={() => deleteSkillFile(file)}>
                             <DeleteOutlined />
-                            删除
+                            刪除
                           </ContextMenu.Item>
                         </ContextMenu.Content>
                       </ContextMenu.Portal>
@@ -1136,14 +1136,14 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
                     className={DELETE_BUTTON_CLASS}
                   >
                     <IconTrash className="size-[14px]" />
-                    删除
+                    刪除
                   </UIButton>
                 </div>
               </aside>
               <section className={SKILL_FILE_PANE_CLASS}>
                 <div className={SKILL_FILE_TAB_CLASS}>
                   <IconProfileFile className="size-[14px] shrink-0 text-[#757f9c]" />
-                  <span className="min-w-0 truncate text-[#18181a]">{selectedFile?.path || '未选择文件'}</span>
+                  <span className="min-w-0 truncate text-[#18181a]">{selectedFile?.path || '未選擇文件'}</span>
                 </div>
                 <div className={SKILL_CODE_EDITOR_CLASS} data-language={selectedFileLanguage}>
                   <pre className={SKILL_CODE_HIGHLIGHT_CLASS} aria-hidden="true">
@@ -1177,13 +1177,13 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
             title={(
               <span className="flex items-center gap-[8px]">
                 <IconPlay className="size-[14px] shrink-0 text-[#757f9c]" />
-                <span>运行结果</span>
+                <span>運行結果</span>
                 {activeResult && (
                   isLiveRunning
-                    ? <span className="inline-flex items-center gap-[4px] rounded-full bg-[#e6f4ff] px-[8px] py-px text-[12px] font-bold text-[#0958d9]">运行中</span>
+                    ? <span className="inline-flex items-center gap-[4px] rounded-full bg-[#e6f4ff] px-[8px] py-px text-[12px] font-bold text-[#0958d9]">運行中</span>
                     : resultSucceeded(activeResult)
                     ? <span className="inline-flex items-center gap-[4px] rounded-full bg-[#eafbf0] px-[8px] py-px text-[12px] font-bold text-[#018434]"><CheckCircleOutlined />成功</span>
-                    : <span className="inline-flex items-center gap-[4px] rounded-full bg-[#fce7e7] px-[8px] py-px text-[12px] font-bold text-[#d20b0b]"><CloseCircleOutlined />失败</span>
+                    : <span className="inline-flex items-center gap-[4px] rounded-full bg-[#fce7e7] px-[8px] py-px text-[12px] font-bold text-[#d20b0b]"><CloseCircleOutlined />失敗</span>
                 )}
               </span>
             )}
@@ -1199,14 +1199,14 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
                   return (
                     <>
                 <section className={SKILL_REPLY_PANEL_CLASS}>
-                  <div className={SKILL_SECTION_LABEL_CLASS}>最终回复</div>
+                  <div className={SKILL_SECTION_LABEL_CLASS}>最終回覆</div>
                   <p className={SKILL_REPLY_TEXT_CLASS}>
-                    {activeResult.reply || (loading ? '正在运行技能...' : '暂无回复')}
+                    {activeResult.reply || (loading ? '正在運行技能...' : '暫無回覆')}
                   </p>
                 </section>
 
                 <section>
-                  <div className={SKILL_SECTION_LABEL_CLASS}>执行流程</div>
+                  <div className={SKILL_SECTION_LABEL_CLASS}>執行流程</div>
                   <div className={SKILL_TRACE_LIST_CLASS}>
                     {traceItems.map((item, index) => {
                       const phase = typeof item.phase === 'string' ? item.phase : '';
@@ -1219,12 +1219,12 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
                         <div className={SKILL_TRACE_ITEM_CLASS} key={`${phase || 'phase'}-${index}`}>
                           <div className={SKILL_TRACE_DOT_CLASS} />
                           <div className={SKILL_TRACE_ITEM_BODY_CLASS}>
-                            <div className={SKILL_TRACE_TITLE_CLASS}>{PHASE_LABELS[phase] || String(item.message || phase || '执行')}</div>
+                            <div className={SKILL_TRACE_TITLE_CLASS}>{PHASE_LABELS[phase] || String(item.message || phase || '執行')}</div>
                             <div className={SKILL_TRACE_MESSAGE_CLASS}>{String(item.message || '')}</div>
                             {detail && (
                               <RunCodePanel
                                 className="mt-2"
-                                title={phase === 'code_finished' ? '查看执行结果' : phase === 'stdout_chunk' ? '查看运行输出' : '查看详情'}
+                                title={phase === 'code_finished' ? '查看執行結果' : phase === 'stdout_chunk' ? '查看運行輸出' : '查看詳情'}
                                 code={detail}
                                 language={codeLanguage(detail)}
                                 defaultOpen={phase === 'code_finished' || phase === 'code_timeout'}
@@ -1247,22 +1247,22 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
                 </section>
 
                 <section>
-                  <div className={SKILL_SECTION_LABEL_CLASS}>运行输出</div>
+                  <div className={SKILL_SECTION_LABEL_CLASS}>運行輸出</div>
                   <div className={SKILL_OUTPUT_STACK_CLASS}>
                     <RunCodePanel
-                      title="结构化结果"
-                      code={formatJson(activeResult.structured_result) || '无结构化结果'}
+                      title="結構化結果"
+                      code={formatJson(activeResult.structured_result) || '無結構化結果'}
                       language="json"
                       defaultOpen
                     />
                     <RunCodePanel
                       title="stdout"
-                      code={formatJson(activeResult.stdout) || '无 stdout'}
+                      code={formatJson(activeResult.stdout) || '無 stdout'}
                       language={codeLanguage(formatJson(activeResult.stdout), 'text')}
                     />
                     <RunCodePanel
                       title="stderr"
-                      code={formatJson(activeResult.stderr) || '无 stderr'}
+                      code={formatJson(activeResult.stderr) || '無 stderr'}
                       language={codeLanguage(formatJson(activeResult.stderr), 'text')}
                     />
                   </div>
@@ -1273,7 +1273,7 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
               </div>
             ) : (
               <div className="flex min-h-[560px] flex-1 flex-col items-center justify-center gap-[8px] text-center text-[13px] text-muted-foreground xl:min-h-0">
-                运行后将在这里显示回复、执行流程、代码和输出
+                運行後將在這裡顯示回覆、執行流程、代碼和輸出
               </div>
             )}
           </SectionCard>
@@ -1290,14 +1290,14 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
         open={agentImportOpen}
         loading={agentImportLoading}
         icon={<IconSkill className="size-[14px] shrink-0" />}
-        title={agentImportMode === 'plaza' ? '从广场复制技能' : '从数字员工复制技能'}
-        sourcePlaceholder={agentImportMode === 'plaza' ? '选择开放广场' : '选择复制来源'}
+        title={agentImportMode === 'plaza' ? '從廣場複製技能' : '從數字員工複製技能'}
+        sourcePlaceholder={agentImportMode === 'plaza' ? '選擇開放廣場' : '選擇複製來源'}
         sources={agentImportMode === 'plaza'
-          ? openGalleryImportSourceOptions(agentImportAgents, '开放广场')
+          ? openGalleryImportSourceOptions(agentImportAgents, '開放廣場')
           : visibleEmployeeAgents(agentImportAgents, currentUser, { activeOnly: true, excludeAgentId: agentId })
             .map((item) => ({ value: item.id, label: item.name }))}
         sourceId={agentImportSourceAgentId}
-        itemsLabel="选择技能"
+        itemsLabel="選擇技能"
         items={agentImportSourceSkills.map((item) => ({
           id: item.id,
           label: (
@@ -1308,10 +1308,10 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
           ),
         }))}
         selectedIds={agentImportSelectedSkillIds}
-        emptyText="没有可复制的技能"
+        emptyText="沒有可複製的技能"
         note={agentImportMode === 'plaza'
-          ? '从开放广场复制可用技能；不会覆盖当前编辑区内容。'
-          : '从数字员工复制可用技能；不会覆盖当前编辑区内容。'}
+          ? '從開放廣場複製可用技能；不會覆蓋當前編輯區內容。'
+          : '從數字員工複製可用技能；不會覆蓋當前編輯區內容。'}
         onSourceChange={(value) => {
           setAgentImportSourceAgentId(value);
           void loadAgentImportSourceSkills(value);
@@ -1324,20 +1324,20 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
       <ConfirmDialog
         open={Boolean(deleteSkillTarget)}
         onOpenChange={(open) => !open && setDeleteSkillTarget(null)}
-        title={deleteSkillTarget ? `${isOverallAgent ? '删除' : '移除'}技能「${deleteSkillTarget.name}」？` : ''}
+        title={deleteSkillTarget ? `${isOverallAgent ? '刪除' : '移除'}技能「${deleteSkillTarget.name}」？` : ''}
         description={isOverallAgent
-          ? '删除后该技能不会再出现在组织技能库中，此操作不可撤销。'
-          : '这只会在当前数字员工中隐藏该技能；开放广场和其他数字员工仍然保留。'}
-        confirmText={isOverallAgent ? '删除' : '移除'}
+          ? '刪除後該技能不會再出現在組織技能庫中，此操作不可撤銷。'
+          : '這隻會在當前數字員工中隱藏該技能；開放廣場和其他數字員工仍然保留。'}
+        confirmText={isOverallAgent ? '刪除' : '移除'}
         onConfirm={() => void runDeleteSkill()}
       />
 
       <ConfirmDialog
         open={Boolean(deleteFileTarget)}
         onOpenChange={(open) => !open && setDeleteFileTarget(null)}
-        title={deleteFileTarget ? `删除文件「${deleteFileTarget.path}」？` : ''}
-        description="删除后需要重新导入或手动新建该文件。"
-        confirmText="删除"
+        title={deleteFileTarget ? `刪除文件「${deleteFileTarget.path}」？` : ''}
+        description="刪除後需要重新導入或手動新建該文件。"
+        confirmText="刪除"
         onConfirm={runDeleteFile}
       />
 
@@ -1347,10 +1347,10 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
       >
         <DialogContent aria-describedby={undefined} className="flex w-[calc(100%-2rem)] flex-col gap-0 overflow-hidden rounded-[16px] p-0 sm:max-w-[460px]">
           <DialogTitle className="border-b border-border px-[24px] py-[16px] text-[16px] font-semibold text-foreground">
-            导入新技能前是否保存当前技能？
+            導入新技能前是否保存當前技能？
           </DialogTitle>
           <p className="px-[24px] py-[16px] text-[13px] leading-[20px] text-[#4f5669]">
-            你正在编辑现有技能。导入会进入新建状态，不会覆盖当前技能。
+            你正在編輯現有技能。導入會進入新建狀態，不會覆蓋當前技能。
           </p>
           <div className="flex items-center justify-end gap-[8px] bg-background px-[24px] py-[12px]">
             <UIButton
@@ -1365,13 +1365,13 @@ function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' |
               onClick={() => void confirmImportPrepareSkip()}
               className="h-[32px] rounded-[10px] border-[#e3e7f1] bg-white px-[14px] text-[14px] font-normal text-[#464c5e] hover:border-[#e3e7f1] hover:bg-[#f6f6f6] hover:text-[#18181a]"
             >
-              不保存，继续导入
+              不保存，繼續導入
             </UIButton>
             <UIButton
               onClick={() => void confirmImportPrepareSave()}
               className="h-[32px] rounded-[10px] bg-[#18181a] px-[14px] text-[14px] font-normal text-white hover:bg-[#303030]"
             >
-              保存并发布
+              保存併發布
             </UIButton>
           </div>
         </DialogContent>

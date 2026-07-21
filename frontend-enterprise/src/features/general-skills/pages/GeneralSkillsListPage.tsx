@@ -117,8 +117,8 @@ export default function GeneralSkillsListPage({ embedded = false, currentUser, o
   const [deleteTarget, setDeleteTarget] = useState<GeneralSkillRead | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  const pageTitle = isOverallAgent ? '技能广场' : '技能';
-  const listLabel = isOverallAgent ? '技能广场列表' : '技能列表';
+  const pageTitle = isOverallAgent ? '技能廣場' : '技能';
+  const listLabel = isOverallAgent ? '技能廣場列表' : '技能列表';
   const currentAgent = useMemo(() => agents.find((item) => item.id === agentId), [agents, agentId]);
   const canManageCurrentScope = currentAgent
     ? canManageEmployeeAgent(currentAgent, currentUser)
@@ -158,7 +158,7 @@ export default function GeneralSkillsListPage({ embedded = false, currentUser, o
     if (!agentScopeLoaded) return;
     const resourceId = searchParams.get('resourceId') || undefined;
     if (isOverallAgent) {
-      notify.warning('请先选择一个数字员工，再从广场复制技能');
+      notify.warning('請先選擇一個數字員工，再從廣場複製技能');
     } else {
       void requestAgentImport('plaza', resourceId);
     }
@@ -209,9 +209,9 @@ export default function GeneralSkillsListPage({ embedded = false, currentUser, o
         `/api/enterprise/general-skills/${row.slug}/${published ? 'publish' : 'archive'}?tenant_id=${TENANT_ID}${agentSuffix}`,
       );
       setRows((current) => current.map((item) => (item.id === next.id ? next : item)));
-      notify.success(published ? '已启用技能' : '已停用技能');
+      notify.success(published ? '已啟用技能' : '已停用技能');
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : published ? '启用失败' : '停用失败');
+      notify.error(error instanceof Error ? error.message : published ? '啟用失敗' : '停用失敗');
     }
   }
 
@@ -224,10 +224,10 @@ export default function GeneralSkillsListPage({ embedded = false, currentUser, o
       const agentSuffix = agentId ? `&agent_id=${encodeURIComponent(agentId)}` : '';
       await api.delete(`/api/enterprise/general-skills/${row.slug}?tenant_id=${TENANT_ID}${agentSuffix}`);
       setRows((current) => current.filter((item) => item.id !== row.id));
-      notify.success(branchMode ? '已移除技能' : '已删除技能');
+      notify.success(branchMode ? '已移除技能' : '已刪除技能');
       setDeleteTarget(null);
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : branchMode ? '移除失败' : '删除失败');
+      notify.error(error instanceof Error ? error.message : branchMode ? '移除失敗' : '刪除失敗');
     } finally {
       setDeleting(false);
     }
@@ -268,7 +268,7 @@ export default function GeneralSkillsListPage({ embedded = false, currentUser, o
         setAgentImportSourceSkills([]);
       }
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '加载员工列表失败');
+      notify.error(error instanceof Error ? error.message : '加載員工列表失敗');
     }
   }
 
@@ -285,22 +285,22 @@ export default function GeneralSkillsListPage({ embedded = false, currentUser, o
       setAgentImportSourceSkills(publishedRows);
       return publishedRows;
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '加载来源技能失败');
+      notify.error(error instanceof Error ? error.message : '加載來源技能失敗');
       return [];
     }
   }
 
   async function submitAgentImportSkills() {
     if (!agentId) {
-      notify.warning('请先选择一个数字员工');
+      notify.warning('請先選擇一個數字員工');
       return;
     }
     if (!agentImportSourceAgentId) {
-      notify.warning(agentImportMode === 'plaza' ? '请选择开放广场' : '请选择复制来源');
+      notify.warning(agentImportMode === 'plaza' ? '請選擇開放廣場' : '請選擇複製來源');
       return;
     }
     if (!agentImportSelectedSkillIds.length) {
-      notify.warning('请选择要复制的技能');
+      notify.warning('請選擇要複製的技能');
       return;
     }
     setAgentImportLoading(true);
@@ -311,11 +311,11 @@ export default function GeneralSkillsListPage({ embedded = false, currentUser, o
         resource_type: 'general_skill',
         resource_ids: agentImportSelectedSkillIds,
       });
-      notify.success(`已复制 ${agentImportSelectedSkillIds.length} 个技能`);
+      notify.success(`已複製 ${agentImportSelectedSkillIds.length} 個技能`);
       setAgentImportOpen(false);
       await load();
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '复制技能失败');
+      notify.error(error instanceof Error ? error.message : '複製技能失敗');
     } finally {
       setAgentImportLoading(false);
     }
@@ -323,7 +323,7 @@ export default function GeneralSkillsListPage({ embedded = false, currentUser, o
 
   async function importClawHubSource() {
     if (!clawhubSource.trim()) {
-      notify.warning('请输入开源平台地址、GitHub 仓库或 SKILL.md 链接');
+      notify.warning('請輸入開源平臺地址、GitHub 倉庫或 SKILL.md 鏈接');
       return;
     }
     const controller = new AbortController();
@@ -344,10 +344,10 @@ export default function GeneralSkillsListPage({ embedded = false, currentUser, o
       navigate(`/enterprise/general-skills/${encodeURIComponent(row.slug)}/edit`);
     } catch (error) {
       if (isAbortError(error)) {
-        notify.info('已取消导入');
+        notify.info('已取消導入');
         return;
       }
-      notify.error(error instanceof Error ? error.message : '从开源平台导入失败');
+      notify.error(error instanceof Error ? error.message : '從開源平臺導入失敗');
     } finally {
       if (clawhubAbortRef.current === controller) {
         clawhubAbortRef.current = null;
@@ -375,7 +375,7 @@ export default function GeneralSkillsListPage({ embedded = false, currentUser, o
             onSelect={() => navigate(`/enterprise/general-skills/${encodeURIComponent(row.slug)}/edit`)}
           >
             <IconEdit />
-            {isOverallAgent ? '编辑' : '编辑本地版本'}
+            {isOverallAgent ? '編輯' : '編輯本地版本'}
           </DropdownMenuItem>
           {published ? (
             <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={() => void setSkillPublished(row, false)}>
@@ -385,7 +385,7 @@ export default function GeneralSkillsListPage({ embedded = false, currentUser, o
           ) : (
             <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={() => void setSkillPublished(row, true)}>
               <CircleCheck />
-              启用
+              啟用
             </DropdownMenuItem>
           )}
           <DropdownMenuSeparator className="my-[2px] bg-[#eef0f4]" />
@@ -395,7 +395,7 @@ export default function GeneralSkillsListPage({ embedded = false, currentUser, o
             onSelect={() => setDeleteTarget(row)}
           >
             <IconTrash />
-            {isOverallAgent ? '删除' : '移除'}
+            {isOverallAgent ? '刪除' : '移除'}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -405,7 +405,7 @@ export default function GeneralSkillsListPage({ embedded = false, currentUser, o
   const columns: DataTableColumn<GeneralSkillRead>[] = [
     {
       key: 'name',
-      title: '名称',
+      title: '名稱',
       width: 200,
       className: 'text-[#18181a]',
       render: (row) => (
@@ -423,17 +423,17 @@ export default function GeneralSkillsListPage({ embedded = false, currentUser, o
       key: 'description',
       title: '描述',
       className: 'whitespace-normal',
-      render: (row) => <span className="line-clamp-2 wrap-break-word">{row.description || '暂无描述'}</span>,
+      render: (row) => <span className="line-clamp-2 wrap-break-word">{row.description || '暫無描述'}</span>,
     },
     {
       key: 'files',
       title: '文件',
       width: 90,
-      render: (row) => `${row.skill_files?.length || 1} 个`,
+      render: (row) => `${row.skill_files?.length || 1} 個`,
     },
     {
       key: 'creator',
-      title: '创建者',
+      title: '創建者',
       width: 120,
       render: (row) => (
         <span className="block truncate text-[#858b9c]" title={resourceCreatorName(row)}>
@@ -443,7 +443,7 @@ export default function GeneralSkillsListPage({ embedded = false, currentUser, o
     },
     {
       key: 'status',
-      title: '状态',
+      title: '狀態',
       width: 100,
       render: (row) => {
         const preset = STATUS_BADGE[row.status] || { tone: 'gray' as BadgeTone, text: row.status };
@@ -452,7 +452,7 @@ export default function GeneralSkillsListPage({ embedded = false, currentUser, o
     },
     {
       key: 'updated',
-      title: '更新时间',
+      title: '更新時間',
       width: 170,
       render: (row) => formatDateTime(row.updated_at),
     },
@@ -473,7 +473,7 @@ export default function GeneralSkillsListPage({ embedded = false, currentUser, o
           <div className="min-w-0">
             <strong className="block truncate text-[14px] font-semibold text-[#18181a]">{row.name}</strong>
             <span className="mt-[2px] block truncate text-[12px] text-[#858b9c]">{row.slug}</span>
-            <span className="mt-[2px] block truncate text-[12px] text-[#858b9c]">创建者：{resourceCreatorName(row) || '-'}</span>
+            <span className="mt-[2px] block truncate text-[12px] text-[#858b9c]">創建者：{resourceCreatorName(row) || '-'}</span>
           </div>
           {renderActions(row)}
         </div>
@@ -482,15 +482,15 @@ export default function GeneralSkillsListPage({ embedded = false, currentUser, o
         )}
         <div className="mt-[10px] flex items-center justify-between gap-[10px] text-[12px] text-[#858b9c]">
           <StatusBadge tone={preset.tone}>{preset.text}</StatusBadge>
-          <span>{row.skill_files?.length || 1} 个文件 · {formatDateTime(row.updated_at)}</span>
+          <span>{row.skill_files?.length || 1} 個文件 · {formatDateTime(row.updated_at)}</span>
         </div>
       </article>
     );
   };
 
   const listEmptyText = isOverallAgent
-    ? canManageCurrentScope ? '暂无技能，点击「新增」创建一个吧' : '暂无技能'
-    : '当前员工暂无技能';
+    ? canManageCurrentScope ? '暫無技能，點擊「新增」創建一個吧' : '暫無技能'
+    : '當前員工暫無技能';
 
   return (
     <div className={embedded ? undefined : 'min-h-full box-border px-[48px] pt-[32px] pb-[43px] max-[900px]:px-[16px]'}>
@@ -522,17 +522,17 @@ export default function GeneralSkillsListPage({ embedded = false, currentUser, o
                   {!isOverallAgent && (
                     <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={() => void requestAgentImport('plaza')}>
                       <Copy />
-                      从广场复制
+                      從廣場複製
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={() => requestClawHubImport()}>
                     <GithubOutlined />
-                    从开源平台导入
+                    從開源平臺導入
                   </DropdownMenuItem>
                   {!isOverallAgent && (
                     <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={() => void requestAgentImport('employee')}>
                       <Users />
-                      从数字员工复制
+                      從數字員工複製
                     </DropdownMenuItem>
                   )}
                 </DropdownMenuContent>
@@ -543,9 +543,9 @@ export default function GeneralSkillsListPage({ embedded = false, currentUser, o
       )}
 
       <div className="flex flex-col gap-[24px] rounded-[20px_20px_0_0] bg-[#FFF] p-[18px] shadow-[0_-4px_16px_0_rgba(0,0,0,0.05)]">
-        <div className="flex flex-wrap items-stretch gap-[20px]" aria-label="技能统计">
-          <StatCard label="技能总数" value={stats.total} />
-          <StatCard label="已启用" value={stats.published} tone="green" />
+        <div className="flex flex-wrap items-stretch gap-[20px]" aria-label="技能統計">
+          <StatCard label="技能總數" value={stats.total} />
+          <StatCard label="已啟用" value={stats.published} tone="green" />
           <StatCard label="草稿" value={stats.draft} />
           <StatCard label="已停用" value={stats.archived} />
         </div>
@@ -561,7 +561,7 @@ export default function GeneralSkillsListPage({ embedded = false, currentUser, o
               <IconSearch className="size-[14px] shrink-0 text-[#858b9c]" />
               <input
                 value={searchText}
-                placeholder="搜索技能名称、Slug、描述或主页"
+                placeholder="搜索技能名稱、Slug、描述或主頁"
                 onChange={(event) => setSearchText(event.target.value)}
                 className="h-full min-w-0 flex-1 bg-transparent text-[12px] text-[#17191f] outline-none placeholder:text-[#c0c6d4]"
               />
@@ -577,12 +577,12 @@ export default function GeneralSkillsListPage({ embedded = false, currentUser, o
               )}
             </label>
             <UISelect value={statusFilter} onValueChange={(value) => setStatusFilter(value as 'all' | GeneralSkillRead['status'])}>
-              <SelectTrigger className={cn(SELECT_TRIGGER_CLASS, 'w-[130px]')} aria-label="状态筛选">
+              <SelectTrigger className={cn(SELECT_TRIGGER_CLASS, 'w-[130px]')} aria-label="狀態篩選">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">全部状态</SelectItem>
-                <SelectItem value="published">已启用</SelectItem>
+                <SelectItem value="all">全部狀態</SelectItem>
+                <SelectItem value="published">已啟用</SelectItem>
                 <SelectItem value="draft">草稿</SelectItem>
                 <SelectItem value="archived">已停用</SelectItem>
               </SelectContent>
@@ -610,7 +610,7 @@ export default function GeneralSkillsListPage({ embedded = false, currentUser, o
 
           {filteredRows.length > 0 && (
             <Paginator
-              aria-label="技能分页"
+              aria-label="技能分頁"
               className="mt-0 mb-[6px]"
               page={pagination.page}
               pageCount={pagination.pageCount}
@@ -633,14 +633,14 @@ export default function GeneralSkillsListPage({ embedded = false, currentUser, o
         open={agentImportOpen}
         loading={agentImportLoading}
         icon={<IconSkill className="size-[14px] shrink-0" />}
-        title={agentImportMode === 'plaza' ? '从广场复制技能' : '从数字员工复制技能'}
-        sourcePlaceholder={agentImportMode === 'plaza' ? '选择开放广场' : '选择复制来源'}
+        title={agentImportMode === 'plaza' ? '從廣場複製技能' : '從數字員工複製技能'}
+        sourcePlaceholder={agentImportMode === 'plaza' ? '選擇開放廣場' : '選擇複製來源'}
         sources={agentImportMode === 'plaza'
-          ? openGalleryImportSourceOptions(agentImportAgents, '开放广场')
+          ? openGalleryImportSourceOptions(agentImportAgents, '開放廣場')
           : visibleEmployeeAgents(agentImportAgents, currentUser, { activeOnly: true, excludeAgentId: agentId })
             .map((item) => ({ value: item.id, label: item.name }))}
         sourceId={agentImportSourceAgentId}
-        itemsLabel="选择技能"
+        itemsLabel="選擇技能"
         items={agentImportSourceSkills.map((item) => ({
           id: item.id,
           label: (
@@ -651,11 +651,11 @@ export default function GeneralSkillsListPage({ embedded = false, currentUser, o
           ),
         }))}
         selectedIds={agentImportSelectedSkillIds}
-        emptyText="没有可复制的技能"
+        emptyText="沒有可複製的技能"
         note={
           agentImportMode === 'plaza'
-            ? '从开放广场复制可用技能；不可复制内容不会出现在列表。'
-            : '从数字员工复制可用技能；不可见内容不会出现在列表。'
+            ? '從開放廣場複製可用技能；不可複製內容不會出現在列表。'
+            : '從數字員工複製可用技能；不可見內容不會出現在列表。'
         }
         onSourceChange={(value) => {
           setAgentImportSourceAgentId(value);
@@ -670,13 +670,13 @@ export default function GeneralSkillsListPage({ embedded = false, currentUser, o
         open={Boolean(deleteTarget)}
         onOpenChange={(open) => !open && setDeleteTarget(null)}
         loading={deleting}
-        title={deleteTarget ? `${isOverallAgent ? '删除' : '移除'}技能「${deleteTarget.name}」？` : ''}
+        title={deleteTarget ? `${isOverallAgent ? '刪除' : '移除'}技能「${deleteTarget.name}」？` : ''}
         description={
           isOverallAgent
-            ? '删除后该技能不会再出现在技能广场中，此操作不可撤销。'
-            : '这只会在当前数字员工中隐藏该技能；开放广场和其他数字员工仍然保留。'
+            ? '刪除後該技能不會再出現在技能廣場中，此操作不可撤銷。'
+            : '這隻會在當前數字員工中隱藏該技能；開放廣場和其他數字員工仍然保留。'
         }
-        confirmText={isOverallAgent ? '删除' : '移除'}
+        confirmText={isOverallAgent ? '刪除' : '移除'}
         onConfirm={() => void confirmDeleteSkill()}
       />
     </div>

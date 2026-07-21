@@ -60,55 +60,55 @@ export type SelectOption = {
 
 export const NODE_TYPE_OPTIONS: SelectOption[] = [
   { value: 'collect_info', label: '收集信息' },
-  { value: 'decision', label: '条件判断' },
-  { value: 'tool_call', label: '调用工具' },
-  { value: 'knowledge_query', label: '检索知识' },
-  { value: 'response', label: '回复用户' },
-  { value: 'handoff', label: '转人工' },
+  { value: 'decision', label: '條件判斷' },
+  { value: 'tool_call', label: '調用工具' },
+  { value: 'knowledge_query', label: '檢索知識' },
+  { value: 'response', label: '回覆用戶' },
+  { value: 'handoff', label: '轉人工' },
   { value: 'subflow', label: '子流程' },
 ];
 
 export const BASE_ACTION_OPTIONS: SelectOption[] = [
-  { value: 'ask_user', label: '询问用户' },
-  { value: 'continue_flow', label: '继续流程' },
-  { value: 'answer_user', label: '回复用户' },
-  { value: 'handoff_human', label: '转人工' },
-  { value: 'ask_clarification', label: '澄清问题' },
-  { value: 'clarify_user', label: '澄清用户需求' },
-  { value: 'update_memory', label: '更新记忆' },
-  { value: 'reflect', label: '反思检查' },
-  { value: 'finish', label: '结束流程' },
+  { value: 'ask_user', label: '詢問用戶' },
+  { value: 'continue_flow', label: '繼續流程' },
+  { value: 'answer_user', label: '回覆用戶' },
+  { value: 'handoff_human', label: '轉人工' },
+  { value: 'ask_clarification', label: '澄清問題' },
+  { value: 'clarify_user', label: '澄清用戶需求' },
+  { value: 'update_memory', label: '更新記憶' },
+  { value: 'reflect', label: '反思檢查' },
+  { value: 'finish', label: '結束流程' },
   { value: 'stop', label: '停止流程' },
 ];
 
 export const CONDITION_PRESET_OPTIONS: SelectOption[] = [
-  { value: '__always__', label: '总是可进入' },
+  { value: '__always__', label: '總是可進入' },
   { value: 'missing_required_info', label: '缺少任一必填信息' },
   { value: 'missing_slots([])', label: '缺少指定字段' },
   { value: 'all_required_info_collected', label: '必填信息已收集完成' },
-  { value: 'tool_success', label: '工具执行成功' },
-  { value: 'tool_failed', label: '工具执行失败' },
-  { value: 'user_confirmed', label: '用户已确认' },
-  { value: 'user_rejected', label: '用户已拒绝' },
-  { value: '__custom__', label: '自定义条件' },
+  { value: 'tool_success', label: '工具執行成功' },
+  { value: 'tool_failed', label: '工具執行失敗' },
+  { value: 'user_confirmed', label: '用戶已確認' },
+  { value: 'user_rejected', label: '用戶已拒絕' },
+  { value: '__custom__', label: '自定義條件' },
 ];
 
 export const CONDITION_PRESET_TEXT: Record<string, string> = {
-  missing_required_info: '还有必填信息没有收集到时进入',
-  'missing_slots([])': '缺少某个指定字段时进入',
-  all_required_info_collected: '所有必填信息都收集完成后进入',
-  tool_success: '上一步工具调用成功后进入',
-  tool_failed: '上一步工具调用失败后进入',
-  user_confirmed: '用户明确确认后进入',
-  user_rejected: '用户明确拒绝后进入',
+  missing_required_info: '還有必填信息沒有收集到時進入',
+  'missing_slots([])': '缺少某個指定字段時進入',
+  all_required_info_collected: '所有必填信息都收集完成後進入',
+  tool_success: '上一步工具調用成功後進入',
+  tool_failed: '上一步工具調用失敗後進入',
+  user_confirmed: '用戶明確確認後進入',
+  user_rejected: '用戶明確拒絕後進入',
 };
 
 export const RETRY_STRATEGY_OPTIONS: SelectOption[] = [
-  { value: 'ask_user', label: '继续追问用户' },
-  { value: 'reflect', label: '反思并修正' },
-  { value: 'retry_tool', label: '重新调用工具' },
-  { value: 'handoff_human', label: '转人工处理' },
-  { value: 'skip', label: '跳过当前节点' },
+  { value: 'ask_user', label: '繼續追問用戶' },
+  { value: 'reflect', label: '反思並修正' },
+  { value: 'retry_tool', label: '重新調用工具' },
+  { value: 'handoff_human', label: '轉人工處理' },
+  { value: 'skip', label: '跳過當前節點' },
   { value: 'stop', label: '停止流程' },
 ];
 
@@ -147,7 +147,7 @@ export const DEFAULT_DISTILL_MESSAGES: ChatItem[] = [
   {
     id: 'welcome',
     role: 'assistant',
-    content: '请粘贴原始技能说明，或点击右侧某一块后告诉我需要怎样改写。',
+    content: '請粘貼原始技能說明，或點擊右側某一塊後告訴我需要怎樣改寫。',
   },
 ];
 export const ENTERPRISE_AGENT_STORAGE_KEY = 'ultrarag_enterprise_agent_scope';

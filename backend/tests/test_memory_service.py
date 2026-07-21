@@ -25,10 +25,10 @@ def test_memory_capture_uses_model_updates_and_deduplicates_profile_name(monkeyp
                     "key": "preferred_name",
                         "content": "xyq",
                     "importance": 0.95,
-                    "reason": "用户更新了称呼。",
+                    "reason": "用戶更新了稱呼。",
                 }
             ],
-            "updated_summary": "用户当前称呼为 xyq，正在测试客服购买和售后流程。",
+            "updated_summary": "用戶當前稱呼為 xyq，正在測試客服購買和售後流程。",
         }
 
     monkeypatch.setattr(LLMClient, "__init__", fake_init)
@@ -57,7 +57,7 @@ def test_memory_capture_uses_model_updates_and_deduplicates_profile_name(monkeyp
             ModelConfig(tenant_id="tenant_demo", name="demo", api_key_encrypted="", model="demo"),
             [
                 {"role": "user", "content": "我叫xyq"},
-                {"role": "assistant", "content": "好的，已记住您的称呼。"},
+                {"role": "assistant", "content": "好的，已記住您的稱呼。"},
             ],
         )
         db.commit()
@@ -74,7 +74,7 @@ def test_memory_capture_uses_model_updates_and_deduplicates_profile_name(monkeyp
     assert captured_payload["existing_memories"] == "- profile/preferred_name: hm"
     assert captured_payload["conversation_context"]["messages"] == [
         {"role": "user", "content": "我叫xyq"},
-        {"role": "assistant", "content": "好的，已记住您的称呼。"},
+        {"role": "assistant", "content": "好的，已記住您的稱呼。"},
     ]
     assert "user_message" not in captured_payload
     assert "assistant_reply" not in captured_payload
@@ -86,10 +86,10 @@ def test_memory_capture_ignores_summary_updates(monkeypatch) -> None:
         return None
 
     def fake_generate_json(self, system_prompt, payload):  # noqa: ANN001
-        assert "用户长期摘要" in payload["existing_memories"]
+        assert "用戶長期摘要" in payload["existing_memories"]
         return {
             "memories": [],
-            "updated_summary": "用户希望客服回复简洁，并正在验证多轮下单流程。",
+            "updated_summary": "用戶希望客服回覆簡潔，並正在驗證多輪下單流程。",
         }
 
     monkeypatch.setattr(LLMClient, "__init__", fake_init)
@@ -103,7 +103,7 @@ def test_memory_capture_ignores_summary_updates(monkeypatch) -> None:
                 username="user_demo",
                 session_id="old_session",
                 kind="summary",
-                content="用户长期摘要\n- 用户本轮诉求：我要买东西；最近处理结果：请问数量",
+                content="用戶長期摘要\n- 用戶本輪訴求：我要買東西；最近處理結果：請問數量",
                 importance=0.8,
                 metadata_json={"turn_count": 3},
             )
@@ -111,14 +111,14 @@ def test_memory_capture_ignores_summary_updates(monkeypatch) -> None:
         db.commit()
 
         MemoryService(db).capture_turn(
-            ChatTurnRequest(tenant_id="tenant_demo", user_id="user_demo", message="一个"),
+            ChatTurnRequest(tenant_id="tenant_demo", user_id="user_demo", message="一個"),
             ChatSession(id="session_test", tenant_id="tenant_demo", user_id="user_demo"),
             StepAgentResult(),
             None,
             ModelConfig(tenant_id="tenant_demo", name="demo", api_key_encrypted="", model="demo"),
             [
-                {"role": "user", "content": "一个"},
-                {"role": "assistant", "content": "已为您创建订单。"},
+                {"role": "user", "content": "一個"},
+                {"role": "assistant", "content": "已為您創建訂單。"},
             ],
         )
         db.commit()
@@ -126,7 +126,7 @@ def test_memory_capture_ignores_summary_updates(monkeypatch) -> None:
         rows = list(db.exec(select(MemoryRecord).where(MemoryRecord.kind == "summary")).all())
 
     assert len(rows) == 1
-    assert rows[0].content == "用户长期摘要\n- 用户本轮诉求：我要买东西；最近处理结果：请问数量"
+    assert rows[0].content == "用戶長期摘要\n- 用戶本輪訴求：我要買東西；最近處理結果：請問數量"
     assert rows[0].metadata_json["turn_count"] == 3
 
 
@@ -139,14 +139,14 @@ def test_memory_job_reads_canonical_history_through_its_own_turn() -> None:
                     tenant_id="tenant_demo",
                     session_id="session_test",
                     role="user",
-                    content="我32岁",
+                    content="我32歲",
                 ),
                 Message(
                     id="msg_assistant_1",
                     tenant_id="tenant_demo",
                     session_id="session_test",
                     role="assistant",
-                    content="已记录",
+                    content="已記錄",
                     metadata_json={"turn_id": "msg_user_1"},
                 ),
                 Message(
@@ -154,14 +154,14 @@ def test_memory_job_reads_canonical_history_through_its_own_turn() -> None:
                     tenant_id="tenant_demo",
                     session_id="session_test",
                     role="user",
-                    content="这是更晚一轮",
+                    content="這是更晚一輪",
                 ),
                 Message(
                     id="msg_assistant_2",
                     tenant_id="tenant_demo",
                     session_id="session_test",
                     role="assistant",
-                    content="更晚一轮回复",
+                    content="更晚一輪迴復",
                     metadata_json={"turn_id": "msg_user_2"},
                 ),
             ]
@@ -173,8 +173,8 @@ def test_memory_job_reads_canonical_history_through_its_own_turn() -> None:
         )
 
     assert messages == [
-        {"role": "user", "content": "我32岁"},
-        {"role": "assistant", "content": "已记录"},
+        {"role": "user", "content": "我32歲"},
+        {"role": "assistant", "content": "已記錄"},
     ]
 
 
@@ -187,7 +187,7 @@ def test_memory_recall_excludes_summary_history() -> None:
                 username="user_demo",
                 session_id="old_session",
                 kind="summary",
-                content="用户正在测试客服购买和售后流程。",
+                content="用戶正在測試客服購買和售後流程。",
                 importance=0.9,
             )
         )
@@ -198,17 +198,17 @@ def test_memory_recall_excludes_summary_history() -> None:
                 username="user_demo",
                 session_id="old_session",
                 kind="preference",
-                content="用户偏好客服回复简洁。",
+                content="用戶偏好客服回覆簡潔。",
                 importance=0.85,
                 metadata_json={"key": "communication_style"},
             )
         )
         db.commit()
 
-        rows = MemoryService(db).recall("tenant_demo", "user_demo", "客服回复")
+        rows = MemoryService(db).recall("tenant_demo", "user_demo", "客服回覆")
 
     assert [row.kind for row in rows] == ["preference"]
-    assert rows[0].content == "用户偏好客服回复简洁。"
+    assert rows[0].content == "用戶偏好客服回覆簡潔。"
 
 
 def test_context_memories_returns_all_supported_memories_without_model_selection() -> None:
@@ -232,7 +232,7 @@ def test_context_memories_returns_all_supported_memories_without_model_selection
                 username="user_demo",
                 session_id="old_session",
                 kind="summary",
-                content="不进入 Router memory",
+                content="不進入 Router memory",
                 importance=0.9,
             )
         )
@@ -263,7 +263,7 @@ def test_memory_rows_for_read_deduplicates_by_structured_key_without_text_filter
             tenant_id="tenant_demo",
             user_id="user_demo",
             kind="summary",
-            content="用户长期摘要\n- 用户本轮诉求：我要买东西；最近处理结果：请问数量",
+            content="用戶長期摘要\n- 用戶本輪訴求：我要買東西；最近處理結果：請問數量",
             metadata_json={"turn_count": 3},
         ),
     ]
@@ -272,7 +272,7 @@ def test_memory_rows_for_read_deduplicates_by_structured_key_without_text_filter
 
     assert [row.content for row in visible] == [
         "hm",
-        "用户长期摘要\n- 用户本轮诉求：我要买东西；最近处理结果：请问数量",
+        "用戶長期摘要\n- 用戶本輪訴求：我要買東西；最近處理結果：請問數量",
     ]
 
 
@@ -295,7 +295,7 @@ def test_clear_my_memories_scopes_to_current_user_and_agent() -> None:
                     username="user_demo",
                     session_id="session_direct",
                     kind="profile",
-                    content="当前用户 agent_a 直接记忆",
+                    content="當前用戶 agent_a 直接記憶",
                     metadata_json={"agent_id": "agent_a"},
                 ),
                 MemoryRecord(
@@ -304,7 +304,7 @@ def test_clear_my_memories_scopes_to_current_user_and_agent() -> None:
                     username="user_demo",
                     session_id="session_agent_a",
                     kind="preference",
-                    content="当前用户 agent_a 会话推断记忆",
+                    content="當前用戶 agent_a 會話推斷記憶",
                 ),
                 MemoryRecord(
                     tenant_id="tenant_demo",
@@ -312,7 +312,7 @@ def test_clear_my_memories_scopes_to_current_user_and_agent() -> None:
                     username="user_demo",
                     session_id="session_other_agent",
                     kind="fact",
-                    content="当前用户其他员工记忆",
+                    content="當前用戶其他員工記憶",
                     metadata_json={"agent_id": "agent_b"},
                 ),
                 MemoryRecord(
@@ -321,7 +321,7 @@ def test_clear_my_memories_scopes_to_current_user_and_agent() -> None:
                     username="other_user",
                     session_id="session_agent_a",
                     kind="profile",
-                    content="其他用户同员工记忆",
+                    content="其他用戶同員工記憶",
                     metadata_json={"agent_id": "agent_a"},
                 ),
                 MemoryRecord(
@@ -330,7 +330,7 @@ def test_clear_my_memories_scopes_to_current_user_and_agent() -> None:
                     username="user_demo",
                     session_id="session_agent_a",
                     kind="conversation",
-                    content="原始对话记录不清理",
+                    content="原始對話記錄不清理",
                     metadata_json={"agent_id": "agent_a"},
                 ),
             ]
@@ -342,9 +342,9 @@ def test_clear_my_memories_scopes_to_current_user_and_agent() -> None:
 
     assert result == {"deleted": 2}
     assert [row.content for row in remaining] == [
-        "其他用户同员工记忆",
-        "原始对话记录不清理",
-        "当前用户其他员工记忆",
+        "其他用戶同員工記憶",
+        "原始對話記錄不清理",
+        "當前用戶其他員工記憶",
     ]
 
 
@@ -359,7 +359,7 @@ def test_list_memories_for_gallery_agent_only_returns_current_user_for_non_creat
             AgentProfile(
                 id="agent_gallery",
                 tenant_id="tenant_demo",
-                name="广场员工",
+                name="廣場員工",
                 status="active",
                 metadata_json={
                     "owner_user_id": owner.id,
@@ -375,7 +375,7 @@ def test_list_memories_for_gallery_agent_only_returns_current_user_for_non_creat
                     user_id=viewer.id,
                     username=viewer.username,
                     kind="profile",
-                    content="当前访问者自己的记忆",
+                    content="當前訪問者自己的記憶",
                     metadata_json={"agent_id": "agent_gallery"},
                 ),
                 MemoryRecord(
@@ -383,7 +383,7 @@ def test_list_memories_for_gallery_agent_only_returns_current_user_for_non_creat
                     user_id="other_user",
                     username="other",
                     kind="profile",
-                    content="其他用户隐私记忆",
+                    content="其他用戶隱私記憶",
                     metadata_json={"agent_id": "agent_gallery"},
                 ),
             ]
@@ -401,7 +401,7 @@ def test_list_memories_for_gallery_agent_only_returns_current_user_for_non_creat
             db=db,
         )
 
-    assert [row["content"] for row in result] == ["当前访问者自己的记忆"]
+    assert [row["content"] for row in result] == ["當前訪問者自己的記憶"]
 
 
 def test_list_memories_non_creator_cannot_filter_into_other_user_memories() -> None:
@@ -415,7 +415,7 @@ def test_list_memories_non_creator_cannot_filter_into_other_user_memories() -> N
             AgentProfile(
                 id="agent_gallery",
                 tenant_id="tenant_demo",
-                name="广场员工",
+                name="廣場員工",
                 status="active",
                 metadata_json={"owner_user_id": owner.id, "owner_username": owner.username},
             )
@@ -426,7 +426,7 @@ def test_list_memories_non_creator_cannot_filter_into_other_user_memories() -> N
                 user_id="other_user",
                 username="other",
                 kind="profile",
-                content="其他用户隐私记忆",
+                content="其他用戶隱私記憶",
                 metadata_json={"agent_id": "agent_gallery"},
             )
         )
@@ -455,7 +455,7 @@ def test_list_memories_agent_creator_can_view_all_users_for_owned_agent() -> Non
             AgentProfile(
                 id="agent_owned",
                 tenant_id="tenant_demo",
-                name="创建者员工",
+                name="創建者員工",
                 status="active",
                 metadata_json={"owner_user_id": owner.id, "owner_username": owner.username},
             )
@@ -467,7 +467,7 @@ def test_list_memories_agent_creator_can_view_all_users_for_owned_agent() -> Non
                     user_id=owner.id,
                     username=owner.username,
                     kind="profile",
-                    content="创建者自己的记忆",
+                    content="創建者自己的記憶",
                     metadata_json={"agent_id": "agent_owned"},
                 ),
                 MemoryRecord(
@@ -475,7 +475,7 @@ def test_list_memories_agent_creator_can_view_all_users_for_owned_agent() -> Non
                     user_id="other_user",
                     username="other",
                     kind="profile",
-                    content="其他用户对该员工的记忆",
+                    content="其他用戶對該員工的記憶",
                     metadata_json={"agent_id": "agent_owned"},
                 ),
             ]
@@ -494,8 +494,8 @@ def test_list_memories_agent_creator_can_view_all_users_for_owned_agent() -> Non
         )
 
     assert sorted(row["content"] for row in result) == [
-        "其他用户对该员工的记忆",
-        "创建者自己的记忆",
+        "其他用戶對該員工的記憶",
+        "創建者自己的記憶",
     ]
 
 

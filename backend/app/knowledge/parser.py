@@ -16,9 +16,9 @@ class KnowledgeParseError(ValueError):
 def extract_text(filename: str, content: bytes) -> tuple[str, str]:
     suffix = Path(filename).suffix.lower()
     if suffix not in SUPPORTED_EXTENSIONS:
-        raise KnowledgeParseError(f"暂不支持 {suffix or 'unknown'} 文件格式。")
+        raise KnowledgeParseError(f"暫不支持 {suffix or 'unknown'} 文件格式。")
     if suffix == ".doc":
-        raise KnowledgeParseError("暂不支持旧版 .doc 二进制格式，请转换为 .docx 后上传。")
+        raise KnowledgeParseError("暫不支持舊版 .doc 二進制格式，請轉換為 .docx 後上傳。")
     if suffix in {".txt", ".md", ".markdown"}:
         return _decode_text(content), suffix.lstrip(".")
     if suffix in {".html", ".htm"}:
@@ -27,7 +27,7 @@ def extract_text(filename: str, content: bytes) -> tuple[str, str]:
         return _extract_pdf(content), "pdf"
     if suffix == ".docx":
         return _extract_docx(content), "docx"
-    raise KnowledgeParseError(f"暂不支持 {suffix} 文件格式。")
+    raise KnowledgeParseError(f"暫不支持 {suffix} 文件格式。")
 
 
 def _decode_text(content: bytes) -> str:
@@ -58,7 +58,7 @@ def _extract_pdf(content: bytes) -> str:
     try:
         from pypdf import PdfReader
     except Exception as exc:  # pragma: no cover - dependency availability differs by env.
-        raise KnowledgeParseError("缺少 pypdf，无法解析 PDF。") from exc
+        raise KnowledgeParseError("缺少 pypdf，無法解析 PDF。") from exc
     reader = PdfReader(BytesIO(content))
     pages: list[str] = []
     for index, page in enumerate(reader.pages):
@@ -89,7 +89,7 @@ def _extract_docx_with_zip(content: bytes) -> str:
         with ZipFile(BytesIO(content)) as archive:
             xml = archive.read("word/document.xml").decode("utf-8", errors="ignore")
     except Exception as exc:
-        raise KnowledgeParseError("无法解析 docx 文档。") from exc
+        raise KnowledgeParseError("無法解析 docx 文檔。") from exc
     parser = _DocxTextExtractor()
     parser.feed(xml)
     return parser.text

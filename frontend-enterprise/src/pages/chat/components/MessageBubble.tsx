@@ -118,7 +118,7 @@ export default function MessageBubble({ chat, item, render }: MessageBubbleProps
                 {scheduledTaskPrompt && (
                   <span className={CHAT_MESSAGE_MODE_CHIP_CLASS}>
                     <StaffdeckIcon name="clock" size={13} />
-                    定时任务
+                    定時任務
                   </span>
                 )}
                 <span data-i18n-ignore>{visibleContent}</span>
@@ -150,10 +150,10 @@ export default function MessageBubble({ chat, item, render }: MessageBubbleProps
           )}
 
           {item.role === 'assistant' && citations.length > 0 && (
-            <div className={CHAT_CITATIONS_CLASS} aria-label="知识引用">
+            <div className={CHAT_CITATIONS_CLASS} aria-label="知識引用">
               <div className={CHAT_CITATION_HEADING_CLASS}>
                 <StaffdeckIcon name="file" size={14} />
-                <span>知识来源</span>
+                <span>知識來源</span>
               </div>
               <div className={CHAT_CITATION_LIST_CLASS}>
                 {citations.map((citation) => (
@@ -188,7 +188,7 @@ export default function MessageBubble({ chat, item, render }: MessageBubbleProps
                   <button
                     type="button"
                     className={cn(CHAT_FEEDBACK_BTN_CLASS, item.feedback_rating === 'up' && CHAT_FEEDBACK_BTN_ACTIVE_CLASS)}
-                    aria-label="点赞"
+                    aria-label="點贊"
                     onClick={() => rateMessage(item, 'up')}
                   >
                     <IconThumbUp width={15} height={15} />
@@ -199,7 +199,7 @@ export default function MessageBubble({ chat, item, render }: MessageBubbleProps
                       CHAT_FEEDBACK_BTN_CLASS,
                       item.feedback_rating === 'down' && CHAT_FEEDBACK_BTN_DISLIKE_ACTIVE_CLASS,
                     )}
-                    aria-label="点踩"
+                    aria-label="點踩"
                     onClick={() => rateMessage(item, 'down')}
                   >
                     <IconThumbDown width={15} height={15} />
@@ -214,7 +214,7 @@ export default function MessageBubble({ chat, item, render }: MessageBubbleProps
         <div className={CHAT_QUEUED_STATUS_ROW_CLASS}>
           <span className={CHAT_QUEUED_STATUS_CLASS} role="status">
             <StaffdeckIcon name="clock" size={12} />
-            排队中
+            排隊中
           </span>
         </div>
       )}

@@ -56,7 +56,7 @@ def run_memory_capture_job(payload: dict[str, Any]) -> None:
                 session_id,
                 "memory_error",
                 {
-                    "message": "后台 Memory 任务缺少 session 或 model_config。",
+                    "message": "後臺 Memory 任務缺少 session 或 model_config。",
                     "missing_session": not bool(chat_session),
                     "missing_model_config": not bool(model_config),
                 },
@@ -98,7 +98,7 @@ def run_memory_capture_job(payload: dict[str, Any]) -> None:
                 request.tenant_id,
                 session_id,
                 "memory_error",
-                {"message": "后台 Memory 任务未找到本轮已落库的完整消息历史。"},
+                {"message": "後臺 Memory 任務未找到本輪已落庫的完整消息歷史。"},
             )
             db.commit()
             return

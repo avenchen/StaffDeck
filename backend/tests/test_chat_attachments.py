@@ -23,7 +23,7 @@ def test_user_message_metadata_keeps_attachments() -> None:
         ChatTurnRequest(
             tenant_id="tenant_demo",
             user_id="user_demo",
-            message="请看附件",
+            message="請看附件",
             attachments=[attachment],
         )
     )
@@ -52,10 +52,10 @@ def test_image_attachment_uses_supported_extension_and_builds_image_payload() ->
 def test_message_context_appends_attachment_text() -> None:
     attachment = parse_chat_attachment("readme.md", "text/markdown", b"# Title\ncontent")
     context = message_content_with_attachment_context(
-        "总结一下",
+        "總結一下",
         {"attachments": [attachment.model_dump(mode="json")]},
     )
 
-    assert "总结一下" in context
-    assert "上传附件上下文" in context
+    assert "總結一下" in context
+    assert "上傳附件上下文" in context
     assert "# Title" in context

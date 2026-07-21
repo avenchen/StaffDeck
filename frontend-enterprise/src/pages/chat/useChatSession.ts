@@ -136,12 +136,12 @@ const CHAT_BASE_PATH = '/workspace/chat';
 const STREAM_TEXT_EVENTS = new Set(['stream_replace', 'stream_delta', 'token']);
 const STREAM_RELAY_RECOVERY_POLL_INTERVAL_MS = 5 * 1000;
 const DEFAULT_SCHEDULE_TIME = '09:00';
-const SCHEDULE_WEEKDAY_LABELS = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'] as const;
+const SCHEDULE_WEEKDAY_LABELS = ['週一', '週二', '週三', '週四', '週五', '週六', '週日'] as const;
 // Shared with the management shell (App.tsx `ENTERPRISE_SIDEBAR_STORAGE_KEY`) so
-// the collapse state is preserved when switching between 管理端 and 对话端.
+// the collapse state is preserved when switching between 管理端 and 對話端.
 // Stored as '1' (expanded) / '0' (collapsed); unset defaults to expanded.
 const ENTERPRISE_SIDEBAR_STORAGE_KEY = 'ultrarag_enterprise_sidebar_expanded';
-const MISSING_MODEL_CONFIG_PATTERN = /missing_model_config|missing model config|没有默认模型配置|没有可用模型|模型配置不存在|模型未配置/i;
+const MISSING_MODEL_CONFIG_PATTERN = /missing_model_config|missing model config|沒有默認模型配置|沒有可用模型|模型配置不存在|模型未配置/i;
 const MODEL_CONFIGS_UPDATED_EVENT = 'ultrarag-enterprise-model-configs-updated';
 
 function isMissingModelConfigurationError(value: unknown): boolean {
@@ -182,9 +182,9 @@ type DraftScheduleType = 'once' | 'daily' | 'weekly' | 'monthly';
 type DraftScheduleFormatter = (schedule: Record<string, unknown>) => string;
 
 const DRAFT_SCHEDULE_FORMATTERS: Record<DraftScheduleType, DraftScheduleFormatter> = {
-  once: (schedule) => `一次性 ${typeof schedule.run_at === 'string' ? schedule.run_at : '待确认时间'}`,
-  weekly: (schedule) => `每周 ${formatScheduleWeekdays(schedule.weekdays)} ${scheduleTime(schedule)}`,
-  monthly: (schedule) => `每月 ${schedule.day_of_month || 1} 号 ${scheduleTime(schedule)}`,
+  once: (schedule) => `一次性 ${typeof schedule.run_at === 'string' ? schedule.run_at : '待確認時間'}`,
+  weekly: (schedule) => `每週 ${formatScheduleWeekdays(schedule.weekdays)} ${scheduleTime(schedule)}`,
+  monthly: (schedule) => `每月 ${schedule.day_of_month || 1} 號 ${scheduleTime(schedule)}`,
   daily: (schedule) => `每天 ${scheduleTime(schedule)}`,
 };
 
@@ -216,7 +216,7 @@ function formatScheduledTaskDraftSchedule(draft?: Partial<ScheduledTaskDraftRead
 
 function scheduledTaskDraftTraceDetail(draft?: Partial<ScheduledTaskDraftRead> | Record<string, unknown>): string | undefined {
   const title = typeof draft?.title === 'string' ? draft.title.trim() : '';
-  return [title, formatScheduledTaskDraftSchedule(draft), '等待确认后启用'].filter(Boolean).join(' · ');
+  return [title, formatScheduledTaskDraftSchedule(draft), '等待確認後啟用'].filter(Boolean).join(' · ');
 }
 
 function scheduledTaskTraceLines(draft?: Partial<ScheduledTaskDraftRead> | Record<string, unknown>): TraceLine[] {
@@ -224,23 +224,23 @@ function scheduledTaskTraceLines(draft?: Partial<ScheduledTaskDraftRead> | Recor
     {
       id: 'scheduled_task_intent',
       kind: 'decision',
-      text: '识别定时任务需求',
-      detail: '用户选择了创建定时任务模式',
+      text: '識別定時任務需求',
+      detail: '用戶選擇了創建定時任務模式',
       state: 'completed',
       icon: 'judge',
     },
     {
       id: 'scheduled_task_parse',
       kind: 'decision',
-      text: '解析执行计划',
-      detail: `计划：${formatScheduledTaskDraftSchedule(draft)}`,
+      text: '解析執行計劃',
+      detail: `計劃：${formatScheduledTaskDraftSchedule(draft)}`,
       state: 'completed',
       icon: 'advance',
     },
     {
       id: 'scheduled_task_draft',
       kind: 'decision',
-      text: '生成定时任务草案',
+      text: '生成定時任務草案',
       detail: scheduledTaskDraftTraceDetail(draft),
       state: 'completed',
       icon: 'advance',
@@ -253,8 +253,8 @@ function scheduledTaskStatusTraceLine(phase: string, data: Record<string, unknow
     return {
       id: 'scheduled_task_intent',
       kind: 'decision',
-      text: '识别定时任务需求',
-      detail: '用户选择了创建定时任务模式',
+      text: '識別定時任務需求',
+      detail: '用戶選擇了創建定時任務模式',
       state: 'running',
       icon: 'judge',
     };
@@ -263,7 +263,7 @@ function scheduledTaskStatusTraceLine(phase: string, data: Record<string, unknow
     return {
       id: 'scheduled_task_parse',
       kind: 'decision',
-      text: '解析执行计划',
+      text: '解析執行計劃',
       state: 'running',
       icon: 'advance',
     };
@@ -272,7 +272,7 @@ function scheduledTaskStatusTraceLine(phase: string, data: Record<string, unknow
     return {
       id: 'scheduled_task_draft',
       kind: 'decision',
-      text: '生成定时任务草案',
+      text: '生成定時任務草案',
       detail: scheduledTaskDraftTraceDetail(data),
       state: 'completed',
       icon: 'advance',
@@ -440,7 +440,7 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
     const lastShownAt = loadErrorNoticeRef.current[noticeKey] || 0;
     if (now - lastShownAt < 12000) return false;
     loadErrorNoticeRef.current[noticeKey] = now;
-    notify.error(isNetworkError ? '接口连接失败，请检查本地服务或稍后重试' : (rawMessage || fallback), {
+    notify.error(isNetworkError ? '接口連接失敗，請檢查本地服務或稍後重試' : (rawMessage || fallback), {
       id: noticeKey,
       duration: 3000,
     });
@@ -520,18 +520,18 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
   const displayedProfile = displayedAgent ? employeeProfile(displayedAgent) : null;
   const emptyProfileTags = displayedProfile?.workStyles.length
     ? displayedProfile.workStyles.slice(0, 3)
-    : ['结构化整理', '可追溯', '可追溯'];
+    : ['結構化整理', '可追溯', '可追溯'];
   const emptyRoleSummary = displayedProfile
-    ? `#角色：${displayedProfile.roleName}「${displayedAgent ? employeeDisplayName(displayedAgent) : '--'}」一名经验丰富的${displayedProfile.roleName}`
+    ? `#角色：${displayedProfile.roleName}「${displayedAgent ? employeeDisplayName(displayedAgent) : '--'}」一名經驗豐富的${displayedProfile.roleName}`
     : '--';
   const emptyStats = displayedAgent
     ? [
-      { label: '资料', value: agentResourceCount(displayedAgent, 'knowledge_base') },
+      { label: '資料', value: agentResourceCount(displayedAgent, 'knowledge_base') },
       { label: '技能', value: agentResourceCount(displayedAgent, 'general_skill') },
       { label: 'SOP', value: agentResourceCount(displayedAgent, 'skill') },
     ]
     : [
-      { label: '资料', value: 0 },
+      { label: '資料', value: 0 },
       { label: '技能', value: 0 },
       { label: 'SOP', value: 0 },
     ];
@@ -544,7 +544,7 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
     const rows = availableAgents
       .sort((a, b) => employeeDisplayName(a).localeCompare(employeeDisplayName(b), 'zh-Hans-CN'));
     return [
-      { value: 'all', label: `全部会话 · ${sessions.length}` },
+      { value: 'all', label: `全部會話 · ${sessions.length}` },
       ...rows.map((agent) => ({
         value: agent.id,
         label: `${employeeDisplayNameWithCreator(agent)} · ${counts.get(agent.id) || 0}`,
@@ -566,8 +566,8 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
   const canConfigureModels = auth?.user.role === 'admin';
   const showModelSetupNotice = !modelConfigsLoading && !modelConfigsLoadError && !selectedModelConfig;
   const modelSetupNoticeText = canConfigureModels
-    ? t('还没有可用模型配置，发送消息前请先完成模型配置。')
-    : t('系统管理员尚未配置可用模型，暂时无法发送消息。请联系管理员完成模型配置。');
+    ? t('還沒有可用模型配置，發送消息前請先完成模型配置。')
+    : t('系統管理員尚未配置可用模型，暫時無法發送消息。請聯繫管理員完成模型配置。');
 
   const changeModelConfig = useCallback((value: string) => {
     setSelectedModelConfigId(value);
@@ -598,18 +598,18 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
 
   const ensureModelAvailable = useCallback(() => {
     if (modelConfigsLoading) {
-      notify.warning(t('模型配置正在加载，请稍后再发送'));
+      notify.warning(t('模型配置正在加載，請稍後再發送'));
       return false;
     }
     if (modelConfigsLoadError) {
-      notify.error(t('无法读取模型配置，请刷新页面后重试'));
+      notify.error(t('無法讀取模型配置，請刷新頁面後重試'));
       return false;
     }
     if (!selectedModelConfig) {
       if (canConfigureModels) {
         setModelSetupOpen(true);
       } else {
-        notify.warning(t('系统管理员尚未配置可用模型，请联系管理员完成模型配置'));
+        notify.warning(t('系統管理員尚未配置可用模型，請聯繫管理員完成模型配置'));
       }
       return false;
     }
@@ -713,7 +713,7 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
           redirectToLogin();
           return;
         }
-        setModelConfigsLoadError(error instanceof Error ? error.message : '模型配置加载失败');
+        setModelConfigsLoadError(error instanceof Error ? error.message : '模型配置加載失敗');
       })
       .finally(() => setModelConfigsLoading(false));
   }, [auth, redirectToLogin, tenantId]);
@@ -1080,7 +1080,7 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
         }
       })
       .catch((error) => {
-        notifyRequestError('sessions', error, '会话加载失败');
+        notifyRequestError('sessions', error, '會話加載失敗');
       })
       .finally(() => {
         setSessionsLoading(false);
@@ -1118,7 +1118,7 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
           handleMissingSession(id);
           return [];
         }
-        notifyRequestError('messages', error, '消息加载失败');
+        notifyRequestError('messages', error, '消息加載失敗');
         return [];
       });
   }, [clearStreamSlot, getSlot, getStreamSlot, handleMissingSession, notifyRequestError, notifyStore, pruneRealtime, tenantId]);
@@ -1243,7 +1243,7 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
           handleMissingSession(id);
           return;
         }
-        notifyRequestError('trace', error, '轨迹加载失败');
+        notifyRequestError('trace', error, '軌跡加載失敗');
       });
   }, [getSlot, getStreamSlot, handleMissingSession, notifyRequestError, notifyStore, notifyStream, notifyTrace, tenantId]);
 
@@ -1306,7 +1306,7 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
       .get<HumanHandoffRead[]>(`/api/chat/handoffs?tenant_id=${tenantId}&status=pending`)
       .then(setHandoffs)
       .catch((error) => {
-        notifyRequestError('handoffs', error, '待回答加载失败');
+        notifyRequestError('handoffs', error, '待回答加載失敗');
       })
       .finally(() => setHandoffsLoading(false));
   }, [auth, notifyRequestError, tenantId]);
@@ -1314,7 +1314,7 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
   const replyToHandoff = useCallback(async (handoff: HumanHandoffRead, reply: string): Promise<boolean> => {
     try {
       await api.post<HumanHandoffRead>(`/api/chat/handoffs/${handoff.id}/reply`, { tenant_id: tenantId, reply });
-      notify.success('已回复，原会话会继续执行');
+      notify.success('已回覆，原會話會繼續執行');
       setHandoffs((rows) => rows.filter((item) => item.id !== handoff.id));
       setHandoffReplies((prev) => {
         const next = { ...prev };
@@ -1331,7 +1331,7 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
         redirectToLogin();
         return false;
       }
-      notify.error(error instanceof Error ? error.message : '回复失败');
+      notify.error(error instanceof Error ? error.message : '回覆失敗');
       return false;
     }
   }, [getSlot, loadMessages, loadSessions, loadTraces, redirectToLogin, tenantId]);
@@ -1339,7 +1339,7 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
   const submitHandoffReply = useCallback((handoff: HumanHandoffRead) => {
     const reply = (handoffReplies[handoff.id] || '').trim();
     if (!reply) {
-      notify.warning('请输入回复内容');
+      notify.warning('請輸入回覆內容');
       return;
     }
     if (!ensureModelAvailable()) return;
@@ -1388,9 +1388,9 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
     const persisted = persistQueuedTurns();
     appendQueuedTurnPreview(turn);
     notifyQueue();
-    notify.info('已加入发送队列');
+    notify.info('已加入發送隊列');
     if (!persisted) {
-      notify.warning('排队内容过大，刷新页面后可能无法恢复');
+      notify.warning('排隊內容過大，刷新頁面後可能無法恢復');
     }
   }, [appendQueuedTurnPreview, notifyQueue, persistQueuedTurns]);
 
@@ -1664,7 +1664,7 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
     if (!renameSession) return;
     const title = renameTitle.trim();
     if (!title) {
-      notify.warning('请输入会话名称');
+      notify.warning('請輸入會話名稱');
       return;
     }
     const updated = await api.put<ChatSession>(`/api/chat/sessions/${renameSession.id}`, {
@@ -1695,13 +1695,13 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
       if (target.id === sessionId) {
         navigate(CHAT_BASE_PATH);
       }
-      notify.success('已删除');
+      notify.success('已刪除');
     } catch (error) {
       if (isAuthError(error)) {
         redirectToLogin();
         return;
       }
-      notify.error(error instanceof Error ? error.message : '删除失败');
+      notify.error(error instanceof Error ? error.message : '刪除失敗');
     }
   }, [forgetMissingSession, getStreamSlot, navigate, pendingDelete, redirectToLogin, sessionId, tenantId]);
 
@@ -1731,7 +1731,7 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
       upsertTraceLine(cancelledTurnId, {
         id: 'generation_stopped',
         kind: 'decision',
-        text: '用户已停止生成',
+        text: '用戶已停止生成',
         state: 'completed',
       });
       finishTrace(cancelledTurnId);
@@ -1790,7 +1790,7 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
         redirectToLogin();
         return;
       }
-      notify.error(error instanceof Error ? error.message : '反馈提交失败');
+      notify.error(error instanceof Error ? error.message : '反饋提交失敗');
     }
   }, [redirectToLogin, sessionId, tenantId, updateMessageFeedback]);
 
@@ -1824,13 +1824,13 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
         delete next[sessionId];
         return next;
       });
-      notify.success(`定时任务「${saved.title}」已启用`);
+      notify.success(`定時任務「${saved.title}」已啟用`);
     } catch (error) {
       if (isAuthError(error)) {
         redirectToLogin();
         return;
       }
-      notify.error(error instanceof Error ? error.message : '创建定时任务失败');
+      notify.error(error instanceof Error ? error.message : '創建定時任務失敗');
     }
   }, [redirectToLogin, sessionId, tenantId]);
 
@@ -1910,7 +1910,7 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
             id: `skill_state_${skill.skillId}_${skill.state || 'active'}_${stateKey}`,
             kind: 'skill',
             text: `${label} ${skill.name || skill.skillId}`,
-            detail: skill.stepId ? `当前步骤 ${skill.stepId}` : undefined,
+            detail: skill.stepId ? `當前步驟 ${skill.stepId}` : undefined,
             state: skill.state === 'suspended' ? 'completed' : 'running',
             icon: 'advance',
           });
@@ -1923,7 +1923,7 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
       upsertVisibleTraceLine({
         id: `general_skill_${skillSlug || skillName || 'selected'}`,
         kind: 'skill',
-        text: `选择通用技能 ${skillName || skillSlug || ''}`.trim(),
+        text: `選擇通用技能 ${skillName || skillSlug || ''}`.trim(),
         detail: skillSlug || undefined,
         state: 'running',
         icon: 'advance',
@@ -1936,7 +1936,7 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
         notifyStream();
         return;
       }
-      const text = typeof item.data.message === 'string' ? item.data.message : '执行通用技能';
+      const text = typeof item.data.message === 'string' ? item.data.message : '執行通用技能';
       const code = typeof item.data.code === 'string' ? item.data.code : '';
       const runtime = typeof item.data.runtime === 'string' ? item.data.runtime : '';
       const attempt = typeof item.data.attempt === 'number' || typeof item.data.attempt === 'string'
@@ -1979,7 +1979,7 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
       upsertVisibleTraceLine({
         id: knowledgeTraceLineId(item.data),
         kind: 'knowledge',
-        text: '读取知识库',
+        text: '讀取知識庫',
         detail: knowledgeResultTraceDetail(item.data),
         state: 'completed',
         icon: 'advance',
@@ -1992,7 +1992,7 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
         upsertVisibleTraceLine({
           id: `tool_${tool.toolCallId || tool.rawToolName || tool.toolId}`,
           kind: 'tool',
-          text: `${tool.isError ? '工具调用失败' : '调用工具'} ${tool.toolName}`,
+          text: `${tool.isError ? '工具調用失敗' : '調用工具'} ${tool.toolName}`,
           detail: toolTraceDetail(tool),
           state: tool.isError ? 'failed' : 'completed',
           icon: 'tool',
@@ -2008,8 +2008,8 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
         kind: 'decision',
         text: '重新分析',
         detail: item.event === 'agent_loop_continued'
-          ? (targetTool ? `决定继续调用 ${targetTool}` : '决定继续调用工具')
-          : '判断无需继续调用工具',
+          ? (targetTool ? `決定繼續調用 ${targetTool}` : '決定繼續調用工具')
+          : '判斷無需繼續調用工具',
         state: 'completed',
         icon: 'loading',
       });
@@ -2021,7 +2021,7 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
       upsertVisibleTraceLine({
         id: 'reflection',
         kind: 'decision',
-        text: skipped ? '反思已关闭' : needsRetry ? '反思后继续尝试' : '反思通过',
+        text: skipped ? '反思已關閉' : needsRetry ? '反思後繼續嘗試' : '反思通過',
         detail: reflectionTraceDetail(item.data),
         state: 'completed',
         icon: 'loading',
@@ -2048,9 +2048,9 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
         finishTrace(traceTurnId, true);
       } else if (phase === 'tool' && typeof item.data.tool_name === 'string') {
         const toolCallId = typeof item.data.tool_call_id === 'string' ? item.data.tool_call_id : item.data.tool_name;
-        upsertVisibleTraceLine({ id: `tool_${toolCallId}`, kind: 'tool', text: `正在调用 ${item.data.tool_name}`, state: 'running', icon: 'tool' });
+        upsertVisibleTraceLine({ id: `tool_${toolCallId}`, kind: 'tool', text: `正在調用 ${item.data.tool_name}`, state: 'running', icon: 'tool' });
       } else if (phase === 'routing') {
-        upsertVisibleTraceLine({ id: 'decision_router', kind: 'decision', text: '判断意图', state: 'running', icon: 'judge' });
+        upsertVisibleTraceLine({ id: 'decision_router', kind: 'decision', text: '判斷意圖', state: 'running', icon: 'judge' });
       } else if (isKnowledgeTracePhase(phase)) {
         upsertVisibleTraceLine({
           id: knowledgeTraceLineId(item.data),
@@ -2066,7 +2066,7 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
         upsertVisibleTraceLine({
           id: `decision_stepping_${repairReason}${iteration}`,
           kind: 'decision',
-          text: repairReason === 'main' ? '决定下一步' : '重新分析',
+          text: repairReason === 'main' ? '決定下一步' : '重新分析',
           state: 'running',
           icon: repairReason === 'main' ? 'advance' : 'loading',
         });
@@ -2230,7 +2230,7 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
         upsertVisibleTraceLine({
           id: 'decision_router',
           kind: 'decision',
-          text: userIntent ? `判断意图 ${userIntent}` : '完成SOP判断',
+          text: userIntent ? `判斷意圖 ${userIntent}` : '完成SOP判斷',
           detail: decisionReason || undefined,
           state: 'completed',
         });
@@ -2283,7 +2283,7 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
         id: `scheduled_error_${Date.now()}`,
         turnId: errorTurnId,
         role: 'assistant',
-        content: typeof item.data.message === 'string' ? item.data.message : '定时任务执行失败。',
+        content: typeof item.data.message === 'string' ? item.data.message : '定時任務執行失敗。',
         created_at: new Date().toISOString(),
         isError: true,
       });
@@ -2397,7 +2397,7 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
     );
     stream.turnId = turnId;
     stream.loading = true;
-    stream.phase = stream.phase || '执行中';
+    stream.phase = stream.phase || '執行中';
     stream.accumulated = text;
     stream.relayRecoveryStartedAt = stream.relayRecoveryStartedAt || Date.now();
     stream.relayRecoveryTurnId = turnId;
@@ -2484,8 +2484,8 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
             upsertTraceLine(recoveringTurnId, {
               id: 'stream_relay_timeout',
               kind: 'thinking',
-              text: '响应同步超时',
-              detail: '前端已从事件日志持续同步，但服务端没有写入完成事件。',
+              text: '響應同步超時',
+              detail: '前端已從事件日誌持續同步，但服務端沒有寫入完成事件。',
               state: 'failed',
               icon: 'loading',
             });
@@ -2494,7 +2494,7 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
               id: `stream_relay_timeout_${recoveringTurnId}_${Date.now()}`,
               turnId: recoveringTurnId,
               role: 'assistant',
-              content: '本次响应同步超时，请重试发送。',
+              content: '本次響應同步超時，請重試發送。',
               created_at: new Date().toISOString(),
               isError: true,
             });
@@ -2555,7 +2555,7 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
               return;
             }
             stream.loading = true;
-            stream.phase = '执行中';
+            stream.phase = '執行中';
             if (hasRenderableStreamingText(stream.accumulated)) {
               updateStreaming(id, stream.accumulated, eventTurnId);
             }
@@ -2603,7 +2603,7 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
         {
           id: uploadKey,
           uploadKey,
-          filename: file.name || '剪贴板文件',
+          filename: file.name || '剪貼板文件',
           content_type: file.type || 'application/octet-stream',
           size: file.size,
           kind: file.type.startsWith('image/') ? 'image' : 'binary',
@@ -2613,7 +2613,7 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
       uploadChatAttachments<ChatAttachmentRead[]>(tenantId, [file], controller.signal)
         .then((items) => {
           const parsed = items[0];
-          if (!parsed) throw new Error('文件解析结果为空');
+          if (!parsed) throw new Error('文件解析結果為空');
           setComposerAttachments((current) =>
             current.map((item) => (item.uploadKey === uploadKey ? { ...parsed, uploadKey, uploadStatus: 'ready' } : item)),
           );
@@ -2623,7 +2623,7 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
           setComposerAttachments((current) =>
             current.map((item) => (
               item.uploadKey === uploadKey
-                ? { ...item, uploadStatus: 'error', error: error instanceof Error ? error.message : '上传失败' }
+                ? { ...item, uploadStatus: 'error', error: error instanceof Error ? error.message : '上傳失敗' }
                 : item
             )),
           );
@@ -2735,7 +2735,7 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
       },
       created_at: options.queued ? new Date().toISOString() : prepared.createdAt,
     });
-    upsertTraceLine(turnId, { id: 'decision_router', kind: 'decision', text: '判断意图', state: 'running', icon: 'judge', provisional: true });
+    upsertTraceLine(turnId, { id: 'decision_router', kind: 'decision', text: '判斷意圖', state: 'running', icon: 'judge', provisional: true });
     setCollapsedTraceIds((current) => current.filter((item) => item !== turnId));
     setExpandedTraceIds((current) => (current.includes(turnId) ? current : [...current, turnId]));
     stream.loading = true;
@@ -2889,14 +2889,14 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
       }
       const targetSessionId = liveConversationId;
       if (!targetSessionId || isDraftConversationKey(targetSessionId)) {
-        appendInterruptedResponse('本次响应连接中断，未能确认服务端会话。请重试发送。');
+        appendInterruptedResponse('本次響應連接中斷，未能確認服務端會話。請重試發送。');
         return;
       }
       const activeStream = getStreamSlot(targetSessionId);
       const activeTurnId = activeStream.turnId || turnId;
       activeStream.abortController = null;
       activeStream.loading = true;
-      activeStream.phase = activeStream.phase || '执行中';
+      activeStream.phase = activeStream.phase || '執行中';
       activeStream.turnId = activeTurnId;
       activeStream.relayRecoveryStartedAt = activeStream.relayRecoveryStartedAt || Date.now();
       activeStream.relayRecoveryTurnId = activeTurnId;
@@ -3044,12 +3044,12 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
     const resolvedInteractionMode = interactionMode || composerIntent || 'normal';
     if (!activeConversationId) return;
     if (resolvedInteractionMode === 'scheduled_task' && !input.trim()) {
-      notify.warning('请输入要创建的定时任务内容');
+      notify.warning('請輸入要創建的定時任務內容');
       return;
     }
     if (!input.trim() && readyComposerAttachments.length === 0) return;
     if (uploadingComposerAttachment) {
-      notify.warning('文件还在解析中，请稍后发送');
+      notify.warning('文件還在解析中，請稍後發送');
       return;
     }
     if (!ensureModelAvailable()) return;
@@ -3059,16 +3059,16 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
     ));
     if (pendingHandoff) {
       if (resolvedInteractionMode !== 'normal') {
-        notify.warning('待回答会话仅支持发送人工回复');
+        notify.warning('待回答會話僅支持發送人工回覆');
         return;
       }
       if (readyComposerAttachments.length > 0) {
-        notify.warning('待回答暂不支持附件，请发送文字回复');
+        notify.warning('待回答暫不支持附件，請發送文字回覆');
         return;
       }
       const reply = input.trim();
       if (!reply) {
-        notify.warning('请输入回复内容');
+        notify.warning('請輸入回覆內容');
         return;
       }
       if (await replyToHandoff(pendingHandoff, reply)) {
@@ -3081,15 +3081,15 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
     const activeSession = sessionId ? sessions.find((item) => item.id === sessionId) || null : null;
     if (!isDraftConversation && !activeSession && !optimisticSessionIdsRef.current.has(currentConversationId)) {
       if (sessionsLoading || handoffsLoading) {
-        notify.warning('任务信息还在加载，请稍后再发送');
+        notify.warning('任務信息還在加載，請稍後再發送');
       } else {
-        notify.warning('当前账号不能直接向该会话发送消息，请从待回答列表回复');
+        notify.warning('當前賬號不能直接向該會話發送消息，請從待回答列表回覆');
       }
       return;
     }
     const sessionAgentId = activeSession?.agent_id || activeDraftAgentId || selectedAgentId || displayedAgent?.id || '';
     if (!sessionAgentId) {
-      notify.warning('该任务没有绑定数字员工，请新建任务后再发送');
+      notify.warning('該任務沒有綁定數字員工，請新建任務後再發送');
       return;
     }
     const prepared: PreparedChatTurn = {

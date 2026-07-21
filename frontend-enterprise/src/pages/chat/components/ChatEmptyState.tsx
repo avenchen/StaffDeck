@@ -38,7 +38,7 @@ export default function ChatEmptyState({ chat }: { chat: UseChatSession }) {
             <strong className={CHAT_EMPTY_TITLE_CLASS}>
               Hello {displayedAgent ? employeeDisplayName(displayedAgent) : ''}！
             </strong>
-            <span className={CHAT_EMPTY_SUBTITLE_CLASS}>我们来做什么？</span>
+            <span className={CHAT_EMPTY_SUBTITLE_CLASS}>我們來做什麼？</span>
           </div>
         </div>
       </div>

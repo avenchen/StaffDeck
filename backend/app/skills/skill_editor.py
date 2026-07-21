@@ -76,14 +76,14 @@ class SkillEditor:
         payload = self._payload(request)
         client = LLMClient(skill_model_config(model_config))
         try:
-            yield {"event": "status", "data": {"text": "模型正在分析改写范围"}}
+            yield {"event": "status", "data": {"text": "模型正在分析改寫範圍"}}
             for chunk in client.generate_text_stream(prompt, payload):
                 chunks.append(chunk)
-            yield {"event": "status", "data": {"text": "正在校验局部改写结果"}}
+            yield {"event": "status", "data": {"text": "正在校驗局部改寫結果"}}
             response = self._response_from_text("".join(chunks), request)
         except (LLMError, json.JSONDecodeError, TypeError, ValueError) as exc:
             try:
-                yield {"event": "status", "data": {"text": "模型输出需要修复，正在重试一次"}}
+                yield {"event": "status", "data": {"text": "模型輸出需要修復，正在重試一次"}}
                 repair_text = client.generate_text(
                     prompt,
                     {
@@ -91,21 +91,21 @@ class SkillEditor:
                         "previous_output": "".join(chunks),
                         "previous_error": str(exc),
                         "repair_instruction": (
-                            "请基于 current_skill、instruction 和 target_paths 修复上一次输出。"
-                            "只输出合法 JSON，可以使用 patches 做局部修改，或返回完整 draft_skill。"
+                            "請基於 current_skill、instruction 和 target_paths 修復上一次輸出。"
+                            "只輸出合法 JSON，可以使用 patches 做局部修改，或返回完整 draft_skill。"
                         ),
                     },
                 )
                 response = self._response_from_text(repair_text, request)
             except (LLMError, json.JSONDecodeError, TypeError, ValueError) as repair_exc:
-                yield {"event": "status", "data": {"text": "模型改写失败，正在保留原版本"}}
+                yield {"event": "status", "data": {"text": "模型改寫失敗，正在保留原版本"}}
                 response = SkillRewriteResponse(
                     draft_skill=request.current_skill,
-                    assistant_message="改写失败，已保留当前技能内容。",
+                    assistant_message="改寫失敗，已保留當前技能內容。",
                     changed_paths=[],
-                    warnings=[f"模型未能完成局部改写：{repair_exc}"],
+                    warnings=[f"模型未能完成局部改寫：{repair_exc}"],
                 )
-        yield {"event": "status", "data": {"text": "正在校验改写范围与工具接入"}}
+        yield {"event": "status", "data": {"text": "正在校驗改寫範圍與工具接入"}}
         response = yield from reflect_skill_response_stream(
             client=client,
             source_kind="rewrite",
@@ -116,7 +116,7 @@ class SkillEditor:
             tool_suggestions=response.tool_suggestions,
             normalize_response=lambda review_raw: self._normalize_response(review_raw, request),
         )
-        yield {"event": "status", "data": {"text": "正在整理校验后的改写结果"}}
+        yield {"event": "status", "data": {"text": "正在整理校驗後的改寫結果"}}
         for chunk in _chunk_text(response.assistant_message):
             yield {"event": "message_chunk", "data": {"content": chunk}}
             sleep(STREAM_INTERVAL_SECONDS)
@@ -125,7 +125,7 @@ class SkillEditor:
     def _response_from_text(self, text: str, request: SkillRewriteRequest) -> SkillRewriteResponse:
         raw = json.loads(_extract_json(text))
         if not isinstance(raw, dict):
-            raise ValueError("模型输出不是 JSON object")
+            raise ValueError("模型輸出不是 JSON object")
         return self._normalize_response(raw, request)
 
     def _payload(self, request: SkillRewriteRequest) -> dict[str, Any]:
@@ -165,13 +165,13 @@ class SkillEditor:
             merged_data["nodes"] = nodes
             merged = SkillCard.model_validate(merged_data)
         merged, id_warnings = skill_card_with_unique_step_ids(merged)
-        assistant_message = str(raw.get("assistant_message") or "已完成选中部分的改写。").strip()
+        assistant_message = str(raw.get("assistant_message") or "已完成選中部分的改寫。").strip()
         warnings = [str(item) for item in raw.get("warnings", []) if str(item).strip()]
         warnings.extend(warning for warning in id_warnings if warning not in warnings)
         for tool_name in missing_tool_names:
             warning = (
-                f"改写结果引用了未配置工具 {tool_name}，已移出 allowed_actions；"
-                "如确需该工具，模型必须在 tool_mentions 中提供来自上下文的完整工具提及。"
+                f"改寫結果引用了未配置工具 {tool_name}，已移出 allowed_actions；"
+                "如確需該工具，模型必須在 tool_mentions 中提供來自上下文的完整工具提及。"
             )
             if warning not in warnings:
                 warnings.append(warning)
@@ -234,7 +234,7 @@ def _skill_from_patches(
         if not isinstance(warnings, list):
             warnings = []
             raw["warnings"] = warnings
-        warnings.append(f"已忽略越界改写路径：{', '.join(ignored_paths)}")
+        warnings.append(f"已忽略越界改寫路徑：{', '.join(ignored_paths)}")
     if not applied:
         return None
     return SkillCard.model_validate(data)

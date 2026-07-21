@@ -94,15 +94,15 @@ export default function ScheduledDraftCard({
   const scheduleValue = scheduleEditValue(editableDraft);
   const validateDraft = (nextDraft: ScheduledTaskDraftRead) => {
     if (!nextDraft.title.trim()) {
-      notify.warning('请输入定时任务名称');
+      notify.warning('請輸入定時任務名稱');
       return false;
     }
     if (!nextDraft.prompt.trim()) {
-      notify.warning('请输入执行内容');
+      notify.warning('請輸入執行內容');
       return false;
     }
     if (!scheduleEditValue(nextDraft).trim()) {
-      notify.warning('请输入执行计划');
+      notify.warning('請輸入執行計劃');
       return false;
     }
     return true;
@@ -135,7 +135,7 @@ export default function ScheduledDraftCard({
             <StaffdeckIcon name={created ? 'check' : 'clock'} size={18} />
           </div>
           <div className="grid min-w-0 gap-[2px]">
-            <div className={CHAT_DRAFT_KICKER_CLASS}>{created ? '定时任务已创建' : '定时任务草案'}</div>
+            <div className={CHAT_DRAFT_KICKER_CLASS}>{created ? '定時任務已創建' : '定時任務草案'}</div>
             {editing ? (
               <Input
                 className="h-[30px]"
@@ -151,7 +151,7 @@ export default function ScheduledDraftCard({
           {created ? (
             <span className={CHAT_DRAFT_CREATED_BADGE_CLASS}>
               <StaffdeckIcon name="check" size={13} />
-              已创建
+              已創建
             </span>
           ) : editing ? (
             <>
@@ -171,7 +171,7 @@ export default function ScheduledDraftCard({
             <>
               <Button size="sm" variant="ghost" onClick={() => setEditing(true)}>
                 <StaffdeckIcon name="edit" size={14} />
-                编辑
+                編輯
               </Button>
               <Button size="sm" variant="ghost" onClick={onDismiss}>忽略</Button>
             </>
@@ -181,7 +181,7 @@ export default function ScheduledDraftCard({
       {editing ? (
         <div className={CHAT_DRAFT_EDITOR_CLASS}>
           <label>
-            <span>计划类型</span>
+            <span>計劃類型</span>
             <Select value={editableDraft.schedule_type} onValueChange={updateScheduleType}>
               <SelectTrigger className="h-[32px] w-full">
                 <SelectValue />
@@ -189,13 +189,13 @@ export default function ScheduledDraftCard({
               <SelectContent>
                 <SelectItem value="once">一次性</SelectItem>
                 <SelectItem value="daily">每天</SelectItem>
-                <SelectItem value="weekly">每周</SelectItem>
+                <SelectItem value="weekly">每週</SelectItem>
                 <SelectItem value="monthly">每月</SelectItem>
               </SelectContent>
             </Select>
           </label>
           <label>
-            <span>执行计划</span>
+            <span>執行計劃</span>
             <Input
               className="h-[32px]"
               value={scheduleValue}
@@ -204,7 +204,7 @@ export default function ScheduledDraftCard({
             />
           </label>
           <label>
-            <span>时区</span>
+            <span>時區</span>
             <Input
               className="h-[32px]"
               value={editableDraft.timezone || currentTimezone}
@@ -212,7 +212,7 @@ export default function ScheduledDraftCard({
             />
           </label>
           <label className={CHAT_DRAFT_EDITOR_FULL_CLASS}>
-            <span>执行内容</span>
+            <span>執行內容</span>
             <Textarea
               rows={3}
               value={editableDraft.prompt}
@@ -220,11 +220,11 @@ export default function ScheduledDraftCard({
             />
           </label>
           <label className={CHAT_DRAFT_EDITOR_FULL_CLASS}>
-            <span>说明</span>
+            <span>說明</span>
             <Textarea
               rows={2}
               value={editableDraft.description || ''}
-              placeholder="可补充任务目的、范围或结果要求"
+              placeholder="可補充任務目的、範圍或結果要求"
               onChange={(event) => updateDraft({ description: event.target.value })}
             />
           </label>
@@ -233,25 +233,25 @@ export default function ScheduledDraftCard({
         <div className="grid gap-[12px]">
           <div className={CHAT_DRAFT_META_GRID_CLASS}>
             <div className={CHAT_DRAFT_META_ITEM_CLASS}>
-              <span>计划</span>
+              <span>計劃</span>
               <strong>{formatDraftSchedule(displayDraft)}</strong>
             </div>
             <div className={CHAT_DRAFT_META_ITEM_CLASS}>
-              <span>类型</span>
+              <span>類型</span>
               <strong>{scheduleTypeLabel(displayDraft.schedule_type)}</strong>
             </div>
             <div className={CHAT_DRAFT_META_ITEM_CLASS}>
-              <span>时区</span>
+              <span>時區</span>
               <strong>{displayDraft.timezone || currentTimezone}</strong>
             </div>
           </div>
           <div className={CHAT_DRAFT_PROMPT_CLASS}>
-            <span>执行内容</span>
+            <span>執行內容</span>
             <p>{displayDraft.prompt}</p>
           </div>
           {displayDraft.description && (
             <div className={CHAT_DRAFT_PROMPT_CLASS}>
-              <span>说明</span>
+              <span>說明</span>
               <p>{displayDraft.description}</p>
             </div>
           )}
@@ -260,7 +260,7 @@ export default function ScheduledDraftCard({
       {!created && (
         <div className={CHAT_DRAFT_FOOTER_CLASS}>
           {editing && <Button size="sm" variant="ghost" onClick={onDismiss}>忽略</Button>}
-          <Button size="sm" onClick={confirmDraft}>确认创建</Button>
+          <Button size="sm" onClick={confirmDraft}>確認創建</Button>
         </div>
       )}
     </div>

@@ -370,8 +370,8 @@ class LLMClient:
                     "previous_output": _preview(text),
                     "parser_error": str(exc),
                     "instruction": (
-                        "上一轮输出不是合法 JSON。请基于原始任务上下文重新输出完整、可解析的 JSON object。"
-                        "字符串内部的双引号必须转义；不要输出 Markdown、解释、代码块或额外文本。"
+                        "上一輪輸出不是合法 JSON。請基於原始任務上下文重新輸出完整、可解析的 JSON object。"
+                        "字符串內部的雙引號必須轉義；不要輸出 Markdown、解釋、代碼塊或額外文本。"
                     ),
                 }
         previews = "; ".join(
@@ -526,7 +526,7 @@ def _request_messages(
             and not isinstance(serialized_payload, _CurrentStageText)
         ):
             current_input = (
-                "本轮输入（仅用于当前调用，不写入对话历史）：\n"
+                "本輪輸入（僅用於當前調用，不寫入對話歷史）：\n"
                 f"{serialized_payload}"
             )
         messages.append(
@@ -596,7 +596,7 @@ def _request_tokens(messages: list[dict[str, Any]]) -> int:
 def _is_history_summary_message(message: dict[str, Any]) -> bool:
     content = _content_text(message.get("content")).lstrip()
     return content.startswith(
-        ("历史的信息可以被总结为：", "近期的历史信息总结为：")
+        ("歷史的信息可以被總結為：", "近期的歷史信息總結為：")
     )
 
 
@@ -676,7 +676,7 @@ def _trim_request_text(text: str, byte_budget: int) -> str:
     encoded = text.encode("utf-8")
     if len(encoded) <= byte_budget:
         return text
-    marker = "\n...<输入超过 32k，已省略中间部分>...\n"
+    marker = "\n...<輸入超過 32k，已省略中間部分>...\n"
     marker_bytes = len(marker.encode("utf-8"))
     available = max(8, byte_budget - marker_bytes)
     head_size = int(available * 0.7)
@@ -1062,7 +1062,7 @@ def _project_context_messages(
                 {
                     "role": role,
                     "content": [
-                        {"type": "text", "text": content or "（用户上传了图片附件）"},
+                        {"type": "text", "text": content or "（用戶上傳了圖片附件）"},
                         *images,
                     ],
                 }
@@ -1155,7 +1155,7 @@ def _project_messages_from_context(context: Any) -> list[dict[str, Any]]:
                 {
                     "role": role,
                     "content": [
-                        {"type": "text", "text": content or "（用户上传了图片附件）"},
+                        {"type": "text", "text": content or "（用戶上傳了圖片附件）"},
                         *images,
                     ],
                 }

@@ -73,7 +73,7 @@ export default function EmployeeAvatar({
     <span
       className={className_}
       style={boxStyle}
-      aria-label={`${profile.avatarText || '员'}员工头像`}
+      aria-label={`${profile.avatarText || '員'}員工頭像`}
     >
       <img src={employeeAvatarImage(profile)} alt="" style={imageStyle} />
     </span>

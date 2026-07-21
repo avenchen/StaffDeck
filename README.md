@@ -15,7 +15,7 @@
   <br/>
 </p>
 
-**English** | [简体中文](./README.zh.md)
+**English** | [簡體中文](./README.zh.md)
 </div>
 
 ## News
@@ -220,9 +220,9 @@ Roadmap priorities are driven by real deployment needs. Please open an [Issue](h
 <td width="33%" align="center"><b>Discord Community</b></td>
 </tr>
 <tr>
-<td align="center"><img src="packaging/assets/qr-wechat.png" width="200" alt="微信二维码"/></td>
-<td align="center"><img src="packaging/assets/qr-feishu.jpg" width="200" alt="飞书二维码"/></td>
-<td align="center"><img src="packaging/assets/qr-discord.png" width="200" alt="Discord 二维码"/></td>
+<td align="center"><img src="packaging/assets/qr-wechat.png" width="200" alt="微信二維碼"/></td>
+<td align="center"><img src="packaging/assets/qr-feishu.jpg" width="200" alt="飛書二維碼"/></td>
+<td align="center"><img src="packaging/assets/qr-discord.png" width="200" alt="Discord 二維碼"/></td>
 </tr>
 </table>
 

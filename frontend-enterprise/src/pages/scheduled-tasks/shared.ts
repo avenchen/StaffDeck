@@ -6,13 +6,13 @@ export const ENTERPRISE_AGENT_STORAGE_KEY = 'ultrarag_enterprise_agent_scope';
 export const TASK_PAGE_SIZE = 10;
 
 export const WEEKDAY_OPTIONS = [
-  { label: '周一', value: 0 },
-  { label: '周二', value: 1 },
-  { label: '周三', value: 2 },
-  { label: '周四', value: 3 },
-  { label: '周五', value: 4 },
-  { label: '周六', value: 5 },
-  { label: '周日', value: 6 },
+  { label: '週一', value: 0 },
+  { label: '週二', value: 1 },
+  { label: '週三', value: 2 },
+  { label: '週四', value: 3 },
+  { label: '週五', value: 4 },
+  { label: '週六', value: 5 },
+  { label: '週日', value: 6 },
 ];
 
 export type TaskFormValues = {
@@ -48,13 +48,13 @@ export const TASK_FILTER_TABS: UnderlineTabItem<TaskListFilter>[] = [
   { label: '全部', value: 'all' },
   { label: '待完成', value: 'pending' },
   { label: '已完成', value: 'completed' },
-  { label: '已暂停', value: 'paused' },
+  { label: '已暫停', value: 'paused' },
 ];
 export const RUN_FILTER_TABS: UnderlineTabItem<RunListFilter>[] = [
   { label: '全部', value: 'all' },
   { label: '待完成', value: 'pending' },
   { label: '已完成', value: 'completed' },
-  { label: '失败/跳过', value: 'failed' },
+  { label: '失敗/跳過', value: 'failed' },
 ];
 
 const TASK_FILTERS: Record<TaskListFilter, (row: ScheduledTaskRead) => boolean> = {
@@ -87,16 +87,16 @@ export const BADGE_TONE_CLASS: Record<BadgeTone, string> = {
   gray: 'bg-[#f2f3f7] text-[#858b9c]',
 };
 export const TASK_STATUS_BADGE: Record<string, { tone: BadgeTone; text: string }> = {
-  active: { tone: 'blue', text: '启用' },
-  paused: { tone: 'orange', text: '暂停' },
+  active: { tone: 'blue', text: '啟用' },
+  paused: { tone: 'orange', text: '暫停' },
   completed: { tone: 'green', text: '已完成' },
-  archived: { tone: 'gray', text: '已删除' },
+  archived: { tone: 'gray', text: '已刪除' },
 };
 export const RUN_STATUS_BADGE: Record<string, { tone: BadgeTone; text: string }> = {
   succeeded: { tone: 'green', text: '成功' },
-  failed: { tone: 'red', text: '失败' },
-  running: { tone: 'blue', text: '执行中' },
-  skipped: { tone: 'gray', text: '已跳过' },
+  failed: { tone: 'red', text: '失敗' },
+  running: { tone: 'blue', text: '執行中' },
+  skipped: { tone: 'gray', text: '已跳過' },
 };
 
 const SCHEDULE_TYPES = new Set<TaskFormValues['schedule_type']>(['once', 'daily', 'weekly', 'monthly']);
@@ -126,10 +126,10 @@ const SCHEDULE_FORMATTERS: Record<
           .map((item) => WEEKDAY_OPTIONS[Number(item)]?.label)
           .filter(Boolean)
           .join('、')
-      : '周一';
-    return `每周 ${days} ${schedule.time || '09:00'}`;
+      : '週一';
+    return `每週 ${days} ${schedule.time || '09:00'}`;
   },
-  monthly: (_row, schedule) => `每月 ${schedule.day_of_month || 1} 号 ${schedule.time || '09:00'}`,
+  monthly: (_row, schedule) => `每月 ${schedule.day_of_month || 1} 號 ${schedule.time || '09:00'}`,
   daily: (_row, schedule) => `每天 ${schedule.time || '09:00'}`,
 };
 
@@ -173,5 +173,5 @@ export function formatSchedule(row: ScheduledTaskRead): string {
 }
 
 export function formatTime(value?: string): string {
-  return formatClientDateTime(value, '暂无');
+  return formatClientDateTime(value, '暫無');
 }

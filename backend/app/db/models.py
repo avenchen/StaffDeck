@@ -448,7 +448,7 @@ class MCPServer(SQLModel, table=True):
     display_name: Optional[str] = None
     description: Optional[str] = None
     bucket: str = Field(default="MCP 工具", index=True)
-    # 连接方式：stdio / streamable_http / sse / builtin
+    # 連接方式：stdio / streamable_http / sse / builtin
     transport: str = Field(default="streamable_http", index=True)
     # streamable_http / sse 使用
     url: Optional[str] = None
@@ -458,7 +458,7 @@ class MCPServer(SQLModel, table=True):
     args_json: list[str] = Field(default_factory=list, sa_column=Column(JSON))
     env_json: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
     cwd: Optional[str] = None
-    # 最近一次发现的原始工具定义（预览/审计用）
+    # 最近一次發現的原始工具定義（預覽/審計用）
     discovered_tools_json: list[dict[str, Any]] = Field(default_factory=list, sa_column=Column(JSON))
     last_synced_at: Optional[datetime] = None
     enabled: bool = True

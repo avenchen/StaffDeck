@@ -67,16 +67,16 @@ SEARCH_MIN_CHUNK_SCORE = 2.0
 SEARCH_MIN_EVIDENCE_SCORE = 2.0
 
 INGEST_STAGES: list[dict[str, Any]] = [
-    {"key": "queued", "label": "排队中", "progress": 0.0},
-    {"key": "parsing", "label": "解析原始资料", "progress": 0.08},
-    {"key": "normalizing", "label": "规范化 Source", "progress": 0.16},
-    {"key": "documenting", "label": "写入 Source Document", "progress": 0.24},
-    {"key": "bucketing", "label": "规划 Wiki 页面", "progress": 0.36},
-    {"key": "bucket_writing", "label": "写入 OKF Wiki", "progress": 0.48},
-    {"key": "chunking", "label": "生成引用来源", "progress": 0.62},
+    {"key": "queued", "label": "排隊中", "progress": 0.0},
+    {"key": "parsing", "label": "解析原始資料", "progress": 0.08},
+    {"key": "normalizing", "label": "規範化 Source", "progress": 0.16},
+    {"key": "documenting", "label": "寫入 Source Document", "progress": 0.24},
+    {"key": "bucketing", "label": "規劃 Wiki 頁面", "progress": 0.36},
+    {"key": "bucket_writing", "label": "寫入 OKF Wiki", "progress": 0.48},
+    {"key": "chunking", "label": "生成引用來源", "progress": 0.62},
     {"key": "summarizing", "label": "刷新 PageIndex", "progress": 0.74},
-    {"key": "discovering", "label": "发现 SOP/工具", "progress": 0.88},
-    {"key": "done", "label": "完成入库", "progress": 1.0},
+    {"key": "discovering", "label": "發現 SOP/工具", "progress": 0.88},
+    {"key": "done", "label": "完成入庫", "progress": 1.0},
 ]
 
 INGEST_STAGE_BY_KEY = {stage["key"]: stage for stage in INGEST_STAGES}
@@ -129,15 +129,15 @@ class KnowledgeService:
         if job.status in TERMINAL_INGEST_STATUSES:
             return job
         if job.status == "queued":
-            self._finalize_cancelled_job(job, "入库任务已取消")
+            self._finalize_cancelled_job(job, "入庫任務已取消")
             return job
         if job.status == "cancel_requested":
-            self._finalize_cancelled_job(job, "入库任务已取消")
+            self._finalize_cancelled_job(job, "入庫任務已取消")
             return job
 
         metadata = dict(job.metadata_json or {})
         metadata["stage_label"] = "取消中"
-        metadata["stage_detail"] = "已收到取消请求，正在停止当前入库阶段"
+        metadata["stage_detail"] = "已收到取消請求，正在停止當前入庫階段"
         metadata["cancel_requested_at"] = utc_now().isoformat()
         metadata["ingest_steps"] = _ingest_steps_for(job.stage, float(job.progress or 0.0), "cancel_requested")
         job.metadata_json = metadata
@@ -170,7 +170,7 @@ class KnowledgeService:
         last_update = job.updated_at or job.created_at
         if utc_now() - last_update < grace_period:
             return None
-        self._finalize_cancelled_job(job, "入库任务已取消")
+        self._finalize_cancelled_job(job, "入庫任務已取消")
         return job
 
     def run_ingest_job(self, job_id: str) -> None:
@@ -188,7 +188,7 @@ class KnowledgeService:
                 "parsing",
                 status="running",
                 started_at=utc_now(),
-                detail="正在识别文件格式并抽取正文",
+                detail="正在識別文件格式並抽取正文",
             )
             metadata = job.metadata_json or {}
             content = base64.b64decode(str(metadata.get("content_base64") or ""))
@@ -201,13 +201,13 @@ class KnowledgeService:
             )
             normalized_text = _normalize_text(text)
             if not normalized_text:
-                raise KnowledgeParseError("文档没有可用文本内容。")
+                raise KnowledgeParseError("文檔沒有可用文本內容。")
             self._raise_if_ingest_cancelled(job)
 
             self._update_ingest_stage(
                 job,
                 "documenting",
-                detail=f"已获得 {len(normalized_text):,} 字符，正在识别章节导航树",
+                detail=f"已獲得 {len(normalized_text):,} 字符，正在識別章節導航樹",
                 stats={"char_count": len(normalized_text), "file_type": file_type},
             )
             section_nodes = _build_section_nodes(normalized_text)
@@ -248,7 +248,7 @@ class KnowledgeService:
             self._update_ingest_stage(
                 job,
                 "bucketing",
-                detail="正在按目录结构、章节语义和任务用途规划 OKF Wiki 页面",
+                detail="正在按目錄結構、章節語義和任務用途規劃 OKF Wiki 頁面",
                 document_id=document.id,
                 stats={"section_count": len(section_nodes)},
             )
@@ -265,13 +265,13 @@ class KnowledgeService:
             self._update_ingest_stage(
                 job,
                 "bucket_writing",
-                detail=f"已规划 {len(buckets)} 个知识主题，正在写入 OKF Wiki 与内部索引",
+                detail=f"已規劃 {len(buckets)} 個知識主題，正在寫入 OKF Wiki 與內部索引",
                 stats={"bucket_count": len(buckets), "section_count": len(section_nodes)},
             )
             self._update_ingest_stage(
                 job,
                 "chunking",
-                detail="正在从 OKF Wiki 与原始资料回填引用来源",
+                detail="正在從 OKF Wiki 與原始資料回填引用來源",
                 stats={"bucket_count": len(buckets)},
             )
             chunk_count = self._build_chunks(job.tenant_id, job.knowledge_base_id, document, buckets, section_nodes, job)
@@ -316,13 +316,13 @@ class KnowledgeService:
             self._update_ingest_stage(
                 job,
                 "summarizing",
-                detail=f"已生成 {chunk_count} 个引用来源，正在刷新 PageIndex 与来源摘要",
+                detail=f"已生成 {chunk_count} 個引用來源，正在刷新 PageIndex 與來源摘要",
                 stats={"concept_count": len(concept_rows), "bucket_count": len(buckets), "chunk_count": chunk_count},
             )
             self._update_ingest_stage(
                 job,
                 "discovering",
-                detail="正在从 OKF Wiki 和引用来源发现可确认的 SOP/工具建议",
+                detail="正在從 OKF Wiki 和引用來源發現可確認的 SOP/工具建議",
                 stats={"bucket_count": len(buckets), "chunk_count": chunk_count},
             )
 
@@ -332,7 +332,7 @@ class KnowledgeService:
                 "done",
                 status="succeeded",
                 finished_at=utc_now(),
-                detail=f"完成入库：{len(concept_rows)} 个 Wiki 页面，{len(buckets)} 个内部索引，{chunk_count} 个引用来源",
+                detail=f"完成入庫：{len(concept_rows)} 個 Wiki 頁面，{len(buckets)} 個內部索引，{chunk_count} 個引用來源",
                 stats={
                     "concept_count": len(concept_rows),
                     "bucket_count": len(buckets),
@@ -341,7 +341,7 @@ class KnowledgeService:
             )
             self._clear_embedded_content(job)
         except KnowledgeIngestCancelled as exc:
-            self._finalize_cancelled_job(job, str(exc) or "入库任务已取消")
+            self._finalize_cancelled_job(job, str(exc) or "入庫任務已取消")
         except Exception as exc:  # noqa: BLE001 - persist stable job failure.
             if job.document_id:
                 document = self.db.get(KnowledgeDocument, job.document_id)
@@ -377,7 +377,7 @@ class KnowledgeService:
             return KnowledgeSearchResponse()
         route_trace: list[dict[str, Any]] = []
         if request.agent_id and not request.knowledge_base_ids and not request.knowledge_base_version_ids:
-            route_trace.append({"phase": "no_visible_knowledge", "message": "当前智能体没有可见知识"})
+            route_trace.append({"phase": "no_visible_knowledge", "message": "當前智能體沒有可見知識"})
             return KnowledgeSearchResponse(trace=route_trace, route_trace=route_trace)
 
         with observed_span("knowledge_span", "knowledge.load_concepts") as span:
@@ -394,7 +394,7 @@ class KnowledgeService:
             route_trace.append(
                 {
                     "phase": "okf_concept_route",
-                    "message": "正在选择 OKF Wiki 页面",
+                    "message": "正在選擇 OKF Wiki 頁面",
                     "candidate_count": len(concepts),
                     "selected_count": len(selected_concepts),
                 }
@@ -404,10 +404,10 @@ class KnowledgeService:
             documents = self._load_documents_for_search(request)
             span.finish(candidate_count=len(documents))
         if not documents and not selected_concepts:
-            route_trace.append({"phase": "no_documents", "message": "没有可检索的知识文档或 OKF 概念"})
+            route_trace.append({"phase": "no_documents", "message": "沒有可檢索的知識文檔或 OKF 概念"})
             return KnowledgeSearchResponse(trace=route_trace, route_trace=route_trace)
         if not documents:
-            route_trace.append({"phase": "okf_only", "message": "仅命中 OKF Wiki 页面"})
+            route_trace.append({"phase": "okf_only", "message": "僅命中 OKF Wiki 頁面"})
             return KnowledgeSearchResponse(
                 trace=route_trace,
                 route_trace=route_trace,
@@ -418,7 +418,7 @@ class KnowledgeService:
         route_trace.append(
             {
                 "phase": "document_route",
-                "message": "正在选择知识文档",
+                "message": "正在選擇知識文檔",
                 "candidate_count": len(documents),
                 "mode": request.mode,
             }
@@ -439,7 +439,7 @@ class KnowledgeService:
                 route_trace.append(
                     {
                         "phase": "document_route_lexical",
-                        "message": "按检索相关性选择知识文档",
+                        "message": "按檢索相關性選擇知識文檔",
                         "selected_count": len(selected_document_ids),
                     }
                 )
@@ -455,7 +455,7 @@ class KnowledgeService:
         selected_documents = [row for row in documents if row.id in set(selected_document_ids)]
         selected_document_cards = [_document_card_for_search(row) for row in selected_documents]
         if not selected_documents and not selected_concepts:
-            route_trace.append({"phase": "document_route_no_match", "message": "没有足够相关的知识文档"})
+            route_trace.append({"phase": "document_route_no_match", "message": "沒有足夠相關的知識文檔"})
             return KnowledgeSearchResponse(trace=route_trace, route_trace=route_trace)
 
         with observed_span(
@@ -464,7 +464,7 @@ class KnowledgeService:
             buckets = self._load_buckets_for_search(request, selected_document_ids)
             span.finish(candidate_count=len(buckets))
         if not buckets:
-            route_trace.append({"phase": "no_buckets", "message": "所选文档没有可展开的内部索引"})
+            route_trace.append({"phase": "no_buckets", "message": "所選文檔沒有可展開的內部索引"})
             return KnowledgeSearchResponse(
                 trace=route_trace,
                 route_trace=route_trace,
@@ -476,7 +476,7 @@ class KnowledgeService:
         route_trace.append(
             {
                 "phase": "bucket_route",
-                    "message": "正在选择内部索引",
+                    "message": "正在選擇內部索引",
                 "candidate_count": len(buckets),
                 "selected_document_ids": selected_document_ids,
             }
@@ -497,7 +497,7 @@ class KnowledgeService:
                 route_trace.append(
                     {
                         "phase": "bucket_route_lexical",
-                        "message": "按检索相关性选择内部索引",
+                        "message": "按檢索相關性選擇內部索引",
                         "selected_count": len(selected_ids),
                     }
                 )
@@ -506,7 +506,7 @@ class KnowledgeService:
         bucket_by_id = {bucket.id: bucket for bucket in buckets}
         selected_buckets = [bucket_by_id[bucket_id] for bucket_id in selected_ids if bucket_id in bucket_by_id]
         if not selected_buckets and not selected_concepts:
-            route_trace.append({"phase": "bucket_route_no_match", "message": "没有足够相关的内部索引"})
+            route_trace.append({"phase": "bucket_route_no_match", "message": "沒有足夠相關的內部索引"})
             return KnowledgeSearchResponse(
                 trace=route_trace,
                 route_trace=route_trace,
@@ -525,7 +525,7 @@ class KnowledgeService:
         route_trace.append(
             {
                 "phase": "section_expand",
-                "message": "正在展开章节",
+                "message": "正在展開章節",
                 "section_count": len(expanded_sections),
             }
         )
@@ -557,8 +557,8 @@ class KnowledgeService:
             span.finish(evidence_count=len(evidence_pack))
         route_trace.extend(
             [
-                {"phase": "read_chunks", "message": "读取引用来源", "chunk_count": len(ranked_chunks)},
-                {"phase": "evidence_pack", "message": "整理引用来源包", "evidence_count": len(evidence_pack)},
+                {"phase": "read_chunks", "message": "讀取引用來源", "chunk_count": len(ranked_chunks)},
+                {"phase": "evidence_pack", "message": "整理引用來源包", "evidence_count": len(evidence_pack)},
             ]
         )
         return KnowledgeSearchResponse(
@@ -633,7 +633,7 @@ class KnowledgeService:
                 knowledge_base_version_id=document.knowledge_base_version_id,
                 document_id=document.id,
                 bucket_key=str(spec.get("bucket_key") or f"bucket_{index + 1}"),
-                title=str(spec.get("title") or f"知识主题 {index + 1}"),
+                title=str(spec.get("title") or f"知識主題 {index + 1}"),
                 summary=str(spec.get("summary") or content[:300]),
                 token_estimate=max(1, len(content) // 2),
                 metadata_json={
@@ -774,7 +774,7 @@ class KnowledgeService:
             suggestion_type = str(item.get("suggestion_type") or "").strip()
             if suggestion_type not in {"skill", "tool", "warning"}:
                 continue
-            title = str(item.get("title") or "").strip() or "未命名建议"
+            title = str(item.get("title") or "").strip() or "未命名建議"
             row = KnowledgeDiscoverySuggestion(
                 tenant_id=tenant_id,
                 knowledge_base_id=knowledge_base_id,
@@ -934,7 +934,7 @@ class KnowledgeService:
     def _confirm_tool(self, suggestion: KnowledgeDiscoverySuggestion, payload: dict[str, Any]) -> dict[str, Any]:
         name = str(payload.get("name") or payload.get("tool_name") or "").strip()
         if not name:
-            raise ValueError("工具建议缺少 name。")
+            raise ValueError("工具建議缺少 name。")
         existing = self.db.exec(
             select(Tool).where(Tool.tenant_id == suggestion.tenant_id, Tool.name == name)
         ).first()
@@ -949,7 +949,7 @@ class KnowledgeService:
             name=name,
             display_name=_optional_str(payload.get("display_name")) or suggestion.title,
             description=_optional_str(payload.get("description") or suggestion.reason),
-            bucket=str(payload.get("bucket") or "知识自发现工具").strip() or "知识自发现工具",
+            bucket=str(payload.get("bucket") or "知識自發現工具").strip() or "知識自發現工具",
             method=str(payload.get("method") or "POST").upper(),
             url=str(payload.get("url") or ""),
             headers_json=payload.get("headers") if isinstance(payload.get("headers"), dict) else {},
@@ -1015,8 +1015,8 @@ class KnowledgeService:
         row = KnowledgeBase(
             id=f"kb_{tenant_id}_default",
             tenant_id=tenant_id,
-            name="默认知识库",
-            description="系统默认知识库",
+            name="默認知識庫",
+            description="系統默認知識庫",
             status="active",
         )
         self.db.add(row)
@@ -1035,7 +1035,7 @@ class KnowledgeService:
     def _raise_if_ingest_cancelled(self, job: KnowledgeIngestJob) -> None:
         self.db.refresh(job)
         if job.status in CANCELLING_INGEST_STATUSES:
-            raise KnowledgeIngestCancelled("入库任务已取消")
+            raise KnowledgeIngestCancelled("入庫任務已取消")
 
     def _finalize_cancelled_job(self, job: KnowledgeIngestJob, detail: str) -> None:
         cancelled_document_id = job.document_id
@@ -1362,14 +1362,14 @@ def _build_section_nodes(text: str) -> list[dict[str, Any]]:
             continue
 
         if current is None:
-            current = start_section(f"段落组 {len(nodes) + 1}", 1, index)
+            current = start_section(f"段落組 {len(nodes) + 1}", 1, index)
             current_parts = []
             current_start = index
 
         projected = sum(len(part) for part in current_parts) + len(paragraph)
         if current_parts and projected > SECTION_TARGET_CHARS:
             parent_id = str(current.get("parent_id") or "")
-            title = str(current.get("title") or f"段落组 {len(nodes) + 1}")
+            title = str(current.get("title") or f"段落組 {len(nodes) + 1}")
             level = int(current.get("level") or 1)
             flush(index - 1)
             current = start_section(title, level, index, parent_id or None)
@@ -1427,7 +1427,7 @@ def _heading_info(text: str) -> tuple[int, str] | None:
     markdown = re.match(r"^(#{1,6})\s+(.+)$", stripped)
     if markdown:
         return len(markdown.group(1)), markdown.group(2).strip()
-    chapter = re.match(r"^第[一二三四五六七八九十百千万0-9]+[章节篇部分]\s*[：:\-、]?\s*(.+)?$", stripped)
+    chapter = re.match(r"^第[一二三四五六七八九十百千萬0-9]+[章節篇部分]\s*[：:\-、]?\s*(.+)?$", stripped)
     if chapter:
         return 1, (chapter.group(1) or stripped).strip()
     numbered = re.match(r"^(\d+(?:\.\d+){0,4})[、.\s]+(.{2,80})$", stripped)
@@ -1485,8 +1485,8 @@ def _structure_bucket_specs(section_nodes: list[dict[str, Any]]) -> list[dict[st
         return []
     top_groups: dict[str, list[dict[str, Any]]] = {}
     for node in section_nodes:
-        path = str(node.get("path") or node.get("title") or "未命名章节")
-        top = path.split(" / ")[0].strip() or "未命名章节"
+        path = str(node.get("path") or node.get("title") or "未命名章節")
+        top = path.split(" / ")[0].strip() or "未命名章節"
         top_groups.setdefault(top, []).append(node)
     specs: list[dict[str, Any]] = []
     for index, (title, nodes) in enumerate(top_groups.items()):
@@ -1525,7 +1525,7 @@ def _normalize_llm_bucket_specs(
             ]
         nodes = [section_by_id[section_id] for section_id in section_ids if section_id in section_by_id]
         content = "\n\n".join(str(node.get("content") or "") for node in nodes)
-        title = str(item.get("title") or f"任务桶 {index + 1}")
+        title = str(item.get("title") or f"任務桶 {index + 1}")
         specs.append(
             {
                 "bucket_key": str(item.get("bucket_key") or _safe_key(title, f"task_{index + 1}")),
@@ -1740,7 +1740,7 @@ def _build_evidence_pack(query: str, chunks: list[KnowledgeChunk]) -> list[dict[
                 "content": chunk.content[:CITATION_EXCERPT_CHAR_LIMIT],
                 "excerpt": chunk.content[:CITATION_EXCERPT_CHAR_LIMIT],
                 "relevance_score": round(score, 2),
-                "confidence_reason": "引用来源摘要、章节路径或正文与查询相关",
+                "confidence_reason": "引用來源摘要、章節路徑或正文與查詢相關",
             }
         )
     return evidence
@@ -1789,7 +1789,7 @@ def _collect_section_with_children(
         "summary": node.get("summary"),
         "level": node.get("level"),
         "source_span": node.get("source_span") or {},
-        "reason": f"命中内部索引：{reason}",
+        "reason": f"命中內部索引：{reason}",
     }
     if max_depth <= 0:
         return
@@ -1849,7 +1849,7 @@ def _score_text(query: str, text: str) -> float:
 
 def _guess_title(section: str, index: int) -> str:
     first_line = next((line.strip("# ").strip() for line in section.splitlines() if line.strip()), "")
-    return first_line[:60] if first_line else f"知识主题 {index + 1}"
+    return first_line[:60] if first_line else f"知識主題 {index + 1}"
 
 
 def _optional_str(value: Any) -> str | None:

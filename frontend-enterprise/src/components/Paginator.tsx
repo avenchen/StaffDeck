@@ -73,7 +73,7 @@ export function Paginator({
             className={ARROW_CLASS}
             disabled={page <= 1}
             onClick={() => goTo(page - 1)}
-            aria-label="上一页"
+            aria-label="上一頁"
           >
             <ChevronLeftIcon className="size-[14px]" />
           </button>
@@ -112,7 +112,7 @@ export function Paginator({
             className={ARROW_CLASS}
             disabled={page >= pageCount}
             onClick={() => goTo(page + 1)}
-            aria-label="下一页"
+            aria-label="下一頁"
           >
             <ChevronRightIcon className="size-[14px]" />
           </button>

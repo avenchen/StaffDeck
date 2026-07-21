@@ -656,7 +656,7 @@ def run_general_skill_stream(
                     yield _sse(
                         "error",
                         {
-                            "message": "通用技能运行超时，请检查模型配置或稍后重试。",
+                            "message": "通用技能運行超時，請檢查模型配置或稍後重試。",
                             "code": "general_skill_stream_timeout",
                         },
                     )
@@ -965,7 +965,7 @@ def _source_name(source: str) -> str:
     cleaned = path.rstrip("/").rsplit("/", 1)[-1].removesuffix(".zip").removesuffix(".md")
     if cleaned.startswith("upload:"):
         cleaned = cleaned.removeprefix("upload:")
-    return cleaned or "开源平台通用技能"
+    return cleaned or "開源平臺通用技能"
 
 
 def _clean_source_filename(filename: str) -> str:
@@ -1006,7 +1006,7 @@ def _load_clawhub_source(source: str) -> list[GeneralSkillFile]:
         return _load_remote_skill_source(f"https://github.com/{cleaned}")
     raise HTTPException(
         status_code=400,
-        detail="开源平台来源必须是开源平台 slug、GitHub URL、raw SKILL.md URL、zip URL 或 owner/repo 路径",
+        detail="開源平臺來源必須是開源平臺 slug、GitHub URL、raw SKILL.md URL、zip URL 或 owner/repo 路徑",
     )
 
 
@@ -1097,8 +1097,8 @@ def _load_remote_skill_source(url: str, visited: set[str] | None = None) -> list
         raise HTTPException(
             status_code=400,
             detail=(
-                "开源平台页面没有暴露可下载的技能包或 GitHub 目录。"
-                "HTML 页面不会被当作 SKILL.md 导入。"
+                "開源平臺頁面沒有暴露可下載的技能包或 GitHub 目錄。"
+                "HTML 頁面不會被當作 SKILL.md 導入。"
             ),
         )
     if _looks_like_markdown_source(parsed.path, lower_content_type):

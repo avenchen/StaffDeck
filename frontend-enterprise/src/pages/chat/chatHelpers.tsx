@@ -50,10 +50,10 @@ const DRAFT_SCHEDULE_TYPES = new Set<DraftScheduleType>(['once', 'daily', 'weekl
 const DRAFT_SCHEDULE_TYPE_LABELS: Record<DraftScheduleType, string> = {
   once: '一次性',
   daily: '每天',
-  weekly: '每周',
+  weekly: '每週',
   monthly: '每月',
 };
-const DRAFT_WEEKDAY_LABELS = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+const DRAFT_WEEKDAY_LABELS = ['週一', '週二', '週三', '週四', '週五', '週六', '週日'];
 
 export function sessionReadStorageKey(userId: string): string {
   return `${SESSION_READ_STORAGE_PREFIX}:${userId || 'anonymous'}`;
@@ -114,7 +114,7 @@ export function modelDisplayName(model: { name?: string; model?: string }): stri
 
 export function modelDetailText(model: { name?: string; model?: string; provider?: string; is_default?: boolean }): string {
   const detail = model.model && model.model !== model.name ? model.model : model.provider || '';
-  return model.is_default ? `${detail} · 默认` : detail;
+  return model.is_default ? `${detail} · 默認` : detail;
 }
 
 export function normalizeMessageText(value?: string): string {
@@ -168,7 +168,7 @@ export function renderInlineMarkdown(text: string, keyPrefix: string): ReactNode
     } else {
       const image = token.match(/^!\[([^\]]*)\]\(([^\)\n]+)\)$/);
       if (image) {
-        nodes.push(<span key={key}>{image[1] || '图片'}</span>);
+        nodes.push(<span key={key}>{image[1] || '圖片'}</span>);
         cursor = match.index + token.length;
         index += 1;
         continue;
@@ -934,9 +934,9 @@ export function computeMergedMessages(slot: SessionSlot, activeTurnId?: string |
 function publicStreamPhase(data: Record<string, unknown>): string {
   const phase = typeof data.phase === 'string' ? data.phase : '';
   const text = typeof data.text === 'string' ? data.text : '';
-  if (phase === 'error') return text || '请求失败';
+  if (phase === 'error') return text || '請求失敗';
   if (phase === 'preparing') return text || '正在整理上下文';
-  if (phase === 'scheduled_task_draft') return text || '生成定时任务草案';
+  if (phase === 'scheduled_task_draft') return text || '生成定時任務草案';
   if (isKnowledgeTracePhase(phase)) return text || knowledgeTraceText(data);
   return '正在思考';
 }
@@ -1013,7 +1013,7 @@ export function knowledgeTraceText(data: Record<string, unknown>): string {
     : typeof data.text === 'string'
       ? data.text
       : '';
-  if (!raw) return '检索知识库';
+  if (!raw) return '檢索知識庫';
   return raw;
 }
 
@@ -1030,11 +1030,11 @@ export function knowledgeTraceLineId(data: Record<string, unknown>): string {
 export function knowledgeTraceDetail(data: Record<string, unknown>): string | undefined {
   const query = isPlainRecord(data.query) && typeof data.query.query === 'string' ? data.query.query : '';
   const parts = [
-    query ? `查询：${query}` : '',
-    typeof data.selected_count === 'number' ? `命中知识图谱 ${data.selected_count} 个` : '',
-    typeof data.candidate_count === 'number' ? `候选 ${data.candidate_count} 个` : '',
-    typeof data.chunk_count === 'number' ? `读取 ${data.chunk_count} 个片段` : '',
-    typeof data.evidence_count === 'number' ? `整理 ${data.evidence_count} 条证据` : '',
+    query ? `查詢：${query}` : '',
+    typeof data.selected_count === 'number' ? `命中知識圖譜 ${data.selected_count} 個` : '',
+    typeof data.candidate_count === 'number' ? `候選 ${data.candidate_count} 個` : '',
+    typeof data.chunk_count === 'number' ? `讀取 ${data.chunk_count} 個片段` : '',
+    typeof data.evidence_count === 'number' ? `整理 ${data.evidence_count} 條證據` : '',
   ].filter(Boolean);
   return parts.length ? parts.join(' · ') : undefined;
 }
@@ -1044,9 +1044,9 @@ export function knowledgeResultTraceDetail(data: Record<string, unknown>): strin
   const chunks = Array.isArray(data.chunks) ? data.chunks.length : 0;
   const evidence = Array.isArray(data.evidence_pack) ? data.evidence_pack.length : 0;
   const parts = [
-    concepts ? `命中知识图谱 ${concepts} 个` : '',
-    chunks ? `读取 ${chunks} 个片段` : '',
-    evidence ? `生成 ${evidence} 条引用候选` : '',
+    concepts ? `命中知識圖譜 ${concepts} 個` : '',
+    chunks ? `讀取 ${chunks} 個片段` : '',
+    evidence ? `生成 ${evidence} 條引用候選` : '',
   ].filter(Boolean);
   return parts.length ? parts.join(' · ') : undefined;
 }
@@ -1065,21 +1065,21 @@ export function normalizeTraceSkill(value: unknown): TraceSkill | null {
 }
 
 export function streamSkillLabel(data: Record<string, unknown>, skill: TraceSkill): string {
-  if (skill.state === 'suspended') return '挂起SOP';
+  if (skill.state === 'suspended') return '掛起SOP';
   if (skill.state === 'pending') return '等待SOP';
   const decision = typeof data.runtimeDecision === 'string' ? data.runtimeDecision : '';
   const fromSkillId = typeof data.fromSkillId === 'string' ? data.fromSkillId : '';
   const toSkillId = typeof data.toSkillId === 'string' ? data.toSkillId : '';
-  if (decision === 'start_skill' || decision === 'start_new_task') return '选择SOP';
-  if (decision === 'suspend_current_and_start_new_skill') return '切换SOP';
+  if (decision === 'start_skill' || decision === 'start_new_task') return '選擇SOP';
+  if (decision === 'suspend_current_and_start_new_skill') return '切換SOP';
   if (
     (decision === 'answer_related_question_then_resume' || decision === 'answer_chitchat_then_resume')
     && fromSkillId
     && toSkillId
     && fromSkillId !== toSkillId
-  ) return '切换SOP';
-  if (decision === 'exit_current_skill') return '恢复SOP';
-  return '推进SOP';
+  ) return '切換SOP';
+  if (decision === 'exit_current_skill') return '恢復SOP';
+  return '推進SOP';
 }
 
 export function normalizeTraceTool(value: unknown): TraceTool | null {
@@ -1122,18 +1122,18 @@ export function reflectionTraceDetail(data: Record<string, unknown>): string | u
     typeof data.reason === 'string' ? data.reason : '',
     typeof data.target_tool_name === 'string' ? `工具 ${data.target_tool_name}` : '',
     typeof data.target_skill_id === 'string' ? `SOP ${data.target_skill_id}` : '',
-    typeof data.target_step_id === 'string' ? `步骤 ${data.target_step_id}` : '',
+    typeof data.target_step_id === 'string' ? `步驟 ${data.target_step_id}` : '',
   ].filter(Boolean);
   return parts.length > 0 ? parts.join(' · ') : undefined;
 }
 
 function streamErrorText(data: Record<string, unknown>, eventName: string): string {
   const code = typeof data.code === 'string' ? data.code.trim() : '';
-  if (code === 'LLM_ERROR') return '模型调用失败';
-  if (eventName === 'stream_interrupted') return '响应生成中断';
-  if (code) return `执行失败 ${code}`;
+  if (code === 'LLM_ERROR') return '模型調用失敗';
+  if (eventName === 'stream_interrupted') return '響應生成中斷';
+  if (code) return `執行失敗 ${code}`;
   const errorType = typeof data.error_type === 'string' ? data.error_type.trim() : '';
-  return errorType ? `执行失败 ${errorType}` : '执行失败';
+  return errorType ? `執行失敗 ${errorType}` : '執行失敗';
 }
 
 function streamErrorDetail(data: Record<string, unknown>): string | undefined {
@@ -1168,13 +1168,13 @@ export function routerDecisionTraceLine(data: Record<string, unknown>): TraceLin
   const skillId = typeof data.target_skill_id === 'string' ? data.target_skill_id.trim() : '';
   const stepId = typeof data.target_step_id === 'string' ? data.target_step_id.trim() : '';
   const reason = typeof data.reason === 'string' ? data.reason.trim() : '';
-  const detail = [reason, skillId ? `目标SOP ${skillId}` : '', stepId ? `目标节点 ${stepId}` : '']
+  const detail = [reason, skillId ? `目標SOP ${skillId}` : '', stepId ? `目標節點 ${stepId}` : '']
     .filter(Boolean)
     .join(' · ');
   return {
     id: 'decision_router',
     kind: 'decision',
-    text: intent ? `判断意图 ${intent}` : decision ? `判断意图 ${decision}` : '判断意图',
+    text: intent ? `判斷意圖 ${intent}` : decision ? `判斷意圖 ${decision}` : '判斷意圖',
     detail: detail || undefined,
     state: 'completed',
     icon: 'judge',
@@ -1189,8 +1189,8 @@ export function stepResultTraceLine(data: Record<string, unknown>): TraceLine {
   const toolName = typeof toolCall?.name === 'string' ? toolCall.name.trim() : '';
   const knowledgeQueryText = typeof knowledgeQuery?.query === 'string' ? knowledgeQuery.query.trim() : '';
   const detail = [
-    nextStepId ? `下一节点 ${nextStepId}` : '',
-    knowledgeQueryText ? `查询：${knowledgeQueryText}` : '',
+    nextStepId ? `下一節點 ${nextStepId}` : '',
+    knowledgeQueryText ? `查詢：${knowledgeQueryText}` : '',
     !toolName && !knowledgeQueryText && reply ? reply.slice(0, 80) : '',
   ].filter(Boolean).join(' · ');
 
@@ -1198,7 +1198,7 @@ export function stepResultTraceLine(data: Record<string, unknown>): TraceLine {
     return {
       id: `decision_step_tool_${toolName}`,
       kind: 'decision',
-      text: `决定调用工具 ${toolName}`,
+      text: `決定調用工具 ${toolName}`,
       detail: detail || undefined,
       state: 'running',
       icon: 'tool',
@@ -1208,7 +1208,7 @@ export function stepResultTraceLine(data: Record<string, unknown>): TraceLine {
     return {
       id: 'decision_step_knowledge',
       kind: 'decision',
-      text: '决定查询知识库',
+      text: '決定查詢知識庫',
       detail: detail || undefined,
       state: 'running',
       icon: 'advance',
@@ -1217,7 +1217,7 @@ export function stepResultTraceLine(data: Record<string, unknown>): TraceLine {
   return {
     id: 'decision_step_result',
     kind: 'decision',
-    text: nextStepId ? '决定下一步' : '完成步骤判断',
+    text: nextStepId ? '決定下一步' : '完成步驟判斷',
     detail: detail || undefined,
     state: 'completed',
     icon: 'advance',
@@ -1326,11 +1326,11 @@ export function generalSkillTraceOutput(data: Record<string, unknown>, phase: st
 } {
   if (phase === 'stdout_chunk') {
     const output = formatTracePayload(accumulatedText || data.stdout_preview || data.text);
-    return output ? { output, language: tracePayloadLanguage(output), title: '查看运行输出' } : {};
+    return output ? { output, language: tracePayloadLanguage(output), title: '查看運行輸出' } : {};
   }
   if (phase === 'stderr_chunk') {
     const output = formatTracePayload(accumulatedText || data.stderr_preview || data.text);
-    return output ? { output, language: tracePayloadLanguage(output), title: '查看错误输出' } : {};
+    return output ? { output, language: tracePayloadLanguage(output), title: '查看錯誤輸出' } : {};
   }
   if (phase === 'code_finished' || phase === 'code_timeout') {
     const result: Record<string, unknown> = {};
@@ -1341,7 +1341,7 @@ export function generalSkillTraceOutput(data: Record<string, unknown>, phase: st
     const output = Object.keys(result).length > 0
       ? formatTracePayload(result)
       : formatTracePayload(data.stdout_preview || data.stderr_preview || data.text);
-    return output ? { output, language: tracePayloadLanguage(output), title: phase === 'code_timeout' ? '查看超时结果' : '查看执行结果' } : {};
+    return output ? { output, language: tracePayloadLanguage(output), title: phase === 'code_timeout' ? '查看超時結果' : '查看執行結果' } : {};
   }
   if (phase.startsWith('reflection_')) {
     const result: Record<string, unknown> = {};
@@ -1350,7 +1350,7 @@ export function generalSkillTraceOutput(data: Record<string, unknown>, phase: st
     if (typeof data.stdout_preview === 'string' && data.stdout_preview.trim()) result.stdout = data.stdout_preview;
     if (typeof data.stderr_preview === 'string' && data.stderr_preview.trim()) result.stderr = data.stderr_preview;
     const output = Object.keys(result).length > 0 ? formatTracePayload(result) : '';
-    return output ? { output, language: tracePayloadLanguage(output), title: '查看校验详情' } : {};
+    return output ? { output, language: tracePayloadLanguage(output), title: '查看校驗詳情' } : {};
   }
   return {};
 }
@@ -1367,17 +1367,17 @@ export function traceLineAllowed(line: TraceLine, config: UIConfigRead): boolean
 export function traceSummary(trace: TurnTrace, lines: TraceLine[]): { text: string; state: TraceLine['state'] } {
   if (trace.completedAt) {
     if (lines.some((line) => line.state === 'failed')) {
-      return { text: '执行遇到问题', state: 'failed' };
+      return { text: '執行遇到問題', state: 'failed' };
     }
-    return { text: '执行记录', state: 'completed' };
+    return { text: '執行記錄', state: 'completed' };
   }
   if (lines.some((line) => line.state === 'running')) {
-    return { text: '执行记录', state: 'running' };
+    return { text: '執行記錄', state: 'running' };
   }
   if (lines.some((line) => line.state === 'failed')) {
-    return { text: '执行遇到问题', state: 'failed' };
+    return { text: '執行遇到問題', state: 'failed' };
   }
-  return { text: '执行记录', state: 'completed' };
+  return { text: '執行記錄', state: 'completed' };
 }
 
 export function traceDetails(lines: TraceLine[]): TraceLine[] {
@@ -1475,14 +1475,14 @@ export function isScheduledTaskPrompt(item: ChatMessage): boolean {
 }
 
 export function citationKindLabel(citation: KnowledgeCitation): string {
-  if (citation.kind === 'concept') return '知识图谱';
-  if (citation.kind === 'okf') return '知识图谱引用';
-  return '引用来源';
+  if (citation.kind === 'concept') return '知識圖譜';
+  if (citation.kind === 'okf') return '知識圖譜引用';
+  return '引用來源';
 }
 
 export function citationDisplayTitle(citation: KnowledgeCitation): string {
-  const raw = citation.title || citation.section_path || citation.source_path || citation.concept_id || '知识引用';
-  return raw.trim() || '知识引用';
+  const raw = citation.title || citation.section_path || citation.source_path || citation.concept_id || '知識引用';
+  return raw.trim() || '知識引用';
 }
 
 export function citationSourceLabel(citation: KnowledgeCitation): string {
@@ -1771,7 +1771,7 @@ export function attachmentTypeLabel(attachment: ChatAttachmentRead): string {
   const type = attachment.kind === 'pdf'
     ? 'PDF'
     : attachment.kind === 'image'
-      ? '图片'
+      ? '圖片'
       : attachment.kind === 'text'
         ? '文本'
         : '文件';
@@ -1794,11 +1794,11 @@ export function formatDraftSchedule(draft: ScheduledTaskDraftRead): string {
   if (scheduleType === 'weekly') {
     const weekdays = Array.isArray(schedule.weekdays)
       ? schedule.weekdays.map((item) => DRAFT_WEEKDAY_LABELS[Number(item)]).filter(Boolean).join('、')
-      : '周一';
-    return `每周 ${weekdays} ${schedule.time || '09:00'}`;
+      : '週一';
+    return `每週 ${weekdays} ${schedule.time || '09:00'}`;
   }
   if (scheduleType === 'monthly') {
-    return `每月 ${schedule.day_of_month || 1} 号 ${schedule.time || '09:00'}`;
+    return `每月 ${schedule.day_of_month || 1} 號 ${schedule.time || '09:00'}`;
   }
   if (scheduleType === 'once') {
     const value = String(schedule.run_at || '');

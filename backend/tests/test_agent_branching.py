@@ -80,14 +80,14 @@ def test_management_and_chat_agent_lists_share_one_access_scope() -> None:
         db.add(member)
         db.add(
             AgentProfile(
-                id="agent_overall", tenant_id="tenant_demo", name="开放广场", is_overall=True
+                id="agent_overall", tenant_id="tenant_demo", name="開放廣場", is_overall=True
             )
         )
         db.add(
             AgentProfile(
                 id="agent_owned",
                 tenant_id="tenant_demo",
-                name="本人员工",
+                name="本人員工",
                 metadata_json={"owner_user_id": member.id},
             )
         )
@@ -95,7 +95,7 @@ def test_management_and_chat_agent_lists_share_one_access_scope() -> None:
             AgentProfile(
                 id="agent_gallery_unused",
                 tenant_id="tenant_demo",
-                name="未使用广场员工",
+                name="未使用廣場員工",
                 metadata_json={"published_to_gallery": True, "owner_user_id": "other"},
             )
         )
@@ -103,7 +103,7 @@ def test_management_and_chat_agent_lists_share_one_access_scope() -> None:
             AgentProfile(
                 id="agent_gallery_used",
                 tenant_id="tenant_demo",
-                name="已使用广场员工",
+                name="已使用廣場員工",
                 metadata_json={"published_to_gallery": True, "owner_user_id": "other"},
             )
         )
@@ -111,7 +111,7 @@ def test_management_and_chat_agent_lists_share_one_access_scope() -> None:
             AgentProfile(
                 id="agent_private_other",
                 tenant_id="tenant_demo",
-                name="他人私有员工",
+                name="他人私有員工",
                 metadata_json={"owner_user_id": "other"},
             )
         )
@@ -144,18 +144,18 @@ def test_seed_publishing_writes_explicit_admin_owner_without_backfilling_user_re
         overall = AgentProfile(
             id="agent_tenant_demo_overall",
             tenant_id="tenant_demo",
-            name="开放广场",
+            name="開放廣場",
             is_overall=True,
         )
         default_agent = AgentProfile(
             id="agent_tenant_demo_default",
             tenant_id="tenant_demo",
-            name="默认员工",
+            name="默認員工",
         )
         user_agent = AgentProfile(
             id="agent_user_owned",
             tenant_id="tenant_demo",
-            name="用户员工",
+            name="用戶員工",
             metadata_json={"owner_user_id": "user_member"},
         )
         seeded_active = Skill(
@@ -163,7 +163,7 @@ def test_seed_publishing_writes_explicit_admin_owner_without_backfilling_user_re
             tenant_id="tenant_demo",
             skill_id=str(REFUND_SKILL["skill_id"]),
             version="1.0.0",
-            name="系统退款流程",
+            name="系統退款流程",
             content_json=dict(REFUND_SKILL),
             status="published",
         )
@@ -172,7 +172,7 @@ def test_seed_publishing_writes_explicit_admin_owner_without_backfilling_user_re
             tenant_id="tenant_demo",
             skill_id=str(EXCHANGE_SKILL["skill_id"]),
             version="1.0.0",
-            name="已从广场删除的系统流程",
+            name="已從廣場刪除的系統流程",
             content_json=dict(EXCHANGE_SKILL),
             status="published",
         )
@@ -181,8 +181,8 @@ def test_seed_publishing_writes_explicit_admin_owner_without_backfilling_user_re
             tenant_id="tenant_demo",
             skill_id="user_skill",
             version="1.0.0",
-            name="用户流程",
-            content_json={"skill_id": "user_skill", "name": "用户流程", "nodes": []},
+            name="用戶流程",
+            content_json={"skill_id": "user_skill", "name": "用戶流程", "nodes": []},
             status="published",
         )
         db.add(Tenant(id="tenant_demo", name="Demo"))
@@ -237,7 +237,7 @@ def test_agent_skill_branch_is_copy_on_write_and_reports_branch_state() -> None:
         db.add(Tenant(id="tenant_demo", name="Demo"))
         db.add(
             AgentProfile(
-                id="agent_overall", tenant_id="tenant_demo", name="整体智能体", is_overall=True
+                id="agent_overall", tenant_id="tenant_demo", name="整體智能體", is_overall=True
             )
         )
         agent = AgentProfile(
@@ -247,11 +247,11 @@ def test_agent_skill_branch_is_copy_on_write_and_reports_branch_state() -> None:
             tenant_id="tenant_demo",
             skill_id="skill_purchase",
             version="1.0.0",
-            name="购买流程",
-            business_domain="电商",
-            description="购买商品",
+            name="購買流程",
+            business_domain="電商",
+            description="購買商品",
             status="published",
-            content_json=_graph("购买流程", "1.0.0"),
+            content_json=_graph("購買流程", "1.0.0"),
         )
         db.add(agent)
         db.add(skill)
@@ -269,15 +269,15 @@ def test_agent_skill_branch_is_copy_on_write_and_reports_branch_state() -> None:
         assert branch_read["branch_head_version"] == "1.0.0"
 
         update_branch_skill(
-            db, "tenant_demo", agent.id, skill, _graph("分支购买流程", "1.0.0-branch.1")
+            db, "tenant_demo", agent.id, skill, _graph("分支購買流程", "1.0.0-branch.1")
         )
         db.commit()
 
         branch_visible = visible_skill_rows(db, "tenant_demo", agent.id)[0]
         global_skill = db.exec(select(Skill).where(Skill.skill_id == "skill_purchase")).first()
-        assert branch_visible.name == "分支购买流程"
+        assert branch_visible.name == "分支購買流程"
         assert global_skill is not None
-        assert global_skill.name == "购买流程"
+        assert global_skill.name == "購買流程"
         assert _skill_branch_read(branch_visible)["branch_sync_state"] == "diverged"
 
 
@@ -286,12 +286,12 @@ def test_open_gallery_delete_skill_hides_gallery_without_removing_agent_binding(
         db.add(Tenant(id="tenant_demo", name="Demo"))
         db.add(
             AgentProfile(
-                id="agent_overall", tenant_id="tenant_demo", name="整体智能体", is_overall=True
+                id="agent_overall", tenant_id="tenant_demo", name="整體智能體", is_overall=True
             )
         )
         db.add(
             AgentProfile(
-                id="agent_branch", tenant_id="tenant_demo", name="研发员工", is_overall=False
+                id="agent_branch", tenant_id="tenant_demo", name="研發員工", is_overall=False
             )
         )
         skill = Skill(
@@ -299,11 +299,11 @@ def test_open_gallery_delete_skill_hides_gallery_without_removing_agent_binding(
             tenant_id="tenant_demo",
             skill_id="skill_weather",
             version="1.0.0",
-            name="天气查询流程",
+            name="天氣查詢流程",
             business_domain="工具",
-            description="查询天气",
+            description="查詢天氣",
             status="published",
-            content_json=_graph("天气查询流程", "1.0.0"),
+            content_json=_graph("天氣查詢流程", "1.0.0"),
         )
         db.add(skill)
         db.add(
@@ -347,7 +347,7 @@ def test_open_gallery_deleted_skill_binding_is_not_restored_by_ensure() -> None:
         db.add(Tenant(id="tenant_demo", name="Demo"))
         db.add(
             AgentProfile(
-                id="agent_overall", tenant_id="tenant_demo", name="整体智能体", is_overall=True
+                id="agent_overall", tenant_id="tenant_demo", name="整體智能體", is_overall=True
             )
         )
         skill = Skill(
@@ -355,11 +355,11 @@ def test_open_gallery_deleted_skill_binding_is_not_restored_by_ensure() -> None:
             tenant_id="tenant_demo",
             skill_id="skill_deleted_gallery",
             version="1.0.0",
-            name="已从广场移除的流程",
+            name="已從廣場移除的流程",
             business_domain="工具",
-            description="删除后不应被旧同步逻辑恢复",
+            description="刪除後不應被舊同步邏輯恢復",
             status="published",
-            content_json=_graph("已从广场移除的流程", "1.0.0"),
+            content_json=_graph("已從廣場移除的流程", "1.0.0"),
         )
         db.add(skill)
         db.commit()
@@ -393,7 +393,7 @@ def test_open_gallery_skill_requires_explicit_overall_binding() -> None:
         db.add(Tenant(id="tenant_demo", name="Demo"))
         db.add(
             AgentProfile(
-                id="agent_overall", tenant_id="tenant_demo", name="整体智能体", is_overall=True
+                id="agent_overall", tenant_id="tenant_demo", name="整體智能體", is_overall=True
             )
         )
         skill = Skill(
@@ -401,11 +401,11 @@ def test_open_gallery_skill_requires_explicit_overall_binding() -> None:
             tenant_id="tenant_demo",
             skill_id="skill_without_gallery_binding",
             version="1.0.0",
-            name="未开放流程",
+            name="未開放流程",
             business_domain="工具",
-            description="没有绑定就不属于开放广场",
+            description="沒有綁定就不屬於開放廣場",
             status="published",
-            content_json=_graph("未开放流程", "1.0.0"),
+            content_json=_graph("未開放流程", "1.0.0"),
         )
         db.add(skill)
         db.commit()
@@ -418,7 +418,7 @@ def test_open_gallery_skill_read_returns_persisted_creator_metadata() -> None:
         db.add(Tenant(id="tenant_demo", name="Demo"))
         db.add(
             AgentProfile(
-                id="agent_overall", tenant_id="tenant_demo", name="整体智能体", is_overall=True
+                id="agent_overall", tenant_id="tenant_demo", name="整體智能體", is_overall=True
             )
         )
         skill = Skill(
@@ -426,11 +426,11 @@ def test_open_gallery_skill_read_returns_persisted_creator_metadata() -> None:
             tenant_id="tenant_demo",
             skill_id="skill_weather",
             version="1.0.0",
-            name="天气查询流程",
+            name="天氣查詢流程",
             business_domain="工具",
-            description="查询天气",
+            description="查詢天氣",
             status="published",
-            content_json=_graph("天气查询流程", "1.0.0"),
+            content_json=_graph("天氣查詢流程", "1.0.0"),
         )
         db.add(skill)
         db.commit()
@@ -460,7 +460,7 @@ def test_private_skill_branch_creator_metadata_is_written_from_agent_owner() -> 
         agent = AgentProfile(
             id="agent_owner",
             tenant_id="tenant_demo",
-            name="个人员工",
+            name="個人員工",
             is_overall=False,
             metadata_json={
                 "owner_user_id": "user_owner",
@@ -476,11 +476,11 @@ def test_private_skill_branch_creator_metadata_is_written_from_agent_owner() -> 
             tenant_id="tenant_demo",
             skill_id="skill_private",
             version="1.0.0",
-            name="个人 SOP",
-            business_domain="个人",
-            description="个人创建",
+            name="個人 SOP",
+            business_domain="個人",
+            description="個人創建",
             status="published",
-            content_json=_graph("个人 SOP", "1.0.0"),
+            content_json=_graph("個人 SOP", "1.0.0"),
         )
         db.add(agent)
         db.add(skill)
@@ -508,13 +508,13 @@ def test_list_agents_allows_tool_resource_bindings() -> None:
     with _test_session() as db:
         db.add(Tenant(id="tenant_demo", name="Demo"))
         agent = AgentProfile(
-            id="agent_tool_owner", tenant_id="tenant_demo", name="工具员工", is_overall=False
+            id="agent_tool_owner", tenant_id="tenant_demo", name="工具員工", is_overall=False
         )
         tool = Tool(
             id="tool_lookup",
             tenant_id="tenant_demo",
             name="product.lookup",
-            display_name="商品查询",
+            display_name="商品查詢",
             method="POST",
             url="/api/mock/product/lookup",
         )
@@ -535,20 +535,20 @@ def test_copy_overall_scope_to_agent_does_not_auto_bind_open_gallery_tools() -> 
         db.add(Tenant(id="tenant_demo", name="Demo"))
         db.add(
             AgentProfile(
-                id="agent_overall", tenant_id="tenant_demo", name="整体智能体", is_overall=True
+                id="agent_overall", tenant_id="tenant_demo", name="整體智能體", is_overall=True
             )
         )
         owner = AgentProfile(
-            id="agent_owner", tenant_id="tenant_demo", name="个人员工", is_overall=False
+            id="agent_owner", tenant_id="tenant_demo", name="個人員工", is_overall=False
         )
         target = AgentProfile(
-            id="agent_target", tenant_id="tenant_demo", name="研发员工", is_overall=False
+            id="agent_target", tenant_id="tenant_demo", name="研發員工", is_overall=False
         )
         open_tool = Tool(
             id="tool_open_lookup",
             tenant_id="tenant_demo",
             name="product.lookup",
-            display_name="商品查询",
+            display_name="商品查詢",
             method="POST",
             url="/api/mock/product/lookup",
         )
@@ -556,7 +556,7 @@ def test_copy_overall_scope_to_agent_does_not_auto_bind_open_gallery_tools() -> 
             id="tool_private_lookup",
             tenant_id="tenant_demo",
             name="private.lookup",
-            display_name="个人查询",
+            display_name="個人查詢",
             method="POST",
             url="/api/mock/private/lookup",
         )
@@ -596,11 +596,11 @@ def test_copy_overall_scope_to_agent_does_not_auto_bind_open_gallery_knowledge_b
         db.add(Tenant(id="tenant_demo", name="Demo"))
         db.add(
             AgentProfile(
-                id="agent_overall", tenant_id="tenant_demo", name="整体智能体", is_overall=True
+                id="agent_overall", tenant_id="tenant_demo", name="整體智能體", is_overall=True
             )
         )
         target = AgentProfile(
-            id="agent_target", tenant_id="tenant_demo", name="研发员工", is_overall=False
+            id="agent_target", tenant_id="tenant_demo", name="研發員工", is_overall=False
         )
         kb = KnowledgeBase(
             id="kb_open_policy",
@@ -639,18 +639,18 @@ def test_list_agents_knowledge_count_ignores_stale_or_empty_default_bindings() -
     with _test_session() as db:
         db.add(Tenant(id="tenant_demo", name="Demo"))
         agent = AgentProfile(
-            id="agent_target", tenant_id="tenant_demo", name="研发员工", is_overall=False
+            id="agent_target", tenant_id="tenant_demo", name="研發員工", is_overall=False
         )
         stale_kb = KnowledgeBase(
             id="kb_stale",
             tenant_id="tenant_demo",
-            name="有绑定但没有分支",
+            name="有綁定但沒有分支",
             status="active",
         )
         default_kb = KnowledgeBase(
             id="kb_default",
             tenant_id="tenant_demo",
-            name="默认知识库",
+            name="默認知識庫",
             status="active",
         )
         db.add(agent)
@@ -689,7 +689,7 @@ def test_agent_summary_resources_match_operational_resource_lists() -> None:
     with _test_session() as db:
         db.add(Tenant(id="tenant_demo", name="Demo"))
         agent = AgentProfile(
-            id="agent_target", tenant_id="tenant_demo", name="研发员工", is_overall=False
+            id="agent_target", tenant_id="tenant_demo", name="研發員工", is_overall=False
         )
         skill = Skill(
             id="skill_visible",
@@ -742,7 +742,7 @@ def test_agent_summary_resources_match_operational_resource_lists() -> None:
             enabled=False,
         )
         kb = KnowledgeBase(
-            id="kb_visible", tenant_id="tenant_demo", name="可用知识库", status="active"
+            id="kb_visible", tenant_id="tenant_demo", name="可用知識庫", status="active"
         )
         db.add(agent)
         for resource in (
@@ -818,7 +818,7 @@ def test_archiving_open_gallery_resources_updates_binding_status() -> None:
         admin = _admin_user()
         db.add(Tenant(id="tenant_demo", name="Demo"))
         overall = AgentProfile(
-            id="agent_overall", tenant_id="tenant_demo", name="开放广场", is_overall=True
+            id="agent_overall", tenant_id="tenant_demo", name="開放廣場", is_overall=True
         )
         skill = Skill(
             id="skill_archive",
@@ -838,7 +838,7 @@ def test_archiving_open_gallery_resources_updates_binding_status() -> None:
             status="published",
         )
         kb = KnowledgeBase(
-            id="kb_archive", tenant_id="tenant_demo", name="待停用知识库", status="active"
+            id="kb_archive", tenant_id="tenant_demo", name="待停用知識庫", status="active"
         )
         db.add(overall)
         db.add(skill)
@@ -880,16 +880,16 @@ def test_import_open_gallery_tool_creates_private_agent_binding() -> None:
     with _test_session() as db:
         db.add(Tenant(id="tenant_demo", name="Demo"))
         overall = AgentProfile(
-            id="agent_overall", tenant_id="tenant_demo", name="开放广场", is_overall=True
+            id="agent_overall", tenant_id="tenant_demo", name="開放廣場", is_overall=True
         )
         target = AgentProfile(
-            id="agent_target", tenant_id="tenant_demo", name="研发员工", is_overall=False
+            id="agent_target", tenant_id="tenant_demo", name="研發員工", is_overall=False
         )
         tool = Tool(
             id="tool_open_lookup",
             tenant_id="tenant_demo",
             name="product.lookup",
-            display_name="商品查询",
+            display_name="商品查詢",
             method="POST",
             url="/api/mock/product/lookup",
             enabled=True,
@@ -999,7 +999,7 @@ def test_non_overall_agent_cannot_delete_global_resources() -> None:
         db.add(Tenant(id="tenant_demo", name="Demo"))
         db.add(
             AgentProfile(
-                id="agent_overall", tenant_id="tenant_demo", name="整体智能体", is_overall=True
+                id="agent_overall", tenant_id="tenant_demo", name="整體智能體", is_overall=True
             )
         )
         db.add(
@@ -1020,7 +1020,7 @@ def test_management_rows_keep_archived_global_and_inactive_branch_skills() -> No
         db.add(Tenant(id="tenant_demo", name="Demo"))
         db.add(
             AgentProfile(
-                id="agent_overall", tenant_id="tenant_demo", name="整体智能体", is_overall=True
+                id="agent_overall", tenant_id="tenant_demo", name="整體智能體", is_overall=True
             )
         )
         agent = AgentProfile(
@@ -1030,21 +1030,21 @@ def test_management_rows_keep_archived_global_and_inactive_branch_skills() -> No
             tenant_id="tenant_demo",
             skill_id="global_archived",
             version="1.0.0",
-            name="主干下线技能",
-            business_domain="电商",
-            description="已下线但仍应管理可见",
+            name="主幹下線技能",
+            business_domain="電商",
+            description="已下線但仍應管理可見",
             status="archived",
-            content_json=_graph("主干下线技能", "1.0.0"),
+            content_json=_graph("主幹下線技能", "1.0.0"),
         )
         branch_skill = Skill(
             tenant_id="tenant_demo",
             skill_id="branch_inactive",
             version="1.0.0",
-            name="分支下线技能",
-            business_domain="电商",
-            description="分支下线但仍应管理可见",
+            name="分支下線技能",
+            business_domain="電商",
+            description="分支下線但仍應管理可見",
             status="published",
-            content_json=_graph("分支下线技能", "1.0.0"),
+            content_json=_graph("分支下線技能", "1.0.0"),
         )
         db.add(agent)
         db.add(global_archived)
@@ -1079,7 +1079,7 @@ def test_updating_inactive_branch_skill_keeps_it_inactive() -> None:
         db.add(Tenant(id="tenant_demo", name="Demo"))
         db.add(
             AgentProfile(
-                id="agent_overall", tenant_id="tenant_demo", name="整体智能体", is_overall=True
+                id="agent_overall", tenant_id="tenant_demo", name="整體智能體", is_overall=True
             )
         )
         agent = AgentProfile(
@@ -1090,8 +1090,8 @@ def test_updating_inactive_branch_skill_keeps_it_inactive() -> None:
             skill_id="branch_inactive_edit",
             version="1.0.0",
             name="停用分支技能",
-            business_domain="电商",
-            description="停用后仍应支持编辑",
+            business_domain="電商",
+            description="停用後仍應支持編輯",
             status="published",
             content_json=_graph("停用分支技能", "1.0.0"),
         )
@@ -1118,7 +1118,7 @@ def test_updating_inactive_branch_skill_keeps_it_inactive() -> None:
             "tenant_demo",
             agent.id,
             skill,
-            _graph("停用分支技能已编辑", "1.0.1"),
+            _graph("停用分支技能已編輯", "1.0.1"),
         )
         db.commit()
 
@@ -1130,7 +1130,7 @@ def test_updating_inactive_branch_skill_keeps_it_inactive() -> None:
         )
         assert branch_read["status"] == "archived"
         assert branch_read["branch_status"] == "inactive"
-        assert branch_read["name"] == "停用分支技能已编辑"
+        assert branch_read["name"] == "停用分支技能已編輯"
 
 
 def test_inactive_bound_skill_can_be_loaded_and_saved_from_management_api() -> None:
@@ -1138,7 +1138,7 @@ def test_inactive_bound_skill_can_be_loaded_and_saved_from_management_api() -> N
         db.add(Tenant(id="tenant_demo", name="Demo"))
         db.add(
             AgentProfile(
-                id="agent_overall", tenant_id="tenant_demo", name="整体智能体", is_overall=True
+                id="agent_overall", tenant_id="tenant_demo", name="整體智能體", is_overall=True
             )
         )
         agent = AgentProfile(
@@ -1151,8 +1151,8 @@ def test_inactive_bound_skill_can_be_loaded_and_saved_from_management_api() -> N
             skill_id="branch_inactive_api_edit",
             version="1.0.0",
             name="停用分支技能",
-            business_domain="电商",
-            description="停用后仍应支持从管理页编辑",
+            business_domain="電商",
+            description="停用後仍應支持從管理頁編輯",
             status="published",
             content_json=skill_content,
         )
@@ -1188,8 +1188,8 @@ def test_inactive_bound_skill_can_be_loaded_and_saved_from_management_api() -> N
         assert loaded.branch_status == "active"
 
         edited_content = loaded.content.model_copy(deep=True)
-        edited_content.name = "停用分支技能已编辑"
-        edited_content.description = "停用状态下保存的新说明"
+        edited_content.name = "停用分支技能已編輯"
+        edited_content.description = "停用狀態下保存的新說明"
 
         saved = update_skill(
             skill.skill_id,
@@ -1205,7 +1205,7 @@ def test_inactive_bound_skill_can_be_loaded_and_saved_from_management_api() -> N
 
         assert saved.status == "archived"
         assert saved.branch_status == "active"
-        assert saved.name == "停用分支技能已编辑"
+        assert saved.name == "停用分支技能已編輯"
         branch_after = db.exec(
             select(AgentSkillBranch).where(
                 AgentSkillBranch.tenant_id == "tenant_demo",
@@ -1223,7 +1223,7 @@ def test_inactive_bound_skill_can_be_loaded_and_saved_from_management_api() -> N
         ).one()
         assert branch_after.status == "active"
         assert binding_after.status == "inactive"
-        assert branch_after.content_json["description"] == "停用状态下保存的新说明"
+        assert branch_after.content_json["description"] == "停用狀態下保存的新說明"
 
 
 def test_inactive_bound_skill_can_be_reenabled_from_management_api() -> None:
@@ -1231,21 +1231,21 @@ def test_inactive_bound_skill_can_be_reenabled_from_management_api() -> None:
         db.add(Tenant(id="tenant_demo", name="Demo"))
         db.add(
             AgentProfile(
-                id="agent_overall", tenant_id="tenant_demo", name="整体智能体", is_overall=True
+                id="agent_overall", tenant_id="tenant_demo", name="整體智能體", is_overall=True
             )
         )
         agent = AgentProfile(
             id="agent_branch", tenant_id="tenant_demo", name="客服分支", is_overall=False
         )
-        skill_content = _graph("可重新启用分支技能", "1.0.0")
+        skill_content = _graph("可重新啟用分支技能", "1.0.0")
         skill_content["skill_id"] = "branch_reenable_api"
         skill = Skill(
             tenant_id="tenant_demo",
             skill_id="branch_reenable_api",
             version="1.0.0",
-            name="可重新启用分支技能",
-            business_domain="电商",
-            description="停用后应能重新启用",
+            name="可重新啟用分支技能",
+            business_domain="電商",
+            description="停用後應能重新啟用",
             status="published",
             content_json=skill_content,
         )
@@ -1298,7 +1298,7 @@ def test_disabled_open_gallery_resources_cannot_be_learned() -> None:
     with _test_session() as db:
         db.add(Tenant(id="tenant_demo", name="Demo"))
         overall = AgentProfile(
-            id="agent_overall", tenant_id="tenant_demo", name="整体智能体", is_overall=True
+            id="agent_overall", tenant_id="tenant_demo", name="整體智能體", is_overall=True
         )
         target = AgentProfile(
             id="agent_branch", tenant_id="tenant_demo", name="客服分支", is_overall=False
@@ -1311,8 +1311,8 @@ def test_disabled_open_gallery_resources_cannot_be_learned() -> None:
             skill_id="archived_sop",
             version="1.0.0",
             name="已停用 SOP",
-            business_domain="电商",
-            description="停用后不可学习",
+            business_domain="電商",
+            description="停用後不可學習",
             status="archived",
             content_json=_graph("已停用 SOP", "1.0.0"),
         )
@@ -1327,7 +1327,7 @@ def test_disabled_open_gallery_resources_cannot_be_learned() -> None:
         archived_knowledge_base = KnowledgeBase(
             id="kb_archived",
             tenant_id="tenant_demo",
-            name="已停用业务资料",
+            name="已停用業務資料",
             status="archived",
         )
         db.add(archived_skill)
@@ -1369,7 +1369,7 @@ def test_disabled_open_gallery_resources_cannot_be_learned() -> None:
             )
 
         inherited = AgentProfile(
-            id="agent_inherited", tenant_id="tenant_demo", name="继承分支", is_overall=False
+            id="agent_inherited", tenant_id="tenant_demo", name="繼承分支", is_overall=False
         )
         db.add(inherited)
         db.flush()
@@ -1387,17 +1387,17 @@ def test_archived_knowledge_remains_manageable_but_is_not_runtime_visible() -> N
     with _test_session() as db:
         db.add(Tenant(id="tenant_demo", name="Demo"))
         overall = AgentProfile(
-            id="agent_overall", tenant_id="tenant_demo", name="整体智能体", is_overall=True
+            id="agent_overall", tenant_id="tenant_demo", name="整體智能體", is_overall=True
         )
         target = AgentProfile(
-            id="agent_target", tenant_id="tenant_demo", name="研发员工", is_overall=False
+            id="agent_target", tenant_id="tenant_demo", name="研發員工", is_overall=False
         )
         db.add(overall)
         db.add(target)
         kb = KnowledgeBase(
             id="kb_archived_manageable",
             tenant_id="tenant_demo",
-            name="已停用业务资料",
+            name="已停用業務資料",
             status="active",
         )
         db.add(kb)
@@ -1445,45 +1445,45 @@ def test_private_agent_resources_are_not_visible_in_open_gallery() -> None:
     with _test_session() as db:
         db.add(Tenant(id="tenant_demo", name="Demo"))
         overall = AgentProfile(
-            id="agent_overall", tenant_id="tenant_demo", name="整体智能体", is_overall=True
+            id="agent_overall", tenant_id="tenant_demo", name="整體智能體", is_overall=True
         )
         owner = AgentProfile(
-            id="agent_owner", tenant_id="tenant_demo", name="个人员工", is_overall=False
+            id="agent_owner", tenant_id="tenant_demo", name="個人員工", is_overall=False
         )
         target = AgentProfile(
-            id="agent_target", tenant_id="tenant_demo", name="学习员工", is_overall=False
+            id="agent_target", tenant_id="tenant_demo", name="學習員工", is_overall=False
         )
         private_skill = Skill(
             id="skill_private",
             tenant_id="tenant_demo",
             skill_id="private_sop",
             version="1.0.0",
-            name="个人 SOP",
-            business_domain="电商",
-            description="个人创建的 SOP",
+            name="個人 SOP",
+            business_domain="電商",
+            description="個人創建的 SOP",
             status="published",
-            content_json=_graph("个人 SOP", "1.0.0"),
+            content_json=_graph("個人 SOP", "1.0.0"),
         )
         private_general_skill = GeneralSkill(
             id="general_private",
             tenant_id="tenant_demo",
             slug="private-general-skill",
-            name="个人通用技能",
-            skill_markdown="# 个人通用技能",
+            name="個人通用技能",
+            skill_markdown="# 個人通用技能",
             status="published",
         )
         private_knowledge_base = KnowledgeBase(
             id="kb_private",
             tenant_id="tenant_demo",
-            name="个人业务资料",
+            name="個人業務資料",
             status="active",
         )
         private_tool = Tool(
             id="tool_private",
             tenant_id="tenant_demo",
             name="private_tool",
-            display_name="个人工具",
-            description="个人工具",
+            display_name="個人工具",
+            description="個人工具",
             method="POST",
             url="mock://private",
             enabled=True,
@@ -1510,7 +1510,7 @@ def test_private_agent_resources_are_not_visible_in_open_gallery() -> None:
         legacy_private_knowledge_base = KnowledgeBase(
             id="kb_legacy_private",
             tenant_id="tenant_demo",
-            name="旧版个人上传资料",
+            name="舊版個人上傳資料",
             status="active",
             metadata_json={"created_from_document_upload": True},
         )
@@ -1567,7 +1567,7 @@ def test_knowledge_branch_write_clones_existing_wiki_before_appending_concept() 
         agent = AgentProfile(
             id="agent_branch", tenant_id="tenant_demo", name="客服分支", is_overall=False
         )
-        kb = KnowledgeBase(id="kb_demo", tenant_id="tenant_demo", name="业务资料")
+        kb = KnowledgeBase(id="kb_demo", tenant_id="tenant_demo", name="業務資料")
         db.add(agent)
         db.add(kb)
         base_version = ensure_knowledge_base_version(db, kb, "1.0.0")
@@ -1578,7 +1578,7 @@ def test_knowledge_branch_write_clones_existing_wiki_before_appending_concept() 
             knowledge_base_version_id=base_version.id,
             filename="policy.md",
             file_type="md",
-            title="政策文档",
+            title="政策文檔",
             status="ready",
             bucket_count=1,
             chunk_count=1,
@@ -1601,7 +1601,7 @@ def test_knowledge_branch_write_clones_existing_wiki_before_appending_concept() 
             document_id=document.id,
             bucket_id=bucket.id,
             chunk_index=0,
-            content="用户取消订单前需要确认当前订单状态。",
+            content="用戶取消訂單前需要確認當前訂單狀態。",
         )
         concept = KnowledgeConcept(
             tenant_id="tenant_demo",
@@ -1610,9 +1610,9 @@ def test_knowledge_branch_write_clones_existing_wiki_before_appending_concept() 
             document_id=document.id,
             concept_id="playbooks/order-cancel",
             concept_type="Playbook",
-            title="订单取消",
-            description="订单取消流程",
-            content_md="---\ntype: Playbook\ntitle: 订单取消\n---\n\n# Summary\n确认订单状态。",
+            title="訂單取消",
+            description="訂單取消流程",
+            content_md="---\ntype: Playbook\ntitle: 訂單取消\n---\n\n# Summary\n確認訂單狀態。",
         )
         db.add(document)
         db.add(bucket)
@@ -1629,7 +1629,7 @@ def test_knowledge_branch_write_clones_existing_wiki_before_appending_concept() 
             [
                 {
                     "concept_id": "topics/new-topic",
-                    "content_md": "---\ntype: Topic\ntitle: 新 Wiki 页面\n---\n\n# Summary\n补充新主题。",
+                    "content_md": "---\ntype: Topic\ntitle: 新 Wiki 頁面\n---\n\n# Summary\n補充新主題。",
                     "document_id": document.id,
                     "status": "active",
                 }
@@ -1674,22 +1674,22 @@ def _graph(name: str, version: str) -> dict[str, object]:
         "skill_id": "skill_purchase",
         "version": version,
         "name": name,
-        "business_domain": "电商",
-        "description": "购买商品",
+        "business_domain": "電商",
+        "description": "購買商品",
         "nodes": [
             {
                 "node_id": "collect",
                 "type": "collect_info",
                 "name": "收集信息",
-                "instruction": "收集用户信息",
+                "instruction": "收集用戶信息",
                 "expected_user_info": ["user_name"],
                 "allowed_actions": ["ask_user", "continue_flow"],
             },
             {
                 "node_id": "reply",
                 "type": "response",
-                "name": "回复用户",
-                "instruction": "回复用户",
+                "name": "回覆用戶",
+                "instruction": "回覆用戶",
                 "allowed_actions": ["answer_user"],
             },
         ],

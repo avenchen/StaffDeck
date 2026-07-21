@@ -71,52 +71,52 @@ type PlatformItem = {
 const PLATFORM_CONFIGS: PlatformConfig[] = [
   {
     kind: 'agents',
-    title: '数字员工广场',
-    subtitle: '已发布到广场，可在对话端直接使用。',
-    detail: '选择一个数字员工查看能力、岗位和服务范围。',
-    useLabel: '使用此员工',
-    metricLabel: '数字员工',
-    signals: ['聊天可用', '支持对话', '查看能力'],
+    title: '數字員工廣場',
+    subtitle: '已發佈到廣場，可在對話端直接使用。',
+    detail: '選擇一個數字員工查看能力、崗位和服務範圍。',
+    useLabel: '使用此員工',
+    metricLabel: '數字員工',
+    signals: ['聊天可用', '支持對話', '查看能力'],
     icon: <UsergroupAddOutlined />,
   },
   {
     kind: 'knowledge',
-    title: '知识库广场',
-    subtitle: '发布到广场的知识库，可复制到你的数字员工。',
-    detail: '从广场复制到当前数字员工的知识库。',
-    useLabel: '复制到知识库',
-    metricLabel: '知识库',
-    signals: ['知识图谱', '引用来源', '可复制'],
+    title: '知識庫廣場',
+    subtitle: '發佈到廣場的知識庫，可複製到你的數字員工。',
+    detail: '從廣場複製到當前數字員工的知識庫。',
+    useLabel: '複製到知識庫',
+    metricLabel: '知識庫',
+    signals: ['知識圖譜', '引用來源', '可複製'],
     icon: <FileSearchOutlined />,
   },
   {
     kind: 'general-skills',
-    title: '技能广场',
-    subtitle: '浏览器、MCP、查询工具等可复用能力。',
-    detail: '从广场复制到当前数字员工的技能。',
-    useLabel: '复制到技能',
+    title: '技能廣場',
+    subtitle: '瀏覽器、MCP、查詢工具等可複用能力。',
+    detail: '從廣場複製到當前數字員工的技能。',
+    useLabel: '複製到技能',
     metricLabel: '技能',
-    signals: ['运行测试', 'MCP/浏览器', '能力复用'],
+    signals: ['運行測試', 'MCP/瀏覽器', '能力複用'],
     icon: <SolutionOutlined />,
   },
   {
     kind: 'skills',
-    title: 'SOP 广场',
-    subtitle: '可复制和复用的业务流程与执行规范。',
-    detail: '从广场复制到当前数字员工的 SOP。',
-    useLabel: '复制到 SOP',
-    metricLabel: '业务 SOP',
-    signals: ['流程推进', '执行规范', '可复制'],
+    title: 'SOP 廣場',
+    subtitle: '可複製和複用的業務流程與執行規範。',
+    detail: '從廣場複製到當前數字員工的 SOP。',
+    useLabel: '複製到 SOP',
+    metricLabel: '業務 SOP',
+    signals: ['流程推進', '執行規範', '可複製'],
     icon: <ProfileOutlined />,
   },
   {
     kind: 'tools',
-    title: '工具广场',
-    subtitle: '可开放给员工调用和测试的工具能力。',
-    detail: '前往工具页按现有流程配置和测试工具。',
-    useLabel: '前往工具页',
+    title: '工具廣場',
+    subtitle: '可開放給員工調用和測試的工具能力。',
+    detail: '前往工具頁按現有流程配置和測試工具。',
+    useLabel: '前往工具頁',
     metricLabel: '工具能力',
-    signals: ['调用权限', '测试可用', '工具配置'],
+    signals: ['調用權限', '測試可用', '工具配置'],
     icon: <ToolOutlined />,
   },
 ];
@@ -132,7 +132,7 @@ const PLATFORM_ICON: Record<PlatformKind, ComponentType<SVGProps<SVGSVGElement>>
   tools: IconBriefcase,
 };
 
-// Colorful 3D module icon shown on each广场 resource card (agents use avatars instead).
+// Colorful 3D module icon shown on each廣場 resource card (agents use avatars instead).
 const PLATFORM_RESOURCE_ICON: Partial<Record<PlatformKind, string>> = {
   knowledge: plazaKnowledgeIcon,
   'general-skills': plazaSkillIcon,
@@ -148,15 +148,15 @@ const PLATFORM_ACCENT: Partial<Record<PlatformKind, PlatformResourceAccent>> = {
   tools: 'orange',
 };
 
-// Unit rendered after the header count, e.g. "12 员工" / "12 内容".
+// Unit rendered after the header count, e.g. "12 員工" / "12 內容".
 function platformCountLabel(kind: PlatformKind): string {
-  return kind === 'agents' ? '员工' : '内容';
+  return kind === 'agents' ? '員工' : '內容';
 }
 
-// Bottom metric segments for a 数字员工广场 card.
+// Bottom metric segments for a 數字員工廣場 card.
 function employeeStats(agent: AgentProfileRead): PlatformStat[] {
   return [
-    { value: agentResourceCount(agent, 'knowledge_base'), label: '资料' },
+    { value: agentResourceCount(agent, 'knowledge_base'), label: '資料' },
     { value: agentResourceCount(agent, 'general_skill'), label: '技能' },
     { value: agentResourceCount(agent, 'skill'), label: 'SOP' },
   ];
@@ -224,7 +224,7 @@ export default function OpenPlatformPage({
       setSkills(skillRows);
       setTools(toolRows);
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '加载开放广场失败');
+      notify.error(error instanceof Error ? error.message : '加載開放廣場失敗');
     } finally {
       setLoading(false);
     }
@@ -252,10 +252,10 @@ export default function OpenPlatformPage({
         id: item.id,
         deleteKey: item.id,
         title: employeeDisplayNameWithCreator(item),
-        description: item.description || '广场开放的数字员工。',
+        description: item.description || '廣場開放的數字員工。',
         meta: profile.roleName,
         tags: [
-          item.status === 'active' ? '在线' : '下线',
+          item.status === 'active' ? '在線' : '下線',
           `SOP ${agentResourceCount(item, 'skill')}`,
           `技能 ${agentResourceCount(item, 'general_skill')}`,
         ],
@@ -268,9 +268,9 @@ export default function OpenPlatformPage({
         id: item.id,
         deleteKey: item.id,
         title: resourceDisplayNameWithCreator(item.name, item),
-        description: item.description || '广场沉淀的知识库。',
-        meta: `${item.document_count} 文档 / ${item.bucket_count} 目录 / ${item.chunk_count} 引用`,
-        tags: [item.version || 'v1.0.0', item.branch_sync_state || '广场版'],
+        description: item.description || '廣場沉澱的知識庫。',
+        meta: `${item.document_count} 文檔 / ${item.bucket_count} 目錄 / ${item.chunk_count} 引用`,
+        tags: [item.version || 'v1.0.0', item.branch_sync_state || '廣場版'],
       })),
     'general-skills': generalSkills
       .filter((item) => item.status === 'published')
@@ -278,9 +278,9 @@ export default function OpenPlatformPage({
         id: item.id,
         deleteKey: item.slug,
         title: resourceDisplayNameWithCreator(item.name, item),
-        description: item.description || '可复制到当前数字员工的技能。',
+        description: item.description || '可複製到當前數字員工的技能。',
         meta: item.slug,
-        tags: [item.homepage ? '外部能力' : '内置能力', '已启用'],
+        tags: [item.homepage ? '外部能力' : '內置能力', '已啟用'],
       })),
     skills: skills
       .filter((item) => item.status === 'published')
@@ -288,9 +288,9 @@ export default function OpenPlatformPage({
         id: item.id,
         deleteKey: item.skill_id,
         title: resourceDisplayNameWithCreator(item.name, item),
-        description: item.description || '可复制和复用的业务 SOP。',
+        description: item.description || '可複製和複用的業務 SOP。',
         meta: `${item.skill_id} / ${item.version}`,
-        tags: [item.business_domain || '业务流程', `${item.total_call_count || item.call_count || 0} 次调用`],
+        tags: [item.business_domain || '業務流程', `${item.total_call_count || item.call_count || 0} 次調用`],
       })),
     tools: tools
       .filter((item) => item.enabled)
@@ -298,9 +298,9 @@ export default function OpenPlatformPage({
         id: item.id,
         deleteKey: item.id,
         title: resourceDisplayNameWithCreator(item.display_name || item.name, item),
-        description: item.description || '可配置到员工工具的工具。',
+        description: item.description || '可配置到員工工具的工具。',
         meta: `${item.bucket || '工具'} / ${item.tool_type.toUpperCase()}`,
-        tags: [item.method, item.enabled ? '已启用' : '已停用'],
+        tags: [item.method, item.enabled ? '已啟用' : '已停用'],
       })),
   }), [generalSkills, knowledgeBases, skills, tools, visibleAgents]);
 
@@ -311,7 +311,7 @@ export default function OpenPlatformPage({
 
   function ensureTargetEmployee(): boolean {
     if (!targetEmployee) {
-      notify.warning('请先选择一个员工，再从广场复制资源。');
+      notify.warning('請先選擇一個員工，再從廣場複製資源。');
       return false;
     }
     if (targetEmployee.id !== agentId) {
@@ -349,14 +349,14 @@ export default function OpenPlatformPage({
     if (platformKind === 'agents') {
       const agent = visibleAgents.find((item) => item.id === itemId) || visibleAgents[0];
       if (!agent) {
-        notify.warning('广场暂无可用数字员工');
+        notify.warning('廣場暫無可用數字員工');
         return;
       }
       try {
         await markPlatformAgentUsed(agent);
         navigate('/enterprise/dashboard');
       } catch (error) {
-        notify.error(error instanceof Error ? error.message : '使用数字员工失败');
+        notify.error(error instanceof Error ? error.message : '使用數字員工失敗');
       }
       return;
     }
@@ -401,14 +401,14 @@ export default function OpenPlatformPage({
       } else {
         await api.delete(platformDeleteUrl(platformKind, item));
       }
-      notify.success('已从广场移除');
+      notify.success('已從廣場移除');
       setDetailItem((current) => (
         current && current.kind === platformKind && current.item.id === item.id ? null : current
       ));
       setConfirmTarget(null);
       await loadPlatformData();
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '删除失败');
+      notify.error(error instanceof Error ? error.message : '刪除失敗');
     } finally {
       setDeletingItemKey('');
     }
@@ -500,10 +500,10 @@ export default function OpenPlatformPage({
       <ConfirmDialog
         open={Boolean(confirmTarget)}
         onOpenChange={(next) => { if (!next) setConfirmTarget(null); }}
-        title={confirmTarget && config ? `删除${config.metricLabel}「${confirmTarget.item.title}」？` : ''}
+        title={confirmTarget && config ? `刪除${config.metricLabel}「${confirmTarget.item.title}」？` : ''}
         description={confirmTarget?.kind === 'agents'
-          ? '删除后该数字员工会从广场和员工列表移除，相关资源绑定也会一并清理。'
-          : '删除后该广场内容会从开放平台移除，已复制到员工侧的引用可能不再可同步。'}
+          ? '刪除後該數字員工會從廣場和員工列表移除，相關資源綁定也會一併清理。'
+          : '刪除後該廣場內容會從開放平臺移除，已複製到員工側的引用可能不再可同步。'}
         loading={Boolean(confirmTarget) && deletingItemKey === (confirmTarget ? platformItemDeleteKey(confirmTarget.kind, confirmTarget.item) : '')}
         onConfirm={() => void runDelete()}
       />
@@ -543,7 +543,7 @@ export default function OpenPlatformPage({
         className="mb-[24px]"
         onLogout={onLogout}
         userName={currentUser?.username}
-        title="开放广场平台"
+        title="開放廣場平臺"
       />
       <div className="mx-auto grid w-full grid-cols-1 gap-[12px] sm:grid-cols-2 xl:min-h-0 xl:flex-1 xl:grid-cols-5 xl:grid-rows-1">
         {platformStats.map((platform) => {
@@ -609,5 +609,5 @@ export default function OpenPlatformPage({
 }
 
 function isEmptyDefaultKnowledgeBase(item: KnowledgeBaseRead): boolean {
-  return item.name === '默认知识库' && item.document_count === 0 && item.bucket_count === 0 && item.chunk_count === 0;
+  return item.name === '默認知識庫' && item.document_count === 0 && item.bucket_count === 0 && item.chunk_count === 0;
 }

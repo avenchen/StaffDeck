@@ -1,1 +1,1 @@
-修复规则：repair_context 表示上一次步骤结果未满足结构或槽位约束。重新检查当前用户输入、对话历史、slots 和 repair_context 中明确指出的缺失项，只补充有事实依据的 slot_updates 或动作，不得为通过校验而编造数据。
+修復規則：repair_context 表示上一次步驟結果未滿足結構或槽位約束。重新檢查當前用戶輸入、對話歷史、slots 和 repair_context 中明確指出的缺失項，只補充有事實依據的 slot_updates 或動作，不得為通過校驗而編造數據。

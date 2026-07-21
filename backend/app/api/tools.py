@@ -233,7 +233,7 @@ def probe_tool(
     except httpx.TimeoutException:
         return ToolProbeResponse(
             success=False,
-            error=ToolError(code="TIMEOUT", message="工具探测超时。"),
+            error=ToolError(code="TIMEOUT", message="工具探測超時。"),
         )
     except Exception as exc:
         return ToolProbeResponse(
@@ -251,7 +251,7 @@ def probe_tool(
         error=None
         if success
         else ToolError(
-            code="HTTP_ERROR", message=f"工具探测返回异常状态码：{response.status_code}"
+            code="HTTP_ERROR", message=f"工具探測返回異常狀態碼：{response.status_code}"
         ),
     )
 
@@ -554,7 +554,7 @@ def _server_connection(row: MCPServer) -> MCPServerConnection:
 
 
 def _connection_to_client_config(connection: MCPServerConnection) -> dict[str, Any]:
-    """把结构化连接配置转成 mcp_client 认识的扁平 config。"""
+    """把結構化連接配置轉成 mcp_client 認識的扁平 config。"""
     config: dict[str, Any] = {"transport": connection.transport}
     if connection.transport in {"streamable_http", "sse"}:
         config["url"] = connection.url or ""
@@ -708,13 +708,13 @@ def discover_mcp_tools_adhoc(
     db: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> MCPDiscoverResponse:
-    """未保存 Server 时，用连接配置直接探测 tools/list。"""
+    """未保存 Server 時，用連接配置直接探測 tools/list。"""
     ensure_current_user_tenant(request.tenant_id, current_user)
     ensure_tenant(db, request.tenant_id)
     if request.connection is None:
         return MCPDiscoverResponse(
             success=False,
-            error=ToolError(code="MISSING_CONNECTION", message="缺少 MCP 连接配置。"),
+            error=ToolError(code="MISSING_CONNECTION", message="缺少 MCP 連接配置。"),
         )
     return _discover_response(request.connection)
 
@@ -726,7 +726,7 @@ def discover_mcp_tools(
     db: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> MCPDiscoverResponse:
-    """已保存 Server：拉取 tools/list，并标注哪些已导入为 Tool。"""
+    """已保存 Server：拉取 tools/list，並標註哪些已導入為 Tool。"""
     row = _get_mcp_server(db, request.tenant_id, server_id)
     ensure_open_gallery_admin(request.tenant_id, current_user)
     connection = request.connection or _server_connection(row)
@@ -754,7 +754,7 @@ def sync_mcp_tools(
     agent_id: str | None = None,
     current_user: User = Depends(get_current_user),
 ) -> MCPSyncResponse:
-    """把发现到的工具落成 Tool 行（新建/更新 schema），可选择导入的子集。"""
+    """把發現到的工具落成 Tool 行（新建/更新 schema），可選擇導入的子集。"""
     row = _get_mcp_server(db, request.tenant_id, server_id)
     ensure_open_gallery_admin(request.tenant_id, current_user)
     connection = _server_connection(row)
@@ -809,9 +809,9 @@ def sync_mcp_tools(
             touched_tool_ids.append(current.id)
             updated.append(tool.name)
 
-    # 与 create_tool 一致：按当前 agent 范围绑定——员工范围内只对该员工私有可见，
-    # 否则落到工具广场（open gallery），所有人可见。已存在的工具也一并补绑定，
-    # 避免「先在广场导入，再切到员工同步」时员工侧仍然看不到。
+    # 與 create_tool 一致：按當前 agent 範圍綁定——員工範圍內只對該員工私有可見，
+    # 否則落到工具廣場（open gallery），所有人可見。已存在的工具也一併補綁定，
+    # 避免「先在廣場導入，再切到員工同步」時員工側仍然看不到。
     agent = get_agent(db, row.tenant_id, agent_id)
     creator_metadata = user_creator_metadata(current_user)
     for tool_id in touched_tool_ids:

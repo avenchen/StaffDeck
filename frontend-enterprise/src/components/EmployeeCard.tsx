@@ -33,7 +33,7 @@ export type EmployeeCardProps = {
   canManage: boolean;
   selected?: boolean;
   busy?: boolean;
-  /** Show the top-right "更多" actions menu. Hidden on the 对话端 gallery. */
+  /** Show the top-right "更多" actions menu. Hidden on the 對話端 gallery. */
   showMenu?: boolean;
   onOpen: () => void;
   onStatus: (status: 'active' | 'archived') => void;
@@ -67,11 +67,11 @@ export default function EmployeeCard({
 
   // Show raw API values on the card (bypass the SD1 term relabeling in staffdeckDisplayText).
   const rawRoleName = (employee.metadata?.role_name as string | undefined) || profile.roleName;
-  const displayName = employee.is_overall ? '开放广场' : employeeDisplayNameWithCreator(employee);
-  const displayDescription = employee.description || '暂无描述';
+  const displayName = employee.is_overall ? '開放廣場' : employeeDisplayNameWithCreator(employee);
+  const displayDescription = employee.description || '暫無描述';
 
   const stats: Array<{ value: number; label: string }> = [
-    { value: kbCount, label: '资料' },
+    { value: kbCount, label: '資料' },
     { value: skillCount, label: '技能' },
     { value: sopCount, label: 'SOP' },
   ];
@@ -122,12 +122,12 @@ export default function EmployeeCard({
             {employee.is_overall ? displayName : <span data-i18n-ignore>{displayName}</span>}
           </strong>
           <span className="truncate text-[10px] text-[#757F9C]">
-            {rawRoleName === '待补充岗位' ? rawRoleName : <span data-i18n-ignore>{rawRoleName}</span>}
+            {rawRoleName === '待補充崗位' ? rawRoleName : <span data-i18n-ignore>{rawRoleName}</span>}
           </span>
           <div className="leading-none">
             <span className="inline-flex items-center gap-[2px] py-[2px] px-[4px] text-[8px] font-semibold text-[#757F9C] rounded-[90px] bg-white">
               <i className={cn('size-[6px] shrink-0 rounded-full', online ? 'bg-[#22c55e]' : 'bg-[#9ca3af]')} aria-hidden="true" />
-              {online ? '在线' : '下线'}
+              {online ? '在線' : '下線'}
             </span>
           </div>
         </div>
@@ -135,7 +135,7 @@ export default function EmployeeCard({
         {/* Chat button */}
         <button
           type="button"
-          aria-label="发起对话"
+          aria-label="發起對話"
           disabled={!online || busy}
           onClick={(event) => {
             event.stopPropagation();
@@ -153,7 +153,7 @@ export default function EmployeeCard({
       <div className="absolute right-[12px] top-[12px] z-20">
         <DropdownMenu>
           <DropdownMenuTrigger
-            aria-label="员工操作"
+            aria-label="員工操作"
             onPointerDown={(event) => event.stopPropagation()}
             onClick={(event) => event.stopPropagation()}
             className="grid size-7 place-items-center rounded-[10px] text-[#757F9C] transition-colors outline-none hover:bg-black/5 focus-visible:bg-black/5"
@@ -172,7 +172,7 @@ export default function EmployeeCard({
               onSelect={() => onChat()}
             >
               <IconChat className="size-[16px]" />
-              发起对话
+              發起對話
             </DropdownMenuItem>
             {online ? (
               <DropdownMenuItem
@@ -182,7 +182,7 @@ export default function EmployeeCard({
                 onSelect={() => onStatus('archived')}
               >
                 <IconPause className="size-[16px]" />
-                下线
+                下線
               </DropdownMenuItem>
             ) : (
               <DropdownMenuItem
@@ -192,7 +192,7 @@ export default function EmployeeCard({
                 onSelect={() => onStatus('active')}
               >
                 <IconPlay className="size-[16px]" />
-                上线
+                上線
               </DropdownMenuItem>
             )}
             <DropdownMenuItem
@@ -202,7 +202,7 @@ export default function EmployeeCard({
               onSelect={() => onGallery(!galleryPublished)}
             >
               <IconPlatform className="size-[16px]" />
-              {galleryPublished ? '从广场下架' : '发布到广场'}
+              {galleryPublished ? '從廣場下架' : '發佈到廣場'}
             </DropdownMenuItem>
             <DropdownMenuItem
               className={MENU_ITEM_CLASS}
@@ -211,7 +211,7 @@ export default function EmployeeCard({
               onSelect={() => onEdit()}
             >
               <IconEdit className="size-[16px]" />
-              编辑资料
+              編輯資料
             </DropdownMenuItem>
             <DropdownMenuItem
               className={MENU_ITEM_CLASS}
@@ -220,7 +220,7 @@ export default function EmployeeCard({
               onSelect={() => onAvatar()}
             >
               <IconImage className="size-[16px]" />
-              设置头像
+              設置頭像
             </DropdownMenuItem>
             <DropdownMenuSeparator className="my-[2px] bg-[#eef0f4]" />
             <DropdownMenuItem
@@ -231,7 +231,7 @@ export default function EmployeeCard({
               onSelect={() => onDelete()}
             >
               <IconTrash className="size-[16px]" />
-              删除
+              刪除
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

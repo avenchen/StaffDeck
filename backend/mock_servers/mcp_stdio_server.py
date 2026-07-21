@@ -79,8 +79,8 @@ def _call_tool(request_id: Any, params: dict[str, Any]) -> None:
     if name == "product_lookup":
         product_id = str(arguments.get("product_id") or arguments.get("product_name") or "").strip().lower()
         catalog = {
-            "a1": {"product_id": "A1", "display_name": "A1 标准商品", "price": 129.0, "currency": "CNY"},
-            "a3": {"product_id": "A3", "display_name": "A3 高阶商品", "price": 239.0, "currency": "CNY"},
+            "a1": {"product_id": "A1", "display_name": "A1 標準商品", "price": 129.0, "currency": "CNY"},
+            "a3": {"product_id": "A3", "display_name": "A3 高階商品", "price": 239.0, "currency": "CNY"},
         }
         item = catalog.get(product_id)
         _tool_result(request_id, {"found": bool(item), **(item or {"query": product_id})})

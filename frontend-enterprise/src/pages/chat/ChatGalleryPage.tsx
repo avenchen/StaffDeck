@@ -24,7 +24,7 @@ export default function ChatGalleryPage() {
       chat.setSessionAgentFilter(agent.id);
       chat.openDraftForAgent(agent.id);
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '无法打开数字员工');
+      notify.error(error instanceof Error ? error.message : '無法打開數字員工');
     }
   }
 

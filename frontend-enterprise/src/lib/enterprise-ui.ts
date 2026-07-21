@@ -1,8 +1,8 @@
 import { formatClientDateTime } from './timezone';
 
 /**
- * Shared Tailwind class tokens for the enterprise list pages (SOP, 技能, 定时任务,
- * 员工记忆, 对话日志 …). Keeping them in one place avoids copy-pasting the exact
+ * Shared Tailwind class tokens for the enterprise list pages (SOP, 技能, 定時任務,
+ * 員工記憶, 對話日誌 …). Keeping them in one place avoids copy-pasting the exact
  * same dropdown / select / card styling into every page.
  */
 

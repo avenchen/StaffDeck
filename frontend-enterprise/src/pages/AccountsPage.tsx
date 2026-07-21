@@ -94,7 +94,7 @@ export default function AccountsPage({
       const result = await api.get<EmployeeAccount[]>(`/api/auth/users?tenant_id=${TENANT_ID}`);
       setRows(result);
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '加载账号失败');
+      notify.error(error instanceof Error ? error.message : '加載賬號失敗');
     } finally {
       setLoading(false);
     }
@@ -108,7 +108,7 @@ export default function AccountsPage({
     const keyword = searchText.trim().toLowerCase();
     if (!keyword) return rows;
     return rows.filter((row) =>
-      [row.username, row.display_name || '', row.role === 'admin' ? '管理员' : '普通成员']
+      [row.username, row.display_name || '', row.role === 'admin' ? '管理員' : '普通成員']
         .some((value) => value.toLowerCase().includes(keyword)),
     );
   }, [rows, searchText]);
@@ -129,7 +129,7 @@ export default function AccountsPage({
     const username = createDraft.username.trim();
     const password = createDraft.password.trim();
     if (!username || !password) {
-      notify.error('请填写账号和密码');
+      notify.error('請填寫賬號和密碼');
       return;
     }
     setCreating(true);
@@ -141,11 +141,11 @@ export default function AccountsPage({
         display_name: createDraft.displayName.trim() || username,
         role: createDraft.role,
       });
-      notify.success('账号已创建');
+      notify.success('賬號已創建');
       setCreateOpen(false);
       await load();
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '创建账号失败');
+      notify.error(error instanceof Error ? error.message : '創建賬號失敗');
     } finally {
       setCreating(false);
     }
@@ -161,11 +161,11 @@ export default function AccountsPage({
         password: draft.password.trim() || undefined,
         role: draft.role,
       });
-      notify.success('账号已更新');
+      notify.success('賬號已更新');
       setEditing(null);
       await load();
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '保存账号失败');
+      notify.error(error instanceof Error ? error.message : '保存賬號失敗');
     } finally {
       setSaving(false);
     }
@@ -177,11 +177,11 @@ export default function AccountsPage({
     setDeleting(true);
     try {
       await api.delete(`/api/auth/users/${row.id}?tenant_id=${TENANT_ID}`);
-      notify.success('账号已删除');
+      notify.success('賬號已刪除');
       setDeleteTarget(null);
       await load();
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '删除账号失败');
+      notify.error(error instanceof Error ? error.message : '刪除賬號失敗');
     } finally {
       setDeleting(false);
     }
@@ -192,7 +192,7 @@ export default function AccountsPage({
     return (
       <DropdownMenu>
         <DropdownMenuTrigger
-          aria-label="账号操作"
+          aria-label="賬號操作"
           className="ml-auto grid size-7 place-items-center rounded-[8px] text-[#1a71ff] transition-colors outline-none hover:bg-black/5 hover:text-[#4a8dff] focus-visible:bg-black/5"
         >
           <IconMore className="size-3.5" />
@@ -200,7 +200,7 @@ export default function AccountsPage({
         <DropdownMenuContent align="end" className={MENU_CONTENT_CLASS}>
           <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={() => openEdit(row)}>
             <IconEdit />
-            编辑
+            編輯
           </DropdownMenuItem>
           <DropdownMenuSeparator className="my-[2px] bg-[#eef0f4]" />
           <DropdownMenuItem
@@ -210,7 +210,7 @@ export default function AccountsPage({
             onSelect={() => setDeleteTarget(row)}
           >
             <IconTrash />
-            删除
+            刪除
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -220,7 +220,7 @@ export default function AccountsPage({
   const columns: DataTableColumn<EmployeeAccount>[] = [
     {
       key: 'username',
-      title: '用户名',
+      title: '用戶名',
       width: 220,
       className: 'text-[#18181a]',
       render: (row) => (
@@ -234,7 +234,7 @@ export default function AccountsPage({
     },
     {
       key: 'display_name',
-      title: '显示名',
+      title: '顯示名',
       width: 200,
       render: (row) => <span className="block truncate">{row.display_name || row.username}</span>,
     },
@@ -242,9 +242,9 @@ export default function AccountsPage({
       key: 'role',
       title: '角色',
       width: 120,
-      render: (row) => <span>{row.role === 'admin' ? '管理员' : '普通成员'}</span>,
+      render: (row) => <span>{row.role === 'admin' ? '管理員' : '普通成員'}</span>,
     },
-    { key: 'created', title: '创建时间', width: 180, render: (row) => formatDateTime(row.created_at) },
+    { key: 'created', title: '創建時間', width: 180, render: (row) => formatDateTime(row.created_at) },
     { key: 'updated', title: '最近更新', width: 180, render: (row) => formatDateTime(row.updated_at) },
     {
       key: 'actions',
@@ -270,7 +270,7 @@ export default function AccountsPage({
         {renderActions(row)}
       </div>
       <div className="mt-[10px] flex items-center justify-between gap-[10px] text-[12px] text-[#858b9c]">
-        <span>创建 {formatDateTime(row.created_at)}</span>
+        <span>創建 {formatDateTime(row.created_at)}</span>
         <span>更新 {formatDateTime(row.updated_at)}</span>
       </div>
     </article>
@@ -278,7 +278,7 @@ export default function AccountsPage({
 
   return (
     <div className="min-h-full box-border px-[48px] pt-[32px] pb-[43px] max-[900px]:px-[16px]" aria-busy={loading}>
-      <AppHeader onLogout={onLogout} userName={currentUser?.username} title="账号管理" />
+      <AppHeader onLogout={onLogout} userName={currentUser?.username} title="賬號管理" />
 
       <div className="mt-[20px] mb-[16px] flex items-center justify-end gap-[12px]">
         <UIButton
@@ -295,7 +295,7 @@ export default function AccountsPage({
           className="h-[34px] gap-[4px] rounded-[10px] bg-[#18181a] px-[20px] text-[12px] font-normal text-white hover:bg-[#303030]"
         >
           <IconAdd className="size-[14px]" />
-          新建账号
+          新建賬號
         </UIButton>
       </div>
 
@@ -303,14 +303,14 @@ export default function AccountsPage({
         <div className="flex flex-col gap-[18px]">
           <div className="flex items-center gap-[6px] px-[12px] text-[#757f9c]">
             <IconAccounts className="size-[14px] shrink-0" />
-            <span className="text-[14px] font-normal leading-none">账号列表</span>
+            <span className="text-[14px] font-normal leading-none">賬號列表</span>
           </div>
 
           <label className="flex h-[34px] w-[300px] items-center gap-[8px] overflow-hidden rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-[12px] transition-colors focus-within:border-[#18181a] max-[900px]:w-full">
             <IconSearch className="size-[14px] shrink-0 text-[#858b9c]" />
             <input
               value={searchText}
-              placeholder="搜索用户名或显示名"
+              placeholder="搜索用戶名或顯示名"
               onChange={(event) => setSearchText(event.target.value)}
               className="h-full min-w-0 flex-1 bg-transparent text-[12px] text-[#17191f] outline-none placeholder:text-[#c0c6d4]"
             />
@@ -330,24 +330,24 @@ export default function AccountsPage({
             {filteredRows.length ? (
               pagination.pagedItems.map(renderMobileCard)
             ) : (
-              <div className="py-[40px] text-center text-[13px] text-[#858b9c]">暂无账号</div>
+              <div className="py-[40px] text-center text-[13px] text-[#858b9c]">暫無賬號</div>
             )}
           </div>
 
           <div className="hidden md:block">
             <DataTable
-              aria-label="账号列表"
+              aria-label="賬號列表"
               columns={columns}
               data={pagination.pagedItems}
               rowKey={(row) => row.id}
               loading={loading}
-              emptyText="暂无账号"
+              emptyText="暫無賬號"
             />
           </div>
 
           {filteredRows.length > 0 && (
             <Paginator
-              aria-label="账号分页"
+              aria-label="賬號分頁"
               className="mt-0 mb-[6px]"
               page={pagination.page}
               pageCount={pagination.pageCount}
@@ -359,9 +359,9 @@ export default function AccountsPage({
 
       <AccountDialog
         open={createOpen}
-        title="新建账号"
+        title="新建賬號"
         loading={creating}
-        submitText="创建"
+        submitText="創建"
         username={{ value: createDraft.username, onChange: (value) => setCreateDraft((prev) => ({ ...prev, username: value })) }}
         displayName={createDraft.displayName}
         onDisplayNameChange={(value) => setCreateDraft((prev) => ({ ...prev, displayName: value }))}
@@ -369,14 +369,14 @@ export default function AccountsPage({
         onPasswordChange={(value) => setCreateDraft((prev) => ({ ...prev, password: value }))}
         role={createDraft.role}
         onRoleChange={(value) => setCreateDraft((prev) => ({ ...prev, role: value }))}
-        passwordLabel="初始密码"
+        passwordLabel="初始密碼"
         onClose={() => setCreateOpen(false)}
         onSubmit={() => void saveCreate()}
       />
 
       <AccountDialog
         open={Boolean(editing)}
-        title={editing ? `编辑账号：${editing.username}` : '编辑账号'}
+        title={editing ? `編輯賬號：${editing.username}` : '編輯賬號'}
         loading={saving}
         submitText="保存"
         username={null}
@@ -387,8 +387,8 @@ export default function AccountsPage({
         role={draft.role}
         onRoleChange={(value) => setDraft((prev) => ({ ...prev, role: value }))}
         roleDisabled={editing?.id === currentUser?.id}
-        passwordLabel="新密码"
-        passwordPlaceholder="不修改请留空"
+        passwordLabel="新密碼"
+        passwordPlaceholder="不修改請留空"
         onClose={() => setEditing(null)}
         onSubmit={() => void saveEdit()}
       />
@@ -397,8 +397,8 @@ export default function AccountsPage({
         open={Boolean(deleteTarget)}
         onOpenChange={(open) => !open && setDeleteTarget(null)}
         loading={deleting}
-        title={deleteTarget ? `删除账号「${deleteTarget.username}」？` : ''}
-        description="删除后该账号无法登录，但其创建的数字员工仍然保留。"
+        title={deleteTarget ? `刪除賬號「${deleteTarget.username}」？` : ''}
+        description="刪除後該賬號無法登錄，但其創建的數字員工仍然保留。"
         onConfirm={() => void confirmDelete()}
       />
     </div>
@@ -455,7 +455,7 @@ function AccountDialog({
 
         <div className="flex flex-col gap-[14px] px-[12px]">
           {username && (
-            <LabeledField label="用户名">
+            <LabeledField label="用戶名">
               <Input
                 value={username.value}
                 placeholder="例如 zhang_san"
@@ -463,10 +463,10 @@ function AccountDialog({
               />
             </LabeledField>
           )}
-          <LabeledField label="显示名">
+          <LabeledField label="顯示名">
             <Input
               value={displayName}
-              placeholder="例如 张三"
+              placeholder="例如 張三"
               onChange={(event) => onDisplayNameChange(event.target.value)}
             />
           </LabeledField>
@@ -478,7 +478,7 @@ function AccountDialog({
               onChange={(event) => onPasswordChange(event.target.value)}
             />
           </LabeledField>
-          <LabeledField label="账号角色">
+          <LabeledField label="賬號角色">
             <Select
               value={role}
               disabled={roleDisabled}
@@ -488,8 +488,8 @@ function AccountDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="member">普通成员</SelectItem>
-                <SelectItem value="admin">管理员</SelectItem>
+                <SelectItem value="member">普通成員</SelectItem>
+                <SelectItem value="admin">管理員</SelectItem>
               </SelectContent>
             </Select>
           </LabeledField>

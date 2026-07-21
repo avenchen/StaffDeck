@@ -63,14 +63,14 @@ def _handoff_skill(step: dict | None = None) -> Skill:
     node = step or {
         "node_id": "manual_review",
         "type": "handoff",
-        "name": "人工复核",
+        "name": "人工複核",
         "allowed_actions": ["handoff_human"],
-        "handoff_question": "请人工确认后继续处理。",
+        "handoff_question": "請人工確認後繼續處理。",
     }
     return Skill(
         tenant_id="tenant_demo",
         skill_id="manual_skill",
-        name="人工复核流程",
+        name="人工複核流程",
         status="published",
         content_json={
             "nodes": [node],
@@ -123,8 +123,8 @@ def test_handoff_requires_structured_step_declaration():
     assert loop._step_declares_human_handoff({"allowed_actions": ["answer_user", "handoff_human"]})
     assert loop._step_declares_human_handoff({"type": "handoff"})
 
-    assert not loop._step_declares_human_handoff({"description": "用户要求转人工时请转人工"})
-    assert not loop._step_declares_human_handoff({"name": "转人工确认"})
+    assert not loop._step_declares_human_handoff({"description": "用戶要求轉人工時請轉人工"})
+    assert not loop._step_declares_human_handoff({"name": "轉人工確認"})
     assert not loop._step_declares_human_handoff({"allowed_actions": ["manual_handoff"]})
     assert not loop._step_declares_human_handoff({"handoff": {"enabled": True}})
     assert not loop._step_declares_human_handoff({"allowed_actions": ["answer_user", "continue_flow"]})
@@ -206,7 +206,7 @@ def test_handoff_finalize_creates_pending_request_for_declared_step():
                     tenant_id="tenant_demo",
                     session_id="session_handoff",
                     role="user",
-                    content="我要转人工处理订单 A001",
+                    content="我要轉人工處理訂單 A001",
                 )
             ],
         ]
@@ -221,7 +221,7 @@ def test_handoff_finalize_creates_pending_request_for_declared_step():
         session,
         _handoff_skill(),
         RouterDecision(decision="continue_active"),
-        StepAgentResult(reply="需要人工复核订单 A001", handoff=True),
+        StepAgentResult(reply="需要人工複核訂單 A001", handoff=True),
         None,
     )
 
@@ -237,7 +237,7 @@ def test_handoff_finalize_creates_pending_request_for_declared_step():
     assert handoff.trigger_skill_id == "manual_skill"
     assert handoff.trigger_step_id == "manual_review"
     assert handoff.resume_payload_json["slots"] == {"order_id": "A001"}
-    assert handoff.pending_question == "需要人工复核订单 A001"
+    assert handoff.pending_question == "需要人工複核訂單 A001"
     assert session.awaiting_input_json["handoff_id"] == handoff.id
     assert [record[2] for record in loop.events.records] == ["human_handoff_requested"]
 
@@ -248,7 +248,7 @@ def test_handoff_finalize_reuses_existing_pending_request():
         id="handoff_existing",
         tenant_id="tenant_demo",
         session_id="session_handoff",
-        pending_question="之前已经创建的人工请求",
+        pending_question="之前已經創建的人工請求",
     )
     loop.db = FakeDb(exec_results=[[existing]])
     loop.events = FakeEvents()
@@ -258,7 +258,7 @@ def test_handoff_finalize_reuses_existing_pending_request():
         "tenant_demo",
         session,
         _handoff_skill(),
-        StepAgentResult(reply="重复触发", handoff=True),
+        StepAgentResult(reply="重複觸發", handoff=True),
     )
 
     assert handoff is existing
@@ -266,7 +266,7 @@ def test_handoff_finalize_reuses_existing_pending_request():
     assert session.awaiting_input_json == {
         "type": "human_handoff",
         "handoff_id": "handoff_existing",
-        "pending_question": "之前已经创建的人工请求",
+        "pending_question": "之前已經創建的人工請求",
     }
     assert not loop.db.added
     assert loop.events.records == []
@@ -281,8 +281,8 @@ def test_handoff_request_is_ignored_when_step_does_not_declare_handoff():
     skill = _handoff_skill(
         {
             "node_id": "manual_review",
-            "name": "转人工确认",
-            "description": "用户要求转人工时请转人工",
+            "name": "轉人工確認",
+            "description": "用戶要求轉人工時請轉人工",
             "allowed_actions": ["answer_user", "continue_flow"],
         }
     )
@@ -292,7 +292,7 @@ def test_handoff_request_is_ignored_when_step_does_not_declare_handoff():
         session,
         skill,
         RouterDecision(decision="handoff_human"),
-        StepAgentResult(reply="模型建议转人工", handoff=True),
+        StepAgentResult(reply="模型建議轉人工", handoff=True),
         None,
     )
 
@@ -326,7 +326,7 @@ def test_handoff_list_filters_by_status_and_user_then_reply_restores_session(mon
                     agent_id="agent_demo",
                     requester_user_id=other.id,
                     assignee_user_id=user.id,
-                    pending_question="请 user_demo 处理",
+                    pending_question="請 user_demo 處理",
                     status="pending",
                     updated_at=utc_now(),
                 ),
@@ -337,7 +337,7 @@ def test_handoff_list_filters_by_status_and_user_then_reply_restores_session(mon
                     agent_id="agent_demo",
                     requester_user_id=user.id,
                     assignee_user_id=other.id,
-                    pending_question="user_demo 发起的请求",
+                    pending_question="user_demo 發起的請求",
                     status="pending",
                     updated_at=utc_now(),
                 ),
@@ -348,7 +348,7 @@ def test_handoff_list_filters_by_status_and_user_then_reply_restores_session(mon
                     agent_id="agent_demo",
                     requester_user_id=other.id,
                     assignee_user_id=other.id,
-                    pending_question="其他人的请求",
+                    pending_question="其他人的請求",
                     status="pending",
                     updated_at=utc_now(),
                 ),
@@ -359,7 +359,7 @@ def test_handoff_list_filters_by_status_and_user_then_reply_restores_session(mon
                     agent_id="agent_demo",
                     requester_user_id=other.id,
                     assignee_user_id=None,
-                    pending_question="未分配请求",
+                    pending_question="未分配請求",
                     status="pending",
                     updated_at=utc_now(),
                 ),
@@ -370,7 +370,7 @@ def test_handoff_list_filters_by_status_and_user_then_reply_restores_session(mon
                     agent_id="agent_demo",
                     requester_user_id=user.id,
                     assignee_user_id=user.id,
-                    pending_question="已经处理",
+                    pending_question="已經處理",
                     status="answered",
                     human_reply="已完成",
                     updated_at=utc_now(),
@@ -398,7 +398,7 @@ def test_handoff_list_filters_by_status_and_user_then_reply_restores_session(mon
         with pytest.raises(HTTPException) as forbidden:
             chat_api.reply_human_handoff(
                 "handoff_requested",
-                chat_api.HumanHandoffReplyRequest(tenant_id="tenant_demo", reply="尝试处理别人的请求"),
+                chat_api.HumanHandoffReplyRequest(tenant_id="tenant_demo", reply="嘗試處理別人的請求"),
                 current_user=user,
                 db=db,
             )
@@ -406,13 +406,13 @@ def test_handoff_list_filters_by_status_and_user_then_reply_restores_session(mon
 
         result = chat_api.reply_human_handoff(
             "handoff_assigned",
-            chat_api.HumanHandoffReplyRequest(tenant_id="tenant_demo", reply="人工已经确认，继续执行"),
+            chat_api.HumanHandoffReplyRequest(tenant_id="tenant_demo", reply="人工已經確認，繼續執行"),
             current_user=user,
             db=db,
         )
 
         assert result.status == "answered"
-        assert result.human_reply == "人工已经确认，继续执行"
+        assert result.human_reply == "人工已經確認，繼續執行"
         stored_handoff = db.get(HumanHandoffRequest, "handoff_assigned")
         stored_session = db.get(ChatSession, "session_handoff")
         assert stored_handoff is not None
@@ -420,7 +420,7 @@ def test_handoff_list_filters_by_status_and_user_then_reply_restores_session(mon
         assert stored_session is not None
         assert stored_session.status == "active"
         assert stored_session.awaiting_input_json is None
-        assert stored_session.summary == "最近回复：人工已经确认，继续执行"
+        assert stored_session.summary == "最近回覆：人工已經確認，繼續執行"
         events = db.exec(select(AgentEvent).where(AgentEvent.event_type == "human_handoff_answered")).all()
         assert len(events) == 1
         assert events[0].payload_json["handoff_id"] == "handoff_assigned"
@@ -448,7 +448,7 @@ def test_handoff_assignee_can_read_original_session_without_owner_permissions():
                 session_id=session.id,
                 requester_user_id=user.id,
                 assignee_user_id=other.id,
-                pending_question="请人工确认",
+                pending_question="請人工確認",
                 status="pending",
             )
         )
@@ -472,8 +472,8 @@ def test_reply_human_handoff_restores_session_and_schedules_resume(monkeypatch):
         assignee_user_id="admin_user",
         trigger_skill_id="manual_skill",
         trigger_step_id="manual_review",
-        context_summary="user: 请人工处理",
-        pending_question="请人工确认",
+        context_summary="user: 請人工處理",
+        pending_question="請人工確認",
         status="pending",
     )
     session = ChatSession(
@@ -495,7 +495,7 @@ def test_reply_human_handoff_restores_session_and_schedules_resume(monkeypatch):
 
     result = chat_api.reply_human_handoff(
         "handoff_reply",
-        chat_api.HumanHandoffReplyRequest(tenant_id="tenant_demo", reply="人工确认通过，继续执行"),
+        chat_api.HumanHandoffReplyRequest(tenant_id="tenant_demo", reply="人工確認通過，繼續執行"),
         current_user=User(
             id="admin_user",
             tenant_id="tenant_demo",
@@ -507,13 +507,13 @@ def test_reply_human_handoff_restores_session_and_schedules_resume(monkeypatch):
     )
 
     assert result.status == "answered"
-    assert result.human_reply == "人工确认通过，继续执行"
+    assert result.human_reply == "人工確認通過，繼續執行"
     assert handoff.status == "answered"
-    assert handoff.human_reply == "人工确认通过，继续执行"
+    assert handoff.human_reply == "人工確認通過，繼續執行"
     assert handoff.resume_payload_json["answered_by_user_id"] == "admin_user"
     assert session.status == "active"
     assert session.awaiting_input_json is None
-    assert session.summary == "最近回复：人工确认通过，继续执行"
+    assert session.summary == "最近回覆：人工確認通過，繼續執行"
     assert any(isinstance(row, AgentEvent) and row.event_type == "human_handoff_answered" for row in db.added)
     assert db.commits == 1
     assert resumed == ["handoff_reply"]
@@ -525,7 +525,7 @@ def test_reply_human_handoff_rejects_non_pending_request(monkeypatch):
         tenant_id="tenant_demo",
         session_id="session_handoff",
         status="answered",
-        human_reply="已处理",
+        human_reply="已處理",
     )
     db = FakeDb(get_rows={(HumanHandoffRequest, "handoff_done"): handoff})
     monkeypatch.setattr(chat_api, "_resume_human_handoff_async", lambda _handoff_id: None)
@@ -533,7 +533,7 @@ def test_reply_human_handoff_rejects_non_pending_request(monkeypatch):
     with pytest.raises(HTTPException) as exc:
         chat_api.reply_human_handoff(
             "handoff_done",
-            chat_api.HumanHandoffReplyRequest(tenant_id="tenant_demo", reply="再次回复"),
+            chat_api.HumanHandoffReplyRequest(tenant_id="tenant_demo", reply="再次回覆"),
             current_user=User(
                 id="admin_user",
                 tenant_id="tenant_demo",
@@ -555,7 +555,7 @@ def test_reply_human_handoff_rejects_missing_original_session(monkeypatch):
         session_id="session_missing",
         assignee_user_id="admin_user",
         status="pending",
-        pending_question="请人工确认",
+        pending_question="請人工確認",
     )
     db = FakeDb(get_rows={(HumanHandoffRequest, "handoff_missing_session"): handoff})
     resumed: list[str] = []
@@ -564,7 +564,7 @@ def test_reply_human_handoff_rejects_missing_original_session(monkeypatch):
     with pytest.raises(HTTPException) as exc:
         chat_api.reply_human_handoff(
             "handoff_missing_session",
-            chat_api.HumanHandoffReplyRequest(tenant_id="tenant_demo", reply="人工回复不能丢"),
+            chat_api.HumanHandoffReplyRequest(tenant_id="tenant_demo", reply="人工回覆不能丟"),
             current_user=User(
                 id="admin_user",
                 tenant_id="tenant_demo",
@@ -616,9 +616,9 @@ def test_handoff_resume_worker_continues_original_session_once(monkeypatch):
                 assignee_user_id="admin_user",
                 trigger_skill_id="manual_skill",
                 trigger_step_id="manual_review",
-                pending_question="请人工确认",
+                pending_question="請人工確認",
                 status="answered",
-                human_reply="人工答复：继续执行后续流程",
+                human_reply="人工答覆：繼續執行後續流程",
             )
         )
         db.commit()
@@ -632,7 +632,7 @@ def test_handoff_resume_worker_continues_original_session_once(monkeypatch):
     assert request.session_id == "session_handoff"
     assert request.agent_id == "agent_demo"
     assert request.user_id == "user_demo"
-    assert request.message == "人工答复：继续执行后续流程"
+    assert request.message == "人工答覆：繼續執行後續流程"
     assert request.channel == "human_handoff_resume"
 
     with Session(engine) as db:
@@ -677,9 +677,9 @@ def test_handoff_resume_worker_persists_failed_resume(monkeypatch):
                 agent_id="agent_demo",
                 requester_user_id=user.id,
                 assignee_user_id="admin_user",
-                pending_question="请人工确认",
+                pending_question="請人工確認",
                 status="answered",
-                human_reply="人工答复：继续执行后续流程",
+                human_reply="人工答覆：繼續執行後續流程",
             )
         )
         db.commit()
@@ -701,9 +701,9 @@ def test_handoff_resume_worker_persists_failed_resume(monkeypatch):
 def test_router_generated_message_slots_are_not_persisted():
     cleaned = strip_router_generated_message_slots(
         {
-            "message_content": "模型改写后的用户消息",
-            "user_message": "另一个改写版本",
-            "current_message": "当前输入摘要",
+            "message_content": "模型改寫後的用戶消息",
+            "user_message": "另一個改寫版本",
+            "current_message": "當前輸入摘要",
             "product_id": "A1",
             "quantity": 1,
         }

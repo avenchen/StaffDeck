@@ -48,8 +48,8 @@ def test_internal_mock_request_adds_service_token_only_for_configured_origin() -
 def test_execute_rejects_tool_not_bound_to_current_employee() -> None:
     with _test_session() as db:
         db.add(Tenant(id="tenant_demo", name="Demo"))
-        owner = AgentProfile(id="agent_owner", tenant_id="tenant_demo", name="员工 A")
-        other = AgentProfile(id="agent_other", tenant_id="tenant_demo", name="员工 B")
+        owner = AgentProfile(id="agent_owner", tenant_id="tenant_demo", name="員工 A")
+        other = AgentProfile(id="agent_other", tenant_id="tenant_demo", name="員工 B")
         tool = Tool(
             id="tool_private",
             tenant_id="tenant_demo",
@@ -249,7 +249,7 @@ def test_execute_get_tool_preserves_query_string_when_arguments_empty(monkeypatc
             Tool(
                 tenant_id="tenant_demo",
                 name="weather.forecast",
-                display_name="天气查询",
+                display_name="天氣查詢",
                 method="GET",
                 url=(
                     "https://api.open-meteo.com/v1/forecast"

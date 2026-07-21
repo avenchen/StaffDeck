@@ -96,7 +96,7 @@ export const CHAT_MD_TABLE_CLASS =
   'w-full border-collapse text-[13px] [&_th]:border [&_th]:border-[#e3e7f1] [&_th]:bg-[#f7f8fa] [&_th]:px-[10px] [&_th]:py-[6px] [&_th]:font-semibold [&_td]:border [&_td]:border-[#e3e7f1] [&_td]:px-[10px] [&_td]:py-[6px]';
 
 // ---------------------------------------------------------------------------
-// Execution record (执行记录 trace panel)
+// Execution record (執行記錄 trace panel)
 // ---------------------------------------------------------------------------
 export const CHAT_TRACE_WRAP_CLASS = 'mb-[10px] min-w-0';
 export const CHAT_TRACE_SUMMARY_CLASS =

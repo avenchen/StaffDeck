@@ -68,7 +68,7 @@ function NavChevron({
 }
 
 /**
- * SD1 广场资源详情侧拉（知识库 298:4801 / SOP·技能·工具 298:4869 系列）。
+ * SD1 廣場資源詳情側拉（知識庫 298:4801 / SOP·技能·工具 298:4869 系列）。
  */
 export default function PlatformResourceDrawer({
   open,
@@ -102,12 +102,12 @@ export default function PlatformResourceDrawer({
               <span className="text-[12px] font-medium capitalize text-[#464c5e]">
                 {platformTitle}
               </span>
-              <NavChevron direction="prev" disabled={!hasPrev} onClick={onPrev} label="上一项" />
-              <NavChevron direction="next" disabled={!hasNext} onClick={onNext} label="下一项" />
+              <NavChevron direction="prev" disabled={!hasPrev} onClick={onPrev} label="上一項" />
+              <NavChevron direction="next" disabled={!hasNext} onClick={onNext} label="下一項" />
             </div>
             <button
               type="button"
-              aria-label="关闭"
+              aria-label="關閉"
               onClick={onClose}
               className="grid size-[14px] place-items-center text-[#757f9c] transition-colors hover:text-[#18181a]"
             >
@@ -141,13 +141,13 @@ export default function PlatformResourceDrawer({
 
           <div className="grid grid-cols-2 gap-[10px]">
             <div className="flex min-h-[60px] flex-col justify-center gap-[4px] rounded-[14px] border-[0.5px] border-[#e3e7f1] px-[16px] py-[8px]">
-              <span className="text-[10px] leading-[13px] text-[#464c5e]">分类</span>
+              <span className="text-[10px] leading-[13px] text-[#464c5e]">分類</span>
               <strong className="truncate text-[12px] leading-[16px] font-medium text-[#18181a]">
                 {platformTitle}
               </strong>
             </div>
             <div className="flex min-h-[60px] flex-col justify-center gap-[4px] rounded-[14px] border-[0.5px] border-[#e3e7f1] px-[16px] py-[8px]">
-              <span className="text-[10px] leading-[13px] text-[#464c5e]">分类</span>
+              <span className="text-[10px] leading-[13px] text-[#464c5e]">分類</span>
               <strong className={cn('truncate text-[12px] leading-[16px] font-medium', accentStyles.meta)}>
                 {categoryMeta}
               </strong>
@@ -155,7 +155,7 @@ export default function PlatformResourceDrawer({
           </div>
 
           <div className="flex min-h-0 flex-1 flex-col gap-[8px]">
-            <span className="text-[12px] capitalize text-[#464c5e]">说明</span>
+            <span className="text-[12px] capitalize text-[#464c5e]">說明</span>
             <p className="text-[12px] leading-[20px] text-[#757f9c]">
               {detailText}
             </p>
@@ -173,7 +173,7 @@ export default function PlatformResourceDrawer({
               className="inline-flex h-[34px] w-[80px] items-center justify-center gap-[4px] rounded-[10px] border-[0.5px] border-[#d20b0b] bg-white text-[12px] text-[#d20b0b] transition-colors hover:bg-[#fce7e7] disabled:cursor-not-allowed disabled:opacity-50"
             >
               <IconTrash className="size-[14px]" />
-              删除
+              刪除
             </button>
           )}
           <button

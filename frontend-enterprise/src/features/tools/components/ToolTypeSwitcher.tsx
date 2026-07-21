@@ -6,18 +6,18 @@ import IconTool from '@/assets/icons/plaza-tool.svg?react';
 import { FIELD_LABEL_CLASS } from '../styles';
 
 /**
- * 新建工具时顶部的类型切换条：HTTP 工具 / MCP 服务器。
- * 点击即跳转到对应的新建页，体验上像同一个「新建工具」流程里的分支。
+ * 新建工具時頂部的類型切換條：HTTP 工具 / MCP 服務器。
+ * 點擊即跳轉到對應的新建頁，體驗上像同一個「新建工具」流程裡的分支。
  */
 export function ToolTypeSwitcher({ active }: { active: 'http' | 'mcp' }) {
   const navigate = useNavigate();
   const options: { value: 'http' | 'mcp'; label: string; hint: string; to: string }[] = [
-    { value: 'http', label: 'HTTP 工具', hint: '配置单个 HTTP 接口作为工具', to: '/enterprise/tools/new' },
-    { value: 'mcp', label: 'MCP 服务器', hint: '连接 MCP Server，自动发现并同步其工具集', to: '/enterprise/tools/mcp/new' },
+    { value: 'http', label: 'HTTP 工具', hint: '配置單個 HTTP 接口作為工具', to: '/enterprise/tools/new' },
+    { value: 'mcp', label: 'MCP 服務器', hint: '連接 MCP Server，自動發現並同步其工具集', to: '/enterprise/tools/mcp/new' },
   ];
   return (
     <div className="mb-[16px] flex flex-col gap-[8px]">
-      <span className={FIELD_LABEL_CLASS}>工具类型</span>
+      <span className={FIELD_LABEL_CLASS}>工具類型</span>
       <div className="flex flex-wrap gap-[10px]">
         {options.map((option) => {
           const isActive = option.value === active;

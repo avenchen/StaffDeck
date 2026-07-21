@@ -26,13 +26,13 @@ export function ClawHubDialog({
         <div className="flex items-center gap-[6px] px-[12px] text-[#757f9c]">
           <IconSkill className="size-[14px] shrink-0" />
           <DialogTitle className="text-[14px] font-normal leading-none text-[#757f9c]">
-            从开源平台导入技能
+            從開源平臺導入技能
           </DialogTitle>
         </div>
 
         <div className="flex flex-col gap-[12px] px-[12px]">
           <p className="text-[12px] leading-[1.6] text-[#858b9c]">
-            支持开源平台地址、GitHub repo/tree/raw SKILL.md 或 owner/repo 形式。本地 zip 或 Markdown 文件请在编辑页使用「导入 &gt; 选择文件」。
+            支持開源平臺地址、GitHub repo/tree/raw SKILL.md 或 owner/repo 形式。本地 zip 或 Markdown 文件請在編輯頁使用「導入 &gt; 選擇文件」。
           </p>
           <input
             value={source}

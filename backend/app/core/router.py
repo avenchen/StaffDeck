@@ -75,7 +75,7 @@ class Router:
                 decision.decision = "clarify"
                 decision.target_skill_id = None
                 decision.target_step_id = None
-                decision.clarification_question = "请问您想办理哪类业务？"
+                decision.clarification_question = "請問您想辦理哪類業務？"
                 return decision
         if decision.decision == "switch_to_pending":
             pending_ids = {
@@ -85,7 +85,7 @@ class Router:
             }
             if not decision.selected_task_id or decision.selected_task_id not in pending_ids:
                 decision.decision = "clarify"
-                decision.clarification_question = "请问您想继续哪一项待处理任务？"
+                decision.clarification_question = "請問您想繼續哪一項待處理任務？"
                 return decision
         if decision.decision == "create_pending":
             ordered_tasks = [
@@ -112,7 +112,7 @@ class Router:
                     decision.selected_task_id = None
                     decision.target_skill_id = None
                     decision.target_step_id = None
-                    decision.clarification_question = "请问您想办理哪类业务？"
+                    decision.clarification_question = "請問您想辦理哪類業務？"
                     return decision
         if not decision.target_skill_id and session.active_skill_id:
             decision.target_skill_id = session.active_skill_id

@@ -37,48 +37,48 @@ const CARD_BADGE_CLASS =
 const STEPS: GuideStep[] = [
   {
     image: galleryImage,
-    eyebrow: "欢迎使用 StaffDeck",
-    titleLines: ["数字员工", "全流程构建与管理平台"],
+    eyebrow: "歡迎使用 StaffDeck",
+    titleLines: ["數字員工", "全流程構建與管理平臺"],
     description:
-      "像招聘、培养、管理真人员工一样，构建你的数字员工团队。把重复的事情交给数字员工，让自己专注更重要的工作。",
+      "像招聘、培養、管理真人員工一樣，構建你的數字員工團隊。把重複的事情交給數字員工，讓自己專注更重要的工作。",
     cards: [
       {
         icon: <IdCard className={CARD_ICON_CLASS} />,
-        title: "像管员工一样管AI",
-        description: "每位数字员工都有档案、岗位与成长记录。",
+        title: "像管員工一樣管AI",
+        description: "每位數字員工都有檔案、崗位與成長記錄。",
       },
       {
         icon: <Workflow className={CARD_ICON_CLASS} />,
-        title: "按流程执行任务",
-        description: "每位数字员工都有档案、岗位与成长记录。",
+        title: "按流程執行任務",
+        description: "每位數字員工都有檔案、崗位與成長記錄。",
       },
       {
         icon: <Brain className={CARD_ICON_CLASS} />,
-        title: "理解业务而非检索",
-        description: "每位数字员工都有档案、岗位与成长记录。",
+        title: "理解業務而非檢索",
+        description: "每位數字員工都有檔案、崗位與成長記錄。",
       },
     ],
   },
   {
     image: profileImage,
     eyebrow: "核心概念",
-    titleLines: ["三步搭建你的数字员工"],
-    description: "先给它配大脑，再给它配能力，最后上岗对话。",
+    titleLines: ["三步搭建你的數字員工"],
+    description: "先給它配大腦，再給它配能力，最後上崗對話。",
     cards: [
       {
         icon: <span className={CARD_BADGE_CLASS}>01</span>,
         title: "模型",
-        description: "数字员工的大脑，接入 OpenAI 兼容模型即可。",
+        description: "數字員工的大腦，接入 OpenAI 兼容模型即可。",
       },
       {
         icon: <span className={CARD_BADGE_CLASS}>02</span>,
         title: "能力",
-        description: "知识库、技能、SOP、工具，决定它懂什么、会做什么。",
+        description: "知識庫、技能、SOP、工具，決定它懂什麼、會做什麼。",
       },
       {
         icon: <span className={CARD_BADGE_CLASS}>03</span>,
-        title: "上岗",
-        description: "创建数字员工并绑定能力，去对话端与它协作。",
+        title: "上崗",
+        description: "創建數字員工並綁定能力，去對話端與它協作。",
       },
     ],
   },
@@ -155,7 +155,7 @@ export default function OnboardingGuide() {
             <button
               type="button"
               onClick={finish}
-              aria-label="关闭引导"
+              aria-label="關閉引導"
               className="flex size-[20px] items-center justify-center text-[#757f9c] transition-colors hover:text-[#18181a]"
             >
               <XIcon className="size-[14px]" />
@@ -235,14 +235,14 @@ export default function OnboardingGuide() {
                 onClick={finish}
                 className="flex w-[80px] items-center justify-center rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-[20px] py-[8px] text-[14px] text-[#757f9c] transition-colors hover:bg-[#f6f6f6] hover:text-[#18181a]"
               >
-                跳过
+                跳過
               </button>
               <button
                 type="button"
                 onClick={goNext}
                 className="flex w-[134px] items-center justify-center rounded-[10px] bg-[#18181a] px-[32px] py-[8px] text-[14px] text-white transition-colors hover:bg-[#303030]"
               >
-                {isLast ? "开始使用" : "下一步"}
+                {isLast ? "開始使用" : "下一步"}
               </button>
             </div>
           </div>

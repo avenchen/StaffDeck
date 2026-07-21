@@ -53,7 +53,7 @@ export function buildToolPayload(values: ToolFormValues) {
       enabled: values.enabled,
     };
   } catch {
-    notify.error('JSON 配置格式不正确，请检查 Headers、Auth、Schema 或 MCP Config');
+    notify.error('JSON 配置格式不正確，請檢查 Headers、Auth、Schema 或 MCP Config');
     return null;
   }
 }
@@ -88,7 +88,7 @@ export function schemaPropertyCount(schema: Record<string, unknown>): string {
 }
 
 export function toolTypeLabel(tool: ToolRead): string {
-  return tool.tool_type === 'mcp' ? 'MCP 服务' : 'HTTP 接口';
+  return tool.tool_type === 'mcp' ? 'MCP 服務' : 'HTTP 接口';
 }
 
 export function serverToFormValues(row: MCPServerRead): McpFormValues {
@@ -120,12 +120,12 @@ export function transportLabel(transport: MCPTransport | string): string {
 }
 
 /**
- * 规范化 MCP 服务器名称（唯一标识）：
- * 中文自动转拼音（无声调），只保留字母/数字/下划线，其余转下划线，最长 15 字符。
+ * 規範化 MCP 服務器名稱（唯一標識）：
+ * 中文自動轉拼音（無聲調），只保留字母/數字/下劃線，其餘轉下劃線，最長 15 字符。
  */
 export function sanitizeMcpName(raw: string): string {
   const input = String(raw || '');
-  // 含中文时先整体转拼音（不带声调），拼音之间用下划线连接。
+  // 含中文時先整體轉拼音（不帶聲調），拼音之間用下劃線連接。
   const converted = /[\u4e00-\u9fa5]/.test(input)
     ? pinyin(input, { toneType: 'none', type: 'array', nonZh: 'consecutive' }).join('_')
     : input;

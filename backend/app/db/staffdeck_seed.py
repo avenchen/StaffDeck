@@ -42,7 +42,7 @@ ADMIN_DISPLAY_NAME = "Administrator"
 SEED_SOURCE = "staffdeck_admin_gallery_seed"
 FIXTURE_PATH = Path(__file__).resolve().parent / "seed_fixtures" / "staffdeck_admin_gallery_seed.json"
 
-SELECTED_AGENT_NAMES = {"IT", "人事", "法务", "行政", "财务"}
+SELECTED_AGENT_NAMES = {"IT", "人事", "法務", "行政", "財務"}
 
 JsonDict = dict[str, Any]
 ModelT = TypeVar("ModelT", bound=SQLModel)

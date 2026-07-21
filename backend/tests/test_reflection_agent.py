@@ -25,16 +25,16 @@ def test_reflection_payload_only_contains_current_rules_and_execution_result(
         name="退款",
         status="published",
         content_json={
-            "response_rules": ["必须明确说明退款结果"],
+            "response_rules": ["必須明確說明退款結果"],
             "nodes": [
                 {
                     "node_id": "process_refund",
                     "type": "tool",
-                    "name": "处理退款",
-                    "instruction": "确认工具结果后再完成。",
+                    "name": "處理退款",
+                    "instruction": "確認工具結果後再完成。",
                     "allowed_actions": ["call_tool:refund.apply"],
                 },
-                {"node_id": "unrelated", "instruction": "不应投影"},
+                {"node_id": "unrelated", "instruction": "不應投影"},
             ],
         },
     )
@@ -42,7 +42,7 @@ def test_reflection_payload_only_contains_current_rules_and_execution_result(
         decision="continue_active",
         target_skill_id="refund",
         target_step_id="process_refund",
-        user_intent="申请退款",
+        user_intent="申請退款",
         source_message="我要退款",
         awaiting_input=AwaitingInput(
             skill_id="refund", step_id="process_refund", expected_fields=["order_id"]
@@ -62,7 +62,7 @@ def test_reflection_payload_only_contains_current_rules_and_execution_result(
         ),
         skill,
         decision,
-        StepAgentResult(reply="退款已处理", is_step_completed=True),
+        StepAgentResult(reply="退款已處理", is_step_completed=True),
         None,
         [skill],
         [],
@@ -70,10 +70,10 @@ def test_reflection_payload_only_contains_current_rules_and_execution_result(
     )
 
     payload = captured["payload"]
-    assert payload["current_step"]["instruction"] == "确认工具结果后再完成。"
-    assert payload["rules"] == {"response_rules": ["必须明确说明退款结果"]}
+    assert payload["current_step"]["instruction"] == "確認工具結果後再完成。"
+    assert payload["rules"] == {"response_rules": ["必須明確說明退款結果"]}
     assert payload["slots"] == {"order_id": "A001"}
-    assert payload["step_result"]["reply"] == "退款已处理"
+    assert payload["step_result"]["reply"] == "退款已處理"
     assert "source_message" not in payload["router_decision"]
     assert "awaiting_input" not in payload["router_decision"]
     assert "current_session" not in payload

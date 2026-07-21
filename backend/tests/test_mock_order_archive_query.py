@@ -72,7 +72,7 @@ def test_product_purchase_uses_name_catalog_price_for_a3() -> None:
 
     assert purchase["found"] is True
     assert purchase["product_id"] == "A3"
-    assert purchase["display_name"] == "A3 高阶商品"
+    assert purchase["display_name"] == "A3 高階商品"
     assert purchase["unit_price"] == 239.0
     assert purchase["total_amount"] == 239.0
     assert result["found"] is True
@@ -118,7 +118,7 @@ def test_product_price_query_returns_price_by_product_name() -> None:
 
 
 def test_product_price_query_accepts_display_name_alias() -> None:
-    result = mock_product_price_query(MockProductPriceQueryRequest(product_name="A3 高阶商品"))
+    result = mock_product_price_query(MockProductPriceQueryRequest(product_name="A3 高階商品"))
 
     assert result["found"] is True
     assert result["product_id"] == "A3"
@@ -155,7 +155,7 @@ def test_fulfillment_reroute_plan_returns_candidate_plans() -> None:
         MockFulfillmentReroutePlanRequest(
             order_id="A12345",
             user_id="user_demo",
-            target_address="上海市浦东新区示例路 88 号",
+            target_address="上海市浦東新區示例路 88 號",
             expected_delivery_time="2026-06-04T20:00:00+08:00",
             allow_split_package=True,
             member_level="black",

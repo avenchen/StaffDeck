@@ -458,7 +458,7 @@ def _ensure_skill_graph(content: dict[str, object]) -> dict[str, object]:
             "source_node_id": str(normalized_steps[index].get("step_id") or f"step_{index + 1}"),
             "next_node_id": str(normalized_steps[index + 1].get("step_id") or f"step_{index + 2}"),
             "priority": index,
-            "label": "默认推进",
+            "label": "默認推進",
         }
         for index in range(len(normalized_steps) - 1)
     ]
@@ -482,7 +482,7 @@ def _step_to_node_dict(step: dict[str, object]) -> dict[str, object]:
     return {
         "node_id": str(step.get("step_id") or step.get("node_id") or "step"),
         "type": node_type,
-        "name": str(step.get("name") or step.get("step_id") or "步骤"),
+        "name": str(step.get("name") or step.get("step_id") or "步驟"),
         "instruction": str(step.get("instruction") or ""),
         "optional": bool(step.get("optional") or False),
         "condition": step.get("condition") if isinstance(step.get("condition"), str) else None,
@@ -588,8 +588,8 @@ def _migrate_knowledge_base_schema(conn, inspector, tables: set[str]) -> None:
                     {
                         "id": default_id,
                         "tenant_id": tenant_id,
-                        "name": "默认知识库",
-                        "description": "系统默认知识库",
+                        "name": "默認知識庫",
+                        "description": "系統默認知識庫",
                     },
                 )
 
@@ -770,7 +770,7 @@ def _split_document_backed_knowledge_bases(conn, tables: set[str]) -> None:
                         "id": target_id,
                         "tenant_id": source["tenant_id"],
                         "name": target_name,
-                        "description": f"由文档 {document.get('filename') or document['id']} 创建",
+                        "description": f"由文檔 {document.get('filename') or document['id']} 創建",
                         "status": "active",
                         "metadata_json": json.dumps(metadata, ensure_ascii=False),
                         "created_at": document.get("created_at") or source.get("created_at"),
@@ -800,7 +800,7 @@ def _split_document_backed_knowledge_bases(conn, tables: set[str]) -> None:
                         "tenant_id": source["tenant_id"],
                         "knowledge_base_id": target_id,
                         "name": target_name,
-                        "description": f"由文档 {document.get('filename') or document['id']} 创建",
+                        "description": f"由文檔 {document.get('filename') or document['id']} 創建",
                         "metadata_json": json.dumps(metadata, ensure_ascii=False),
                     },
                 )
@@ -896,7 +896,7 @@ def _document_knowledge_base_name(document) -> str:
         return title
     filename = str(document.get("filename") or "").strip()
     stem = Path(filename).stem.strip()
-    return stem or filename or "未命名知识库"
+    return stem or filename or "未命名知識庫"
 
 
 def _unique_migrated_knowledge_base_name(
@@ -905,7 +905,7 @@ def _unique_migrated_knowledge_base_name(
     base_name: str,
     target_id: str,
 ) -> str:
-    normalized = base_name.strip() or "未命名知识库"
+    normalized = base_name.strip() or "未命名知識庫"
     existing_names = {
         str(row[0])
         for row in conn.execute(
@@ -930,7 +930,7 @@ def _seed_default_agents(conn, tables: set[str]) -> None:
     tenant_ids = _tenant_ids(conn, tables)
     for tenant_id in tenant_ids:
         for agent_id, name, is_overall in (
-            (_overall_agent_id(tenant_id), "整体智能体", True),
+            (_overall_agent_id(tenant_id), "整體智能體", True),
         ):
             existing = conn.execute(text("SELECT id FROM agent_profiles WHERE id = :id"), {"id": agent_id}).first()
             if existing:
@@ -952,7 +952,7 @@ def _seed_default_agents(conn, tables: set[str]) -> None:
                     "id": agent_id,
                     "tenant_id": tenant_id,
                     "name": name,
-                    "description": "全局资源池" if is_overall else "默认对话可见域",
+                    "description": "全局資源池" if is_overall else "默認對話可見域",
                     "is_overall": 1 if is_overall else 0,
                 },
             )

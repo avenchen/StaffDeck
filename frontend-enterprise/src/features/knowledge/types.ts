@@ -33,16 +33,16 @@ export type OkfLintIssue = {
 };
 
 export const DEFAULT_INGEST_STEPS: IngestStepView[] = [
-  { key: 'queued', label: '排队中', progress: 0, status: 'pending' },
-  { key: 'parsing', label: '解析原始资料', progress: 0.08, status: 'pending' },
-  { key: 'normalizing', label: '规范化原始资料', progress: 0.16, status: 'pending' },
-  { key: 'documenting', label: '写入文档页', progress: 0.24, status: 'pending' },
-  { key: 'bucketing', label: '规划知识图谱', progress: 0.36, status: 'pending' },
-  { key: 'bucket_writing', label: '写入知识图谱', progress: 0.48, status: 'pending' },
-  { key: 'chunking', label: '生成引用来源', progress: 0.62, status: 'pending' },
-  { key: 'summarizing', label: '刷新 目录索引', progress: 0.74, status: 'pending' },
-  { key: 'discovering', label: '发现 SOP/工具', progress: 0.88, status: 'pending' },
-  { key: 'done', label: '完成入库', progress: 1, status: 'pending' },
+  { key: 'queued', label: '排隊中', progress: 0, status: 'pending' },
+  { key: 'parsing', label: '解析原始資料', progress: 0.08, status: 'pending' },
+  { key: 'normalizing', label: '規範化原始資料', progress: 0.16, status: 'pending' },
+  { key: 'documenting', label: '寫入文檔頁', progress: 0.24, status: 'pending' },
+  { key: 'bucketing', label: '規劃知識圖譜', progress: 0.36, status: 'pending' },
+  { key: 'bucket_writing', label: '寫入知識圖譜', progress: 0.48, status: 'pending' },
+  { key: 'chunking', label: '生成引用來源', progress: 0.62, status: 'pending' },
+  { key: 'summarizing', label: '刷新 目錄索引', progress: 0.74, status: 'pending' },
+  { key: 'discovering', label: '發現 SOP/工具', progress: 0.88, status: 'pending' },
+  { key: 'done', label: '完成入庫', progress: 1, status: 'pending' },
 ];
 
 export type KnowledgePageProps = {

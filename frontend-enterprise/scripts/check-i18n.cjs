@@ -8,7 +8,7 @@ const catalog = require(path.join(sourceRoot, 'i18n', 'en.json'));
 const ignoredFiles = new Set([
   path.join(sourceRoot, 'components', 'LanguageSwitcher.tsx'),
 ]);
-const ignoredFragments = ["after:content-['展开']"];
+const ignoredFragments = ["after:content-['展開']"];
 const missing = new Map();
 
 function sourceFiles(directory) {

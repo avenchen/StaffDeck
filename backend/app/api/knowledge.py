@@ -174,7 +174,7 @@ def import_okf_bundle(
                 "title": Path(request.filename).stem or request.filename,
                 "filename": request.filename,
                 "file_type": "okf",
-                "summary": f"从 OKF bundle 导入 {len(parsed_docs)} 个概念页。",
+                "summary": f"從 OKF bundle 導入 {len(parsed_docs)} 個概念頁。",
                 "outline": [
                     {
                         "section_id": item.concept_id,
@@ -185,7 +185,7 @@ def import_okf_bundle(
                     }
                     for item in parsed_docs[:80]
                 ],
-                "applicable_scenarios": ["OKF Wiki", "业务知识检索"],
+                "applicable_scenarios": ["OKF Wiki", "業務知識檢索"],
                 "key_entities": sorted(
                     {str(item.frontmatter.get("type") or "Topic") for item in parsed_docs}
                 ),
@@ -253,7 +253,7 @@ def _resolve_upload_knowledge_base(
     knowledge_base = KnowledgeBase(
         tenant_id=request.tenant_id,
         name=name,
-        description=f"由文档 {request.filename} 创建",
+        description=f"由文檔 {request.filename} 創建",
         status="active",
         metadata_json={
             **(creator_metadata or user_creator_metadata(current_user, request.metadata or {})),
@@ -291,11 +291,11 @@ def _knowledge_base_name_from_upload(request: KnowledgeDocumentUploadRequest) ->
     if title:
         return title
     stem = Path(request.filename).stem.strip()
-    return stem or request.filename.strip() or "未命名知识库"
+    return stem or request.filename.strip() or "未命名知識庫"
 
 
 def _unique_knowledge_base_name(db: Session, tenant_id: str, base_name: str) -> str:
-    normalized_base = base_name.strip() or "未命名知识库"
+    normalized_base = base_name.strip() or "未命名知識庫"
     existing_names = set(
         db.exec(select(KnowledgeBase.name).where(KnowledgeBase.tenant_id == tenant_id)).all()
     )
@@ -600,7 +600,7 @@ def search_knowledge(
         request.agent_id,
     )
     if not visible_version_ids:
-        trace = [{"phase": "no_visible_knowledge", "message": "当前范围没有可见知识"}]
+        trace = [{"phase": "no_visible_knowledge", "message": "當前範圍沒有可見知識"}]
         return KnowledgeSearchResponse(trace=trace, route_trace=trace)
     if request.knowledge_base_version_ids:
         allowed_ids = set(visible_version_ids)

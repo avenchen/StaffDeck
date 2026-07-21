@@ -34,7 +34,7 @@ export function SectionCard({
       )}
       <div className={bodyClassName}>
         {loading ? (
-          <div className="py-[24px] text-center text-[13px] text-[#858b9c]">加载中…</div>
+          <div className="py-[24px] text-center text-[13px] text-[#858b9c]">加載中…</div>
         ) : (
           children
         )}

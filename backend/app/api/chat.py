@@ -65,7 +65,7 @@ from app.session.session_schema import (
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 logger = logging.getLogger(__name__)
 CANCELLED_ASSISTANT_REPLY = "已停止生成"
-INTERRUPTED_ASSISTANT_REPLY = "本次响应中断，请重试发送。"
+INTERRUPTED_ASSISTANT_REPLY = "本次響應中斷，請重試發送。"
 STREAM_REPLY_CHUNK_SIZE = 96
 STREAM_RELAY_POLL_SECONDS = 0.08
 STREAM_RELAY_HEARTBEAT_SECONDS = 5.0
@@ -74,7 +74,7 @@ STREAM_INTERRUPTED_TRACEBACK_CHAR_LIMIT = 6000
 MAX_CHAT_ATTACHMENT_BYTES = 12 * 1024 * 1024
 MAX_CHAT_ATTACHMENTS = 8
 SESSION_TITLE_SUMMARY_EVENT = "session_title_summarized"
-SCHEDULE_WEEKDAY_LABELS = ("周一", "周二", "周三", "周四", "周五", "周六", "周日")
+SCHEDULE_WEEKDAY_LABELS = ("週一", "週二", "週三", "週四", "週五", "週六", "週日")
 EVENT_PAYLOAD_META_KEYS = {"id", "event", "type", "event_type", "created_at", "data"}
 STREAM_RELAY_EVENT_ALIASES = {
     "router_decision_created": "router_decision",
@@ -109,17 +109,17 @@ KNOWLEDGE_TRACE_PHASES = {
     "no_documents",
     "no_buckets",
 }
-SESSION_TITLE_PROMPT = """你是任务派发台的会话标题编辑器。
+SESSION_TITLE_PROMPT = """你是任務派發臺的會話標題編輯器。
 
-根据首轮用户需求和员工回复，生成一个简短、可读、具体的中文标题。
+根據首輪用戶需求和員工回覆，生成一個簡短、可讀、具體的中文標題。
 
 要求：
-- 输出 JSON object，格式为 {"title": "..."}。
-- 直接输出标题 JSON，不输出分析、候选标题或解释。
-- 标题 4 到 18 个中文字符优先，最多 24 个字符。
-- 不要使用“新任务”“任务记录”“用户咨询”等空泛标题。
-- 不要包含标点符号、引号、编号、员工名或用户称呼。
-- 如果无法判断，就返回最能概括用户需求的短语。
+- 輸出 JSON object，格式為 {"title": "..."}。
+- 直接輸出標題 JSON，不輸出分析、候選標題或解釋。
+- 標題 4 到 18 箇中文字符優先，最多 24 個字符。
+- 不要使用“新任務”“任務記錄”“用戶諮詢”等空泛標題。
+- 不要包含標點符號、引號、編號、員工名或用戶稱呼。
+- 如果無法判斷，就返回最能概括用戶需求的短語。
 """
 _session_title_summary_jobs: set[str] = set()
 _session_title_summary_jobs_lock = threading.Lock()
@@ -608,7 +608,7 @@ def _maybe_handle_scheduled_task_request(
     assistant_time = now + timedelta(microseconds=5)
     state_time = now + timedelta(microseconds=6)
     chat_session.updated_at = assistant_time
-    chat_session.summary = f"最近回复：{reply[:120]}"
+    chat_session.summary = f"最近回覆：{reply[:120]}"
     user_message = Message(
         tenant_id=request.tenant_id,
         session_id=chat_session.id,
@@ -640,7 +640,7 @@ def _maybe_handle_scheduled_task_request(
         chat_session.id,
         user_message.id,
         "scheduled_task_intent",
-        "识别定时任务需求",
+        "識別定時任務需求",
         created_at=intent_time,
     )
     _add_stream_status_event(
@@ -649,7 +649,7 @@ def _maybe_handle_scheduled_task_request(
         chat_session.id,
         user_message.id,
         "scheduled_task_parse",
-        "解析执行计划",
+        "解析執行計劃",
         created_at=parse_time,
     )
     _add_stream_status_event(
@@ -658,7 +658,7 @@ def _maybe_handle_scheduled_task_request(
         chat_session.id,
         user_message.id,
         "scheduled_task_draft",
-        "生成定时任务草案",
+        "生成定時任務草案",
         extra=draft_payload,
         created_at=draft_status_time,
     )
@@ -751,11 +751,11 @@ def _add_stream_status_event(
 
 def _scheduled_task_draft_reply(draft: ScheduledTaskDraftRead) -> str:
     lines = [
-        "我已按你选择的定时项目整理成自动任务草案。",
-        f"任务：{draft.title}",
-        f"计划：{_format_draft_schedule(draft)}",
-        f"执行内容：{draft.prompt}",
-        "确认下方卡片后才会启用；确认前不会创建自动任务。",
+        "我已按你選擇的定時項目整理成自動任務草案。",
+        f"任務：{draft.title}",
+        f"計劃：{_format_draft_schedule(draft)}",
+        f"執行內容：{draft.prompt}",
+        "確認下方卡片後才會啟用；確認前不會創建自動任務。",
     ]
     return "\n".join(lines)
 
@@ -765,15 +765,15 @@ def _format_draft_schedule(draft: ScheduledTaskDraftRead) -> str:
 
 
 def _format_once_schedule(schedule: dict) -> str:
-    return f"一次性 {schedule.get('run_at') or '待确认时间'}"
+    return f"一次性 {schedule.get('run_at') or '待確認時間'}"
 
 
 def _format_weekly_schedule(schedule: dict) -> str:
-    return f"每周 {_format_weekday_labels(schedule.get('weekdays'))} {schedule.get('time') or DEFAULT_TASK_TIME}"
+    return f"每週 {_format_weekday_labels(schedule.get('weekdays'))} {schedule.get('time') or DEFAULT_TASK_TIME}"
 
 
 def _format_monthly_schedule(schedule: dict) -> str:
-    return f"每月 {schedule.get('day_of_month') or 1} 号 {schedule.get('time') or DEFAULT_TASK_TIME}"
+    return f"每月 {schedule.get('day_of_month') or 1} 號 {schedule.get('time') or DEFAULT_TASK_TIME}"
 
 
 def _format_daily_schedule(schedule: dict) -> str:
@@ -812,7 +812,7 @@ def _format_weekday_labels(value: object) -> str:
 def _scheduled_task_trace_detail(payload: dict) -> str | None:
     title = str(payload.get("title") or "").strip()
     schedule = _format_scheduled_task_schedule(payload.get("schedule_type"), payload.get("schedule"))
-    detail = " · ".join(part for part in (title, schedule, "等待确认后启用") if part)
+    detail = " · ".join(part for part in (title, schedule, "等待確認後啟用") if part)
     return detail or None
 
 
@@ -822,21 +822,21 @@ def _scheduled_task_trace_lines(payload: dict, *, state: str = "completed") -> l
         {
             "id": "scheduled_task_intent",
             "kind": "decision",
-            "text": "识别定时任务需求",
-            "detail": "用户选择了创建定时任务模式",
+            "text": "識別定時任務需求",
+            "detail": "用戶選擇了創建定時任務模式",
             "state": "completed",
         },
         {
             "id": "scheduled_task_parse",
             "kind": "decision",
-            "text": "解析执行计划",
-            "detail": f"计划：{schedule}" if schedule else None,
+            "text": "解析執行計劃",
+            "detail": f"計劃：{schedule}" if schedule else None,
             "state": "completed",
         },
         {
             "id": "scheduled_task_draft",
             "kind": "decision",
-            "text": "生成定时任务草案",
+            "text": "生成定時任務草案",
             "detail": _scheduled_task_trace_detail(payload),
             "state": state,
         },
@@ -891,12 +891,12 @@ async def upload_chat_attachments(
     if not files:
         raise HTTPException(status_code=400, detail="No files uploaded")
     if len(files) > MAX_CHAT_ATTACHMENTS:
-        raise HTTPException(status_code=400, detail=f"最多一次上传 {MAX_CHAT_ATTACHMENTS} 个文件")
+        raise HTTPException(status_code=400, detail=f"最多一次上傳 {MAX_CHAT_ATTACHMENTS} 個文件")
     parsed: list[ChatAttachmentRead] = []
     for file in files:
         data = await file.read()
         if len(data) > MAX_CHAT_ATTACHMENT_BYTES:
-            raise HTTPException(status_code=413, detail=f"{file.filename or '文件'} 超过上传大小限制")
+            raise HTTPException(status_code=413, detail=f"{file.filename or '文件'} 超過上傳大小限制")
         parsed.append(parse_chat_attachment(file.filename or "uploaded-file", file.content_type, data))
     return parsed
 
@@ -1012,14 +1012,14 @@ def chat_stream(
                             request.tenant_id,
                             chat_session.id,
                             "stream_status",
-                            {"phase": "scheduled_task_intent", "text": "识别定时任务需求"},
+                            {"phase": "scheduled_task_intent", "text": "識別定時任務需求"},
                         )
                         _persist_relay_only_event(
                             worker_db,
                             request.tenant_id,
                             chat_session.id,
                             "stream_status",
-                            {"phase": "scheduled_task_parse", "text": "解析执行计划"},
+                            {"phase": "scheduled_task_parse", "text": "解析執行計劃"},
                         )
                     scheduled_response = _maybe_handle_scheduled_task_request(worker_db, request, chat_session)
                     if scheduled_response:
@@ -1043,7 +1043,7 @@ def chat_stream(
                             "stream_status",
                             {
                                 "phase": "scheduled_task_draft",
-                                "text": "生成定时任务草案",
+                                "text": "生成定時任務草案",
                                 **draft.model_dump(mode="json"),
                                 **turn_payload,
                             },
@@ -1443,7 +1443,7 @@ def _ensure_cancelled_assistant_message(
             created_at=created_at,
         )
     )
-    chat_session.summary = f"最近回复：{CANCELLED_ASSISTANT_REPLY}"
+    chat_session.summary = f"最近回覆：{CANCELLED_ASSISTANT_REPLY}"
     chat_session.updated_at = created_at
     db.add(chat_session)
     return True
@@ -1472,7 +1472,7 @@ def _persist_chat_turn_interrupted(
         "user_message_id": message_id,
         "client_turn_id": client_turn_id or None,
         "phase": "interrupted",
-        "text": "响应生成中断",
+        "text": "響應生成中斷",
         "reason": reason[:2000],
     }
     if error_details:
@@ -1624,7 +1624,7 @@ def _ensure_interrupted_assistant_message(
             created_at=created_at,
         )
     )
-    chat_session.summary = f"最近回复：{INTERRUPTED_ASSISTANT_REPLY}"
+    chat_session.summary = f"最近回覆：{INTERRUPTED_ASSISTANT_REPLY}"
     chat_session.updated_at = created_at
     db.add(chat_session)
     return True
@@ -1923,7 +1923,7 @@ def reply_human_handoff(
 
     chat_session.status = "active"
     chat_session.awaiting_input_json = None
-    chat_session.summary = f"最近回复：{reply[:120]}"
+    chat_session.summary = f"最近回覆：{reply[:120]}"
     chat_session.updated_at = now
     db.add(chat_session)
     db.add(
@@ -2463,15 +2463,15 @@ def _general_skill_trace_failed(phase: str) -> bool:
 def _error_trace_text(payload: dict, *, interrupted: bool = False) -> str:
     code = str(payload.get("code") or "").strip()
     if code == "LLM_ERROR":
-        return "模型调用失败"
+        return "模型調用失敗"
     if interrupted:
-        return "响应生成中断"
+        return "響應生成中斷"
     if code:
-        return f"执行失败 {code}"
+        return f"執行失敗 {code}"
     error_type = str(payload.get("error_type") or "").strip()
     if error_type:
-        return f"执行失败 {error_type}"
-    return "执行失败"
+        return f"執行失敗 {error_type}"
+    return "執行失敗"
 
 
 def _error_trace_detail(payload: dict) -> str | None:
@@ -2489,14 +2489,14 @@ def _general_skill_trace_output(payload: dict, phase: str) -> dict[str, str]:
         return {
             "output": output,
             "outputLanguage": _trace_payload_language(output),
-            "outputTitle": "查看运行输出",
+            "outputTitle": "查看運行輸出",
         } if output else {}
     if phase == "stderr_chunk":
         output = _trace_payload_text(payload.get("stderr_preview") or payload.get("text"))
         return {
             "output": output,
             "outputLanguage": _trace_payload_language(output),
-            "outputTitle": "查看错误输出",
+            "outputTitle": "查看錯誤輸出",
         } if output else {}
     if phase in {"code_finished", "code_timeout"}:
         result: dict[str, object] = {}
@@ -2512,7 +2512,7 @@ def _general_skill_trace_output(payload: dict, phase: str) -> dict[str, str]:
         return {
             "output": output,
             "outputLanguage": _trace_payload_language(output),
-            "outputTitle": "查看超时结果" if phase == "code_timeout" else "查看执行结果",
+            "outputTitle": "查看超時結果" if phase == "code_timeout" else "查看執行結果",
         } if output else {}
     if phase.startswith("reflection_"):
         result: dict[str, object] = {}
@@ -2528,7 +2528,7 @@ def _general_skill_trace_output(payload: dict, phase: str) -> dict[str, str]:
         return {
             "output": output,
             "outputLanguage": _trace_payload_language(output),
-            "outputTitle": "查看校验详情",
+            "outputTitle": "查看校驗詳情",
         } if result and output else {}
     return {}
 
@@ -2758,15 +2758,15 @@ def _event_trace_line(
             return {
                 "id": "scheduled_task_intent",
                 "kind": "decision",
-                "text": text or "识别定时任务需求",
-                "detail": "用户选择了创建定时任务模式",
+                "text": text or "識別定時任務需求",
+                "detail": "用戶選擇了創建定時任務模式",
                 "state": "running",
             }
         if phase == "scheduled_task_parse":
             return {
                 "id": "scheduled_task_parse",
                 "kind": "decision",
-                "text": text or "解析执行计划",
+                "text": text or "解析執行計劃",
                 "detail": None,
                 "state": "running",
             }
@@ -2774,7 +2774,7 @@ def _event_trace_line(
             return {
                 "id": "scheduled_task_draft",
                 "kind": "decision",
-                "text": text or "生成定时任务草案",
+                "text": text or "生成定時任務草案",
                 "detail": _scheduled_task_trace_detail(payload),
                 "state": "running",
             }
@@ -2782,7 +2782,7 @@ def _event_trace_line(
             return {
                 "id": "decision_router",
                 "kind": "decision",
-                "text": "判断意图",
+                "text": "判斷意圖",
                 "detail": None,
                 "state": "running",
             }
@@ -2806,7 +2806,7 @@ def _event_trace_line(
             return {
                 "id": f"decision_stepping_{repair_reason}{iteration_suffix}",
                 "kind": "decision",
-                "text": "决定下一步" if repair_reason == "main" else "重新分析",
+                "text": "決定下一步" if repair_reason == "main" else "重新分析",
                 "detail": None,
                 "state": "running",
             }
@@ -2821,24 +2821,24 @@ def _event_trace_line(
         if phase in KNOWLEDGE_TRACE_PHASES:
             query = payload.get("query") if isinstance(payload.get("query"), dict) else {}
             detail_parts = [
-                f"查询：{query['query']}" if query.get("query") else "",
-                f"命中知识图谱 {payload['selected_count']} 个"
+                f"查詢：{query['query']}" if query.get("query") else "",
+                f"命中知識圖譜 {payload['selected_count']} 個"
                 if isinstance(payload.get("selected_count"), int)
                 else "",
-                f"候选 {payload['candidate_count']} 个"
+                f"候選 {payload['candidate_count']} 個"
                 if isinstance(payload.get("candidate_count"), int)
                 else "",
-                f"读取 {payload['chunk_count']} 个片段"
+                f"讀取 {payload['chunk_count']} 個片段"
                 if isinstance(payload.get("chunk_count"), int)
                 else "",
-                f"整理 {payload['evidence_count']} 条证据"
+                f"整理 {payload['evidence_count']} 條證據"
                 if isinstance(payload.get("evidence_count"), int)
                 else "",
             ]
             return {
                 "id": _knowledge_trace_line_id(payload),
                 "kind": "knowledge",
-                "text": text or "检索知识库",
+                "text": text or "檢索知識庫",
                 "detail": " · ".join(part for part in detail_parts if part) or None,
                 "state": "completed"
                 if phase == "evidence_pack" or phase.startswith("no_") or phase == "okf_only"
@@ -2850,7 +2850,7 @@ def _event_trace_line(
             return {
                 "id": f"tool_{tool_call_id}",
                 "kind": "tool",
-                "text": f"正在调用 {tool_name}",
+                "text": f"正在調用 {tool_name}",
                 "detail": None,
                 "state": "running",
             }
@@ -2867,7 +2867,7 @@ def _event_trace_line(
         return {
             "id": "generation_stopped",
             "kind": "decision",
-            "text": "用户已停止生成",
+            "text": "用戶已停止生成",
             "detail": None,
             "state": "completed",
         }
@@ -2885,7 +2885,7 @@ def _event_trace_line(
         return {
             "id": f"general_skill_selected_{event.id}",
             "kind": "skill",
-            "text": f"选择通用技能 {skill_name}" if skill_name else "选择通用技能",
+            "text": f"選擇通用技能 {skill_name}" if skill_name else "選擇通用技能",
             "detail": reason or None,
             "state": "completed",
         }
@@ -2895,7 +2895,7 @@ def _event_trace_line(
         return {
             "id": f"general_skill_intent_{event.id}",
             "kind": "decision",
-            "text": "判断意图" if not skill_name else f"判断意图 {skill_name}",
+            "text": "判斷意圖" if not skill_name else f"判斷意圖 {skill_name}",
             "detail": reason or None,
             "state": "completed",
         }
@@ -2921,7 +2921,7 @@ def _event_trace_line(
         return {
             "id": f"general_skill_trace_{event.id}",
             "kind": "code" if code or phase in code_phases else "decision",
-            "text": message or phase or "执行通用技能",
+            "text": message or phase or "執行通用技能",
             "detail": detail or None,
             "code": code or None,
             "language": "bash" if code and runtime == "bash" else "python" if code else None,
@@ -2934,7 +2934,7 @@ def _event_trace_line(
         return {
             "id": f"general_skill_finished_{event.id}",
             "kind": "skill",
-            "text": "通用技能运行完成" if success else "通用技能运行失败",
+            "text": "通用技能運行完成" if success else "通用技能運行失敗",
             "detail": str(payload.get("skill_slug") or "") or None,
             "state": "completed" if success else "failed",
         }
@@ -2952,13 +2952,13 @@ def _event_trace_line(
             name = str(entry.get("name") or skill_id).strip()
             state = str(entry.get("state") or "active").strip()
             if state == "suspended":
-                label = "挂起SOP"
+                label = "掛起SOP"
             elif state == "pending":
                 label = "等待SOP"
             elif runtime_decision in {"start_skill", "start_new_task"}:
-                label = "选择SOP"
+                label = "選擇SOP"
             elif runtime_decision == "suspend_current_and_start_new_skill":
-                label = "切换SOP"
+                label = "切換SOP"
             elif (
                 runtime_decision
                 in {"answer_related_question_then_resume", "answer_chitchat_then_resume"}
@@ -2966,11 +2966,11 @@ def _event_trace_line(
                 and to_skill_id
                 and from_skill_id != to_skill_id
             ):
-                label = "切换SOP"
+                label = "切換SOP"
             elif runtime_decision == "exit_current_skill":
-                label = "恢复SOP"
+                label = "恢復SOP"
             else:
-                label = "推进SOP"
+                label = "推進SOP"
             step_id = str(entry.get("stepId") or "").strip()
             state_key = step_id or str(index)
             lines.append(
@@ -2978,7 +2978,7 @@ def _event_trace_line(
                     "id": f"skill_state_{skill_id}_{state}_{state_key}",
                     "kind": "skill",
                     "text": f"{label} {name}",
-                    "detail": f"当前步骤 {step_id}" if step_id else None,
+                    "detail": f"當前步驟 {step_id}" if step_id else None,
                     "state": "completed" if state == "suspended" else "running",
                 }
             )
@@ -2991,7 +2991,7 @@ def _event_trace_line(
         return {
             "id": "decision_router",
             "kind": "decision",
-            "text": f"判断意图 {intent}" if intent else "完成SOP判断",
+            "text": f"判斷意圖 {intent}" if intent else "完成SOP判斷",
             "detail": reason or None,
             "state": "completed",
         }
@@ -3007,8 +3007,8 @@ def _event_trace_line(
         detail = " · ".join(
             part
             for part in (
-                f"下一节点 {next_step_id}" if next_step_id else "",
-                f"查询：{knowledge_query_text}" if knowledge_query_text else "",
+                f"下一節點 {next_step_id}" if next_step_id else "",
+                f"查詢：{knowledge_query_text}" if knowledge_query_text else "",
                 reply[:80] if not tool_name and not knowledge_query_text and reply else "",
             )
             if part
@@ -3017,7 +3017,7 @@ def _event_trace_line(
             return {
                 "id": f"decision_step_tool_{tool_name}",
                 "kind": "decision",
-                "text": f"决定调用工具 {tool_name}",
+                "text": f"決定調用工具 {tool_name}",
                 "detail": detail or None,
                 "state": "running",
             }
@@ -3025,14 +3025,14 @@ def _event_trace_line(
             return {
                 "id": "decision_step_knowledge",
                 "kind": "decision",
-                "text": "决定查询知识库",
+                "text": "決定查詢知識庫",
                 "detail": detail or None,
                 "state": "running",
             }
         return {
             "id": "decision_step_result",
             "kind": "decision",
-            "text": "决定下一步" if next_step_id else "完成步骤判断",
+            "text": "決定下一步" if next_step_id else "完成步驟判斷",
             "detail": detail or None,
             "state": "completed",
         }
@@ -3050,9 +3050,9 @@ def _event_trace_line(
         if not skill_id:
             return None
         label = {
-            "skill_started": "选择SOP",
-            "skill_resumed": "恢复SOP",
-            "skill_step_changed": "推进SOP",
+            "skill_started": "選擇SOP",
+            "skill_resumed": "恢復SOP",
+            "skill_step_changed": "推進SOP",
         }[event.event_type]
         detail_parts = []
         if from_skill_id and from_skill_id != to_skill_id:
@@ -3085,7 +3085,7 @@ def _event_trace_line(
         return {
             "id": f"tool_{tool_call_id}",
             "kind": "tool",
-            "text": f"调用工具 {name}",
+            "text": f"調用工具 {name}",
             "detail": None,
             "state": "running",
         }
@@ -3096,7 +3096,7 @@ def _event_trace_line(
             "id": _knowledge_trace_line_id(payload),
             "kind": "knowledge",
             "phase": "query",
-            "text": "查询业务资料",
+            "text": "查詢業務資料",
             "detail": text or None,
             "state": "running",
         }
@@ -3106,16 +3106,16 @@ def _event_trace_line(
         concepts = payload.get("selected_concepts") if isinstance(payload.get("selected_concepts"), list) else []
         evidence = payload.get("evidence_pack") if isinstance(payload.get("evidence_pack"), list) else []
         parts = [
-            f"命中 Wiki {len(concepts)} 个" if concepts else "",
-            f"展开 {len(buckets)} 个知识桶" if buckets else "",
-            f"读取 {len(chunks)} 个片段" if chunks else "",
-            f"生成 {len(evidence)} 条引用候选" if evidence else "",
+            f"命中 Wiki {len(concepts)} 個" if concepts else "",
+            f"展開 {len(buckets)} 個知識桶" if buckets else "",
+            f"讀取 {len(chunks)} 個片段" if chunks else "",
+            f"生成 {len(evidence)} 條引用候選" if evidence else "",
         ]
         return {
             "id": _knowledge_trace_line_id(payload),
             "kind": "knowledge",
             "phase": "result",
-            "text": "读取业务资料",
+            "text": "讀取業務資料",
             "detail": " · ".join(part for part in parts if part),
             "state": "completed",
         }
@@ -3135,7 +3135,7 @@ def _event_trace_line(
         return {
             "id": f"tool_{tool_call_id}",
             "kind": "tool",
-            "text": f"{'工具调用失败' if is_error else '调用工具'} {display_name}",
+            "text": f"{'工具調用失敗' if is_error else '調用工具'} {display_name}",
             "detail": _tool_trace_detail(detail_payload),
             "state": "failed" if is_error else "completed",
         }
@@ -3146,7 +3146,7 @@ def _event_trace_line(
         return {
             "id": f"tool_{tool_call_id}",
             "kind": "tool",
-            "text": f"{'调用工具' if success else '工具调用失败'} {name}",
+            "text": f"{'調用工具' if success else '工具調用失敗'} {name}",
             "detail": _tool_trace_detail(payload),
             "state": "completed" if success else "failed",
         }
@@ -3156,8 +3156,8 @@ def _event_trace_line(
         return {
             "id": f"decision_stepping_tool_continuation_{iteration}",
             "kind": "decision",
-            "text": "重新分析执行动作",
-            "detail": f"决定继续调用工具 {target_tool}" if target_tool else "决定继续调用工具",
+            "text": "重新分析執行動作",
+            "detail": f"決定繼續調用工具 {target_tool}" if target_tool else "決定繼續調用工具",
             "state": "completed",
         }
     if event.event_type == "agent_loop_completed":
@@ -3165,8 +3165,8 @@ def _event_trace_line(
         return {
             "id": f"decision_stepping_tool_continuation_{iteration}",
             "kind": "decision",
-            "text": "重新分析执行动作",
-            "detail": "判断无需继续调用工具",
+            "text": "重新分析執行動作",
+            "detail": "判斷無需繼續調用工具",
             "state": "completed",
         }
     if event.event_type in {"reflection_decision_created", "reflection_decision"}:
@@ -3174,7 +3174,7 @@ def _event_trace_line(
         return {
             "id": "reflection",
             "kind": "decision",
-            "text": "反思后继续尝试" if needs_retry else "反思通过",
+            "text": "反思後繼續嘗試" if needs_retry else "反思通過",
             "detail": _reflection_trace_detail(payload),
             "state": "completed",
         }
@@ -3182,7 +3182,7 @@ def _event_trace_line(
         return {
             "id": "reflection",
             "kind": "decision",
-            "text": "反思已关闭",
+            "text": "反思已關閉",
             "detail": str(payload.get("reason") or "") or None,
             "state": "completed",
         }
@@ -3194,7 +3194,7 @@ def _event_trace_line(
         return {
             "id": "reflection",
             "kind": "decision",
-            "text": f"重试{ '工具' if mode == 'tool' else 'SOP' } {target}".strip(),
+            "text": f"重試{ '工具' if mode == 'tool' else 'SOP' } {target}".strip(),
             "detail": str(payload.get("reason") or "") or None,
             "state": "completed",
         }
@@ -3214,7 +3214,7 @@ def _tool_trace_detail(payload: dict) -> str | None:
     data = payload.get("data")
     data_dict = data if isinstance(data, dict) else {}
     parts = [
-        "已复用此前成功结果" if payload.get("idempotent_replay") or data_dict.get("idempotent_replay") else "",
+        "已複用此前成功結果" if payload.get("idempotent_replay") or data_dict.get("idempotent_replay") else "",
         str(data_dict.get("source") or "").strip(),
         "未命中" if data_dict.get("found") is False else "已命中" if data_dict.get("found") is True else "",
         str(data_dict.get("miss_reason") or "").strip(),
@@ -3229,7 +3229,7 @@ def _reflection_trace_detail(payload: dict) -> str | None:
         str(payload.get("reason") or "").strip(),
         f"工具 {payload['target_tool_name']}" if payload.get("target_tool_name") else "",
         f"技能 {payload['target_skill_id']}" if payload.get("target_skill_id") else "",
-        f"步骤 {payload['target_step_id']}" if payload.get("target_step_id") else "",
+        f"步驟 {payload['target_step_id']}" if payload.get("target_step_id") else "",
     ]
     text = " · ".join(part for part in parts if part)
     return text or None

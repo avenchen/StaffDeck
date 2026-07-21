@@ -89,7 +89,7 @@ export default function ModelsPage({
         setRows(items);
         window.dispatchEvent(new CustomEvent(MODEL_CONFIGS_UPDATED_EVENT, { detail: { models: items } }));
       })
-      .catch((error) => notify.error(error instanceof Error ? error.message : '加载模型失败'))
+      .catch((error) => notify.error(error instanceof Error ? error.message : '加載模型失敗'))
       .finally(() => setLoading(false));
   };
 
@@ -147,13 +147,13 @@ export default function ModelsPage({
     const provider = form.provider.trim();
     const model = form.model.trim();
     if (!name || !provider || !model) {
-      notify.error('请填写名称、Provider 和 Model');
+      notify.error('請填寫名稱、Provider 和 Model');
       return;
     }
     const temperature = Number(form.temperature);
     const maxOutputTokens = Number(form.max_output_tokens);
     if (Number.isNaN(temperature) || Number.isNaN(maxOutputTokens)) {
-      notify.error('Temperature 与 Max Tokens 必须是数字');
+      notify.error('Temperature 與 Max Tokens 必須是數字');
       return;
     }
     let extraBody: Record<string, unknown>;
@@ -164,7 +164,7 @@ export default function ModelsPage({
       }
       extraBody = parsed as Record<string, unknown>;
     } catch {
-      notify.error('额外参数必须是合法的 JSON 对象');
+      notify.error('額外參數必須是合法的 JSON 對象');
       return;
     }
     const payload = {
@@ -193,7 +193,7 @@ export default function ModelsPage({
       setForm(BLANK_MODEL_FORM);
       await load();
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '保存失败');
+      notify.error(error instanceof Error ? error.message : '保存失敗');
     } finally {
       setSaving(false);
     }
@@ -202,10 +202,10 @@ export default function ModelsPage({
   async function setDefault(row: ModelConfigRead) {
     try {
       await api.post(`/api/enterprise/model-configs/${row.id}/set-default?tenant_id=${TENANT_ID}`);
-      notify.success('已设为默认');
+      notify.success('已設為默認');
       await load();
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '设为默认失败');
+      notify.error(error instanceof Error ? error.message : '設為默認失敗');
     }
   }
 
@@ -220,7 +220,7 @@ export default function ModelsPage({
         notify.error(result.message);
       }
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '测试失败');
+      notify.error(error instanceof Error ? error.message : '測試失敗');
     }
   }
 
@@ -236,15 +236,15 @@ export default function ModelsPage({
         <DropdownMenuContent align="end" className={MENU_CONTENT_CLASS}>
           <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={() => edit(row)}>
             <IconEdit />
-            编辑
+            編輯
           </DropdownMenuItem>
           <DropdownMenuItem className={MENU_ITEM_CLASS} disabled={row.is_default} onSelect={() => void setDefault(row)}>
             <Check />
-            {row.is_default ? '已默认' : '设为默认'}
+            {row.is_default ? '已默認' : '設為默認'}
           </DropdownMenuItem>
           <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={() => void test(row)}>
             <FlaskConical />
-            测试
+            測試
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -254,17 +254,17 @@ export default function ModelsPage({
   const columns: DataTableColumn<ModelConfigRead>[] = [
     {
       key: 'name',
-      title: '名称',
+      title: '名稱',
       width: 240,
       className: 'text-[#18181a]',
       render: (row) => (
         <div className="flex min-w-0 flex-col gap-[2px]">
           <span className="flex min-w-0 items-center gap-[6px]">
             <span className="truncate font-medium leading-[18px] text-[#18181a]">{row.name}</span>
-            {row.is_default && <StatusBadge tone="green">默认</StatusBadge>}
+            {row.is_default && <StatusBadge tone="green">默認</StatusBadge>}
           </span>
           <span className="truncate text-[#858b9c]">
-            {row.enabled ? '已启用' : '已停用'} · {row.provider}
+            {row.enabled ? '已啟用' : '已停用'} · {row.provider}
           </span>
         </div>
       ),
@@ -300,10 +300,10 @@ export default function ModelsPage({
         <div className="min-w-0">
           <span className="flex min-w-0 items-center gap-[6px]">
             <strong className="truncate text-[14px] font-semibold text-[#18181a]">{row.name}</strong>
-            {row.is_default && <StatusBadge tone="green">默认</StatusBadge>}
+            {row.is_default && <StatusBadge tone="green">默認</StatusBadge>}
           </span>
           <span className="mt-[2px] block truncate text-[12px] text-[#858b9c]">
-            {row.enabled ? '已启用' : '已停用'} · {row.provider}
+            {row.enabled ? '已啟用' : '已停用'} · {row.provider}
           </span>
         </div>
         {renderActions(row)}
@@ -339,10 +339,10 @@ export default function ModelsPage({
       </div>
 
       <div className="flex flex-col gap-[24px] rounded-[20px_20px_0_0] bg-white p-[18px_18px_24px_18px] shadow-[0_-4px_16px_0_rgba(0,0,0,0.05)]">
-        <div className="flex flex-wrap items-stretch gap-[20px]" aria-label="模型统计">
+        <div className="flex flex-wrap items-stretch gap-[20px]" aria-label="模型統計">
           <StatCard label="模型" value={rows.length} />
-          <StatCard label="已启用" value={enabledCount} tone="green" />
-          <StatCard label="默认模型" value={defaultRow?.name || '-'} valueClassName="text-[18px]" />
+          <StatCard label="已啟用" value={enabledCount} tone="green" />
+          <StatCard label="默認模型" value={defaultRow?.name || '-'} valueClassName="text-[18px]" />
           <StatCard label="Provider" value={providerCount} />
         </div>
 
@@ -356,7 +356,7 @@ export default function ModelsPage({
             <IconSearch className="size-[14px] shrink-0 text-[#858b9c]" />
             <input
               value={searchText}
-              placeholder="搜索名称、模型、Provider 或 Base URL"
+              placeholder="搜索名稱、模型、Provider 或 Base URL"
               onChange={(event) => setSearchText(event.target.value)}
               className="h-full min-w-0 flex-1 bg-transparent text-[12px] text-[#17191f] outline-none placeholder:text-[#c0c6d4]"
             />
@@ -376,7 +376,7 @@ export default function ModelsPage({
             {filteredRows.length ? (
               pagination.pagedItems.map(renderMobileCard)
             ) : (
-              <div className="py-[40px] text-center text-[13px] text-[#858b9c]">暂无模型</div>
+              <div className="py-[40px] text-center text-[13px] text-[#858b9c]">暫無模型</div>
             )}
           </div>
 
@@ -387,13 +387,13 @@ export default function ModelsPage({
               data={pagination.pagedItems}
               rowKey={(row) => row.id}
               loading={loading}
-              emptyText="暂无模型，点击「新建模型」添加一个吧"
+              emptyText="暫無模型，點擊「新建模型」添加一個吧"
             />
           </div>
 
           {filteredRows.length > 0 && (
             <Paginator
-              aria-label="模型分页"
+              aria-label="模型分頁"
               className="mt-0 mb-[6px]"
               page={pagination.page}
               pageCount={pagination.pageCount}
@@ -411,13 +411,13 @@ export default function ModelsPage({
           <div className="flex items-center gap-[6px] px-[12px] text-[#757f9c]">
             <IconModels className="size-[14px] shrink-0" />
             <DialogTitle className="min-w-0 truncate text-[14px] font-normal leading-none text-[#757f9c]">
-              {selected ? `编辑模型：${selected.name}` : '新建模型'}
+              {selected ? `編輯模型：${selected.name}` : '新建模型'}
             </DialogTitle>
           </div>
 
           <div className="min-h-0 flex-1 overflow-y-auto px-[12px]">
             <div className="grid grid-cols-1 gap-[14px] sm:grid-cols-2">
-              <LabeledField label="名称">
+              <LabeledField label="名稱">
                 <Input value={form.name} placeholder="例如 GPT-4o" onChange={(event) => updateForm('name', event.target.value)} />
               </LabeledField>
               <LabeledField label="Provider">
@@ -436,7 +436,7 @@ export default function ModelsPage({
               <LabeledField label="Base URL">
                 <Input value={form.base_url} placeholder="https://api.openai.com/v1" onChange={(event) => updateForm('base_url', event.target.value)} />
                 <span className="text-[11px] text-[#858b9c]">
-                  Gemini 可留空，将自动使用 Google OpenAI 兼容端点；模型名称如 gemini-2.5-flash。
+                  Gemini 可留空，將自動使用 Google OpenAI 兼容端點；模型名稱如 gemini-2.5-flash。
                 </span>
               </LabeledField>
               <LabeledField label="Model">
@@ -446,7 +446,7 @@ export default function ModelsPage({
                 <Input
                   type="password"
                   value={form.api_key}
-                  placeholder={selected ? '不修改请留空' : 'sk-...'}
+                  placeholder={selected ? '不修改請留空' : 'sk-...'}
                   onChange={(event) => updateForm('api_key', event.target.value)}
                 />
               </LabeledField>
@@ -472,7 +472,7 @@ export default function ModelsPage({
                 </LabeledField>
               </div>
               <div className="sm:col-span-2">
-                <LabeledField label="额外请求参数（extra_body JSON）">
+                <LabeledField label="額外請求參數（extra_body JSON）">
                   <Textarea
                     rows={5}
                     value={form.extra_body}
@@ -486,11 +486,11 @@ export default function ModelsPage({
             <div className="mt-[16px] flex flex-wrap items-center gap-[24px]">
               <label className="flex cursor-pointer items-center gap-[8px]">
                 <Switch checked={form.is_default} onCheckedChange={(next) => updateForm('is_default', next)} />
-                <span className="text-[12px] font-medium text-[#464c5e]">设为默认</span>
+                <span className="text-[12px] font-medium text-[#464c5e]">設為默認</span>
               </label>
               <label className="flex cursor-pointer items-center gap-[8px]">
                 <Switch checked={form.enabled} onCheckedChange={(next) => updateForm('enabled', next)} />
-                <span className="text-[12px] font-medium text-[#464c5e]">启用</span>
+                <span className="text-[12px] font-medium text-[#464c5e]">啟用</span>
               </label>
             </div>
           </div>

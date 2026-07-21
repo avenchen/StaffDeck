@@ -46,7 +46,7 @@ def test_delete_tool_removes_tenant_tool() -> None:
         tool = Tool(
             tenant_id="tenant_demo",
             name="product.lookup",
-            display_name="商品查询",
+            display_name="商品查詢",
             method="POST",
             url="/api/mock/product/lookup",
         )
@@ -67,7 +67,7 @@ def test_delete_tool_is_tenant_scoped() -> None:
         tool = Tool(
             tenant_id="tenant_other",
             name="product.lookup",
-            display_name="商品查询",
+            display_name="商品查詢",
             method="POST",
             url="/api/mock/product/lookup",
         )
@@ -87,19 +87,19 @@ def test_open_gallery_delete_tool_hides_gallery_without_removing_agent_binding()
         db.add(Tenant(id="tenant_demo", name="Demo"))
         db.add(
             AgentProfile(
-                id="agent_overall", tenant_id="tenant_demo", name="开放广场", is_overall=True
+                id="agent_overall", tenant_id="tenant_demo", name="開放廣場", is_overall=True
             )
         )
         db.add(
             AgentProfile(
-                id="agent_branch", tenant_id="tenant_demo", name="研发员工", is_overall=False
+                id="agent_branch", tenant_id="tenant_demo", name="研發員工", is_overall=False
             )
         )
         tool = Tool(
             id="tool_weather",
             tenant_id="tenant_demo",
             name="weather.forecast",
-            display_name="天气查询",
+            display_name="天氣查詢",
             method="POST",
             url="/api/mock/weather",
         )
@@ -145,14 +145,14 @@ def test_open_gallery_tool_read_returns_persisted_creator_metadata() -> None:
         db.add(Tenant(id="tenant_demo", name="Demo"))
         db.add(
             AgentProfile(
-                id="agent_overall", tenant_id="tenant_demo", name="开放广场", is_overall=True
+                id="agent_overall", tenant_id="tenant_demo", name="開放廣場", is_overall=True
             )
         )
         tool = Tool(
             id="tool_weather",
             tenant_id="tenant_demo",
             name="weather.forecast",
-            display_name="天气查询",
+            display_name="天氣查詢",
             method="POST",
             url="/api/mock/weather",
         )
@@ -178,7 +178,7 @@ def test_open_gallery_tool_read_returns_persisted_creator_metadata() -> None:
 def test_private_tool_is_not_visible_without_employee_scope() -> None:
     with _test_session() as db:
         db.add(Tenant(id="tenant_demo", name="Demo"))
-        agent = AgentProfile(id="agent_private", tenant_id="tenant_demo", name="研发员工")
+        agent = AgentProfile(id="agent_private", tenant_id="tenant_demo", name="研發員工")
         tool = Tool(
             id="tool_private",
             tenant_id="tenant_demo",
@@ -203,19 +203,19 @@ def test_agent_without_tool_binding_does_not_see_open_gallery_tools() -> None:
         db.add(Tenant(id="tenant_demo", name="Demo"))
         db.add(
             AgentProfile(
-                id="agent_overall", tenant_id="tenant_demo", name="开放广场", is_overall=True
+                id="agent_overall", tenant_id="tenant_demo", name="開放廣場", is_overall=True
             )
         )
         db.add(
             AgentProfile(
-                id="agent_branch", tenant_id="tenant_demo", name="研发员工", is_overall=False
+                id="agent_branch", tenant_id="tenant_demo", name="研發員工", is_overall=False
             )
         )
         tool = Tool(
             id="tool_weather",
             tenant_id="tenant_demo",
             name="weather.forecast",
-            display_name="天气查询",
+            display_name="天氣查詢",
             method="POST",
             url="/api/mock/weather",
         )
@@ -234,14 +234,14 @@ def test_invalid_agent_id_does_not_fall_back_to_open_gallery_tools() -> None:
         db.add(Tenant(id="tenant_demo", name="Demo"))
         db.add(
             AgentProfile(
-                id="agent_overall", tenant_id="tenant_demo", name="开放广场", is_overall=True
+                id="agent_overall", tenant_id="tenant_demo", name="開放廣場", is_overall=True
             )
         )
         tool = Tool(
             id="tool_weather",
             tenant_id="tenant_demo",
             name="weather.forecast",
-            display_name="天气查询",
+            display_name="天氣查詢",
             method="POST",
             url="/api/mock/weather",
         )

@@ -55,7 +55,7 @@ def _seed_session_privacy_rows(db: Session) -> tuple[User, User]:
             tenant_id="tenant_demo",
             user_id=admin.id,
             agent_id="agent_shared",
-            title="管理员自己的会话",
+            title="管理員自己的會話",
         )
     )
     db.add(
@@ -64,7 +64,7 @@ def _seed_session_privacy_rows(db: Session) -> tuple[User, User]:
             tenant_id="tenant_demo",
             user_id=other.id,
             agent_id="agent_shared",
-            title="其他用户的会话",
+            title="其他用戶的會話",
         )
     )
     db.add(Message(id="msg_admin_user", tenant_id="tenant_demo", session_id="session_admin", role="user", content="admin question"))

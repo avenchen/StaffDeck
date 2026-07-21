@@ -63,7 +63,7 @@ def test_private_knowledge_details_documents_and_jobs_require_the_bound_agent_sc
         knowledge_base = KnowledgeBase(
             id="kb_private",
             tenant_id="tenant_demo",
-            name="私有知识库",
+            name="私有知識庫",
         )
         db.add(knowledge_base)
         db.flush()
@@ -127,7 +127,7 @@ def test_visible_knowledge_history_has_consistent_list_and_detail_access() -> No
         knowledge_base = KnowledgeBase(
             id="kb_versioned",
             tenant_id="tenant_demo",
-            name="版本知识库",
+            name="版本知識庫",
         )
         db.add(knowledge_base)
         db.flush()
@@ -212,8 +212,8 @@ def _skill_content(skill_id: str) -> dict[str, object]:
             {
                 "node_id": "reply",
                 "type": "response",
-                "name": "回复",
-                "instruction": "回复用户",
+                "name": "回覆",
+                "instruction": "回覆用戶",
                 "allowed_actions": ["answer_user"],
             }
         ],

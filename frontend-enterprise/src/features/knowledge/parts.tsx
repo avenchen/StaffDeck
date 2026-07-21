@@ -219,7 +219,7 @@ export function ingestSteps(job: KnowledgeIngestJobRead): IngestStepView[] {
       const status = record.status === 'running' || record.status === 'done' ? record.status : 'pending';
       return {
         key: String(record.key || `step_${index}`),
-        label: String(record.label || DEFAULT_INGEST_STEPS[index]?.label || `阶段 ${index + 1}`),
+        label: String(record.label || DEFAULT_INGEST_STEPS[index]?.label || `階段 ${index + 1}`),
         progress: Number(record.progress || 0),
         status,
       };
@@ -244,7 +244,7 @@ export function ingestSteps(job: KnowledgeIngestJobRead): IngestStepView[] {
 }
 
 export function stageLabelFallback(stage: string): string {
-  return DEFAULT_INGEST_STEPS.find((item) => item.key === stage)?.label || stage || '处理中';
+  return DEFAULT_INGEST_STEPS.find((item) => item.key === stage)?.label || stage || '處理中';
 }
 
 export function stringFromMetadata(value: unknown): string {
@@ -298,7 +298,7 @@ export type KnowledgeOverviewItem = {
   bucket?: KnowledgeBucketRead;
 };
 
-export function 目录索引Overview({
+export function 目錄索引Overview({
   document,
   knowledgeBase,
   buckets,
@@ -327,7 +327,7 @@ export function 目录索引Overview({
   const previewWikiStructure = wikiIndexGroups.slice(0, STRUCTURE_PREVIEW_LIMIT);
   const previewConcepts = okfConcepts.slice(0, OKF_PREVIEW_LIMIT);
   const documentTitle = String(documentCard.title || document.title || knowledgeBase?.name || document.filename);
-  const documentSummary = String(documentCard.summary || '暂无文档摘要');
+  const documentSummary = String(documentCard.summary || '暫無文檔摘要');
   const sourceMarkdown = useMemo(() => documentSourceMarkdown(document, documentSummary), [document, documentSummary]);
   const totalChunkCount = buckets.reduce((sum, bucket) => sum + (bucket.chunk_count || 0), 0) || document.chunk_count || 0;
   const evidenceBuckets = useMemo(
@@ -374,10 +374,10 @@ export function 目录索引Overview({
     }
   > = {
     sections: {
-      title: '目录索引',
-      description: '按目录结构组织知识范围，先看主题，再进入知识图谱。',
+      title: '目錄索引',
+      description: '按目錄結構組織知識範圍，先看主題，再進入知識圖譜。',
       count: wikiIndexGroups.length,
-      emptyText: '暂无目录索引',
+      emptyText: '暫無目錄索引',
       items: previewWikiStructure.map((group) => ({
         key: group.key,
         title: group.title,
@@ -386,10 +386,10 @@ export function 目录索引Overview({
       })),
     },
     wiki: {
-      title: '知识图谱',
-      description: '可读知识页，用于长期沉淀、跨文档综合和数字员工复制。',
+      title: '知識圖譜',
+      description: '可讀知識頁，用於長期沉澱、跨文檔綜合和數字員工複製。',
       count: okfConcepts.length,
-      emptyText: '暂无知识图谱',
+      emptyText: '暫無知識圖譜',
       items: previewConcepts.map((concept) => ({
         key: concept.id,
         title: concept.title || concept.concept_id,
@@ -398,10 +398,10 @@ export function 目录索引Overview({
       })),
     },
     evidence: {
-      title: '引用来源',
-      description: '保留切片内容、原文片段和来源路径，用于回答溯源。',
+      title: '引用來源',
+      description: '保留切片內容、原文片段和來源路徑，用於回答溯源。',
       count: totalChunkCount,
-      emptyText: '暂无引用来源',
+      emptyText: '暫無引用來源',
       items: previewEvidence,
     },
   };
@@ -411,7 +411,7 @@ export function 目录索引Overview({
     <div className="knowledge-pageindex">
       <div className="knowledge-pageindex-card">
         <div className="knowledge-document-card-body">
-          <span className="text-[13px] text-[#858b9c]">文档卡片</span>
+          <span className="text-[13px] text-[#858b9c]">文檔卡片</span>
           <h5 className="my-[4px] text-[15px] font-semibold text-foreground">{documentTitle}</h5>
           <div className="knowledge-document-card-markdown is-preview">
             <MarkdownPreview markdown={documentSummary} />
@@ -420,7 +420,7 @@ export function 目录索引Overview({
         <div className="knowledge-pageindex-actions">
           <UIButton variant="outline" className={OUTLINE_ACTION_BUTTON_SM_CLASS} onClick={() => openDetail('document')}>
             <EditOutlined />
-            详情
+            詳情
           </UIButton>
         </div>
         <div className="knowledge-document-meta">
@@ -434,7 +434,7 @@ export function 目录索引Overview({
             aria-pressed={activeContentView === 'sections'}
             onClick={() => setActiveContentView('sections')}
           >
-            <span>目录索引</span>
+            <span>目錄索引</span>
             <strong>{wikiIndexGroups.length}</strong>
           </button>
           <button
@@ -443,7 +443,7 @@ export function 目录索引Overview({
             aria-pressed={activeContentView === 'wiki'}
             onClick={() => setActiveContentView('wiki')}
           >
-            <span>知识图谱</span>
+            <span>知識圖譜</span>
             <strong>{okfConcepts.length}</strong>
           </button>
           <button
@@ -452,7 +452,7 @@ export function 目录索引Overview({
             aria-pressed={activeContentView === 'evidence'}
             onClick={() => setActiveContentView('evidence')}
           >
-            <span>引用来源</span>
+            <span>引用來源</span>
             <strong>{totalChunkCount}</strong>
           </button>
         </div>
@@ -476,14 +476,14 @@ export function 目录索引Overview({
           </div>
         </div>
         {activeContentView === 'sections' && (
-          <div className="knowledge-layer-explain" aria-label="知识层级说明">
+          <div className="knowledge-layer-explain" aria-label="知識層級說明">
             <span>
-              <strong>目录索引</strong>
-              <small>目录索引，用于按资料、章节、主题逐级展开</small>
+              <strong>目錄索引</strong>
+              <small>目錄索引，用於按資料、章節、主題逐級展開</small>
             </span>
             <span>
-              <strong>知识图谱</strong>
-              <small>最底层可读知识页，回答时基于页面内容并追溯引用来源</small>
+              <strong>知識圖譜</strong>
+              <small>最底層可讀知識頁，回答時基於頁面內容並追溯引用來源</small>
             </span>
           </div>
         )}
@@ -513,12 +513,12 @@ export function 目录索引Overview({
                 }}
                 title={
                   activeContentView === 'sections' && entry.indexGroup
-                    ? '查看目录下的知识图谱'
+                    ? '查看目錄下的知識圖譜'
                     : (activeContentView === 'sections' || activeContentView === 'wiki') && entry.concept
-                      ? '查看知识图谱'
+                      ? '查看知識圖譜'
                       : activeContentView === 'evidence'
-                        ? '查看引用来源'
-                      : '查看详情'
+                        ? '查看引用來源'
+                      : '查看詳情'
                 }
               >
                 <strong>{entry.title}</strong>
@@ -540,7 +540,7 @@ export function 目录索引Overview({
           <div className="knowledge-detail-stack">
             <div className="knowledge-detail-header">
               <div>
-                <span className="text-[13px] text-[#858b9c]">文档卡片</span>
+                <span className="text-[13px] text-[#858b9c]">文檔卡片</span>
                 <h4 className="my-[4px] text-[16px] font-semibold text-foreground">{documentTitle}</h4>
               </div>
               <UIButton variant="outline" className={OUTLINE_ACTION_BUTTON_SM_CLASS} onClick={() => onEditDocument(document)}>
@@ -550,7 +550,7 @@ export function 目录索引Overview({
             </div>
             <section className="knowledge-document-md-panel">
               <div className="knowledge-document-md-panel-head">
-                <strong>文档卡片</strong>
+                <strong>文檔卡片</strong>
                 <KTag>{document.file_type || 'unknown'}</KTag>
               </div>
               <div className="knowledge-document-md-scroll is-summary">
@@ -559,11 +559,11 @@ export function 目录索引Overview({
             </section>
             <section className="knowledge-document-md-panel">
               <div className="knowledge-document-md-panel-head">
-                <strong>原始资料</strong>
+                <strong>原始資料</strong>
                 <KTag>{Array.isArray(metadata.section_tree) ? metadata.section_tree.length : 0} 段</KTag>
               </div>
               <div className="knowledge-document-md-scroll is-source">
-                <MarkdownPreview markdown={sourceMarkdown || '暂无原始资料'} />
+                <MarkdownPreview markdown={sourceMarkdown || '暫無原始資料'} />
               </div>
             </section>
             <div className="knowledge-evidence-stat is-inline">
@@ -572,15 +572,15 @@ export function 目录索引Overview({
             </div>
             <div className="knowledge-document-meta">
               <button type="button" className="knowledge-stat-pill" onClick={() => openDetail('sections')}>
-                <span>目录索引</span>
+                <span>目錄索引</span>
                 <strong>{wikiIndexGroups.length}</strong>
               </button>
               <button type="button" className="knowledge-stat-pill" onClick={() => openDetail('wiki')}>
-                <span>知识图谱</span>
+                <span>知識圖譜</span>
                 <strong>{okfConcepts.length}</strong>
               </button>
               <button type="button" className="knowledge-stat-pill" onClick={() => openDetail('evidence')}>
-                <span>引用来源</span>
+                <span>引用來源</span>
                 <strong>{totalChunkCount}</strong>
               </button>
             </div>
@@ -590,7 +590,7 @@ export function 目录索引Overview({
         {detailView === 'sections' && (
           <div className="knowledge-wiki-map">
             {wikiIndexGroups.length === 0 ? (
-              <EmptyState description="暂无 目录索引 目录" />
+              <EmptyState description="暫無 目錄索引 目錄" />
             ) : (
               wikiIndexGroups.map((group) => (
                 <section
@@ -600,11 +600,11 @@ export function 目录索引Overview({
                 >
                   <div className="knowledge-index-group-head">
                     <div>
-                      <KTag color="green">目录索引</KTag>
+                      <KTag color="green">目錄索引</KTag>
                       <strong>{group.title}</strong>
                       <small>{group.description}</small>
                     </div>
-                    <KTag>{group.concepts.length} 页</KTag>
+                    <KTag>{group.concepts.length} 頁</KTag>
                   </div>
                   <div className="knowledge-index-page-list">
                     {group.concepts.slice(0, 8).map((concept) => (
@@ -623,7 +623,7 @@ export function 目录索引Overview({
         {detailView === 'evidence' && (
           <div className="knowledge-concept-list">
             {evidenceBuckets.length === 0 ? (
-              <EmptyState description="暂无引用来源" />
+              <EmptyState description="暫無引用來源" />
             ) : (
               evidenceBuckets.map((bucket) => {
                 const contentMarkdown = bucketContentMarkdown(bucket);
@@ -636,12 +636,12 @@ export function 目录索引Overview({
                     <div className="knowledge-concept-card-head">
                       <div>
                         <div className="flex flex-wrap items-center gap-[8px]">
-                          <KTag color="green">引用来源</KTag>
+                          <KTag color="green">引用來源</KTag>
                           {bucketStatusTag(bucket)}
-                          <KTag>{bucket.chunk_count} 个切片</KTag>
+                          <KTag>{bucket.chunk_count} 個切片</KTag>
                         </div>
                         <h5 className="mt-[6px] mb-0 text-[15px] font-semibold text-foreground">
-                          {bucket.title || bucket.bucket_key || '引用来源'}
+                          {bucket.title || bucket.bucket_key || '引用來源'}
                         </h5>
                       </div>
                       <UIButton
@@ -650,7 +650,7 @@ export function 目录索引Overview({
                         onClick={() => onEditBucket(bucket)}
                       >
                         <EditOutlined />
-                        编辑
+                        編輯
                       </UIButton>
                     </div>
                     {bucket.summary ? (
@@ -658,7 +658,7 @@ export function 目录索引Overview({
                     ) : null}
                     <KnowledgeBucketLinks bucket={bucket} evidenceOnly />
                     <section className="mt-[12px] rounded-[14px] border border-[#eceef1] bg-white p-[14px]">
-                      <MarkdownPreview markdown={contentMarkdown || '暂无可展示的切片正文，可点击编辑加载完整引用来源。'} />
+                      <MarkdownPreview markdown={contentMarkdown || '暫無可展示的切片正文，可點擊編輯加載完整引用來源。'} />
                     </section>
                   </section>
                 );
@@ -670,7 +670,7 @@ export function 目录索引Overview({
         {detailView === 'wiki' && (
           <div className="knowledge-concept-list">
             {okfConcepts.length === 0 ? (
-              <EmptyState description="暂无知识图谱" />
+              <EmptyState description="暫無知識圖譜" />
             ) : (
               okfConcepts.map((concept) => (
                 <div
@@ -704,15 +704,15 @@ export function 目录索引Overview({
                       }}
                     >
                       <EditOutlined />
-                      编辑
+                      編輯
                     </UIButton>
                   </div>
                   <p className="my-[6px] text-[13px] text-[#858b9c]">{concept.description || conceptSummary(concept)}</p>
                   <div className="flex flex-wrap items-center gap-[6px]">
                     <KTag>{concept.concept_id}</KTag>
-                    <KTag>{concept.links.length} 个链接</KTag>
-                    <KTag>{concept.citations.length} 个引用</KTag>
-                    {concept.document_id ? <KTag>来源文档 {concept.document_id}</KTag> : null}
+                    <KTag>{concept.links.length} 個鏈接</KTag>
+                    <KTag>{concept.citations.length} 個引用</KTag>
+                    {concept.document_id ? <KTag>來源文檔 {concept.document_id}</KTag> : null}
                   </div>
                 </div>
               ))
@@ -757,12 +757,12 @@ export function WikiConceptViewer({ concept }: { concept: KnowledgeConceptRead }
         <p className="text-[14px] leading-[1.65] text-[#18181a]">{concept.description || conceptSummary(concept)}</p>
       </section>
 
-      <section className="grid min-w-0 gap-[10px] grid-cols-[repeat(auto-fit,minmax(160px,1fr))]" aria-label="知识图谱元信息">
+      <section className="grid min-w-0 gap-[10px] grid-cols-[repeat(auto-fit,minmax(160px,1fr))]" aria-label="知識圖譜元信息">
         {[
-          { label: '页面路径', value: concept.concept_id },
-          { label: '链接', value: `${links.length} 个` },
-          { label: '引用', value: `${citations.length} 个` },
-          { label: '更新时间', value: formatDateTime(concept.updated_at) },
+          { label: '頁面路徑', value: concept.concept_id },
+          { label: '鏈接', value: `${links.length} 個` },
+          { label: '引用', value: `${citations.length} 個` },
+          { label: '更新時間', value: formatDateTime(concept.updated_at) },
         ].map((item) => (
           <div
             key={item.label}
@@ -775,14 +775,14 @@ export function WikiConceptViewer({ concept }: { concept: KnowledgeConceptRead }
       </section>
 
       <section className="rounded-[16px] border border-[#eceef1] bg-white p-[18px]">
-        <MarkdownPreview markdown={body || '暂无正文'} />
+        <MarkdownPreview markdown={body || '暫無正文'} />
       </section>
 
       {(links.length > 0 || citations.length > 0 || sourceRefs.length > 0) && (
-        <section className="grid min-w-0 grid-cols-1 gap-[10px] xl:grid-cols-3" aria-label="知识链接与引用">
+        <section className="grid min-w-0 grid-cols-1 gap-[10px] xl:grid-cols-3" aria-label="知識鏈接與引用">
           {links.length > 0 && (
             <div className="flex min-w-0 flex-col gap-[10px] overflow-hidden rounded-[14px] border border-[#eceef1] bg-white p-[14px]">
-              <strong className="text-[13px] font-semibold text-[#18181a]">关联页面</strong>
+              <strong className="text-[13px] font-semibold text-[#18181a]">關聯頁面</strong>
               <div className="flex max-h-[220px] min-w-0 max-w-full flex-wrap gap-[6px] overflow-x-hidden overflow-y-auto pr-[2px]">
                 {links.slice(0, 12).map((item, index) => (
                   <KnowledgeRelationChip key={`link-${index}`}>{recordLabel(item, ['target', 'concept_id', 'id'])}</KnowledgeRelationChip>
@@ -802,7 +802,7 @@ export function WikiConceptViewer({ concept }: { concept: KnowledgeConceptRead }
           )}
           {sourceRefs.length > 0 && (
             <div className="flex min-w-0 flex-col gap-[10px] overflow-hidden rounded-[14px] border border-[#eceef1] bg-white p-[14px]">
-              <strong className="text-[13px] font-semibold text-[#18181a]">来源</strong>
+              <strong className="text-[13px] font-semibold text-[#18181a]">來源</strong>
               <div className="flex max-h-[220px] min-w-0 max-w-full flex-wrap gap-[6px] overflow-x-hidden overflow-y-auto pr-[2px]">
                 {sourceRefs.slice(0, 12).map((item, index) => (
                   <KnowledgeRelationChip key={`source-${index}`}>{recordLabel(item, ['document_id', 'section_id', 'source', 'id'])}</KnowledgeRelationChip>
@@ -820,7 +820,7 @@ export function MarkdownPreview({ markdown }: { markdown: string }) {
   const normalized = normalizeMarkdownForDisplay(markdown);
   return (
     <div className="knowledge-markdown-preview">
-      {renderMarkdownBlocks(normalized || '暂无内容')}
+      {renderMarkdownBlocks(normalized || '暫無內容')}
     </div>
   );
 }
@@ -853,20 +853,20 @@ export function KnowledgeBucketLinks({ bucket, evidenceOnly = false }: { bucket:
     <div className="knowledge-bucket-link-grid">
       {!evidenceOnly && (
         <>
-          <span className="text-[13px] text-[#858b9c]">覆盖来源</span>
+          <span className="text-[13px] text-[#858b9c]">覆蓋來源</span>
           <div>
             {sourceSections.length === 0 ? (
-              <KTag>暂无来源路径</KTag>
+              <KTag>暫無來源路徑</KTag>
             ) : (
               sourceSections.map((section) => <KTag key={String(section)}>{String(section)}</KTag>)
             )}
           </div>
         </>
       )}
-      <span className="text-[13px] text-[#858b9c]">{evidenceOnly ? '引用来源' : '代表引用'}</span>
+      <span className="text-[13px] text-[#858b9c]">{evidenceOnly ? '引用來源' : '代表引用'}</span>
       <div className="knowledge-evidence-token-list">
         {representativeChunks.length === 0 ? (
-          bucket.chunk_count > 0 ? <KTag>{bucket.chunk_count} 个引用来源</KTag> : <KTag>暂无可读代表来源</KTag>
+          bucket.chunk_count > 0 ? <KTag>{bucket.chunk_count} 個引用來源</KTag> : <KTag>暫無可讀代表來源</KTag>
         ) : (
           representativeChunks.map((chunkId) => <KTag key={String(chunkId)}>{String(chunkId)}</KTag>)
         )}
@@ -876,11 +876,11 @@ export function KnowledgeBucketLinks({ bucket, evidenceOnly = false }: { bucket:
 }
 
 export function knowledgeDetailTitle(view: KnowledgeDetailView | null) {
-  if (view === 'document') return '文档详情';
-  if (view === 'sections') return '目录索引 目录';
-  if (view === 'wiki') return '知识图谱';
-  if (view === 'evidence') return '引用来源';
-  return '知识详情';
+  if (view === 'document') return '文檔詳情';
+  if (view === 'sections') return '目錄索引 目錄';
+  if (view === 'wiki') return '知識圖譜';
+  if (view === 'evidence') return '引用來源';
+  return '知識詳情';
 }
 
 export function bucketSourceSections(bucket: KnowledgeBucketRead) {
@@ -929,10 +929,10 @@ export function previewEvidenceItems(buckets: KnowledgeBucketRead[], chunkCount:
       const contentPreview = bucketContentMarkdown(bucket).replace(/\s+/g, ' ').trim().slice(0, 180);
       return {
         key: bucket.id,
-        title: bucket.title || bucket.bucket_key || '引用来源',
+        title: bucket.title || bucket.bucket_key || '引用來源',
         summary: contentPreview || (sourceSections.length
-          ? `${bucket.chunk_count} 个引用来源，覆盖 ${sourceSections.join(' / ')}`
-          : `${bucket.chunk_count} 个引用来源，已完成桶级映射。`),
+          ? `${bucket.chunk_count} 個引用來源，覆蓋 ${sourceSections.join(' / ')}`
+          : `${bucket.chunk_count} 個引用來源，已完成桶級映射。`),
         bucket,
       };
     });
@@ -943,7 +943,7 @@ export function previewEvidenceItems(buckets: KnowledgeBucketRead[], chunkCount:
     return representativeChunkIds.map((chunkId) => ({
       key: chunkId,
       title: chunkId,
-      summary: '代表引用来源，可在详情中查看来源映射。',
+      summary: '代表引用來源，可在詳情中查看來源映射。',
     }));
   }
 
@@ -951,8 +951,8 @@ export function previewEvidenceItems(buckets: KnowledgeBucketRead[], chunkCount:
     return [
       {
         key: 'chunk-total',
-        title: '已入库引用来源',
-        summary: `共 ${chunkCount} 个引用来源，当前暂无可展示的桶级代表来源。`,
+        title: '已入庫引用來源',
+        summary: `共 ${chunkCount} 個引用來源，當前暫無可展示的桶級代表來源。`,
       },
     ];
   }
@@ -970,10 +970,10 @@ export function KnowledgeSearchDebug({
   compact?: boolean;
 }) {
   if (loading) {
-    return <span className="text-[13px] text-[#858b9c]">正在按目录索引和知识图谱检索，并整理引用来源...</span>;
+    return <span className="text-[13px] text-[#858b9c]">正在按目錄索引和知識圖譜檢索，並整理引用來源...</span>;
   }
   if (!result) {
-    return <EmptyState description="尚未运行检索" />;
+    return <EmptyState description="尚未運行檢索" />;
   }
   const selectedConcepts = result.selected_concepts || [];
   const okfCitations = result.okf_citations || [];
@@ -992,31 +992,31 @@ export function KnowledgeSearchDebug({
       </div>
       <Accordion type="multiple" className="flex flex-col gap-[6px]">
         <AccordionItem value="concepts">
-          <AccordionTrigger>{`知识图谱 ${selectedConcepts.length}`}</AccordionTrigger>
+          <AccordionTrigger>{`知識圖譜 ${selectedConcepts.length}`}</AccordionTrigger>
           <AccordionContent>
             <pre className="knowledge-json">{JSON.stringify(selectedConcepts, null, 2)}</pre>
           </AccordionContent>
         </AccordionItem>
         <AccordionItem value="okf-citations">
-          <AccordionTrigger>{`知识图谱引用 ${okfCitations.length}`}</AccordionTrigger>
+          <AccordionTrigger>{`知識圖譜引用 ${okfCitations.length}`}</AccordionTrigger>
           <AccordionContent>
             <pre className="knowledge-json">{JSON.stringify(okfCitations, null, 2)}</pre>
           </AccordionContent>
         </AccordionItem>
         <AccordionItem value="documents">
-          <AccordionTrigger>{`文档 ${result.selected_documents.length}`}</AccordionTrigger>
+          <AccordionTrigger>{`文檔 ${result.selected_documents.length}`}</AccordionTrigger>
           <AccordionContent>
             <pre className="knowledge-json">{JSON.stringify(result.selected_documents, null, 2)}</pre>
           </AccordionContent>
         </AccordionItem>
         <AccordionItem value="sections">
-          <AccordionTrigger>{`展开来源 ${result.expanded_sections.length}`}</AccordionTrigger>
+          <AccordionTrigger>{`展開來源 ${result.expanded_sections.length}`}</AccordionTrigger>
           <AccordionContent>
             <pre className="knowledge-json">{JSON.stringify(result.expanded_sections, null, 2)}</pre>
           </AccordionContent>
         </AccordionItem>
         <AccordionItem value="evidence">
-          <AccordionTrigger>{`引用来源包 ${result.evidence_pack.length}`}</AccordionTrigger>
+          <AccordionTrigger>{`引用來源包 ${result.evidence_pack.length}`}</AccordionTrigger>
           <AccordionContent>
             <div className="knowledge-evidence-list">
               {result.evidence_pack.map((item) => (
@@ -1059,7 +1059,7 @@ export function DiscoveryColumn({
         <KTag>{items.length}</KTag>
       </div>
       {items.length === 0 ? (
-        <EmptyState description="暂无内容" />
+        <EmptyState description="暫無內容" />
       ) : (
         <div className="knowledge-discovery-list flex flex-col gap-[12px]">
           {items.map((item) => (
@@ -1084,7 +1084,7 @@ export function DiscoveryColumn({
               {item.reason && <p className="my-[6px] text-[13px] text-[#858b9c]">{item.reason}</p>}
               <Accordion type="single" collapsible>
                 <AccordionItem value="payload" className="border-b-0">
-                  <AccordionTrigger className="py-[6px]">查看详情</AccordionTrigger>
+                  <AccordionTrigger className="py-[6px]">查看詳情</AccordionTrigger>
                   <AccordionContent>
                     <pre className="knowledge-json">{JSON.stringify(item.payload, null, 2)}</pre>
                   </AccordionContent>
@@ -1100,19 +1100,19 @@ export function DiscoveryColumn({
 
 export function routePhaseLabel(phase: string) {
   const map: Record<string, string> = {
-    document_route: '选择知识库文档',
-    document_route_lexical: '按相关性选择知识库文档',
-    okf_concept_route: '选择知识图谱',
-    okf_only: '仅命中知识图谱',
-    bucket_route: '展开内部索引',
-    bucket_route_lexical: '按相关性选择内部索引',
-    section_expand: '读取来源',
-    read_chunks: '读取引用来源',
-    evidence_pack: '整理引用来源包',
-    no_documents: '没有文档',
-    no_buckets: '没有内部索引',
+    document_route: '選擇知識庫文檔',
+    document_route_lexical: '按相關性選擇知識庫文檔',
+    okf_concept_route: '選擇知識圖譜',
+    okf_only: '僅命中知識圖譜',
+    bucket_route: '展開內部索引',
+    bucket_route_lexical: '按相關性選擇內部索引',
+    section_expand: '讀取來源',
+    read_chunks: '讀取引用來源',
+    evidence_pack: '整理引用來源包',
+    no_documents: '沒有文檔',
+    no_buckets: '沒有內部索引',
   };
-  return map[phase] || phase || '检索阶段';
+  return map[phase] || phase || '檢索階段';
 }
 
 export function isEmptyDefaultKnowledgeBase(item: KnowledgeBaseRead) {
@@ -1121,7 +1121,7 @@ export function isEmptyDefaultKnowledgeBase(item: KnowledgeBaseRead) {
     return true;
   }
   return (
-    item.name === '默认知识库' &&
+    item.name === '默認知識庫' &&
     item.document_count === 0 &&
     item.bucket_count === 0 &&
     item.chunk_count === 0
@@ -1134,17 +1134,17 @@ export function isRecord(value: unknown): value is Record<string, unknown> {
 
 export function statusTag(status: string) {
   const map: Record<string, { color: string; label: string }> = {
-    active: { color: 'green', label: '已上线' },
-    published: { color: 'green', label: '已发布' },
-    archived: { color: 'default', label: '已下线' },
+    active: { color: 'green', label: '已上線' },
+    published: { color: 'green', label: '已發佈' },
+    archived: { color: 'default', label: '已下線' },
     draft: { color: 'default', label: '草稿' },
     succeeded: { color: 'green', label: '已完成' },
-    ready: { color: 'green', label: '达标' },
-    confirmed: { color: 'green', label: '已确认' },
-    failed: { color: 'red', label: '失败' },
-    pending: { color: 'gold', label: '待处理' },
-    running: { color: 'processing', label: '处理中' },
-    queued: { color: 'gold', label: '排队中' },
+    ready: { color: 'green', label: '達標' },
+    confirmed: { color: 'green', label: '已確認' },
+    failed: { color: 'red', label: '失敗' },
+    pending: { color: 'gold', label: '待處理' },
+    running: { color: 'processing', label: '處理中' },
+    queued: { color: 'gold', label: '排隊中' },
     cancel_requested: { color: 'gold', label: '取消中' },
     cancelled: { color: 'default', label: '已取消' },
   };
@@ -1153,8 +1153,8 @@ export function statusTag(status: string) {
 }
 
 export function bucketStatusTag(bucket: KnowledgeBucketRead) {
-  if (bucket.status === 'ready') return <KTag color="green">达标</KTag>;
-  return <KTag color="gold">待补足</KTag>;
+  if (bucket.status === 'ready') return <KTag color="green">達標</KTag>;
+  return <KTag color="gold">待補足</KTag>;
 }
 
 export const KTAG_TONE_CLASS: Record<string, string> = {
@@ -1360,12 +1360,12 @@ export function conceptPath(conceptId: string) {
 }
 
 export const CONCEPT_TYPE_LABELS = new Map<string, string>([
-  ['Source Document', '原始资料'],
-  ['Source Section', '资料页'],
-  ['Topic', '主题'],
-  ['Playbook', '流程知识'],
-  ['Business Rule', '业务规则'],
-  ['Query Analysis', '查询分析'],
+  ['Source Document', '原始資料'],
+  ['Source Section', '資料頁'],
+  ['Topic', '主題'],
+  ['Playbook', '流程知識'],
+  ['Business Rule', '業務規則'],
+  ['Query Analysis', '查詢分析'],
 ]);
 
 export function conceptTypeLabel(type: string) {
@@ -1432,7 +1432,7 @@ export function wikiIndexGroupKey(concept: KnowledgeConceptRead) {
     const label = String(firstSource.source_document || firstSource.document_id || '').trim();
     if (label) return `source:${label}`;
   }
-  return `type:${concept.concept_type || '知识图谱'}`;
+  return `type:${concept.concept_type || '知識圖譜'}`;
 }
 
 export function wikiIndexGroupTitle(concept: KnowledgeConceptRead) {
@@ -1452,14 +1452,14 @@ export function wikiIndexGroupDescription(concepts: KnowledgeConceptRead[]) {
     .map((concept) => concept.title || concept.concept_id)
     .filter(Boolean)
     .slice(0, 3);
-  const typeText = types.length ? types.join('、') : '知识图谱';
+  const typeText = types.length ? types.join('、') : '知識圖譜';
   const sampleText = samples.length ? `，包含 ${samples.join(' / ')}` : '';
-  return `${concepts.length} 个知识图谱，覆盖 ${typeText}${sampleText}`;
+  return `${concepts.length} 個知識圖譜，覆蓋 ${typeText}${sampleText}`;
 }
 
 export function conceptSummary(concept: KnowledgeConceptRead) {
   const body = concept.content_md.replace(/^---[\s\S]*?---\s*/m, '').replace(/[#>*_\-[\]()`]/g, ' ').trim();
-  return body.length > 160 ? `${body.slice(0, 160)}...` : body || '暂无摘要';
+  return body.length > 160 ? `${body.slice(0, 160)}...` : body || '暫無摘要';
 }
 
 export function okfFrontmatterValue(markdown: string, key: string, fallback = '') {
@@ -1494,7 +1494,7 @@ export function updateOkfFrontmatterValue(markdown: string, key: string, value: 
 }
 
 export function formatDateTime(value: string) {
-  if (!value) return '未知时间';
+  if (!value) return '未知時間';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleString(getDateLocale(), {
@@ -1514,7 +1514,7 @@ export function typeLabel(type: string) {
 export function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onerror = () => reject(new Error('读取文件失败'));
+    reader.onerror = () => reject(new Error('讀取文件失敗'));
     reader.onload = () => {
       const result = String(reader.result || '');
       resolve(result.includes(',') ? result.split(',').pop() || '' : result);

@@ -5,9 +5,9 @@ def test_conversation_context_keeps_full_history_under_budget() -> None:
     messages = [
         {"role": "user", "content": "你好"},
         {"role": "assistant", "content": "您好"},
-        {"role": "user", "content": "我是 hx，我要买 A2"},
-        {"role": "assistant", "content": "请问买几个？"},
-        {"role": "user", "content": "买两个"},
+        {"role": "user", "content": "我是 hx，我要買 A2"},
+        {"role": "assistant", "content": "請問買幾個？"},
+        {"role": "user", "content": "買兩個"},
     ]
 
     context = build_conversation_context(messages, token_budget=1_000)
@@ -32,8 +32,8 @@ def test_conversation_context_compacts_only_after_budget_is_exceeded() -> None:
     assert context["metadata"]["compacted"] is True
     assert context["metadata"]["omitted_messages"] > 0
     assert projected[0]["role"] == "user"
-    assert "历史的信息可以被总结为" in projected[0]["content"]
-    assert "近期的历史信息总结为" in projected[1]["content"]
+    assert "歷史的信息可以被總結為" in projected[0]["content"]
+    assert "近期的歷史信息總結為" in projected[1]["content"]
     assert projected[-1]["content"] == messages[-1]["content"]
     assert context["metadata"]["estimated_tokens"] <= 500
 
@@ -61,9 +61,9 @@ def test_context_rotates_medium_history_into_long_history_on_next_threshold() ->
 
     assert first_state["compaction_count"] == 1
     assert first_state["long_term_summary"] == ""
-    assert first_state["medium_term_summary"].startswith("近期历史信息摘要")
-    assert first["messages"][0]["content"].startswith("历史的信息可以被总结为：")
-    assert first["messages"][1]["content"].startswith("近期的历史信息总结为：")
+    assert first_state["medium_term_summary"].startswith("近期歷史信息摘要")
+    assert first["messages"][0]["content"].startswith("歷史的信息可以被總結為：")
+    assert first["messages"][1]["content"].startswith("近期的歷史信息總結為：")
 
     more_messages = [
         *messages,
@@ -86,8 +86,8 @@ def test_context_rotates_medium_history_into_long_history_on_next_threshold() ->
     second_state = second["context_state"]
 
     assert second_state["compaction_count"] == 2
-    assert second_state["long_term_summary"].startswith("长期历史信息摘要")
+    assert second_state["long_term_summary"].startswith("長期歷史信息摘要")
     assert first_state["medium_term_summary"] in summaries[-2][1]
-    assert second_state["medium_term_summary"].startswith("近期历史信息摘要")
+    assert second_state["medium_term_summary"].startswith("近期歷史信息摘要")
     assert second["metadata"]["current_turn_time"] == "2026-07-13T13:15:00"
     assert second["metadata"]["estimated_tokens"] <= 700

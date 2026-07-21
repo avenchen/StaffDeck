@@ -49,9 +49,9 @@ from app.session.session_schema import ChatTurnRequest, RouterDecision, StepAgen
 from app.tools.tool_schema import ToolCall
 
 
-WEATHER_SKILL_MD = """# 中国城市天气查询工具
+WEATHER_SKILL_MD = """# 中國城市天氣查詢工具
 
-python weather.py -json -today <地区名称>
+python weather.py -json -today <地區名稱>
 """
 
 
@@ -70,27 +70,27 @@ def test_capability_selector_allows_general_skill_and_knowledge_together(monkeyp
             "use_general_skill": True,
             "selected_slug": "weather-zh",
             "use_knowledge": True,
-            "knowledge_query": "内部出差规范对天气风险有什么要求",
+            "knowledge_query": "內部出差規範對天氣風險有什麼要求",
             "confidence": 0.93,
-            "reason": "需要天气能力和内部出差规范共同回答。",
+            "reason": "需要天氣能力和內部出差規範共同回答。",
         },
     )
     skill = GeneralSkill(
         tenant_id="tenant_demo",
         slug="weather-zh",
-        name="中国城市天气",
+        name="中國城市天氣",
         skill_markdown=WEATHER_SKILL_MD,
         status="published",
     )
 
     decision = GeneralSkillSelector().decide(
-        "结合天气和公司规范给出建议", [skill], SimpleNamespace()
+        "結合天氣和公司規範給出建議", [skill], SimpleNamespace()
     )
 
     assert decision.use_general_skill is True
     assert decision.selected_slug == "weather-zh"
     assert decision.use_knowledge is True
-    assert decision.knowledge_query == "内部出差规范对天气风险有什么要求"
+    assert decision.knowledge_query == "內部出差規範對天氣風險有什麼要求"
 
 
 def test_capability_selector_still_checks_knowledge_without_general_skills(monkeypatch) -> None:
@@ -103,32 +103,32 @@ def test_capability_selector_still_checks_knowledge_without_general_skills(monke
             "use_general_skill": False,
             "selected_slug": None,
             "use_knowledge": True,
-            "knowledge_query": "员工报销的审批要求",
+            "knowledge_query": "員工報銷的審批要求",
             "confidence": 0.88,
-            "reason": "回答依赖企业文档。",
+            "reason": "回答依賴企業文檔。",
         }
 
     monkeypatch.setattr(LLMClient, "generate_json", fake_generate_json)
 
-    decision = GeneralSkillSelector().decide("这种费用应该怎么报", [], SimpleNamespace())
+    decision = GeneralSkillSelector().decide("這種費用應該怎麼報", [], SimpleNamespace())
 
     assert received["general_skills"] == []
     assert decision.use_general_skill is False
     assert decision.use_knowledge is True
-    assert decision.knowledge_query == "员工报销的审批要求"
+    assert decision.knowledge_query == "員工報銷的審批要求"
 
 
 def test_capability_knowledge_is_merged_into_general_skill_result() -> None:
-    step_result = StepAgentResult(reply="天气查询完成", is_step_completed=True)
+    step_result = StepAgentResult(reply="天氣查詢完成", is_step_completed=True)
     knowledge_result = StepAgentResult(
-        knowledge_query={"query": "内部出差规范"},
-        knowledge_results=[{"evidence_pack": [{"content": "恶劣天气时应调整行程"}]}],
+        knowledge_query={"query": "內部出差規範"},
+        knowledge_results=[{"evidence_pack": [{"content": "惡劣天氣時應調整行程"}]}],
     )
 
     AgentLoop._merge_capability_knowledge(step_result, knowledge_result)
 
     assert step_result.knowledge_query is not None
-    assert step_result.knowledge_query.query == "内部出差规范"
+    assert step_result.knowledge_query.query == "內部出差規範"
     assert step_result.knowledge_results == knowledge_result.knowledge_results
 
 
@@ -138,7 +138,7 @@ def test_knowledge_keywords_do_not_bypass_structured_capability_selection() -> N
         ChatTurnRequest(
             tenant_id="tenant_demo",
             user_id="user_demo",
-            message="请根据知识库资料、规则、政策和文档说明怎么处理",
+            message="請根據知識庫資料、規則、政策和文檔說明怎麼處理",
         ),
         ChatSession(id="session_demo", tenant_id="tenant_demo"),
         SimpleNamespace(),
@@ -146,7 +146,7 @@ def test_knowledge_keywords_do_not_bypass_structured_capability_selection() -> N
         GeneralSkillSelection(
             use_general_skill=False,
             use_knowledge=False,
-            reason="第二轮能力选择认为当前上下文足以回答。",
+            reason="第二輪能力選擇認為當前上下文足以回答。",
         ),
     )
 
@@ -169,7 +169,7 @@ def test_import_general_skill_uses_user_supplied_metadata() -> None:
         _seed_minimal_tenant(db)
         db.add(
             AgentProfile(
-                id="agent_overall", tenant_id="tenant_demo", name="整体智能体", is_overall=True
+                id="agent_overall", tenant_id="tenant_demo", name="整體智能體", is_overall=True
             )
         )
         db.commit()
@@ -177,9 +177,9 @@ def test_import_general_skill_uses_user_supplied_metadata() -> None:
         first = import_general_skill(
             GeneralSkillImportRequest(
                 tenant_id="tenant_demo",
-                name="用户填写天气技能",
+                name="用戶填寫天氣技能",
                 slug="weather-zh",
-                description="用户填写描述",
+                description="用戶填寫描述",
                 homepage="https://example.com/weather",
                 markdown=WEATHER_SKILL_MD,
             ),
@@ -189,12 +189,12 @@ def test_import_general_skill_uses_user_supplied_metadata() -> None:
         second = import_general_skill(
             GeneralSkillImportRequest(
                 tenant_id="tenant_demo",
-                name="用户改名天气技能",
+                name="用戶改名天氣技能",
                 slug="weather-zh",
-                description="用户改写描述",
+                description="用戶改寫描述",
                 homepage="https://example.com/weather-cn",
                 original_slug="weather-zh",
-                markdown=WEATHER_SKILL_MD.replace("中国城市天气查询工具", "天气 demo"),
+                markdown=WEATHER_SKILL_MD.replace("中國城市天氣查詢工具", "天氣 demo"),
             ),
             db,
             _admin_user(),
@@ -204,10 +204,10 @@ def test_import_general_skill_uses_user_supplied_metadata() -> None:
         assert first.id == second.id
         assert len(rows) == 1
         assert rows[0].slug == "weather-zh"
-        assert rows[0].name == "用户改名天气技能"
-        assert rows[0].description == "用户改写描述"
+        assert rows[0].name == "用戶改名天氣技能"
+        assert rows[0].description == "用戶改寫描述"
         assert rows[0].homepage == "https://example.com/weather-cn"
-        assert rows[0].skill_markdown.startswith("# 天气 demo")
+        assert rows[0].skill_markdown.startswith("# 天氣 demo")
 
         try:
             import_general_skill(
@@ -232,7 +232,7 @@ def test_import_general_skill_without_original_slug_does_not_overwrite_existing(
         _seed_minimal_tenant(db)
         db.add(
             AgentProfile(
-                id="agent_overall", tenant_id="tenant_demo", name="整体智能体", is_overall=True
+                id="agent_overall", tenant_id="tenant_demo", name="整體智能體", is_overall=True
             )
         )
         db.commit()
@@ -240,7 +240,7 @@ def test_import_general_skill_without_original_slug_does_not_overwrite_existing(
         first = import_general_skill(
             GeneralSkillImportRequest(
                 tenant_id="tenant_demo",
-                name="已有天气技能",
+                name="已有天氣技能",
                 slug="weather-zh",
                 markdown=WEATHER_SKILL_MD,
             ),
@@ -252,9 +252,9 @@ def test_import_general_skill_without_original_slug_does_not_overwrite_existing(
             import_general_skill(
                 GeneralSkillImportRequest(
                     tenant_id="tenant_demo",
-                    name="新导入天气技能",
+                    name="新導入天氣技能",
                     slug="weather-zh",
-                    markdown="# 新内容",
+                    markdown="# 新內容",
                 ),
                 db,
                 _admin_user(),
@@ -267,7 +267,7 @@ def test_import_general_skill_without_original_slug_does_not_overwrite_existing(
         rows = list_general_skills("tenant_demo", db)
         assert len(rows) == 1
         assert rows[0].id == first.id
-        assert rows[0].name == "已有天气技能"
+        assert rows[0].name == "已有天氣技能"
         assert rows[0].skill_markdown == WEATHER_SKILL_MD.strip()
 
 
@@ -276,7 +276,7 @@ def test_deleted_open_gallery_general_skill_binding_is_not_restored_by_ensure() 
         _seed_minimal_tenant(db)
         db.add(
             AgentProfile(
-                id="agent_overall", tenant_id="tenant_demo", name="整体智能体", is_overall=True
+                id="agent_overall", tenant_id="tenant_demo", name="整體智能體", is_overall=True
             )
         )
         db.commit()
@@ -284,7 +284,7 @@ def test_deleted_open_gallery_general_skill_binding_is_not_restored_by_ensure() 
         imported = import_general_skill(
             GeneralSkillImportRequest(
                 tenant_id="tenant_demo",
-                name="天气技能",
+                name="天氣技能",
                 slug="weather-zh",
                 markdown=WEATHER_SKILL_MD,
             ),
@@ -321,12 +321,12 @@ def test_deleted_open_gallery_general_skill_is_hidden_from_agent_branch_binding(
         _seed_minimal_tenant(db)
         db.add(
             AgentProfile(
-                id="agent_overall", tenant_id="tenant_demo", name="整体智能体", is_overall=True
+                id="agent_overall", tenant_id="tenant_demo", name="整體智能體", is_overall=True
             )
         )
         db.add(
             AgentProfile(
-                id="agent_branch", tenant_id="tenant_demo", name="研发员工", is_overall=False
+                id="agent_branch", tenant_id="tenant_demo", name="研發員工", is_overall=False
             )
         )
         db.commit()
@@ -334,7 +334,7 @@ def test_deleted_open_gallery_general_skill_is_hidden_from_agent_branch_binding(
         imported = import_general_skill(
             GeneralSkillImportRequest(
                 tenant_id="tenant_demo",
-                name="天气技能",
+                name="天氣技能",
                 slug="weather-zh",
                 markdown=WEATHER_SKILL_MD,
             ),
@@ -380,13 +380,13 @@ def test_import_general_skill_folder_reads_skill_md_metadata() -> None:
                         "path": "weather-bundle/SKILL.md",
                         "content": (
                             "---\n"
-                            "name: 中国城市天气\n"
+                            "name: 中國城市天氣\n"
                             "slug: weather-zh\n"
-                            "description: 从目录包读取天气技能\n"
+                            "description: 從目錄包讀取天氣技能\n"
                             "homepage: https://example.com/weather\n"
                             "---\n\n"
-                            "# 使用说明\n"
-                            "读取 data/cities.json 完成查询。\n"
+                            "# 使用說明\n"
+                            "讀取 data/cities.json 完成查詢。\n"
                         ),
                     },
                     {
@@ -399,13 +399,13 @@ def test_import_general_skill_folder_reads_skill_md_metadata() -> None:
             _admin_user(),
         )
 
-        assert row.name == "中国城市天气"
+        assert row.name == "中國城市天氣"
         assert row.slug == "weather-zh"
-        assert row.description == "从目录包读取天气技能"
+        assert row.description == "從目錄包讀取天氣技能"
         assert row.homepage == "https://example.com/weather"
-        assert row.metadata["name"] == "中国城市天气"
+        assert row.metadata["name"] == "中國城市天氣"
         assert [file.path for file in row.skill_files] == ["SKILL.md", "data/cities.json"]
-        assert row.skill_markdown.startswith("---\nname: 中国城市天气")
+        assert row.skill_markdown.startswith("---\nname: 中國城市天氣")
 
 
 def test_import_clawhub_skill_reads_zip_package_without_overwriting(monkeypatch) -> None:
@@ -413,7 +413,7 @@ def test_import_clawhub_skill_reads_zip_package_without_overwriting(monkeypatch)
     with ZipFile(package, "w") as archive:
         archive.writestr(
             "skill-pack-main/weather/SKILL.md",
-            "---\nname: 天气包\nslug: weather-pack\n---\n\n# 天气包\n",
+            "---\nname: 天氣包\nslug: weather-pack\n---\n\n# 天氣包\n",
         )
         archive.writestr("skill-pack-main/weather/scripts/run.py", "print('ok')\n")
         archive.writestr("skill-pack-main/weather/data/cities.json", '{"北京": "101010100"}')
@@ -448,7 +448,7 @@ def test_import_clawhub_skill_reads_zip_package_without_overwriting(monkeypatch)
             "scripts/run.py",
             "data/cities.json",
         ]
-        assert first.skill_markdown.startswith("---\nname: 天气包")
+        assert first.skill_markdown.startswith("---\nname: 天氣包")
 
 
 def test_import_general_skill_package_upload_keeps_full_zip_folder() -> None:
@@ -485,7 +485,7 @@ def test_import_general_skill_package_upload_keeps_full_zip_folder() -> None:
 
 
 def test_import_general_skill_package_upload_treats_single_markdown_as_skill_md() -> None:
-    markdown = "---\nname: 单文件技能\nslug: single-file-skill\n---\n\n# 单文件技能\n"
+    markdown = "---\nname: 單文件技能\nslug: single-file-skill\n---\n\n# 單文件技能\n"
 
     with _test_session() as db:
         _seed_minimal_tenant(db)
@@ -541,7 +541,7 @@ def test_import_clawhub_skill_reads_github_directory_package(monkeypatch) -> Non
 
     def fake_download(url: str):  # noqa: ANN001
         content = {
-            "https://raw.githubusercontent.com/example/skill-pack/main/weather/SKILL.md": "---\nname: 目录天气\nslug: weather-dir\n---\n\n# 天气\n",
+            "https://raw.githubusercontent.com/example/skill-pack/main/weather/SKILL.md": "---\nname: 目錄天氣\nslug: weather-dir\n---\n\n# 天氣\n",
             "https://raw.githubusercontent.com/example/skill-pack/main/weather/scripts/run.py": "print('ok')\n",
             "https://raw.githubusercontent.com/example/skill-pack/main/weather/data/cities.json": '{"北京":"101010100"}',
         }.get(url)
@@ -580,7 +580,7 @@ def test_import_clawhub_skill_follows_page_to_real_skill_package(monkeypatch) ->
                 "text/html",
             )
         content = {
-            "https://raw.githubusercontent.com/example/skill-pack/main/weather/SKILL.md": "---\nname: 页面天气\nslug: weather-page\n---\n\n# 天气\n",
+            "https://raw.githubusercontent.com/example/skill-pack/main/weather/SKILL.md": "---\nname: 頁面天氣\nslug: weather-page\n---\n\n# 天氣\n",
         }.get(url)
         if content is None:
             raise AssertionError(f"unexpected url: {url}")
@@ -619,7 +619,7 @@ def test_import_clawhub_skill_uses_clawhub_download_api_for_page_url(monkeypatch
     with ZipFile(package, "w") as archive:
         archive.writestr(
             "SKILL.md",
-            "---\nname: weather\n---\n\n# 天气\n",
+            "---\nname: weather\n---\n\n# 天氣\n",
         )
         archive.writestr("scripts/weather.py", "print('weather')\n")
         archive.writestr("references/weather_details.md", "# details\n")
@@ -658,7 +658,7 @@ def test_import_clawhub_skill_uses_clawhub_download_api_for_page_url(monkeypatch
 def test_import_clawhub_skill_accepts_cli_slug(monkeypatch) -> None:
     package = BytesIO()
     with ZipFile(package, "w") as archive:
-        archive.writestr("SKILL.md", "---\nname: weather\n---\n\n# 天气\n")
+        archive.writestr("SKILL.md", "---\nname: weather\n---\n\n# 天氣\n")
 
     def fake_download(url: str):  # noqa: ANN001
         assert url == "https://wry-manatee-359.convex.site/api/v1/download?slug=maomao-weather"
@@ -697,7 +697,7 @@ def test_import_clawhub_skill_rejects_plain_html_page(monkeypatch) -> None:
             )
         except HTTPException as error:
             assert error.status_code == 400
-            assert "HTML 页面不会被当作 SKILL.md 导入" in str(error.detail)
+            assert "HTML 頁面不會被當作 SKILL.md 導入" in str(error.detail)
         else:
             raise AssertionError("plain HTML page must not be imported as SKILL.md")
 
@@ -725,7 +725,7 @@ def test_general_skill_archive_publish_and_delete_api(monkeypatch) -> None:
         _seed_minimal_tenant(db)
         db.add(
             AgentProfile(
-                id="agent_overall", tenant_id="tenant_demo", name="开放广场", is_overall=True
+                id="agent_overall", tenant_id="tenant_demo", name="開放廣場", is_overall=True
             )
         )
         db.add(
@@ -742,7 +742,7 @@ def test_general_skill_archive_publish_and_delete_api(monkeypatch) -> None:
         imported = import_general_skill(
             GeneralSkillImportRequest(
                 tenant_id="tenant_demo",
-                name="天气",
+                name="天氣",
                 slug="weather-zh",
                 markdown=WEATHER_SKILL_MD,
             ),
@@ -758,7 +758,7 @@ def test_general_skill_archive_publish_and_delete_api(monkeypatch) -> None:
             run_general_skill(
                 imported.slug,
                 GeneralSkillRunRequest(
-                    tenant_id="tenant_demo", user_id="user_demo", query="北京天气"
+                    tenant_id="tenant_demo", user_id="user_demo", query="北京天氣"
                 ),
                 db,
                 _admin_user(),
@@ -775,24 +775,24 @@ def test_general_skill_archive_publish_and_delete_api(monkeypatch) -> None:
         assert published.status == "published"
         result = run_general_skill(
             imported.slug,
-            GeneralSkillRunRequest(tenant_id="tenant_demo", user_id="user_demo", query="北京天气"),
+            GeneralSkillRunRequest(tenant_id="tenant_demo", user_id="user_demo", query="北京天氣"),
             db,
             _admin_user(),
         )
-        assert result["reply"] == "北京天气 ok"
+        assert result["reply"] == "北京天氣 ok"
 
         selected_result = run_general_skill(
             imported.slug,
             GeneralSkillRunRequest(
                 tenant_id="tenant_demo",
                 user_id="user_demo",
-                query="上海天气",
+                query="上海天氣",
                 model_config_id="model_selected",
             ),
             db,
             _admin_user(),
         )
-        assert selected_result["reply"] == "上海天气 ok"
+        assert selected_result["reply"] == "上海天氣 ok"
         assert captured_model_ids[-1] == "model_selected"
 
         deleted = delete_general_skill(
@@ -817,7 +817,7 @@ def test_non_overall_agent_delete_hides_general_skill_only_in_branch() -> None:
         _seed_minimal_tenant(db)
         db.add(
             AgentProfile(
-                id="agent_overall", tenant_id="tenant_demo", name="整体智能体", is_overall=True
+                id="agent_overall", tenant_id="tenant_demo", name="整體智能體", is_overall=True
             )
         )
         db.add(
@@ -828,7 +828,7 @@ def test_non_overall_agent_delete_hides_general_skill_only_in_branch() -> None:
         imported = import_general_skill(
             GeneralSkillImportRequest(
                 tenant_id="tenant_demo",
-                name="天气",
+                name="天氣",
                 slug="weather-zh",
                 markdown=WEATHER_SKILL_MD,
             ),
@@ -863,37 +863,37 @@ def test_chat_turn_uses_general_skill_after_scene_router_skips_unmatched_scene(
 
     def fake_generate_json(self, system_prompt, payload):  # noqa: ANN001
         prompt_text = _system_and_stage_instructions(system_prompt, payload)
-        if "企业技能路由器" in prompt_text:
+        if "企業技能路由器" in prompt_text:
             calls.append("router")
             return {
                 "decision": "clarify",
                 "target_skill_id": "skill_weather_query",
                 "target_step_id": "step_query_weather",
                 "confidence": 0.85,
-                "user_intent": "查询海淀区天气",
-                "reason": "模型错误地假设存在天气流程。",
+                "user_intent": "查詢海淀區天氣",
+                "reason": "模型錯誤地假設存在天氣流程。",
             }
-        if "通用技能选择器" in prompt_text:
+        if "通用技能選擇器" in prompt_text:
             calls.append("selector")
             return {
                 "use_general_skill": True,
                 "selected_slug": "weather-zh",
                 "confidence": 0.96,
-                "reason": "用户询问天气。",
+                "reason": "用戶詢問天氣。",
             }
-        if "通用技能执行器" in prompt_text:
+        if "通用技能執行器" in prompt_text:
             calls.append("runner")
             code = (
                 "import json\n"
                 "payload=json.loads(input())\n"
-                "print(json.dumps({'success': True, 'city': '海淀区', 'weather': '晴', 'query': payload['query']}, ensure_ascii=False))\n"
+                "print(json.dumps({'success': True, 'city': '海淀區', 'weather': '晴', 'query': payload['query']}, ensure_ascii=False))\n"
             )
-            return {"code": code, "rationale": "天气查询 demo"}
-        if "通用技能结果回复器" in prompt_text:
+            return {"code": code, "rationale": "天氣查詢 demo"}
+        if "通用技能結果回覆器" in prompt_text:
             calls.append("reply")
             assert payload["structured_result"]["weather"] == "晴"
-            return {"reply": "海淀区今天晴。"}
-        if "企业技能执行助手" in prompt_text:
+            return {"reply": "海淀區今天晴。"}
+        if "企業技能執行助手" in prompt_text:
             raise AssertionError("step agent should not run without an active scene skill")
         raise AssertionError("unexpected JSON prompt")
 
@@ -904,8 +904,8 @@ def test_chat_turn_uses_general_skill_after_scene_router_skips_unmatched_scene(
         assert payload["tool_result"]["tool_name"] == "general_skill.weather-zh"
         assert payload["tool_result"]["success"] is True
         assert payload["tool_result"]["data"]["structured_result"]["weather"] == "晴"
-        assert payload["step_summary"]["reply"] == "海淀区今天晴。"
-        return "海淀区今天晴。"
+        assert payload["step_summary"]["reply"] == "海淀區今天晴。"
+        return "海淀區今天晴。"
 
     monkeypatch.setattr(LLMClient, "__init__", fake_init)
     monkeypatch.setattr(LLMClient, "generate_json", fake_generate_json)
@@ -915,15 +915,15 @@ def test_chat_turn_uses_general_skill_after_scene_router_skips_unmatched_scene(
         _seed_minimal_tenant(db)
         db.add(
             AgentProfile(
-                id="agent_overall", tenant_id="tenant_demo", name="整体智能体", is_overall=True
+                id="agent_overall", tenant_id="tenant_demo", name="整體智能體", is_overall=True
             )
         )
         scene_skill = _purchase_scene_skill()
         general_skill = GeneralSkill(
             tenant_id="tenant_demo",
             slug="weather-zh",
-            name="中国城市天气",
-            description="中国城市天气查询工具",
+            name="中國城市天氣",
+            description="中國城市天氣查詢工具",
             homepage="https://www.weather.com.cn/",
             skill_markdown=WEATHER_SKILL_MD,
             status="published",
@@ -939,11 +939,11 @@ def test_chat_turn_uses_general_skill_after_scene_router_skips_unmatched_scene(
             ChatTurnRequest(
                 tenant_id="tenant_demo",
                 user_id="user_demo",
-                message="我想看下海淀区的天气",
+                message="我想看下海淀區的天氣",
             )
         )
 
-        assert response.reply == "海淀区今天晴。"
+        assert response.reply == "海淀區今天晴。"
         assert calls == ["router", "selector", "runner", "reply", "response"]
         assert response.tool_result is not None
         assert response.tool_result.tool_name == "general_skill.weather-zh"
@@ -966,35 +966,35 @@ def test_general_skill_response_keeps_active_scene_context(monkeypatch) -> None:
 
     def fake_generate_json(self, system_prompt, payload):  # noqa: ANN001
         prompt_text = _system_and_stage_instructions(system_prompt, payload)
-        if "企业技能路由器" in prompt_text:
+        if "企業技能路由器" in prompt_text:
             calls.append("router")
             return {
                 "decision": "answer_only",
                 "confidence": 0.9,
-                "user_intent": "购买流程中插入天气查询",
-                "reason": "用户在购买流程中询问天气，需要先回答相关问题。",
+                "user_intent": "購買流程中插入天氣查詢",
+                "reason": "用戶在購買流程中詢問天氣，需要先回答相關問題。",
             }
-        if "通用技能选择器" in prompt_text:
+        if "通用技能選擇器" in prompt_text:
             calls.append("selector")
             return {
                 "use_general_skill": True,
                 "selected_slug": "weather-zh",
                 "confidence": 0.96,
-                "reason": "用户询问海淀天气。",
+                "reason": "用戶詢問海淀天氣。",
             }
-        if "通用技能执行器" in prompt_text:
+        if "通用技能執行器" in prompt_text:
             calls.append("runner")
             code = (
                 "import json\n"
                 "payload=json.loads(input())\n"
                 "print(json.dumps({'success': True, 'city': '海淀', 'weather': '晴', 'query': payload['query']}, ensure_ascii=False))\n"
             )
-            return {"code": code, "rationale": "天气查询 demo"}
-        if "通用技能结果回复器" in prompt_text:
+            return {"code": code, "rationale": "天氣查詢 demo"}
+        if "通用技能結果回覆器" in prompt_text:
             calls.append("reply")
             assert payload["structured_result"]["city"] == "海淀"
-            return {"reply": "海淀当前天气晴。"}
-        if "企业技能执行助手" in prompt_text:
+            return {"reply": "海淀當前天氣晴。"}
+        if "企業技能執行助手" in prompt_text:
             raise AssertionError(
                 "scene step agent should not run for inserted general skill answer"
             )
@@ -1005,8 +1005,8 @@ def test_general_skill_response_keeps_active_scene_context(monkeypatch) -> None:
         assert payload["current_step"]["node_id"] == "collect_product"
         assert payload["slots"]["user_name"] == "hm"
         assert payload["tool_result"]["tool_name"] == "general_skill.weather-zh"
-        assert payload["tool_result"]["data"]["reply"] == "海淀当前天气晴。"
-        return "海淀当前天气晴。天气合适的话，请继续告诉我想购买的商品和数量。"
+        assert payload["tool_result"]["data"]["reply"] == "海淀當前天氣晴。"
+        return "海淀當前天氣晴。天氣合適的話，請繼續告訴我想購買的商品和數量。"
 
     monkeypatch.setattr(LLMClient, "__init__", fake_init)
     monkeypatch.setattr(LLMClient, "generate_json", fake_generate_json)
@@ -1016,15 +1016,15 @@ def test_general_skill_response_keeps_active_scene_context(monkeypatch) -> None:
         _seed_minimal_tenant(db)
         db.add(
             AgentProfile(
-                id="agent_overall", tenant_id="tenant_demo", name="整体智能体", is_overall=True
+                id="agent_overall", tenant_id="tenant_demo", name="整體智能體", is_overall=True
             )
         )
         scene_skill = _purchase_scene_skill()
         general_skill = GeneralSkill(
             tenant_id="tenant_demo",
             slug="weather-zh",
-            name="中国城市天气",
-            description="中国城市天气查询工具",
+            name="中國城市天氣",
+            description="中國城市天氣查詢工具",
             homepage="https://www.weather.com.cn/",
             skill_markdown=WEATHER_SKILL_MD,
             status="published",
@@ -1051,11 +1051,11 @@ def test_general_skill_response_keeps_active_scene_context(monkeypatch) -> None:
                 tenant_id="tenant_demo",
                 session_id="session_weather_inside_purchase",
                 user_id="user_demo",
-                message="诶？现在海淀天气怎么样，天气好我就出门买了",
+                message="誒？現在海淀天氣怎麼樣，天氣好我就出門買了",
             )
         )
 
-        assert response.reply == "海淀当前天气晴。天气合适的话，请继续告诉我想购买的商品和数量。"
+        assert response.reply == "海淀當前天氣晴。天氣合適的話，請繼續告訴我想購買的商品和數量。"
         assert response.tool_result is not None
         assert response.session_state.active_skill_id == "purchase"
         assert response.session_state.active_step_id == "collect_product"
@@ -1072,15 +1072,15 @@ def test_general_skill_and_active_scene_run_in_the_same_turn(monkeypatch) -> Non
         overall_agent = AgentProfile(
             id="agent_overall_scene_and_general",
             tenant_id="tenant_demo",
-            name="开放广场",
+            name="開放廣場",
             is_overall=True,
         )
         scene_skill = _purchase_scene_skill()
         general_skill = GeneralSkill(
             tenant_id="tenant_demo",
             slug="weather-zh",
-            name="中国城市天气",
-            description="中国城市天气查询工具",
+            name="中國城市天氣",
+            description="中國城市天氣查詢工具",
             skill_markdown=WEATHER_SKILL_MD,
             status="published",
         )
@@ -1118,7 +1118,7 @@ def test_general_skill_and_active_scene_run_in_the_same_turn(monkeypatch) -> Non
                 use_general_skill=True,
                 selected_slug="weather-zh",
                 confidence=0.98,
-                reason="用户同时要求查询北京天气。",
+                reason="用戶同時要求查詢北京天氣。",
             )
 
         def fake_general_run(  # noqa: ANN001
@@ -1139,7 +1139,7 @@ def test_general_skill_and_active_scene_run_in_the_same_turn(monkeypatch) -> Non
                 stdout="",
                 stderr="",
                 structured_result={"success": True, "city": "北京", "weather": "晴"},
-                reply="北京当前天气晴。",
+                reply="北京當前天氣晴。",
             )
 
         def fake_step_run(**kwargs):  # noqa: ANN003
@@ -1148,7 +1148,7 @@ def test_general_skill_and_active_scene_run_in_the_same_turn(monkeypatch) -> Non
             assert kwargs["repair_context"]["previous_tool_result"]["success"] is True
             return StepAgentResult(
                 action="ask_user",
-                reply="北京当前天气晴。请问您想购买多少数量的 a1？",
+                reply="北京當前天氣晴。請問您想購買多少數量的 a1？",
                 slot_updates={"product_id": "a1"},
             )
 
@@ -1163,13 +1163,13 @@ def test_general_skill_and_active_scene_run_in_the_same_turn(monkeypatch) -> Non
             tenant_id="tenant_demo",
             session_id=chat_session.id,
             user_id="user_demo",
-            message="我想买 a1，同时帮我看下北京天气",
+            message="我想買 a1，同時幫我看下北京天氣",
         )
         router_decision = RouterDecision(
             decision="continue_active",
             target_skill_id="purchase",
-            user_intent="购买 a1 并查询北京天气",
-            general_intent="查询北京天气",
+            user_intent="購買 a1 並查詢北京天氣",
+            general_intent="查詢北京天氣",
         )
         tools = loop._tools_with_general_skills(
             "tenant_demo", [], overall_agent.id
@@ -1201,14 +1201,14 @@ def test_general_skill_and_active_scene_run_in_the_same_turn(monkeypatch) -> Non
 
         assert initial_result.tool_call == ToolCall(
             name="general_skill.weather-zh",
-            arguments={"query": "查询北京天气"},
+            arguments={"query": "查詢北京天氣"},
         )
         assert tool_result is not None and tool_result.success is True
-        assert final_result.reply == "北京当前天气晴。请问您想购买多少数量的 a1？"
+        assert final_result.reply == "北京當前天氣晴。請問您想購買多少數量的 a1？"
         assert chat_session.active_skill_id == "purchase"
         assert chat_session.active_step_id == "collect_product"
-        assert selector_calls == ["查询北京天气"]
-        assert runner_calls == ["查询北京天气"]
+        assert selector_calls == ["查詢北京天氣"]
+        assert runner_calls == ["查詢北京天氣"]
         assert step_calls == [[]]
         event_types = {
             event.event_type
@@ -1236,7 +1236,7 @@ def test_scene_tool_call_to_general_skill_records_expandable_trace(monkeypatch) 
             use_general_skill=True,
             selected_slug="weather-zh",
             confidence=0.95,
-            reason="天气查询与天气技能匹配。",
+            reason="天氣查詢與天氣技能匹配。",
         )
 
     def fake_run(  # noqa: ANN001
@@ -1252,18 +1252,18 @@ def test_scene_tool_call_to_general_skill_records_expandable_trace(monkeypatch) 
     ):
         received_contexts.append(conversation_context)
         trace = [
-            {"phase": "skill_loaded", "message": "已加载通用技能 中国城市天气", "slug": skill.slug},
+            {"phase": "skill_loaded", "message": "已加載通用技能 中國城市天氣", "slug": skill.slug},
             {
                 "phase": "plan_created",
                 "message": "已生成 Python runner",
                 "runtime": "python",
                 "code": "import json\nprint(json.dumps({'success': True, 'city': '北京'}, ensure_ascii=False))\n",
-                "rationale": "查询天气。",
+                "rationale": "查詢天氣。",
             },
-            {"phase": "attempt_started", "message": "开始第 1 次运行", "attempt": 1},
+            {"phase": "attempt_started", "message": "開始第 1 次運行", "attempt": 1},
             {"phase": "stdout_chunk", "text": '{"success": true, "city": "北京"}'},
-            {"phase": "reflection_passed", "message": "第 1 次运行结果可用", "attempt": 1},
-            {"phase": "reply_created", "message": "已生成最终回复"},
+            {"phase": "reflection_passed", "message": "第 1 次運行結果可用", "attempt": 1},
+            {"phase": "reply_created", "message": "已生成最終回覆"},
         ]
         if event_sink:
             for item in trace:
@@ -1275,7 +1275,7 @@ def test_scene_tool_call_to_general_skill_records_expandable_trace(monkeypatch) 
             stdout='{"success": true, "city": "北京"}',
             stderr="",
             structured_result={"success": True, "city": "北京"},
-            reply="北京天气已查询。",
+            reply="北京天氣已查詢。",
         )
 
     monkeypatch.setattr(GeneralSkillSelector, "decide", fake_decide)
@@ -1287,15 +1287,15 @@ def test_scene_tool_call_to_general_skill_records_expandable_trace(monkeypatch) 
             AgentProfile(
                 id="agent_overall_tool_trace",
                 tenant_id="tenant_demo",
-                name="开放广场",
+                name="開放廣場",
                 is_overall=True,
             )
         )
         general_skill = GeneralSkill(
             tenant_id="tenant_demo",
             slug="weather-zh",
-            name="中国城市天气",
-            description="中国城市天气查询工具",
+            name="中國城市天氣",
+            description="中國城市天氣查詢工具",
             skill_markdown=WEATHER_SKILL_MD,
             status="published",
         )
@@ -1314,16 +1314,16 @@ def test_scene_tool_call_to_general_skill_records_expandable_trace(monkeypatch) 
         db.commit()
 
         stream_events: list[tuple[str, dict[str, object]]] = []
-        conversation_context = {"messages": [{"role": "user", "content": "北京天气怎么样"}]}
+        conversation_context = {"messages": [{"role": "user", "content": "北京天氣怎麼樣"}]}
         result = AgentLoop(db)._execute_tool_call(
             ChatTurnRequest(
                 tenant_id="tenant_demo",
                 session_id="session_general_skill_tool",
                 user_id="user_demo",
-                message="北京天气怎么样",
+                message="北京天氣怎麼樣",
             ),
             db.get(ChatSession, "session_general_skill_tool"),
-            ToolCall(name="general_skill.weather-zh", arguments={"query": "北京天气怎么样"}),
+            ToolCall(name="general_skill.weather-zh", arguments={"query": "北京天氣怎麼樣"}),
             tool_call_id="toolcall_weather",
             stream_events=stream_events,
             conversation_context=conversation_context,
@@ -1367,7 +1367,7 @@ def test_scene_tool_call_to_general_skill_backfills_returned_trace(monkeypatch) 
             use_general_skill=True,
             selected_slug="weather-zh",
             confidence=0.95,
-            reason="天气查询与天气技能匹配。",
+            reason="天氣查詢與天氣技能匹配。",
         )
 
     def fake_run(  # noqa: ANN001
@@ -1382,7 +1382,7 @@ def test_scene_tool_call_to_general_skill_backfills_returned_trace(monkeypatch) 
         memory_context=None,
     ):
         trace = [
-            {"phase": "skill_loaded", "message": "已加载通用技能 中国城市天气", "slug": skill.slug},
+            {"phase": "skill_loaded", "message": "已加載通用技能 中國城市天氣", "slug": skill.slug},
             {
                 "phase": "plan_created",
                 "message": "已生成 Python runner",
@@ -1390,7 +1390,7 @@ def test_scene_tool_call_to_general_skill_backfills_returned_trace(monkeypatch) 
                 "code": "print('ok')\n",
             },
             {"phase": "stdout_chunk", "text": "ok"},
-            {"phase": "reply_created", "message": "已生成最终回复"},
+            {"phase": "reply_created", "message": "已生成最終回覆"},
         ]
         return GeneralSkillRunResponse(
             skill_slug=skill.slug,
@@ -1399,7 +1399,7 @@ def test_scene_tool_call_to_general_skill_backfills_returned_trace(monkeypatch) 
             stdout="ok",
             stderr="",
             structured_result={"success": True},
-            reply="北京天气已查询。",
+            reply="北京天氣已查詢。",
         )
 
     monkeypatch.setattr(GeneralSkillSelector, "decide", fake_decide)
@@ -1411,15 +1411,15 @@ def test_scene_tool_call_to_general_skill_backfills_returned_trace(monkeypatch) 
             AgentProfile(
                 id="agent_overall_tool_backfill",
                 tenant_id="tenant_demo",
-                name="开放广场",
+                name="開放廣場",
                 is_overall=True,
             )
         )
         general_skill = GeneralSkill(
             tenant_id="tenant_demo",
             slug="weather-zh",
-            name="中国城市天气",
-            description="中国城市天气查询工具",
+            name="中國城市天氣",
+            description="中國城市天氣查詢工具",
             skill_markdown=WEATHER_SKILL_MD,
             status="published",
         )
@@ -1443,10 +1443,10 @@ def test_scene_tool_call_to_general_skill_backfills_returned_trace(monkeypatch) 
                 tenant_id="tenant_demo",
                 session_id="session_general_skill_tool_backfill",
                 user_id="user_demo",
-                message="北京天气怎么样",
+                message="北京天氣怎麼樣",
             ),
             db.get(ChatSession, "session_general_skill_tool_backfill"),
-            ToolCall(name="general_skill.weather-zh", arguments={"query": "北京天气怎么样"}),
+            ToolCall(name="general_skill.weather-zh", arguments={"query": "北京天氣怎麼樣"}),
             tool_call_id="toolcall_weather_backfill",
             stream_events=stream_events,
         )
@@ -1484,7 +1484,7 @@ def test_scene_tool_call_rejects_mismatched_general_skill(monkeypatch) -> None:
             use_general_skill=False,
             selected_slug=None,
             confidence=0.12,
-            reason="商品价格查询不属于候选通用技能能力。",
+            reason="商品價格查詢不屬於候選通用技能能力。",
         )
 
     def fake_run(  # noqa: ANN001
@@ -1506,7 +1506,7 @@ def test_scene_tool_call_rejects_mismatched_general_skill(monkeypatch) -> None:
             stdout="",
             stderr="",
             structured_result={"success": True},
-            reply="不应执行。",
+            reply="不應執行。",
         )
 
     monkeypatch.setattr(GeneralSkillSelector, "decide", fake_decide)
@@ -1518,15 +1518,15 @@ def test_scene_tool_call_rejects_mismatched_general_skill(monkeypatch) -> None:
             AgentProfile(
                 id="agent_overall_tool_mismatch",
                 tenant_id="tenant_demo",
-                name="开放广场",
+                name="開放廣場",
                 is_overall=True,
             )
         )
         general_skill = GeneralSkill(
             tenant_id="tenant_demo",
             slug="weather-zh",
-            name="中国城市天气",
-            description="中国城市天气查询工具",
+            name="中國城市天氣",
+            description="中國城市天氣查詢工具",
             skill_markdown=WEATHER_SKILL_MD,
             status="published",
         )
@@ -1549,12 +1549,12 @@ def test_scene_tool_call_rejects_mismatched_general_skill(monkeypatch) -> None:
                 tenant_id="tenant_demo",
                 session_id="session_general_skill_mismatch",
                 user_id="user_demo",
-                message="查询商品 A1 和 A3 的当前实时价格",
+                message="查詢商品 A1 和 A3 的當前實時價格",
             ),
             db.get(ChatSession, "session_general_skill_mismatch"),
             ToolCall(
                 name="general_skill.weather-zh",
-                arguments={"query": "查询商品 A1 和 A3 的当前实时价格"},
+                arguments={"query": "查詢商品 A1 和 A3 的當前實時價格"},
             ),
             tool_call_id="toolcall_weather_mismatch",
         )
@@ -1582,7 +1582,7 @@ def test_scene_step_agent_does_not_expose_irrelevant_general_skill(monkeypatch) 
             use_general_skill=False,
             selected_slug=None,
             confidence=0.08,
-            reason="商品价格查询不属于天气通用技能。",
+            reason="商品價格查詢不屬於天氣通用技能。",
         )
 
     monkeypatch.setattr(GeneralSkillSelector, "decide", fake_decide)
@@ -1593,8 +1593,8 @@ def test_scene_step_agent_does_not_expose_irrelevant_general_skill(monkeypatch) 
             GeneralSkill(
                 tenant_id="tenant_demo",
                 slug="weather-zh",
-                name="中国城市天气",
-                description="中国城市天气查询工具",
+                name="中國城市天氣",
+                description="中國城市天氣查詢工具",
                 skill_markdown=WEATHER_SKILL_MD,
                 status="published",
             )
@@ -1607,7 +1607,7 @@ def test_scene_step_agent_does_not_expose_irrelevant_general_skill(monkeypatch) 
         active_skill = Skill(
             tenant_id="tenant_demo",
             skill_id="after_sales_refund",
-            name="售后退款流程",
+            name="售後退款流程",
             status="published",
             content_json={},
         )
@@ -1621,7 +1621,7 @@ def test_scene_step_agent_does_not_expose_irrelevant_general_skill(monkeypatch) 
         scoped = AgentLoop(db)._step_agent_tools(
             active_skill,
             tools,
-            "查询商品 'a' 的价格",
+            "查詢商品 'a' 的價格",
             model_config,
         )
 
@@ -1635,7 +1635,7 @@ def test_reflection_can_retry_general_skill_with_user_query() -> None:
             action="retry_tool",
             needs_retry=True,
             target_tool_name="general_skill.weather-zh",
-            reason="场景内临时查询需要通用技能执行。",
+            reason="場景內臨時查詢需要通用技能執行。",
         ),
         ChatSession(
             id="session_reflection_general_skill",
@@ -1656,12 +1656,12 @@ def test_reflection_can_retry_general_skill_with_user_query() -> None:
                 },
             )
         ],
-        "我想买个 A1，同时查一下海淀天气",
+        "我想買個 A1，同時查一下海淀天氣",
     )
 
     assert tool_call == ToolCall(
         name="general_skill.weather-zh",
-        arguments={"query": "我想买个 A1，同时查一下海淀天气"},
+        arguments={"query": "我想買個 A1，同時查一下海淀天氣"},
     )
 
 
@@ -1674,9 +1674,9 @@ def test_scene_layer_prompt_contract_mentions_general_skill_tools() -> None:
     )
     reflection_prompt = (prompt_dir / "reflection_prompt.md").read_text(encoding="utf-8")
 
-    assert "Router 只决定场景化技能和任务执行顺序" in router_prompt
-    assert "通用技能是场景内第二层能力" in step_prompt
-    assert "target_tool_name 指向该通用技能工具" in reflection_prompt
+    assert "Router 只決定場景化技能和任務執行順序" in router_prompt
+    assert "通用技能是場景內第二層能力" in step_prompt
+    assert "target_tool_name 指向該通用技能工具" in reflection_prompt
 
 
 def test_chat_turn_treats_unmatched_scene_as_chat_when_general_skill_not_selected(
@@ -1689,23 +1689,23 @@ def test_chat_turn_treats_unmatched_scene_as_chat_when_general_skill_not_selecte
 
     def fake_generate_json(self, system_prompt, payload):  # noqa: ANN001
         prompt_text = _system_and_stage_instructions(system_prompt, payload)
-        if "企业技能路由器" in prompt_text:
+        if "企業技能路由器" in prompt_text:
             calls.append("router")
             return {
                 "decision": "answer_only",
                 "confidence": 0.95,
-                "user_intent": "普通闲聊",
-                "reason": "用户没有匹配任何业务流程。",
+                "user_intent": "普通閒聊",
+                "reason": "用戶沒有匹配任何業務流程。",
             }
-        if "通用技能选择器" in prompt_text:
+        if "通用技能選擇器" in prompt_text:
             calls.append("selector")
             return {
                 "use_general_skill": False,
                 "selected_slug": None,
                 "confidence": 0.2,
-                "reason": "没有匹配的通用技能。",
+                "reason": "沒有匹配的通用技能。",
             }
-        if "企业技能执行助手" in prompt_text:
+        if "企業技能執行助手" in prompt_text:
             raise AssertionError("step agent should not run without an active scene skill")
         raise AssertionError("unexpected JSON prompt")
 
@@ -1715,7 +1715,7 @@ def test_chat_turn_treats_unmatched_scene_as_chat_when_general_skill_not_selecte
         assert "active_skill" not in payload
         assert "router_decision" not in payload
         assert payload["tool_result"] is None
-        return "你好，有什么业务需要我帮忙？"
+        return "你好，有什麼業務需要我幫忙？"
 
     monkeypatch.setattr(LLMClient, "__init__", fake_init)
     monkeypatch.setattr(LLMClient, "generate_json", fake_generate_json)
@@ -1725,15 +1725,15 @@ def test_chat_turn_treats_unmatched_scene_as_chat_when_general_skill_not_selecte
         _seed_minimal_tenant(db)
         db.add(
             AgentProfile(
-                id="agent_overall", tenant_id="tenant_demo", name="整体智能体", is_overall=True
+                id="agent_overall", tenant_id="tenant_demo", name="整體智能體", is_overall=True
             )
         )
         scene_skill = _purchase_scene_skill()
         general_skill = GeneralSkill(
             tenant_id="tenant_demo",
             slug="weather-zh",
-            name="中国城市天气",
-            description="中国城市天气查询工具",
+            name="中國城市天氣",
+            description="中國城市天氣查詢工具",
             homepage="https://www.weather.com.cn/",
             skill_markdown=WEATHER_SKILL_MD,
             status="published",
@@ -1753,7 +1753,7 @@ def test_chat_turn_treats_unmatched_scene_as_chat_when_general_skill_not_selecte
             )
         )
 
-        assert response.reply == "你好，有什么业务需要我帮忙？"
+        assert response.reply == "你好，有什麼業務需要我幫忙？"
         assert calls == ["router", "selector", "response"]
         events = db.exec(
             select(AgentEvent).where(AgentEvent.session_id == response.session_id)
@@ -1772,7 +1772,7 @@ def test_general_skill_runner_repairs_failed_code(monkeypatch) -> None:
 
     def fake_generate_json(self, system_prompt, payload):  # noqa: ANN001
         prompt_text = _system_and_stage_instructions(system_prompt, payload)
-        if "代码修复器" in prompt_text:
+        if "代碼修復器" in prompt_text:
             calls.append("repair")
             return {
                 "code": (
@@ -1780,15 +1780,15 @@ def test_general_skill_runner_repairs_failed_code(monkeypatch) -> None:
                     "payload=json.loads(input())\n"
                     "print(json.dumps({'success': True, 'city': '北京', 'weather': '晴', 'query': payload['query']}, ensure_ascii=False))\n"
                 ),
-                "rationale": "修复失败输出",
+                "rationale": "修復失敗輸出",
             }
-        if "通用技能执行器" in prompt_text:
+        if "通用技能執行器" in prompt_text:
             calls.append("runner")
             return {
                 "code": "import json\nprint(json.dumps({'success': False, 'error': 'first_fail'}, ensure_ascii=False))\n",
-                "rationale": "首次尝试失败",
+                "rationale": "首次嘗試失敗",
             }
-        if "通用技能结果回复器" in prompt_text:
+        if "通用技能結果回覆器" in prompt_text:
             calls.append("reply")
             assert payload["structured_result"]["success"] is True
             return {"reply": "北京今天晴。"}
@@ -1800,8 +1800,8 @@ def test_general_skill_runner_repairs_failed_code(monkeypatch) -> None:
     skill = GeneralSkill(
         tenant_id="tenant_demo",
         slug="weather-zh",
-        name="中国城市天气",
-        description="中国城市天气查询工具",
+        name="中國城市天氣",
+        description="中國城市天氣查詢工具",
         homepage="https://www.weather.com.cn/",
         skill_markdown=WEATHER_SKILL_MD,
         status="published",
@@ -1818,7 +1818,7 @@ def test_general_skill_runner_repairs_failed_code(monkeypatch) -> None:
     events: list[dict] = []
 
     response = GeneralSkillRunner().run(
-        skill, "北京今天天气怎么样", model_config, max_attempts=2, event_sink=events.append
+        skill, "北京今天天氣怎麼樣", model_config, max_attempts=2, event_sink=events.append
     )
 
     assert response.reply == "北京今天晴。"
@@ -1836,7 +1836,7 @@ def test_general_skill_runner_materializes_folder_package(monkeypatch) -> None:
 
     def fake_generate_json(self, system_prompt, payload):  # noqa: ANN001
         prompt_text = _system_and_stage_instructions(system_prompt, payload)
-        if "通用技能执行器" in prompt_text:
+        if "通用技能執行器" in prompt_text:
             calls.append("runner")
             assert payload["skill"]["package"]["file_count"] == 2
             assert [item["path"] for item in payload["skill"]["package"]["files"]] == [
@@ -1851,21 +1851,21 @@ def test_general_skill_runner_materializes_folder_package(monkeypatch) -> None:
                     "city=(Path(payload['skill_workspace'])/'data'/'city.txt').read_text(encoding='utf-8').strip()\n"
                     "print(json.dumps({'success': True, 'city': city, 'files': payload['skill_files']}, ensure_ascii=False))\n"
                 ),
-                "rationale": "读取技能目录里的数据文件。",
+                "rationale": "讀取技能目錄裡的數據文件。",
             }
-        if "通用技能运行结果审查器" in prompt_text:
+        if "通用技能運行結果審查器" in prompt_text:
             calls.append("review")
             assert payload["structured_result"]["city"] == "北京"
             return {
                 "result_sufficient": True,
                 "needs_retry": False,
                 "terminal": False,
-                "reason": "目录文件已读取成功。",
+                "reason": "目錄文件已讀取成功。",
             }
-        if "通用技能结果回复器" in prompt_text:
+        if "通用技能結果回覆器" in prompt_text:
             calls.append("reply")
             assert payload["structured_result"]["city"] == "北京"
-            return {"reply": "已读取目录技能，城市是北京。"}
+            return {"reply": "已讀取目錄技能，城市是北京。"}
         raise AssertionError("unexpected prompt")
 
     monkeypatch.setattr(LLMClient, "__init__", fake_init)
@@ -1874,11 +1874,11 @@ def test_general_skill_runner_materializes_folder_package(monkeypatch) -> None:
     skill = GeneralSkill(
         tenant_id="tenant_demo",
         slug="folder-weather",
-        name="目录天气技能",
-        description="读取目录内数据",
-        skill_markdown="# 目录天气技能\n读取 data/city.txt。",
+        name="目錄天氣技能",
+        description="讀取目錄內數據",
+        skill_markdown="# 目錄天氣技能\n讀取 data/city.txt。",
         skill_files_json=[
-            {"path": "SKILL.md", "content": "# 目录天气技能\n读取 data/city.txt。"},
+            {"path": "SKILL.md", "content": "# 目錄天氣技能\n讀取 data/city.txt。"},
             {"path": "data/city.txt", "content": "北京"},
         ],
         status="published",
@@ -1892,9 +1892,9 @@ def test_general_skill_runner_materializes_folder_package(monkeypatch) -> None:
         enabled=True,
     )
 
-    response = GeneralSkillRunner().run(skill, "查一下目录里的城市", model_config, max_attempts=1)
+    response = GeneralSkillRunner().run(skill, "查一下目錄裡的城市", model_config, max_attempts=1)
 
-    assert response.reply == "已读取目录技能，城市是北京。"
+    assert response.reply == "已讀取目錄技能，城市是北京。"
     assert response.structured_result["city"] == "北京"
     assert response.structured_result["files"] == ["SKILL.md", "data/city.txt"]
     assert calls == ["runner", "review", "reply"]
@@ -1908,25 +1908,25 @@ def test_general_skill_runner_executes_bash_package_command(monkeypatch) -> None
 
     def fake_generate_json(self, system_prompt, payload):  # noqa: ANN001
         prompt_text = _system_and_stage_instructions(system_prompt, payload)
-        if "通用技能执行器" in prompt_text:
+        if "通用技能執行器" in prompt_text:
             calls.append("runner")
             assert payload["skill"]["package"]["file_count"] == 2
             assert payload["runtime"]["languages"] == ["bash", "python"]
             return {
                 "runtime": "bash",
                 "code": 'set -euo pipefail\ncd "$SKILL_WORKSPACE"\nprintf \'%s\\n\' "$ARGUMENTS" | python3 scripts/weather.py\n',
-                "rationale": "技能声明 allowed-tools: Bash，并给出了调用 scripts/weather.py 的命令。",
+                "rationale": "技能聲明 allowed-tools: Bash，並給出了調用 scripts/weather.py 的命令。",
             }
-        if "通用技能运行结果审查器" in prompt_text:
+        if "通用技能運行結果審查器" in prompt_text:
             calls.append("review")
             assert payload["structured_result"]["city"] == "北京"
             return {
                 "result_sufficient": True,
                 "needs_retry": False,
                 "terminal": False,
-                "reason": "Bash 已调用包内脚本并得到结果。",
+                "reason": "Bash 已調用包內腳本並得到結果。",
             }
-        if "通用技能结果回复器" in prompt_text:
+        if "通用技能結果回覆器" in prompt_text:
             calls.append("reply")
             return {"reply": "北京今天晴。"}
         raise AssertionError("unexpected prompt")
@@ -1937,8 +1937,8 @@ def test_general_skill_runner_executes_bash_package_command(monkeypatch) -> None
     skill = GeneralSkill(
         tenant_id="tenant_demo",
         slug="weather-zh",
-        name="中国城市天气",
-        description="中国城市天气查询工具",
+        name="中國城市天氣",
+        description="中國城市天氣查詢工具",
         skill_markdown=(
             "---\n"
             "allowed-tools: Bash\n"
@@ -1970,7 +1970,7 @@ def test_general_skill_runner_executes_bash_package_command(monkeypatch) -> None
         enabled=True,
     )
 
-    response = GeneralSkillRunner().run(skill, "北京今天天气怎么样", model_config, max_attempts=1)
+    response = GeneralSkillRunner().run(skill, "北京今天天氣怎麼樣", model_config, max_attempts=1)
 
     assert response.reply == "北京今天晴。"
     assert response.structured_result["city"] == "北京"
@@ -1987,7 +1987,7 @@ def test_general_skill_runner_has_requests_in_runtime(monkeypatch) -> None:
 
     def fake_generate_json(self, system_prompt, payload):  # noqa: ANN001
         prompt_text = _system_and_stage_instructions(system_prompt, payload)
-        if "通用技能执行器" in prompt_text:
+        if "通用技能執行器" in prompt_text:
             calls.append("runner")
             return {
                 "runtime": "python",
@@ -2001,9 +2001,9 @@ def test_general_skill_runner_has_requests_in_runtime(monkeypatch) -> None:
                     "'requests_available': bool(requests.__version__)"
                     "}, ensure_ascii=False))\n"
                 ),
-                "rationale": "验证通用技能运行环境包含 requests。",
+                "rationale": "驗證通用技能運行環境包含 requests。",
             }
-        if "通用技能运行结果审查器" in prompt_text:
+        if "通用技能運行結果審查器" in prompt_text:
             calls.append("review")
             assert payload["structured_result"]["requests_available"] is True
             return {
@@ -2012,7 +2012,7 @@ def test_general_skill_runner_has_requests_in_runtime(monkeypatch) -> None:
                 "terminal": False,
                 "reason": "requests 可用。",
             }
-        if "通用技能结果回复器" in prompt_text:
+        if "通用技能結果回覆器" in prompt_text:
             calls.append("reply")
             return {"reply": "requests 可用。"}
         raise AssertionError("unexpected prompt")
@@ -2023,9 +2023,9 @@ def test_general_skill_runner_has_requests_in_runtime(monkeypatch) -> None:
     skill = GeneralSkill(
         tenant_id="tenant_demo",
         slug="runtime-check",
-        name="运行环境检查",
-        description="检查基础库",
-        skill_markdown="# 运行环境检查\n需要 requests。",
+        name="運行環境檢查",
+        description="檢查基礎庫",
+        skill_markdown="# 運行環境檢查\n需要 requests。",
         status="published",
     )
     model_config = ModelConfig(
@@ -2037,7 +2037,7 @@ def test_general_skill_runner_has_requests_in_runtime(monkeypatch) -> None:
         enabled=True,
     )
 
-    response = GeneralSkillRunner().run(skill, "检查 requests", model_config, max_attempts=1)
+    response = GeneralSkillRunner().run(skill, "檢查 requests", model_config, max_attempts=1)
 
     assert response.reply == "requests 可用。"
     assert response.structured_result["requests_available"] is True
@@ -2053,7 +2053,7 @@ def test_general_skill_prompt_rejects_unlisted_external_apis() -> None:
         / "general_skill_runner_prompt.md"
     ).read_text(encoding="utf-8")
 
-    assert "不要自行发明第三方接口" in prompt
+    assert "不要自行發明第三方接口" in prompt
     assert "runtime=`bash`" in prompt
 
 
@@ -2065,7 +2065,7 @@ def test_general_skill_runner_reflects_failed_initial_plan(monkeypatch) -> None:
 
     def fake_generate_json(self, system_prompt, payload):  # noqa: ANN001
         prompt_text = _system_and_stage_instructions(system_prompt, payload)
-        if "代码修复器" in prompt_text:
+        if "代碼修復器" in prompt_text:
             calls.append("repair")
             assert (
                 payload["previous_attempts"][0]["structured_result"]["error"]
@@ -2075,17 +2075,17 @@ def test_general_skill_runner_reflects_failed_initial_plan(monkeypatch) -> None:
                 "code": (
                     "import json\n"
                     "payload=json.loads(input())\n"
-                    "print(json.dumps({'success': True, 'city': '廊坊', 'weather': '多云', 'query': payload['query']}, ensure_ascii=False))\n"
+                    "print(json.dumps({'success': True, 'city': '廊坊', 'weather': '多雲', 'query': payload['query']}, ensure_ascii=False))\n"
                 ),
-                "rationale": "重新输出合法 runner JSON",
+                "rationale": "重新輸出合法 runner JSON",
             }
-        if "通用技能执行器" in prompt_text:
+        if "通用技能執行器" in prompt_text:
             calls.append("runner_failed")
             raise LLMError("Model did not return valid JSON after retry")
-        if "通用技能结果回复器" in prompt_text:
+        if "通用技能結果回覆器" in prompt_text:
             calls.append("reply")
             assert payload["structured_result"]["success"] is True
-            return {"reply": "廊坊今天多云。"}
+            return {"reply": "廊坊今天多雲。"}
         raise AssertionError("unexpected prompt")
 
     monkeypatch.setattr(LLMClient, "__init__", fake_init)
@@ -2094,8 +2094,8 @@ def test_general_skill_runner_reflects_failed_initial_plan(monkeypatch) -> None:
     skill = GeneralSkill(
         tenant_id="tenant_demo",
         slug="weather-zh",
-        name="中国城市天气",
-        description="中国城市天气查询工具",
+        name="中國城市天氣",
+        description="中國城市天氣查詢工具",
         homepage="https://www.weather.com.cn/",
         skill_markdown=WEATHER_SKILL_MD,
         status="published",
@@ -2109,9 +2109,9 @@ def test_general_skill_runner_reflects_failed_initial_plan(monkeypatch) -> None:
         enabled=True,
     )
 
-    response = GeneralSkillRunner().run(skill, "廊坊天气", model_config, max_attempts=2)
+    response = GeneralSkillRunner().run(skill, "廊坊天氣", model_config, max_attempts=2)
 
-    assert response.reply == "廊坊今天多云。"
+    assert response.reply == "廊坊今天多雲。"
     assert response.structured_result["success"] is True
     assert calls == ["runner_failed", "repair", "reply"]
     assert any(item["phase"] == "plan_failed" for item in response.execution_trace)
@@ -2126,7 +2126,7 @@ def test_general_skill_runner_stops_on_non_retryable_failure(monkeypatch) -> Non
 
     def fake_generate_json(self, system_prompt, payload):  # noqa: ANN001
         prompt_text = _system_and_stage_instructions(system_prompt, payload)
-        if "通用技能执行器" in prompt_text:
+        if "通用技能執行器" in prompt_text:
             calls.append("runner")
             return {
                 "code": (
@@ -2134,22 +2134,22 @@ def test_general_skill_runner_stops_on_non_retryable_failure(monkeypatch) -> Non
                     "print(json.dumps({"
                     "'success': False, "
                     "'error': 'source_unavailable', "
-                    "'message': '天气源不可用', "
+                    "'message': '天氣源不可用', "
                     "'attempted_urls': ['https://example.invalid/weather'], "
                     "'exception_type': 'TimeoutError', "
                     "'exception_message': 'timed out', "
                     "'retryable': False"
                     "}, ensure_ascii=False))\n"
                 ),
-                "rationale": "返回不可自动修复的失败",
+                "rationale": "返回不可自動修復的失敗",
             }
-        if "代码修复器" in prompt_text:
+        if "代碼修復器" in prompt_text:
             calls.append("repair")
             raise AssertionError("non-retryable failure should not call repair")
-        if "通用技能结果回复器" in prompt_text:
+        if "通用技能結果回覆器" in prompt_text:
             calls.append("reply")
             assert payload["structured_result"]["retryable"] is False
-            return {"reply": "当前天气源不可用，建议稍后再试。"}
+            return {"reply": "當前天氣源不可用，建議稍後再試。"}
         raise AssertionError("unexpected prompt")
 
     monkeypatch.setattr(LLMClient, "__init__", fake_init)
@@ -2158,8 +2158,8 @@ def test_general_skill_runner_stops_on_non_retryable_failure(monkeypatch) -> Non
     skill = GeneralSkill(
         tenant_id="tenant_demo",
         slug="weather-zh",
-        name="中国城市天气",
-        description="中国城市天气查询工具",
+        name="中國城市天氣",
+        description="中國城市天氣查詢工具",
         homepage="https://www.weather.com.cn/",
         skill_markdown=WEATHER_SKILL_MD,
         status="published",
@@ -2173,9 +2173,9 @@ def test_general_skill_runner_stops_on_non_retryable_failure(monkeypatch) -> Non
         enabled=True,
     )
 
-    response = GeneralSkillRunner().run(skill, "北京今天天气怎么样", model_config, max_attempts=10)
+    response = GeneralSkillRunner().run(skill, "北京今天天氣怎麼樣", model_config, max_attempts=10)
 
-    assert response.reply == "当前天气源不可用，建议稍后再试。"
+    assert response.reply == "當前天氣源不可用，建議稍後再試。"
     assert calls == ["runner", "reply"]
     assert any(item["phase"] == "reflection_stopped" for item in response.execution_trace)
 
@@ -2207,18 +2207,18 @@ def _purchase_scene_skill() -> Skill:
     return Skill(
         tenant_id="tenant_demo",
         skill_id="purchase",
-        name="购买商品流程",
-        description="帮助用户购买商品。",
+        name="購買商品流程",
+        description="幫助用戶購買商品。",
         status="published",
         content_json={
             "business_domain": "commerce",
-            "trigger_intents": ["购买", "下单"],
+            "trigger_intents": ["購買", "下單"],
             "required_info": ["product_id"],
             "steps": [
                 {
                     "step_id": "collect_product",
                     "name": "收集商品信息",
-                    "instruction": "收集用户想购买的商品。",
+                    "instruction": "收集用戶想購買的商品。",
                     "expected_user_info": ["product_id"],
                     "allowed_actions": ["ask_user", "continue_flow"],
                 }

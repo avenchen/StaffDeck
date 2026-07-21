@@ -452,7 +452,7 @@ export function SourceNumberInput({
 export function ActionCombobox({
   value,
   options,
-  placeholder = '选择一个动作',
+  placeholder = '選擇一個動作',
   onSelect,
 }: {
   value?: string;
@@ -505,7 +505,7 @@ export function ActionCombobox({
         className="max-h-[280px] w-[320px] overflow-y-auto p-[4px]"
       >
         {filtered.length === 0 ? (
-          <div className="px-[10px] py-[12px] text-center text-[13px] text-[#858b9c]">无匹配动作</div>
+          <div className="px-[10px] py-[12px] text-center text-[13px] text-[#858b9c]">無匹配動作</div>
         ) : (
           filtered.map((option) => (
             <button
@@ -610,14 +610,14 @@ export function SkillSource({
       const previousId = String(currentNode.node_id || currentNode.step_id || `node_${index + 1}`);
       const nextId = String(listValue || '').trim();
       if (!nextId) {
-        notify.warning('节点 ID 不能为空');
+        notify.warning('節點 ID 不能為空');
         return;
       }
       const duplicated = next.nodes.some((node, nodeIndex) => (
         nodeIndex !== index && String(node?.node_id || node?.step_id || '') === nextId
       ));
       if (duplicated) {
-        notify.warning(`节点 ID「${nextId}」已经存在`);
+        notify.warning(`節點 ID「${nextId}」已經存在`);
         return;
       }
       currentNode.node_id = nextId;
@@ -665,7 +665,7 @@ export function SkillSource({
         next_node_id: targetId,
         condition: '',
         priority,
-        label: targetId ? '新增流转' : '',
+        label: targetId ? '新增流轉' : '',
       },
     ];
     onEdit(next, stepTargetPath(index));
@@ -694,8 +694,8 @@ export function SkillSource({
     const newNode = {
       node_id: newNodeId,
       type: 'collect_info',
-      name: '新增节点',
-      instruction: '说明这个节点要完成的目标。',
+      name: '新增節點',
+      instruction: '說明這個節點要完成的目標。',
       optional: false,
       condition: '',
       expected_user_info: [],
@@ -718,7 +718,7 @@ export function SkillSource({
           edges[edgeIndex] = {
             ...edges[edgeIndex],
             next_node_id: newNodeId,
-            label: String(edges[edgeIndex].label || '').trim() || '进入新增节点',
+            label: String(edges[edgeIndex].label || '').trim() || '進入新增節點',
           };
         });
         const maxPriority = Math.max(...directEdgeIndexes.map((edgeIndex, localIndex) => edgePriority(edges[edgeIndex], localIndex)));
@@ -727,7 +727,7 @@ export function SkillSource({
           next_node_id: targetId,
           condition: '',
           priority: maxPriority + 1,
-          label: `继续到 ${String(targetNode?.name || targetId)}`,
+          label: `繼續到 ${String(targetNode?.name || targetId)}`,
         });
       } else {
         const sourcePriority = edges
@@ -738,14 +738,14 @@ export function SkillSource({
           next_node_id: newNodeId,
           condition: '',
           priority: sourcePriority,
-          label: '进入新增节点',
+          label: '進入新增節點',
         });
         edges.push({
           source_node_id: newNodeId,
           next_node_id: targetId,
           condition: '',
           priority: 1,
-          label: `继续到 ${String(targetNode?.name || targetId)}`,
+          label: `繼續到 ${String(targetNode?.name || targetId)}`,
         });
       }
     } else if (!sourceId && targetId) {
@@ -754,7 +754,7 @@ export function SkillSource({
         next_node_id: targetId,
         condition: '',
         priority: 1,
-        label: `继续到 ${String(targetNode?.name || targetId)}`,
+        label: `繼續到 ${String(targetNode?.name || targetId)}`,
       });
       next.start_node_id = newNodeId;
     } else if (sourceId && !targetId) {
@@ -766,7 +766,7 @@ export function SkillSource({
         next_node_id: newNodeId,
         condition: '',
         priority: sourcePriority,
-        label: '进入新增节点',
+        label: '進入新增節點',
       });
       const previousTerminalIds = asStringList(next.terminal_node_ids);
       next.terminal_node_ids = previousTerminalIds.length > 0
@@ -787,7 +787,7 @@ export function SkillSource({
   function confirmDeleteNode(index: number) {
     const nodes = normalizeSkillNodes(skill);
     if (nodes.length <= 1) {
-      notify.warning('至少需要保留一个节点');
+      notify.warning('至少需要保留一個節點');
       return;
     }
     setDeleteNodeIndex(index);
@@ -827,12 +827,12 @@ export function SkillSource({
       <ConfirmDialog
         open
         onOpenChange={(open) => !open && setDeleteNodeIndex(null)}
-        title={`确认删除 Node ${index + 1}：${String(node.name || nodeId)}？`}
-        confirmText="确认删除"
+        title={`確認刪除 Node ${index + 1}：${String(node.name || nodeId)}？`}
+        confirmText="確認刪除"
         description={
           <div className={NODE_DELETE_CONFIRM_CLASS}>
-            <p>删除后会同时移除所有连接到这个节点、或从这个节点发出的流转规则。</p>
-            <strong>将受影响的连接</strong>
+            <p>刪除後會同時移除所有連接到這個節點、或從這個節點發出的流轉規則。</p>
+            <strong>將受影響的連接</strong>
             <ul>
               {affected.length > 0 ? (
                 affected.map((edge, edgeIndex) => (
@@ -844,7 +844,7 @@ export function SkillSource({
                   </li>
                 ))
               ) : (
-                <li>无直接连接关系</li>
+                <li>無直接連接關係</li>
               )}
             </ul>
           </div>
@@ -877,10 +877,10 @@ export function SkillSource({
 
   return (
     <div className={SOURCE_MD_CLASS} ref={containerRef}>
-      <div className={SOURCE_GROUP_TITLE_CLASS}>基础信息</div>
+      <div className={SOURCE_GROUP_TITLE_CLASS}>基礎信息</div>
       <SelectableTarget
         className={distillSourceSectionClass('basic', selectedPaths, highlightedPaths, updatingPaths, dirtyPaths)}
-        target={{ path: 'basic', label: '基础信息' }}
+        target={{ path: 'basic', label: '基礎信息' }}
         onToggle={onToggle}
       >
         {selectedPaths.includes('basic') && <span className={SELECTION_MARK_CLASS}><CheckOutlined /></span>}
@@ -904,12 +904,12 @@ export function SkillSource({
           </div>
         </div>
       </SelectableTarget>
-      <div className={SOURCE_GROUP_TITLE_CLASS}>详细节点</div>
+      <div className={SOURCE_GROUP_TITLE_CLASS}>詳細節點</div>
       <div className={SOURCE_STEPS_CLASS}>
         <div className={cn(NODE_INSERT_ROW_CLASS, NODE_INSERT_ROW_EDGE_CLASS)}>
           <UIButton variant="outline" size="sm" className={NODE_INSERT_BUTTON_CLASS} onClick={() => insertNodeBetween(-1)}>
             <PlusOutlined />
-            {steps.length > 0 ? '在最前新增节点' : '新增第一个节点'}
+            {steps.length > 0 ? '在最前新增節點' : '新增第一個節點'}
           </UIButton>
         </div>
         {steps.map((step, index) => {
@@ -917,9 +917,9 @@ export function SkillSource({
           const path = stepTargetPath(index);
           const outgoingEdges = edgeMap[stepId] || [];
           const nodeState = [
-            stepId === startNodeId ? '起始节点' : '',
-            Boolean(step.optional) ? '可选' : '必选',
-            terminalNodeIds.has(stepId) ? '终止节点' : '流程节点',
+            stepId === startNodeId ? '起始節點' : '',
+            Boolean(step.optional) ? '可選' : '必選',
+            terminalNodeIds.has(stepId) ? '終止節點' : '流程節點',
           ].filter(Boolean).join(' · ');
           return (
             <div className={SOURCE_STEP_BLOCK_CLASS} key={path}>
@@ -927,13 +927,13 @@ export function SkillSource({
                 <div className={NODE_INSERT_ROW_CLASS}>
                   <UIButton variant="outline" size="sm" className={NODE_INSERT_BUTTON_CLASS} onClick={() => insertNodeBetween(index - 1)}>
                     <PlusOutlined />
-                    在 Node {index} 和 Node {index + 1} 之间新增节点
+                    在 Node {index} 和 Node {index + 1} 之間新增節點
                   </UIButton>
                 </div>
               )}
               <SelectableTarget
                 className={distillSourceSectionClass(path, selectedPaths, highlightedPaths, updatingPaths, dirtyPaths)}
-                target={{ path, label: `节点 ${index + 1}：${step.name || stepId}` }}
+                target={{ path, label: `節點 ${index + 1}：${step.name || stepId}` }}
                 onToggle={onToggle}
               >
                 {selectedPaths.includes(path) && <span className={SELECTION_MARK_CLASS}><CheckOutlined /></span>}
@@ -948,7 +948,7 @@ export function SkillSource({
                     <EditableSourceField>
                       <UIButton variant="destructive" size="sm" onClick={() => confirmDeleteNode(index)}>
                         <DeleteOutlined />
-                        删除节点
+                        刪除節點
                       </UIButton>
                     </EditableSourceField>
                   </div>
@@ -960,7 +960,7 @@ export function SkillSource({
                       options={NODE_TYPE_OPTIONS}
                       onChange={(value) => editStep(index, 'type', value)}
                     />
-                    <SourceReadonlyLine label="节点状态" value={nodeState} />
+                    <SourceReadonlyLine label="節點狀態" value={nodeState} />
                     <EditableSourceTextLine
                       label={fieldLabel('instruction')}
                       value={String(step.instruction || '')}
@@ -986,7 +986,7 @@ export function SkillSource({
                       onUpdate={(edgeIndex, patch) => updateEdge(index, edgeIndex, patch)}
                       onDelete={(edgeIndex) => deleteEdge(index, edgeIndex)}
                     />
-                    <SourceJsonLine label="知识范围" value={step.knowledge_scope} />
+                    <SourceJsonLine label="知識範圍" value={step.knowledge_scope} />
                     <EditableRetryPolicyLine
                       value={step.retry_policy}
                       onChange={(value) => editStep(index, 'retry_policy', value)}
@@ -1001,7 +1001,7 @@ export function SkillSource({
           <div className={cn(NODE_INSERT_ROW_CLASS, NODE_INSERT_ROW_EDGE_CLASS)}>
             <UIButton variant="outline" size="sm" className={NODE_INSERT_BUTTON_CLASS} onClick={() => insertNodeBetween(steps.length - 1)}>
               <PlusOutlined />
-              在最后新增节点
+              在最後新增節點
             </UIButton>
           </div>
         )}
@@ -1080,9 +1080,9 @@ export function SkillFlow({
   const isFullZoom = Math.abs(flowZoom - 1) < 0.001;
   return (
     <>
-      <div className={FLOW_ZOOM_TOOLBAR_CLASS} aria-label="流程图缩放">
-        <span className="shrink-0">缩放</span>
-        <UIButton variant="outline" size="sm" className={FLOW_ZOOM_STEP_BUTTON_CLASS} onClick={() => updateZoom(flowZoom - 0.08)} aria-label="缩小">
+      <div className={FLOW_ZOOM_TOOLBAR_CLASS} aria-label="流程圖縮放">
+        <span className="shrink-0">縮放</span>
+        <UIButton variant="outline" size="sm" className={FLOW_ZOOM_STEP_BUTTON_CLASS} onClick={() => updateZoom(flowZoom - 0.08)} aria-label="縮小">
           -
         </UIButton>
         <span className={FLOW_ZOOM_VALUE_CLASS}>{Math.round(flowZoom * 100)}%</span>
@@ -1096,7 +1096,7 @@ export function SkillFlow({
           aria-pressed={isFitZoom}
           onClick={() => updateZoom(0.64)}
         >
-          适配
+          適配
         </UIButton>
         <UIButton
           variant="outline"
@@ -1161,22 +1161,22 @@ export function SkillFlow({
             >
               <SelectableTarget
                 className={distillFlowNodeClass('basic', true, selectedPaths, highlightedPaths, updatingPaths, dirtyPaths)}
-                target={{ path: 'basic', label: '基础信息' }}
+                target={{ path: 'basic', label: '基礎信息' }}
                 onToggle={onToggle}
               >
                 {selectedPaths.includes('basic') && <span className={SELECTION_MARK_CLASS}><CheckOutlined /></span>}
-                <span>基础信息</span>
+                <span>基礎信息</span>
                 <strong><InlineDiffText path="basic" field="name" value={skill.name} diffs={textDiffs} /></strong>
                 <small>{skill.skill_id}</small>
-                <p><InlineDiffText path="basic" field="description" value={skill.description || '暂无描述'} diffs={textDiffs} /></p>
+                <p><InlineDiffText path="basic" field="description" value={skill.description || '暫無描述'} diffs={textDiffs} /></p>
                 <div className={FLOW_META_CLASS}>
-                  <FlowMetaRow label="业务域">
+                  <FlowMetaRow label="業務域">
                     <span className={FLOW_CHIP_CLASS}>{skill.business_domain || '-'}</span>
                   </FlowMetaRow>
                   <FlowMetaRow label="必填信息">
                     <PlainChipList values={skill.required_info} />
                   </FlowMetaRow>
-                  <FlowMetaRow label="触发意图">
+                  <FlowMetaRow label="觸發意圖">
                     <PlainChipList values={skill.trigger_intents} />
                   </FlowMetaRow>
                 </div>
@@ -1242,22 +1242,22 @@ export function SkillFlowNodeCard({
   const path = stepTargetPath(index);
   const expectedInfo = asStringList(step.expected_user_info);
   const actionList = asStringList(step.allowed_actions);
-  const instruction = String(step.instruction || '暂无说明');
+  const instruction = String(step.instruction || '暫無說明');
   return (
     <div className={FLOW_NODE_SHELL_CLASS}>
       <SelectableTarget
         className={distillFlowNodeClass(path, false, selectedPaths, highlightedPaths, updatingPaths, dirtyPaths)}
-        target={{ path, label: `节点 ${index + 1}：${step.name || nodeId}` }}
+        target={{ path, label: `節點 ${index + 1}：${step.name || nodeId}` }}
         onToggle={onToggle}
       >
         {selectedPaths.includes(path) && <span className={SELECTION_MARK_CLASS}><CheckOutlined /></span>}
-        <span>节点 {index + 1}</span>
+        <span>節點 {index + 1}</span>
         <strong><InlineDiffText path={path} field="name" value={String(step.name || nodeId)} diffs={textDiffs} /></strong>
         <small>{nodeId}</small>
         <div className={FLOW_NODE_BADGES_CLASS}>
           <span className={FLOW_CHIP_CLASS}>{nodeTypeLabel(String(step.type || 'collect_info'))}</span>
-          {Boolean(step.optional) && <span className={FLOW_CHIP_CLASS}>可选</span>}
-          {terminal && <span className={FLOW_CHIP_CLASS}>终止</span>}
+          {Boolean(step.optional) && <span className={FLOW_CHIP_CLASS}>可選</span>}
+          {terminal && <span className={FLOW_CHIP_CLASS}>終止</span>}
         </div>
         <p className={FLOW_NODE_SUMMARY_CLASS} title={instruction}>
           <InlineDiffText path={path} field="instruction" value={instruction} diffs={textDiffs} />
@@ -1271,7 +1271,7 @@ export function SkillFlowNodeCard({
           )}
           {actionList.length > 0 && (
             <div className={FLOW_COMPACT_ROW_CLASS}>
-              <span>动作</span>
+              <span>動作</span>
               <ActionList actions={actionList.slice(0, 4)} toolDescriptions={toolDescriptions} toolStatuses={toolStatuses} />
             </div>
           )}
@@ -1311,7 +1311,7 @@ export function skillGraphSteps(skill: SkillCard): Array<Record<string, unknown>
       step_id: node.node_id || `node_${index + 1}`,
       node_id: node.node_id || `node_${index + 1}`,
       type: node.type || 'collect_info',
-      name: node.name || node.node_id || `节点 ${index + 1}`,
+      name: node.name || node.node_id || `節點 ${index + 1}`,
       instruction: node.instruction || '',
       optional: Boolean(node.optional),
       condition: node.condition || '',
@@ -1385,7 +1385,7 @@ export function uniqueNodeId(nodes: Array<Record<string, unknown>>, preferred: s
 
 export function nodeDisplayNameById(nodes: Array<Record<string, unknown>>, nodeId: string): string {
   const index = nodes.findIndex((node) => String(node.node_id || node.step_id || '') === nodeId);
-  if (index < 0) return nodeId || '未指定节点';
+  if (index < 0) return nodeId || '未指定節點';
   const node = nodes[index];
   return `Node ${index + 1} · ${String(node.name || nodeId)}`;
 }
@@ -1498,8 +1498,8 @@ export function buildSkillFlowCanvasLayout(
       id: `root_${startNode.nodeId}`,
       kind: 'root',
       labelTone: 'root',
-      label: '开始',
-      title: `开始 -> ${nodeNameMap[startNode.nodeId] || startNode.nodeId}`,
+      label: '開始',
+      title: `開始 -> ${nodeNameMap[startNode.nodeId] || startNode.nodeId}`,
       path: forwardFlowPath(sourceX, sourceY, targetX, targetY, laneY),
       labelX: labelAnchor.x,
       labelY: labelAnchor.y,
@@ -1917,7 +1917,7 @@ export function incomingEdgeLabel(edge: Record<string, unknown>, nodeNameMap: Re
   const detail = label && condition ? `${label}（${condition}）` : label || condition;
   if (route && detail) return `${route}：${detail}`;
   if (route) return route;
-  return detail || '流转';
+  return detail || '流轉';
 }
 
 export function edgeDisplayLabel(edge: Record<string, unknown>, nodeNameMap: Record<string, string> = {}): string {
@@ -1927,11 +1927,11 @@ export function edgeDisplayLabel(edge: Record<string, unknown>, nodeNameMap: Rec
   if (condition) return condition;
   const source = String(edge.source_node_id || '');
   const sourceName = source && nodeNameMap[source] ? nodeNameMap[source] : source;
-  return sourceName ? `来自 ${sourceName}` : '流转';
+  return sourceName ? `來自 ${sourceName}` : '流轉';
 }
 
 export function normalizedEdgeLabel(edge: Record<string, unknown>, nodeNameMap: Record<string, string> = {}): string {
-  return edgeDisplayLabel(edge, nodeNameMap).replace(/\s+/g, ' ').trim() || '流转';
+  return edgeDisplayLabel(edge, nodeNameMap).replace(/\s+/g, ' ').trim() || '流轉';
 }
 
 export function edgeTargetName(edge: Record<string, unknown>, nodeNameMap: Record<string, string> = {}): string {
@@ -1967,7 +1967,7 @@ export function hasDuplicateOutgoingEdgeLabel(
 }
 
 export function outgoingRouteCountLabel(edges: Array<Record<string, unknown>>): string {
-  return `${edges.length} 条${hasDuplicateOutgoingEdgeLabel(edges) ? '并行' : ''}流转`;
+  return `${edges.length} 條${hasDuplicateOutgoingEdgeLabel(edges) ? '並行' : ''}流轉`;
 }
 
 export function flowEdgeDisplayLabel(
@@ -1979,7 +1979,7 @@ export function flowEdgeDisplayLabel(
   const label = normalizedEdgeLabel(edge, nodeNameMap);
   const targetName = edgeTargetName(edge, nodeNameMap);
   if (hasDuplicateSourceLabel && targetName) {
-    return `并行执行 · ${targetName}`;
+    return `並行執行 · ${targetName}`;
   }
   const hasExplicitLabel = Boolean(String(edge.label || '').trim() || String(edge.condition || '').trim());
   if (siblingCount > 1 && targetName && (hasDuplicateSourceLabel || !hasExplicitLabel)) {
@@ -1994,14 +1994,14 @@ export function sourceEdgeSummary(
   index = 0,
   siblingEdges: Array<Record<string, unknown>> = [],
 ): string {
-  const targetName = edgeTargetName(edge, nodeNameMap) || '未指定节点';
+  const targetName = edgeTargetName(edge, nodeNameMap) || '未指定節點';
   const label = String(edge.label || '').trim();
   const condition = conditionNaturalText(String(edge.condition || '')).trim();
   const hasPriority = edge.priority !== undefined && edge.priority !== null && String(edge.priority).trim() !== '';
   const priority = hasPriority && typeof edge.priority === 'number' ? edge.priority : hasPriority && Number.isFinite(Number(edge.priority)) ? Number(edge.priority) : index;
   const prefix = label || condition;
-  const parallelText = hasDuplicateSiblingEdgeLabel(edge, siblingEdges, nodeNameMap) ? '并行执行 · ' : '';
-  const priorityText = hasPriority && Number.isFinite(priority) ? ` · 优先级 ${priority}` : '';
+  const parallelText = hasDuplicateSiblingEdgeLabel(edge, siblingEdges, nodeNameMap) ? '並行執行 · ' : '';
+  const priorityText = hasPriority && Number.isFinite(priority) ? ` · 優先級 ${priority}` : '';
   return `${parallelText}${prefix ? `${prefix} -> ` : ''}${targetName}${priorityText}`;
 }
 
@@ -2012,7 +2012,7 @@ export function compactEdgeLabel(value: string): string {
 }
 
 export function nodeTypeLabel(type: string): string {
-  return NODE_TYPE_OPTIONS.find((item) => item.value === type)?.label || type || '节点';
+  return NODE_TYPE_OPTIONS.find((item) => item.value === type)?.label || type || '節點';
 }
 
 export function knowledgeScopeLabels(value: unknown): string[] {
@@ -2043,7 +2043,7 @@ export function sourceInputStyle(value: string, multiline = false): CSSPropertie
 
 export function previewSourceText(value: string): string {
   const text = value.replace(/\s+/g, ' ').trim();
-  if (!text) return '暂无节点说明';
+  if (!text) return '暫無節點說明';
   return text.length > 96 ? `${text.slice(0, 96)}...` : text;
 }
 
@@ -2124,11 +2124,11 @@ export function EditableSourceTextLine({
                 onClick={() => setCollapsed((current) => !current)}
               >
                 <span className={cn(SOURCE_COLLAPSIBLE_PREVIEW_CLASS, !collapsed && SOURCE_COLLAPSIBLE_PREVIEW_MUTED_CLASS)}>
-                  {collapsed ? previewSourceText(value) : '正在编辑节点说明'}
+                  {collapsed ? previewSourceText(value) : '正在編輯節點說明'}
                 </span>
                 <span className={SOURCE_COLLAPSIBLE_TOGGLE_CLASS}>
                   {collapsed ? <RightOutlined /> : <DownOutlined />}
-                  {collapsed ? '展开' : '收起'}
+                  {collapsed ? '展開' : '收起'}
                 </span>
               </button>
               {!collapsed && (
@@ -2260,7 +2260,7 @@ export function EditableConditionLine({
             <AutoGrowTextarea
               className={cn(SOURCE_EDIT_INPUT_CLASS, CONDITION_INPUT_CLASS)}
               value={naturalValue}
-              placeholder="用一句话描述什么时候进入，例如：用户已经提供商品名称后进入"
+              placeholder="用一句話描述什麼時候進入，例如：用戶已經提供商品名稱後進入"
               minRows={1}
               onChange={(event) => onChange(event.target.value)}
             />
@@ -2337,12 +2337,12 @@ export function EditableRetryPolicyLine({
 
   return (
     <div className={SOURCE_LINE_CLASS}>
-      <span className={SOURCE_KEY_CLASS}>重试策略</span>
+      <span className={SOURCE_KEY_CLASS}>重試策略</span>
       <span className={SOURCE_VALUE_CLASS}>
         <EditableSourceField>
           <div className={RETRY_POLICY_EDITOR_CLASS}>
             <label className={RETRY_POLICY_FIELD_CLASS}>
-              <span>最多重试</span>
+              <span>最多重試</span>
               <SourceNumberInput
                 min={0}
                 value={maxAttempts}
@@ -2351,19 +2351,19 @@ export function EditableRetryPolicyLine({
               />
             </label>
             <label className={RETRY_POLICY_FIELD_CLASS}>
-              <span>失败后</span>
+              <span>失敗後</span>
               <SourceSelect
                 value={strategy || undefined}
                 options={strategyOptions}
-                placeholder="选择处理方式"
+                placeholder="選擇處理方式"
                 onChange={(nextValue) => updateStrategy(nextValue)}
               />
             </label>
             <label className={RETRY_POLICY_FIELD_CLASS}>
-              <span>追问文案</span>
+              <span>追問文案</span>
               <SourceInput
                 value={retryMessage}
-                placeholder="例如：请补充需要校验的报文内容。"
+                placeholder="例如：請補充需要校驗的報文內容。"
                 onChange={(event) => updateMessage(event.target.value)}
               />
             </label>
@@ -2457,7 +2457,7 @@ export function EditableActionList({
     }
     const duplicateIndex = next.findIndex((item, itemIndex) => item === nextAction && itemIndex !== index);
     if (duplicateIndex >= 0) {
-      notify.info('这个动作已经添加过了');
+      notify.info('這個動作已經添加過了');
       setEditingIndex(null);
       return;
     }
@@ -2482,7 +2482,7 @@ export function EditableActionList({
       <ActionCombobox
         value={value || undefined}
         options={mergedOptions}
-        placeholder="选择一个动作"
+        placeholder="選擇一個動作"
         onSelect={(nextValue) => commitAction(index, String(nextValue || ''))}
       />
     );
@@ -2519,11 +2519,11 @@ export function EditableActionList({
         {editingIndex === null && (
           <button type="button" className={SOURCE_ACTION_ADD_CLASS} onClick={() => setEditingIndex(actions.length)}>
             <PlusOutlined />
-            新增动作
+            新增動作
           </button>
         )}
       </div>
-      <span className={SOURCE_EDIT_HINT_CLASS}>每次新增一个动作；点击已有动作可重新选择。</span>
+      <span className={SOURCE_EDIT_HINT_CLASS}>每次新增一個動作；點擊已有動作可重新選擇。</span>
     </div>
   );
 }
@@ -2552,44 +2552,44 @@ export function EditableFlowRulesLine({
     .sort((a, b) => edgePriority(a.edge, a.index) - edgePriority(b.edge, b.index));
   return (
     <div className={SOURCE_LINE_CLASS}>
-      <span className={SOURCE_KEY_CLASS}>流转规则</span>
+      <span className={SOURCE_KEY_CLASS}>流轉規則</span>
       <span className={SOURCE_VALUE_CLASS}>
         <EditableSourceField>
           <div className={FLOW_RULE_EDITOR_CLASS}>
             <div className={FLOW_RULE_HEAD_CLASS}>
-              <span>从 {nodeDisplayNameById(nodes, sourceNodeId)} 出发</span>
+              <span>從 {nodeDisplayNameById(nodes, sourceNodeId)} 出發</span>
               <UIButton variant="outline" size="sm" className={PILL_OUTLINE_BUTTON_CLASS} onClick={onAdd}>
                 <PlusOutlined />
-                新增规则
+                新增規則
               </UIButton>
             </div>
             {orderedEdges.length === 0 ? (
-              <div className={FLOW_RULE_EMPTY_CLASS}>{terminal ? '当前节点是终止节点，默认流程结束。' : '还没有后续节点，请新增流转规则。'}</div>
+              <div className={FLOW_RULE_EMPTY_CLASS}>{terminal ? '當前節點是終止節點，默認流程結束。' : '還沒有後續節點，請新增流轉規則。'}</div>
             ) : (
               <div className={FLOW_RULE_LIST_CLASS}>
                 {orderedEdges.map(({ edge, index }) => (
                   <div className={FLOW_RULE_ITEM_CLASS} key={`${String(edge.next_node_id)}_${index}`}>
                     <label className={cn(FLOW_RULE_FIELD_CLASS, FLOW_RULE_FIELD_TARGET_CLASS)}>
-                      <span>目标 Node</span>
+                      <span>目標 Node</span>
                       <SourceSelect
                         className={FLOW_RULE_TARGET_CLASS}
                         value={String(edge.next_node_id || '') || undefined}
                         options={nodeOptions}
-                        placeholder="选择目标 Node"
+                        placeholder="選擇目標 Node"
                         onChange={(value) => onUpdate(index, { next_node_id: value })}
                       />
                     </label>
                     <label className={cn(FLOW_RULE_FIELD_CLASS, FLOW_RULE_FIELD_LABEL_CLASS)}>
-                      <span>规则名称</span>
+                      <span>規則名稱</span>
                       <SourceInput
                         className={FLOW_RULE_LABEL_INPUT_CLASS}
                         value={String(edge.label || '')}
-                        placeholder="例如：信息完整后继续"
+                        placeholder="例如：信息完整後繼續"
                         onChange={(event) => onUpdate(index, { label: event.target.value })}
                       />
                     </label>
                     <div className={cn(FLOW_RULE_FIELD_CLASS, FLOW_RULE_FIELD_CONDITION_CLASS)}>
-                      <span>进入条件</span>
+                      <span>進入條件</span>
                       <div className={FLOW_RULE_CONDITION_CONTROLS_CLASS}>
                         <SourceSelect
                           className={CONDITION_PRESET_CLASS}
@@ -2606,7 +2606,7 @@ export function EditableFlowRulesLine({
                         <AutoGrowTextarea
                           className={FLOW_RULE_CONDITION_INPUT_CLASS}
                           value={conditionNaturalText(String(edge.condition || ''))}
-                          placeholder="用一句话描述，例如：报文已获取后进入"
+                          placeholder="用一句話描述，例如：報文已獲取後進入"
                           minRows={1}
                           onChange={(event) => onUpdate(index, { condition: event.target.value })}
                         />
@@ -2614,7 +2614,7 @@ export function EditableFlowRulesLine({
                       <em>{flowRuleConditionText(String(edge.condition || ''))}</em>
                     </div>
                     <label className={cn(FLOW_RULE_FIELD_CLASS, FLOW_RULE_FIELD_PRIORITY_CLASS)}>
-                      <span>优先级</span>
+                      <span>優先級</span>
                       <SourceNumberInput
                         className={FLOW_RULE_PRIORITY_CLASS}
                         min={0}
@@ -2758,7 +2758,7 @@ export function ActionChip({
   className?: string;
 }) {
   const toolName = toolNameFromAction(action);
-  const description = toolName ? toolDescriptions[toolName] || '当前工具配置中暂无描述' : '';
+  const description = toolName ? toolDescriptions[toolName] || '當前工具配置中暫無描述' : '';
   const status = toolName ? toolStatuses[toolName] || 'incomplete' : '';
   const variant = className.includes('removed')
     ? 'removed'
@@ -3008,7 +3008,7 @@ export function parseNodeFragment(fragment: string, index: number): Record<strin
   return {
     node_id: nodeId || `node_${index + 1}`,
     type,
-    name: name || nodeId || `节点 ${index + 1}`,
+    name: name || nodeId || `節點 ${index + 1}`,
     instruction,
     optional: false,
     condition,
@@ -3253,7 +3253,7 @@ export function filenameTitle(filename: string): string {
   return filename.replace(/\.[^.]+$/, '').trim() || '新SOP';
 }
 
-export const uploadContentMarker = '上传文档内容：';
+export const uploadContentMarker = '上傳文檔內容：';
 
 export function buildOutgoingText(input: string, attachments: UploadAttachment[]): string {
   const text = input.trim();
@@ -3261,7 +3261,7 @@ export function buildOutgoingText(input: string, attachments: UploadAttachment[]
     .filter((item) => item.status === 'ready' && item.text?.trim())
     .map((item) => `文件：${item.name}\n${item.text?.trim() || ''}`)
     .join('\n\n');
-  return [text, attachmentText ? `上传文档内容：\n${attachmentText}` : ''].filter(Boolean).join('\n\n');
+  return [text, attachmentText ? `上傳文檔內容：\n${attachmentText}` : ''].filter(Boolean).join('\n\n');
 }
 
 export function visibleChatContent(item: ChatItem): string {
@@ -3337,7 +3337,7 @@ export function normalizeToolSuggestions(value: unknown): ToolSuggestionItem[] {
       name: String(item.name || '').trim(),
       display_name: typeof item.display_name === 'string' ? item.display_name : undefined,
       description: typeof item.description === 'string' ? item.description : undefined,
-      bucket: typeof item.bucket === 'string' && item.bucket.trim() ? item.bucket.trim() : '技能自发现工具',
+      bucket: typeof item.bucket === 'string' && item.bucket.trim() ? item.bucket.trim() : '技能自發現工具',
       tool_type: item.tool_type === 'mcp' ? 'mcp' : 'http',
       method: typeof item.method === 'string' ? item.method : 'POST',
       url: typeof item.url === 'string' ? item.url : '',
@@ -3376,23 +3376,23 @@ export function toolSuggestionTitle(suggestion: ToolSuggestionItem): string {
   if (toolSuggestionResolution(suggestion) === 'existing') {
     return `已匹配工具：${suggestion.matched_tool_display_name || label}`;
   }
-  return `建议新增工具：${label}`;
+  return `建議新增工具：${label}`;
 }
 
 export function toolSuggestionResolutionLabel(suggestion: ToolSuggestionItem): string {
   const status = toolSuggestionResolution(suggestion);
-  if (status === 'existing') return '已匹配现有工具';
+  if (status === 'existing') return '已匹配現有工具';
   if (status === 'incomplete') return '工具信息不足';
-  return '可新增候选';
+  return '可新增候選';
 }
 
 export function toolSuggestionStatusText(suggestion: ToolSuggestionItem): string {
-  if (suggestion.status === 'accepted') return '已确认';
+  if (suggestion.status === 'accepted') return '已確認';
   if (suggestion.status === 'created') return '已新增';
-  if (suggestion.status === 'rejected') return '已拒绝';
-  if (suggestion.probeStatus === 'probing') return '测试中';
-  if (suggestion.probe_result?.success) return '测试通过';
-  if (suggestion.probe_result && !suggestion.probe_result.success) return '测试失败';
+  if (suggestion.status === 'rejected') return '已拒絕';
+  if (suggestion.probeStatus === 'probing') return '測試中';
+  if (suggestion.probe_result?.success) return '測試通過';
+  if (suggestion.probe_result && !suggestion.probe_result.success) return '測試失敗';
   if (toolSuggestionResolution(suggestion) === 'existing') return '已存在';
   if (toolSuggestionResolution(suggestion) === 'incomplete') return '信息不足';
   return '待新增';
@@ -3863,7 +3863,7 @@ export function toolPayloadFromSuggestion(suggestion: ToolSuggestionItem, skillI
     name: suggestion.name,
     display_name: suggestion.display_name || suggestion.name,
     description: suggestion.description || suggestion.reason || '',
-    bucket: suggestion.bucket || '技能自发现工具',
+    bucket: suggestion.bucket || '技能自發現工具',
     tool_type: suggestion.tool_type || 'http',
     method: suggestion.method || 'POST',
     url: suggestion.url || `/api/mock/${suggestion.name.replace(/\./g, '/')}`,
@@ -3887,7 +3887,7 @@ export function toolReadFromSuggestion(suggestion: ToolSuggestionItem, skillId?:
     name: suggestion.name,
     display_name: suggestion.display_name || suggestion.name,
     description: suggestion.description || suggestion.reason || '',
-    bucket: suggestion.bucket || '技能自发现工具',
+    bucket: suggestion.bucket || '技能自發現工具',
     tool_type: suggestion.tool_type || 'http',
     method: suggestion.method || 'POST',
     url: suggestion.url || `/api/mock/${suggestion.name.replace(/\./g, '/')}`,
@@ -3913,21 +3913,21 @@ export function upsertToolRead(current: ToolRead[], nextTool: ToolRead): ToolRea
 export function fieldLabel(field: string): string {
   const labels: Record<string, string> = {
     skill_id: '技能 ID',
-    name: '名称',
+    name: '名稱',
     version: '版本',
-    business_domain: '业务域',
+    business_domain: '業務域',
     description: '描述',
-    trigger_intents: '触发意图',
-    user_utterance_examples: '示例话术',
-    goal: '目标',
+    trigger_intents: '觸發意圖',
+    user_utterance_examples: '示例話術',
+    goal: '目標',
     required_info: '必填信息',
-    response_rules: '回复规则',
-    step_id: '节点 ID',
-    type: '节点类型',
-    condition: '条件',
-    instruction: '节点说明',
+    response_rules: '回覆規則',
+    step_id: '節點 ID',
+    type: '節點類型',
+    condition: '條件',
+    instruction: '節點說明',
     expected_user_info: '期望字段',
-    allowed_actions: '允许动作',
+    allowed_actions: '允許動作',
   };
   return labels[field] || field;
 }
@@ -3938,7 +3938,7 @@ export function toolNameFromAction(action: string): string {
 
 export function actionLabel(action: string): string {
   const toolName = toolNameFromAction(action);
-  if (toolName) return `调用工具：${toolName}`;
+  if (toolName) return `調用工具：${toolName}`;
   return BASE_ACTION_OPTIONS.find((item) => item.value === action)?.label || action;
 }
 
@@ -3953,7 +3953,7 @@ export function buildActionOptions(
   ])).filter(Boolean).sort((a, b) => a.localeCompare(b));
   const toolOptions = toolNames.map((toolName) => ({
     value: `call_tool:${toolName}`,
-    label: `调用工具：${toolName}`,
+    label: `調用工具：${toolName}`,
   }));
   const currentActionOptions = steps
     .flatMap((step) => asStringList(step.allowed_actions))
@@ -3998,12 +3998,12 @@ export function conditionNaturalText(value: string): string {
 
 export function conditionReadableText(value: string): string {
   const natural = conditionNaturalText(value);
-  return natural ? `模型理解：${natural}。` : '模型理解：没有额外限制，流程可以从这里继续。';
+  return natural ? `模型理解：${natural}。` : '模型理解：沒有額外限制，流程可以從這裡繼續。';
 }
 
 export function flowRuleConditionText(value: string): string {
   const natural = conditionNaturalText(value);
-  return natural ? `进入条件：${natural}。` : '进入条件：总是进入。';
+  return natural ? `進入條件：${natural}。` : '進入條件：總是進入。';
 }
 
 export function diffTargetLabel(path: string, skill: SkillCard | null): string {
@@ -4013,12 +4013,12 @@ export function diffTargetLabel(path: string, skill: SkillCard | null): string {
 
 export function targetLabel(paths: string[], skill: SkillCard): string {
   const labels = paths.map((path) => {
-    if (path === 'basic') return '基础信息';
+    if (path === 'basic') return '基礎信息';
     const stepIndex = stepIndexFromPath(path);
     if (stepIndex !== null) {
       const index = stepIndex;
       const step = index >= 0 ? skillGraphSteps(skill)[index] : null;
-      return step ? `节点 ${index + 1}：${step.name || step.step_id || path}` : path;
+      return step ? `節點 ${index + 1}：${step.name || step.step_id || path}` : path;
     }
     return path;
   });

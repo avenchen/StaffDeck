@@ -210,7 +210,7 @@ def get_agent_work_record(
             kind="chat",
             phase="reply",
             timestamp=_iso_utc(message.created_at),
-            label="对话回复",
+            label="對話回覆",
         )
         for message in reply_rows
     ]
@@ -1222,7 +1222,7 @@ def _copy_or_update_skill_branch(
         ).first()
     if not source_branch:
         branch = sync_branch_from_overall(db, tenant_id, target_agent_id, skill)
-        _ensure_copied_skill_branch_version(db, branch, "导入自整体智能体")
+        _ensure_copied_skill_branch_version(db, branch, "導入自整體智能體")
         return
     with db.no_autoflush:
         target_branch = db.exec(
@@ -1248,7 +1248,7 @@ def _copy_or_update_skill_branch(
     target_branch.updated_at = utc_now()
     db.add(target_branch)
     db.flush()
-    _ensure_copied_skill_branch_version(db, target_branch, f"导入自 {source_agent_id}")
+    _ensure_copied_skill_branch_version(db, target_branch, f"導入自 {source_agent_id}")
 
 
 def _ensure_copied_skill_branch_version(
@@ -1403,7 +1403,7 @@ def _copy_skill_branch(
             content_json=dict(target_branch.content_json or {}),
             status=target_branch.status,
             sync_state=target_branch.sync_state,
-            change_summary=f"复制自 {source_agent_id}",
+            change_summary=f"複製自 {source_agent_id}",
         )
     )
 
@@ -1596,7 +1596,7 @@ def _is_empty_default_knowledge_base(db: Session, tenant_id: str, kb: KnowledgeB
         return False
     if metadata.get("created_from_document_upload") and not metadata.get("source_document_id"):
         return True
-    return kb.name == "默认知识库"
+    return kb.name == "默認知識庫"
 
 
 def _ensure_resource_exists(db: Session, tenant_id: str, item: AgentResourceBindingInput) -> None:

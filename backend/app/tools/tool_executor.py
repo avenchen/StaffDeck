@@ -39,24 +39,24 @@ class ToolExecutor:
         if not tool:
             return self._error(tool_call.name, "NOT_FOUND", "工具不存在或未配置。")
         if not tool.enabled:
-            return self._error(tool.name, "DISABLED", "工具当前未启用。")
+            return self._error(tool.name, "DISABLED", "工具當前未啟用。")
         if agent_id and tool.id not in {
             row.id
             for row in visible_tool_rows(self.db, tenant_id, agent_id, include_inactive=False)
         }:
-            return self._error(tool.name, "NOT_ALLOWED", "当前员工未启用该工具。")
+            return self._error(tool.name, "NOT_ALLOWED", "當前員工未啟用該工具。")
         if (
             active_skill_id
             and tool.allowed_skills_json
             and active_skill_id not in tool.allowed_skills_json
         ):
-            return self._error(tool.name, "NOT_ALLOWED", "当前技能不允许调用该工具。")
+            return self._error(tool.name, "NOT_ALLOWED", "當前技能不允許調用該工具。")
 
         if (tool.tool_type or "http") == "mcp":
             return self._execute_mcp_tool(tool, tool_call.arguments)
         if (tool.tool_type or "http") != "http":
             return self._error(
-                tool.name, "UNSUPPORTED_TOOL_TYPE", f"不支持的工具类型：{tool.tool_type}"
+                tool.name, "UNSUPPORTED_TOOL_TYPE", f"不支持的工具類型：{tool.tool_type}"
             )
 
         headers = self._request_headers(
@@ -82,12 +82,12 @@ class ToolExecutor:
                     error=None,
                 )
         except httpx.TimeoutException:
-            return self._error(tool.name, "TIMEOUT", "工具调用超时。")
+            return self._error(tool.name, "TIMEOUT", "工具調用超時。")
         except httpx.HTTPStatusError as exc:
             return self._error(
                 tool.name,
                 "HTTP_ERROR",
-                f"工具返回异常状态码：{exc.response.status_code}",
+                f"工具返回異常狀態碼：{exc.response.status_code}",
             )
         except Exception as exc:
             return self._error(tool.name, "EXECUTION_ERROR", str(exc))
@@ -114,10 +114,10 @@ class ToolExecutor:
             str(tool_config.get("tool") or tool_config.get("tool_name") or "").strip() or None
         )
         if not tool.mcp_server_id:
-            raise MCPClientError("MCP 工具未关联 Server。")
+            raise MCPClientError("MCP 工具未關聯 Server。")
         server = self.db.get(MCPServer, tool.mcp_server_id)
         if server is None:
-            raise MCPClientError("MCP 工具关联的 Server 不存在或已删除。")
+            raise MCPClientError("MCP 工具關聯的 Server 不存在或已刪除。")
         return self._server_client_config(server), tool_name
 
     def _server_client_config(self, server: MCPServer) -> dict[str, Any]:

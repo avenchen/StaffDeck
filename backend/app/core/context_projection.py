@@ -341,7 +341,7 @@ def _compact_retrieved_knowledge(item: dict[str, Any]) -> list[dict[str, Any]]:
             continue
         seen.add(identity)
         compacted.append(
-            {"label": f"检索到的知识 {len(compacted) + 1}", **projected}
+            {"label": f"檢索到的知識 {len(compacted) + 1}", **projected}
         )
         if len(compacted) >= RETRIEVED_KNOWLEDGE_LIMIT:
             break

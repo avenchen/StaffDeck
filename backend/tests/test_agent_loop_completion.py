@@ -129,7 +129,7 @@ def test_tool_call_start_event_is_committed_before_external_execute() -> None:
     )
 
     result = loop._execute_tool_call(
-        _request("下单"),
+        _request("下單"),
         session,
         ToolCall(name="product.purchase", arguments={"product_id": "A1"}),
     )
@@ -147,7 +147,7 @@ def test_side_effect_tool_call_reuses_previous_successful_result() -> None:
     tool = Tool(
         tenant_id="tenant_demo",
         name="crm.create_ticket",
-        display_name="创建工单",
+        display_name="創建工單",
         method="POST",
         url="http://localhost:8000/api/mock/tickets",
         enabled=True,
@@ -165,7 +165,7 @@ def test_side_effect_tool_call_reuses_previous_successful_result() -> None:
                 "name": "crm.create_ticket",
                 "arguments": {
                     "customer_id": "C-1",
-                    "subject": "发票开具",
+                    "subject": "發票開具",
                     "priority": "normal",
                 },
             },
@@ -182,13 +182,13 @@ def test_side_effect_tool_call_reuses_previous_successful_result() -> None:
     )
 
     result = loop._execute_tool_call(
-        _request("重试一下，如果办理失败需要提示我"),
+        _request("重試一下，如果辦理失敗需要提示我"),
         session,
         ToolCall(
             name="crm.create_ticket",
             arguments={
                 "customer_id": "C-1",
-                "subject": "发票开具",
+                "subject": "發票開具",
                 "priority": "normal",
             },
         ),
@@ -211,7 +211,7 @@ def test_post_read_only_tool_does_not_reuse_previous_result() -> None:
     tool = Tool(
         tenant_id="tenant_demo",
         name="order.query",
-        display_name="查询订单",
+        display_name="查詢訂單",
         method="POST",
         url="http://localhost:8000/api/mock/order/query",
         config_json={"idempotency": {"enabled": False}},
@@ -238,7 +238,7 @@ def test_post_read_only_tool_does_not_reuse_previous_result() -> None:
     session = ChatSession(id="session_test", tenant_id="tenant_demo", active_skill_id="refund")
 
     result = loop._execute_tool_call(
-        _request("查订单"),
+        _request("查訂單"),
         session,
         ToolCall(name="order.query", arguments={"order_id": "O-1"}),
     )
@@ -280,8 +280,8 @@ def test_stream_emits_context_status_only_when_compaction_runs(compacted_now: bo
     loop.router = SimpleNamespace(
         decide=lambda *_args, **_kwargs: RouterDecision(
             decision="answer_only",
-            user_intent="问候",
-            reason="普通问候，不需要进入业务流程。",
+            user_intent="問候",
+            reason="普通問候，不需要進入業務流程。",
         )
     )
     loop._get_or_create_session = lambda _request: session
@@ -324,8 +324,8 @@ def test_stream_emits_context_status_only_when_compaction_runs(compacted_now: bo
         assert preparing_indexes == []
     assert router_index < reply_index
     router_payload = events[router_index]["data"]
-    assert router_payload["user_intent"] == "问候"
-    assert router_payload["reason"] == "普通问候，不需要进入业务流程。"
+    assert router_payload["user_intent"] == "問候"
+    assert router_payload["reason"] == "普通問候，不需要進入業務流程。"
 
 
 def test_stream_disconnect_does_not_persist_stop_event_without_cancel_flag() -> None:
@@ -356,8 +356,8 @@ def test_stream_disconnect_does_not_persist_stop_event_without_cancel_flag() -> 
     loop.router = SimpleNamespace(
         decide=lambda *_args, **_kwargs: RouterDecision(
             decision="answer_only",
-            user_intent="问候",
-            reason="普通问候，不需要进入业务流程。",
+            user_intent="問候",
+            reason="普通問候，不需要進入業務流程。",
         )
     )
     loop._get_or_create_session = lambda _request: session
@@ -465,17 +465,17 @@ def test_router_order_keeps_current_turn_followup_out_of_pending_tasks() -> None
         target_skill_id="purchase",
         target_step_id="collect_user_name",
         confidence=0.91,
-        user_intent="继续购买 A1，并比较 A1 和 A3",
-        reason="用户补充购买目标，同时提出独立比价任务。",
-        source_message="我买 A1 前跟 A3 比一下价格",
+        user_intent="繼續購買 A1，並比較 A1 和 A3",
+        reason="用戶補充購買目標，同時提出獨立比價任務。",
+        source_message="我買 A1 前跟 A3 比一下價格",
         slot_hints={"product_id": "A1", "quantity": 1},
         task_frames=[
             PendingTask(
                 decision="continue_active",
                 target_skill_id="purchase",
                 target_step_id="collect_user_name",
-                user_intent="继续购买 A1",
-                source_message="我买 A1 前跟 A3 比一下价格",
+                user_intent="繼續購買 A1",
+                source_message="我買 A1 前跟 A3 比一下價格",
                 slot_hints={"product_id": "A1", "quantity": 1},
             ),
             PendingTask(
@@ -483,8 +483,8 @@ def test_router_order_keeps_current_turn_followup_out_of_pending_tasks() -> None
                 decision="start_new_task",
                 target_skill_id="price_compare",
                 target_step_id="collect_products",
-                user_intent="比较 A1 和 A3 的价格",
-                source_message="我买 A1 前跟 A3 比一下价格",
+                user_intent="比較 A1 和 A3 的價格",
+                source_message="我買 A1 前跟 A3 比一下價格",
                 slot_hints={"product_name_1": "A1", "product_name_2": "A3"},
             )
         ],
@@ -517,17 +517,17 @@ def test_router_keeps_existing_active_task_in_current_turn_plan_after_new_primar
         target_skill_id="price_compare",
         target_step_id="collect_products",
         confidence=0.95,
-        user_intent="比较 A1 和 A3 的价格",
-        reason="用户提出独立比价任务。",
-        source_message="我想买一个A1,然后想跟A3比下价格",
+        user_intent="比較 A1 和 A3 的價格",
+        reason="用戶提出獨立比價任務。",
+        source_message="我想買一個A1,然後想跟A3比下價格",
         slot_hints={"product_name_1": "A1", "product_name_2": "A3"},
         task_frames=[
             PendingTask(
                 decision="start_new_task",
                 target_skill_id="price_compare",
                 target_step_id="collect_products",
-                user_intent="比较 A1 和 A3 的价格",
-                source_message="我想买一个A1,然后想跟A3比下价格",
+                user_intent="比較 A1 和 A3 的價格",
+                source_message="我想買一個A1,然後想跟A3比下價格",
                 slot_hints={"product_name_1": "A1", "product_name_2": "A3"},
             ),
             PendingTask(
@@ -535,8 +535,8 @@ def test_router_keeps_existing_active_task_in_current_turn_plan_after_new_primar
                 decision="continue_active",
                 target_skill_id="purchase",
                 target_step_id="collect_user_name",
-                user_intent="继续购买 A1",
-                source_message="我想买一个A1,然后想跟A3比下价格",
+                user_intent="繼續購買 A1",
+                source_message="我想買一個A1,然後想跟A3比下價格",
                 slot_hints={"user_name": "hm"},
             )
         ],
@@ -606,7 +606,7 @@ def test_current_turn_task_frames_execute_in_order_without_pending_queue() -> No
     ]
 
     result = loop._try_continue_pending_after_completion(
-        _request("先比较 A1 和 A3，再购买 A3"),
+        _request("先比較 A1 和 A3，再購買 A3"),
         session,
         _model_config(),
         skills,
@@ -647,8 +647,8 @@ def test_only_started_waiting_task_becomes_pending_while_later_turn_frame_still_
         executed.append(active_skill.skill_id)
         if active_skill.skill_id == "price_compare":
             session.awaiting_input_json = {"expected_fields": ["product_name_2"]}
-            return StepAgentResult(reply="请补充第二个商品")
-        return StepAgentResult(reply="购买完成", is_step_completed=True)
+            return StepAgentResult(reply="請補充第二個商品")
+        return StepAgentResult(reply="購買完成", is_step_completed=True)
 
     def finalize(_tenant_id, session, active_skill, *_args, **_kwargs):
         if active_skill.skill_id == "price_compare":
@@ -675,7 +675,7 @@ def test_only_started_waiting_task_becomes_pending_while_later_turn_frame_still_
     ]
 
     result = loop._try_continue_pending_after_completion(
-        _request("先比较 A1 和另一个商品，再购买 A3"),
+        _request("先比較 A1 和另一個商品，再購買 A3"),
         session,
         _model_config(),
         skills,
@@ -693,7 +693,7 @@ def test_only_started_waiting_task_becomes_pending_while_later_turn_frame_still_
         "expected_fields": ["product_name_2"]
     }
     assert result is not None
-    assert result.reply == "请补充第二个商品\n\n购买完成"
+    assert result.reply == "請補充第二個商品\n\n購買完成"
 
 
 def test_streamed_followup_tasks_collect_results_without_emitting_replies() -> None:
@@ -720,7 +720,7 @@ def test_streamed_followup_tasks_collect_results_without_emitting_replies() -> N
     def run_step(_request, _session, active_skill, *_args, **_kwargs):
         return StepAgentResult(
             action="ask_user",
-            reply=f"{active_skill.name}需要补充信息",
+            reply=f"{active_skill.name}需要補充信息",
         )
 
     loop._run_step_agent_with_context_repair = run_step
@@ -740,7 +740,7 @@ def test_streamed_followup_tasks_collect_results_without_emitting_replies() -> N
     ]
 
     iterator = loop._stream_continue_pending_after_completion(
-        _request("先比价，再购买"),
+        _request("先比價，再購買"),
         session,
         _model_config(),
         skills,
@@ -841,7 +841,7 @@ def test_skill_state_payload_filters_disabled_sop_frames() -> None:
     assert payload["currentSkills"] == [
         {
             "skillId": "purchase",
-            "name": "购买商品",
+            "name": "購買商品",
             "stepId": "collect_user_name",
             "state": "pending",
         },
@@ -875,14 +875,14 @@ def test_finalize_turn_clears_stale_last_question_for_non_question_reply() -> No
     session = ChatSession(
         id="session_test",
         tenant_id="tenant_demo",
-        last_agent_question="旧的比价回复。请问您是否决定购买 A1？",
+        last_agent_question="舊的比價回覆。請問您是否決定購買 A1？",
     )
-    reply = "好的，已为您确认退款申请。正在为您处理订单 MOCKD57272DB0E 的退款，请您耐心等待。"
+    reply = "好的，已為您確認退款申請。正在為您處理訂單 MOCKD57272DB0E 的退款，請您耐心等待。"
 
     loop._finalize_turn(session, "tenant_demo", reply)
 
-    assert session.last_agent_question == "旧的比价回复。请问您是否决定购买 A1？"
-    assert session.summary == f"最近回复：{reply[:120]}"
+    assert session.last_agent_question == "舊的比價回覆。請問您是否決定購買 A1？"
+    assert session.summary == f"最近回覆：{reply[:120]}"
     assert loop.events.records[0][2] == "assistant_message_created"
 
 
@@ -891,12 +891,12 @@ def test_finalize_turn_keeps_current_question_reply() -> None:
     loop.db = FakeDb()
     loop.events = FakeEvents()
     session = ChatSession(id="session_test", tenant_id="tenant_demo")
-    reply = "请提供您的订单号？"
+    reply = "請提供您的訂單號？"
 
     loop._finalize_turn(session, "tenant_demo", reply)
 
     assert session.last_agent_question is None
-    assert session.summary == f"最近回复：{reply[:120]}"
+    assert session.summary == f"最近回覆：{reply[:120]}"
 
 
 def test_finalize_turn_drops_unused_knowledge_citations() -> None:
@@ -908,19 +908,19 @@ def test_finalize_turn_drops_unused_knowledge_citations() -> None:
         tenant_id="tenant_demo",
         knowledge_context_json=[
             {
-                "source_message": "自动任务需要结合业务资料",
+                "source_message": "自動任務需要結合業務資料",
                 "evidence_pack": [
                     {
-                        "source_path": "service-handbook.md / 服务原则 / evidence 1",
-                        "excerpt": "服务人员应先确认用户真实诉求。",
+                        "source_path": "service-handbook.md / 服務原則 / evidence 1",
+                        "excerpt": "服務人員應先確認用戶真實訴求。",
                     }
                 ],
             }
         ],
     )
-    reply = "本次自动任务执行完毕，已成功购买 1 个 A1 商品。"
+    reply = "本次自動任務執行完畢，已成功購買 1 個 A1 商品。"
 
-    loop._finalize_turn(session, "tenant_demo", reply, source_message="自动任务需要结合业务资料")
+    loop._finalize_turn(session, "tenant_demo", reply, source_message="自動任務需要結合業務資料")
 
     message = loop.db.added[-1]
     assert isinstance(message, Message)
@@ -937,48 +937,48 @@ def test_finalize_turn_keeps_only_inline_knowledge_citations() -> None:
     step_result = StepAgentResult(
         knowledge_results=[
             {
-                "query": {"query": "前端规范有哪些？"},
+                "query": {"query": "前端規範有哪些？"},
                 "evidence_pack": [
                     {
-                        "source_path": "frontend.md / 目录规范 / evidence 1",
-                        "excerpt": "前端目录规范说明。",
+                        "source_path": "frontend.md / 目錄規範 / evidence 1",
+                        "excerpt": "前端目錄規範說明。",
                     },
                     {
-                        "source_path": "frontend.md / 命名规范 / evidence 1",
-                        "excerpt": "前端命名规范说明。",
+                        "source_path": "frontend.md / 命名規範 / evidence 1",
+                        "excerpt": "前端命名規範說明。",
                     },
                 ],
             }
         ],
     )
-    reply = "前端规范包括目录组织和命名规范。[2]\n\n参考资料：[1][2]"
+    reply = "前端規範包括目錄組織和命名規範。[2]\n\n參考資料：[1][2]"
 
     loop._finalize_turn(
         session,
         "tenant_demo",
         reply,
         step_result=step_result,
-        source_message="前端规范有哪些？",
+        source_message="前端規範有哪些？",
     )
 
     message = loop.db.added[-1]
     assert isinstance(message, Message)
-    assert message.content == "前端规范包括目录组织和命名规范。[1]"
+    assert message.content == "前端規範包括目錄組織和命名規範。[1]"
     assert [item["label"] for item in message.metadata_json["knowledge_citations"]] == ["[1]"]
 
 
 def test_merge_queued_reply_preserves_each_structured_execution_segment() -> None:
     loop = object.__new__(AgentLoop)
     refund_then_purchase = (
-        "好的，已为您提交订单 MOCK7A17191FC9（商品 A1）的退款申请，退款原因为“不想要了”。\n\n"
-        "接下来为您购买 A3 高阶商品，请确认以下信息：\n"
-        "- 用户：hm\n"
+        "好的，已為您提交訂單 MOCK7A17191FC9（商品 A1）的退款申請，退款原因為“不想要了”。\n\n"
+        "接下來為您購買 A3 高階商品，請確認以下信息：\n"
+        "- 用戶：hm\n"
         "- 商品：A3\n"
-        "- 数量：1\n\n"
-        "请问确认下单吗？"
+        "- 數量：1\n\n"
+        "請問確認下單嗎？"
     )
     purchase_confirmation = (
-        "好的，hm。已为您确认购买 A3 高阶商品 1 件，价格 239.0 元。请问确认下单吗？"
+        "好的，hm。已為您確認購買 A3 高階商品 1 件，價格 239.0 元。請問確認下單嗎？"
     )
 
     replies, replaced = loop._merge_queued_reply_segment([], refund_then_purchase)
@@ -990,8 +990,8 @@ def test_merge_queued_reply_preserves_each_structured_execution_segment() -> Non
 
 def test_merge_queued_reply_keeps_distinct_followup_confirmations() -> None:
     loop = object.__new__(AgentLoop)
-    first = "退款已处理。接下来为您购买 A1，请问确认下单吗？"
-    second = "好的，hm。已为您确认购买 A3 高阶商品 1 件，价格 239.0 元。请问确认下单吗？"
+    first = "退款已處理。接下來為您購買 A1，請問確認下單嗎？"
+    second = "好的，hm。已為您確認購買 A3 高階商品 1 件，價格 239.0 元。請問確認下單嗎？"
 
     replies, replaced = loop._merge_queued_reply_segment([], first)
     replies, replaced = loop._merge_queued_reply_segment(replies, second)
@@ -1092,21 +1092,21 @@ def test_apply_step_result_queues_parallel_sibling_steps_and_merges() -> None:
     loop.events = FakeEvents()
     skill = _parallel_audit_skill(
         [
-            {"source_node_id": "start", "next_node_id": "check_payee", "condition": "报文已获取"},
+            {"source_node_id": "start", "next_node_id": "check_payee", "condition": "報文已獲取"},
             {
                 "source_node_id": "start",
                 "next_node_id": "check_sensitive",
-                "condition": "报文已获取",
+                "condition": "報文已獲取",
             },
             {
                 "source_node_id": "check_payee",
                 "next_node_id": "report",
-                "condition": "一致性检查完成",
+                "condition": "一致性檢查完成",
             },
             {
                 "source_node_id": "check_sensitive",
                 "next_node_id": "report",
-                "condition": "敏感词检查完成",
+                "condition": "敏感詞檢查完成",
             },
         ]
     )
@@ -1152,8 +1152,8 @@ def test_apply_step_result_does_not_queue_exclusive_sibling_conditions() -> None
     loop.events = FakeEvents()
     skill = _parallel_audit_skill(
         [
-            {"source_node_id": "start", "next_node_id": "approve", "condition": "审核通过"},
-            {"source_node_id": "start", "next_node_id": "reject", "condition": "审核拒绝"},
+            {"source_node_id": "start", "next_node_id": "approve", "condition": "審核通過"},
+            {"source_node_id": "start", "next_node_id": "reject", "condition": "審核拒絕"},
         ]
     )
     session = ChatSession(
@@ -1182,7 +1182,7 @@ def test_terminal_skill_completion_when_required_slots_are_complete() -> None:
         tenant_id="tenant_demo",
         active_skill_id="repair_ticket",
         active_step_id="reply_ticket_result",
-        slots_json={"reporter_name": "hm", "asset_id": "EQ-9", "issue_desc": "无法开机"},
+        slots_json={"reporter_name": "hm", "asset_id": "EQ-9", "issue_desc": "無法開機"},
     )
 
     assert loop._should_complete_skill(
@@ -1200,7 +1200,7 @@ def test_terminal_collect_step_can_complete_with_ask_user_action_when_slots_are_
         tenant_id="tenant_demo",
         active_skill_id="refund",
         active_step_id="collect_refund_reason",
-        slots_json={"order_id": "A12345", "refund_reason": "不喜欢"},
+        slots_json={"order_id": "A12345", "refund_reason": "不喜歡"},
     )
 
     assert loop._should_complete_skill(
@@ -1220,7 +1220,7 @@ def test_stale_terminal_skill_is_cleared_before_next_route() -> None:
         tenant_id="tenant_demo",
         active_skill_id="repair_ticket",
         active_step_id="reply_ticket_result",
-        slots_json={"reporter_name": "hm", "asset_id": "EQ-9", "issue_desc": "无法开机"},
+        slots_json={"reporter_name": "hm", "asset_id": "EQ-9", "issue_desc": "無法開機"},
     )
 
     loop._finish_stale_completed_skill("tenant_demo", session, [_repair_skill()])
@@ -1242,7 +1242,7 @@ def test_scheduled_task_followup_can_continue_after_stale_terminal_completion() 
         tenant_id="tenant_demo",
         active_skill_id="repair_ticket",
         active_step_id="reply_ticket_result",
-        slots_json={"reporter_name": "hm", "asset_id": "EQ-9", "issue_desc": "无法开机"},
+        slots_json={"reporter_name": "hm", "asset_id": "EQ-9", "issue_desc": "無法開機"},
         pending_tasks_json=[
             {
                 "task_id": "task_purchase_after_compare",
@@ -1253,18 +1253,18 @@ def test_scheduled_task_followup_can_continue_after_stale_terminal_completion() 
                 "target_step_id": "collect_user_name",
                 "slots": {"user_name": "hm"},
                 "slot_hints": {"user_name": "hm"},
-                "intent_summary": "购买比价后更贵的商品",
+                "intent_summary": "購買比價後更貴的商品",
             }
         ],
     )
-    request = _request("自动任务唤醒：完成维修后继续处理购买任务")
+    request = _request("自動任務喚醒：完成維修後繼續處理購買任務")
     request.interaction_mode = "scheduled_task"
 
     should_continue = loop._should_attempt_queued_task_followup(
         request,
         session,
         [_repair_skill(), _purchase_skill()],
-        "维修结果已反馈。",
+        "維修結果已反饋。",
         1,
     )
 
@@ -1288,7 +1288,7 @@ def test_normal_chat_does_not_auto_continue_pending_after_stale_terminal_complet
         tenant_id="tenant_demo",
         active_skill_id="repair_ticket",
         active_step_id="reply_ticket_result",
-        slots_json={"reporter_name": "hm", "asset_id": "EQ-9", "issue_desc": "无法开机"},
+        slots_json={"reporter_name": "hm", "asset_id": "EQ-9", "issue_desc": "無法開機"},
         pending_tasks_json=[
             {
                 "task_id": "task_purchase_after_compare",
@@ -1304,10 +1304,10 @@ def test_normal_chat_does_not_auto_continue_pending_after_stale_terminal_complet
     )
 
     should_continue = loop._should_attempt_queued_task_followup(
-        _request("普通聊天继续处理"),
+        _request("普通聊天繼續處理"),
         session,
         [_repair_skill(), _purchase_skill()],
-        "维修结果已反馈。",
+        "維修結果已反饋。",
         1,
     )
 
@@ -1329,7 +1329,7 @@ def test_obsolete_suspended_stack_is_cleared() -> None:
             {
                 "skill_id": "repair_ticket",
                 "step_id": "reply_ticket_result",
-                "slots": {"reporter_name": "hm", "asset_id": "EQ-9", "issue_desc": "无法开机"},
+                "slots": {"reporter_name": "hm", "asset_id": "EQ-9", "issue_desc": "無法開機"},
             }
         ],
     )
@@ -1372,7 +1372,7 @@ def test_model_can_complete_non_terminal_skill_when_no_next_action() -> None:
     assert loop._should_complete_skill(
         _repair_skill(),
         session,
-        StepAgentResult(reply="好的，已取消本次报修流程。", is_step_completed=True),
+        StepAgentResult(reply="好的，已取消本次報修流程。", is_step_completed=True),
         None,
     )
 
@@ -1412,7 +1412,7 @@ def test_answer_step_can_complete_even_if_distilled_order_has_later_satisfied_co
         tenant_id="tenant_demo",
         active_skill_id="refund",
         active_step_id="check_refund",
-        slots_json={"order_id": "A12345", "refund_reason": "商品质量"},
+        slots_json={"order_id": "A12345", "refund_reason": "商品質量"},
     )
     step_result = StepAgentResult(tool_call=_refund_tool_call(), is_step_completed=True)
 
@@ -1440,7 +1440,7 @@ def test_context_repair_does_not_auto_advance_satisfied_collect_step() -> None:
     loop.step_agent = _FakeStepAgent(
         [
             StepAgentResult(
-                reply="您好 hm，请问您想购买的商品 ID 是什么？",
+                reply="您好 hm，請問您想購買的商品 ID 是什麼？",
                 slot_updates={"user_name": "hm"},
                 next_step_id="collect_user_name",
             ),
@@ -1480,7 +1480,7 @@ def test_context_repair_does_not_infer_tool_when_router_is_clarifying() -> None:
     loop = object.__new__(AgentLoop)
     loop.events = FakeEvents()
     loop.step_agent = _FakeStepAgent(
-        [StepAgentResult(reply="请问您想办理哪类业务？", next_step_id="confirm_product")]
+        [StepAgentResult(reply="請問您想辦理哪類業務？", next_step_id="confirm_product")]
     )
     session = ChatSession(
         id="session_test",
@@ -1491,7 +1491,7 @@ def test_context_repair_does_not_infer_tool_when_router_is_clarifying() -> None:
     )
 
     step_result = loop._run_step_agent_with_context_repair(
-        _request("我想查询订单"),
+        _request("我想查詢訂單"),
         session,
         _purchase_skill(),
         [_purchase_tool()],
@@ -1512,12 +1512,12 @@ def test_model_slot_validation_retry_can_complete_missed_quantity() -> None:
     loop.step_agent = _FakeStepAgent(
         [
             StepAgentResult(
-                reply="好的，hm。请问您想购买多少件 A1？",
+                reply="好的，hm。請問您想購買多少件 A1？",
                 slot_updates={"user_name": "hm", "product_id": "A1"},
                 next_step_id="collect_user_name",
             ),
             StepAgentResult(
-                reply="正在为您创建订单，请稍候。",
+                reply="正在為您創建訂單，請稍候。",
                 slot_updates={"quantity": 1},
                 tool_call=ToolCall(
                     name="product.purchase", arguments={"product_id": "A1", "quantity": 1}
@@ -1534,7 +1534,7 @@ def test_model_slot_validation_retry_can_complete_missed_quantity() -> None:
     )
 
     step_result = loop._run_step_agent_with_context_repair(
-        _request("我要买一个A1，我叫hm"),
+        _request("我要買一個A1，我叫hm"),
         session,
         _purchase_skill(),
         [_purchase_tool()],
@@ -1621,8 +1621,8 @@ def test_model_slot_validation_retry_does_not_fill_without_model_progress() -> N
     loop.events = FakeEvents()
     loop.step_agent = _FakeStepAgent(
         [
-            StepAgentResult(reply="请问您想购买多少件 A1？", next_step_id="collect_user_name"),
-            StepAgentResult(reply="请问您想购买多少件 A1？", next_step_id="collect_user_name"),
+            StepAgentResult(reply="請問您想購買多少件 A1？", next_step_id="collect_user_name"),
+            StepAgentResult(reply="請問您想購買多少件 A1？", next_step_id="collect_user_name"),
         ]
     )
     session = ChatSession(
@@ -1634,7 +1634,7 @@ def test_model_slot_validation_retry_does_not_fill_without_model_progress() -> N
     )
 
     step_result = loop._run_step_agent_with_context_repair(
-        _request("随便看看"),
+        _request("隨便看看"),
         session,
         _purchase_skill(),
         [_purchase_tool()],
@@ -1657,12 +1657,12 @@ def test_start_new_task_slot_validation_accepts_reply_repair() -> None:
     loop.step_agent = _FakeStepAgent(
         [
             StepAgentResult(
-                reply="好的，hm！请问您想购买什么商品？另外，请提供您的姓名以便我们为您下单。",
+                reply="好的，hm！請問您想購買什麼商品？另外，請提供您的姓名以便我們為您下單。",
                 slot_updates={"user_name": "hm"},
                 next_step_id="collect_user_name",
             ),
             StepAgentResult(
-                reply="好的，hm！请问您想购买什么商品？需要购买多少件？",
+                reply="好的，hm！請問您想購買什麼商品？需要購買多少件？",
                 next_step_id="collect_user_name",
             ),
         ]
@@ -1676,7 +1676,7 @@ def test_start_new_task_slot_validation_accepts_reply_repair() -> None:
     )
 
     step_result = loop._run_step_agent_with_context_repair(
-        _request("我想买东西"),
+        _request("我想買東西"),
         session,
         _purchase_skill(),
         [_purchase_tool()],
@@ -1689,12 +1689,12 @@ def test_start_new_task_slot_validation_accepts_reply_repair() -> None:
                 "metadata": {"key": "preferred_name"},
             }
         ],
-        conversation_context={"messages": [{"role": "user", "content": "我想买东西"}]},
+        conversation_context={"messages": [{"role": "user", "content": "我想買東西"}]},
     )
 
     assert loop.step_agent.calls == 2
     assert session.slots_json["user_name"] == "hm"
-    assert step_result.reply == "好的，hm！请问您想购买什么商品？需要购买多少件？"
+    assert step_result.reply == "好的，hm！請問您想購買什麼商品？需要購買多少件？"
     assert any(
         event_type == "step_agent_result_repaired" and payload.get("mode") == "slot_validation"
         for _, _, event_type, payload in loop.events.records
@@ -1748,7 +1748,7 @@ def test_tool_continuation_is_model_driven_and_accumulates_results() -> None:
                 is_step_completed=True,
             ),
             StepAgentResult(
-                reply="A1 和 A3 均已查到，可以给出比价结果。",
+                reply="A1 和 A3 均已查到，可以給出比價結果。",
                 next_step_id="reply_result",
                 is_step_completed=True,
             ),
@@ -1772,7 +1772,7 @@ def test_tool_continuation_is_model_driven_and_accumulates_results() -> None:
 
     stream_events: list[tuple[str, dict[str, object]]] = []
     step_result, tool_result = loop._execute_tool_action_cycle(
-        _request("我想比下 A1 和 A3 的价格"),
+        _request("我想比下 A1 和 A3 的價格"),
         session,
         _price_compare_skill(),
         [_price_query_tool()],
@@ -1828,7 +1828,7 @@ def test_tool_continuation_respects_configured_action_limit() -> None:
     )
 
     loop._execute_tool_action_cycle(
-        _request("我想比下 A1 和 A3 的价格"),
+        _request("我想比下 A1 和 A3 的價格"),
         session,
         _price_compare_skill(),
         [_price_query_tool()],
@@ -1853,7 +1853,7 @@ def test_duplicate_tool_call_with_reply_completes_from_existing_tool_result() ->
     loop.step_agent = _FakeStepAgent(
         [
             StepAgentResult(
-                reply="A1 的价格已查到，可以继续。",
+                reply="A1 的價格已查到，可以繼續。",
                 tool_call=ToolCall(name="product.price_query", arguments={"product_name": "A1"}),
                 is_step_completed=False,
             )
@@ -1876,7 +1876,7 @@ def test_duplicate_tool_call_with_reply_completes_from_existing_tool_result() ->
     )
 
     step_result, tool_result = loop._execute_tool_action_cycle(
-        _request("查 A1 价格"),
+        _request("查 A1 價格"),
         session,
         _price_compare_skill(),
         [_price_query_tool()],
@@ -1892,7 +1892,7 @@ def test_duplicate_tool_call_with_reply_completes_from_existing_tool_result() ->
     assert tool_result is not None and tool_result.success is True
     assert step_result.tool_call is None
     assert step_result.is_step_completed is True
-    assert step_result.reply == "A1 的价格已查到，可以继续。"
+    assert step_result.reply == "A1 的價格已查到，可以繼續。"
     assert not any(record[2] == "agent_loop_stopped" for record in loop.events.records)
     assert any(
         record[2] == "agent_loop_completed" and record[3]["mode"] == "respond_after_duplicate"
@@ -1904,20 +1904,20 @@ def _repair_skill() -> Skill:
     return Skill(
         tenant_id="tenant_demo",
         skill_id="repair_ticket",
-        name="设备报修",
+        name="設備報修",
         content_json=_graph_content(
             "repair_ticket",
-            "设备报修",
+            "設備報修",
             [
                 {
                     "node_id": "collect_repair_info",
-                    "name": "收集报修信息",
+                    "name": "收集報修信息",
                     "expected_user_info": ["reporter_name", "asset_id", "issue_desc"],
                     "allowed_actions": ["ask_user"],
                 },
                 {
                     "node_id": "reply_ticket_result",
-                    "name": "反馈工单结果",
+                    "name": "反饋工單結果",
                     "expected_user_info": [],
                     "allowed_actions": ["answer_user", "handoff_human"],
                 },
@@ -1932,21 +1932,21 @@ def _refund_skill() -> Skill:
     return Skill(
         tenant_id="tenant_demo",
         skill_id="refund",
-        name="售后退款流程",
+        name="售後退款流程",
         content_json=_graph_content(
             "refund",
-            "售后退款流程",
+            "售後退款流程",
             [
                 {
                     "node_id": "check_refund",
                     "type": "tool_call",
-                    "name": "核实退款条件",
+                    "name": "核實退款條件",
                     "expected_user_info": ["order_id", "refund_reason"],
                     "allowed_actions": ["continue_flow", "call_tool:order.query"],
                 },
                 {
                     "node_id": "reply_result",
-                    "name": "反馈结果",
+                    "name": "反饋結果",
                     "expected_user_info": [],
                     "allowed_actions": ["answer_user", "handoff_human"],
                 },
@@ -1961,57 +1961,57 @@ def _parallel_audit_skill(edges: list[dict[str, object]]) -> Skill:
     return Skill(
         tenant_id="tenant_demo",
         skill_id="skill_parallel_audit",
-        name="并行审核",
+        name="並行審核",
         content_json={
             "skill_id": "skill_parallel_audit",
-            "name": "并行审核",
+            "name": "並行審核",
             "required_info": ["message_content"],
             "nodes": [
                 {
                     "node_id": "start",
                     "type": "collect_info",
                     "name": "收集信息",
-                    "instruction": "收集用户报文。",
+                    "instruction": "收集用戶報文。",
                     "expected_user_info": ["message_content"],
                     "allowed_actions": ["ask_user"],
                 },
                 {
                     "node_id": "check_payee",
                     "type": "condition",
-                    "name": "收款方一致性检查",
-                    "instruction": "检查收款方是否一致。",
+                    "name": "收款方一致性檢查",
+                    "instruction": "檢查收款方是否一致。",
                     "expected_user_info": [],
                     "allowed_actions": ["continue_flow"],
                 },
                 {
                     "node_id": "check_sensitive",
                     "type": "condition",
-                    "name": "敏感词检查",
-                    "instruction": "检查敏感词。",
+                    "name": "敏感詞檢查",
+                    "instruction": "檢查敏感詞。",
                     "expected_user_info": [],
                     "allowed_actions": ["continue_flow"],
                 },
                 {
                     "node_id": "approve",
                     "type": "response",
-                    "name": "通过",
-                    "instruction": "反馈通过。",
+                    "name": "通過",
+                    "instruction": "反饋通過。",
                     "expected_user_info": [],
                     "allowed_actions": ["answer_user"],
                 },
                 {
                     "node_id": "reject",
                     "type": "response",
-                    "name": "拒绝",
-                    "instruction": "反馈拒绝。",
+                    "name": "拒絕",
+                    "instruction": "反饋拒絕。",
                     "expected_user_info": [],
                     "allowed_actions": ["answer_user"],
                 },
                 {
                     "node_id": "report",
                     "type": "response",
-                    "name": "生成报告",
-                    "instruction": "汇总检查结果。",
+                    "name": "生成報告",
+                    "instruction": "彙總檢查結果。",
                     "expected_user_info": [],
                     "allowed_actions": ["answer_user"],
                 },
@@ -2036,14 +2036,14 @@ def _refund_collect_terminal_skill() -> Skill:
     return Skill(
         tenant_id="tenant_demo",
         skill_id="refund",
-        name="售后退款流程",
+        name="售後退款流程",
         content_json=_graph_content(
             "refund",
-            "售后退款流程",
+            "售後退款流程",
             [
                 {
                     "node_id": "collect_order",
-                    "name": "收集订单号",
+                    "name": "收集訂單號",
                     "expected_user_info": ["order_id"],
                     "allowed_actions": ["ask_user", "continue_flow"],
                 },
@@ -2064,7 +2064,7 @@ def _refund_tool() -> Tool:
     return Tool(
         tenant_id="tenant_demo",
         name="order.query",
-        display_name="订单查询",
+        display_name="訂單查詢",
         method="POST",
         url="http://localhost:8000/api/mock/order/query",
         input_schema={
@@ -2084,21 +2084,21 @@ def _refund_skill_with_late_collect_step() -> Skill:
     return Skill(
         tenant_id="tenant_demo",
         skill_id="refund",
-        name="售后退款流程",
+        name="售後退款流程",
         content_json=_graph_content(
             "refund",
-            "售后退款流程",
+            "售後退款流程",
             [
                 {
                     "node_id": "collect_order",
                     "type": "tool_call",
-                    "name": "收集订单",
+                    "name": "收集訂單",
                     "expected_user_info": ["order_id"],
                     "allowed_actions": ["ask_user", "call_tool:order.query"],
                 },
                 {
                     "node_id": "check_refund",
-                    "name": "查询退款资格",
+                    "name": "查詢退款資格",
                     "expected_user_info": [],
                     "allowed_actions": ["answer_user", "handoff_human"],
                 },
@@ -2118,7 +2118,7 @@ def _refund_skill_with_late_collect_step() -> Skill:
 def _refund_tool_call():
     return ToolCall(
         name="order.query",
-        arguments={"order_id": "A12345", "refund_reason": "商品质量"},
+        arguments={"order_id": "A12345", "refund_reason": "商品質量"},
     )
 
 
@@ -2201,7 +2201,7 @@ def _graph_content(
                 "source_node_id": normalized_nodes[index]["node_id"],
                 "next_node_id": normalized_nodes[index + 1]["node_id"],
                 "priority": index,
-                "label": "默认推进",
+                "label": "默認推進",
             }
             for index in range(len(normalized_nodes) - 1)
         ],
@@ -2214,27 +2214,27 @@ def _purchase_skill() -> Skill:
     return Skill(
         tenant_id="tenant_demo",
         skill_id="purchase",
-        name="购买商品",
+        name="購買商品",
         content_json=_graph_content(
             "purchase",
-            "购买商品",
+            "購買商品",
             [
                 {
                     "node_id": "collect_user_name",
-                    "name": "收集用户与商品",
+                    "name": "收集用戶與商品",
                     "expected_user_info": ["user_name", "product_id", "quantity"],
                     "allowed_actions": ["ask_user"],
                 },
                 {
                     "node_id": "confirm_product",
                     "type": "tool_call",
-                    "name": "创建订单",
+                    "name": "創建訂單",
                     "expected_user_info": ["product_id"],
                     "allowed_actions": ["call_tool:product.purchase", "call_tool:order.add"],
                 },
                 {
                     "node_id": "reply_result",
-                    "name": "反馈订单",
+                    "name": "反饋訂單",
                     "expected_user_info": [],
                     "allowed_actions": ["answer_user"],
                 },
@@ -2258,7 +2258,7 @@ def _purchase_tool() -> Tool:
     return Tool(
         tenant_id="tenant_demo",
         name="product.purchase",
-        display_name="购买商品",
+        display_name="購買商品",
         method="POST",
         url="http://localhost:8000/api/mock/product/purchase",
         input_schema={
@@ -2278,7 +2278,7 @@ def _order_add_tool() -> Tool:
     return Tool(
         tenant_id="tenant_demo",
         name="order.add",
-        display_name="订单添加",
+        display_name="訂單添加",
         method="POST",
         url="http://localhost:8000/api/mock/order/add",
         input_schema={
@@ -2294,10 +2294,10 @@ def _price_compare_skill() -> Skill:
     return Skill(
         tenant_id="tenant_demo",
         skill_id="price_compare",
-        name="商品比价",
+        name="商品比價",
         content_json=_graph_content(
             "price_compare",
-            "商品比价",
+            "商品比價",
             [
                 {
                     "node_id": "collect_products",
@@ -2308,13 +2308,13 @@ def _price_compare_skill() -> Skill:
                 {
                     "node_id": "query_price",
                     "type": "tool_call",
-                    "name": "查询价格",
+                    "name": "查詢價格",
                     "expected_user_info": [],
                     "allowed_actions": ["call_tool:product.price_query"],
                 },
                 {
                     "node_id": "reply_result",
-                    "name": "反馈结果",
+                    "name": "反饋結果",
                     "expected_user_info": [],
                     "allowed_actions": ["answer_user"],
                 },
@@ -2329,7 +2329,7 @@ def _price_query_tool() -> Tool:
     return Tool(
         tenant_id="tenant_demo",
         name="product.price_query",
-        display_name="商品价格查询",
+        display_name="商品價格查詢",
         method="POST",
         url="http://localhost:8000/api/mock/product/price-query",
         input_schema={
@@ -2393,13 +2393,13 @@ def _refund_skill_with_tool_collect_step() -> Skill:
                 {
                     "node_id": "collect_order",
                     "type": "tool_call",
-                    "name": "收集订单",
+                    "name": "收集訂單",
                     "expected_user_info": ["order_id"],
                     "allowed_actions": ["ask_user", "call_tool:order.query"],
                 },
                 {
                     "node_id": "reply_result",
-                    "name": "反馈结果",
+                    "name": "反饋結果",
                     "expected_user_info": [],
                     "allowed_actions": ["answer_user"],
                 },

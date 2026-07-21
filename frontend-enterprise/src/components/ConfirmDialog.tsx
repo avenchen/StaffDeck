@@ -40,7 +40,7 @@ export function ConfirmDialog({
   onOpenChange,
   title,
   description,
-  confirmText = '删除',
+  confirmText = '刪除',
   cancelText = '取消',
   onConfirm,
   loading = false,

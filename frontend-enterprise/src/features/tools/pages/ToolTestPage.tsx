@@ -25,7 +25,7 @@ export function ToolTestPage({ currentUser, onLogout }: ToolPageProps = {}) {
   const { data: tool, loading } = useApiQuery<ToolRead>(
     toolId ? () => toolsApi.get(toolId, currentAgentId()) : null,
     [toolId],
-    { onError: (error) => notify.error(error.message || '加载工具失败') },
+    { onError: (error) => notify.error(error.message || '加載工具失敗') },
   );
 
   return (
@@ -33,8 +33,8 @@ export function ToolTestPage({ currentUser, onLogout }: ToolPageProps = {}) {
       <AppHeader
         onLogout={onLogout}
         userName={currentUser?.username}
-        title="工具测试"
-        description="用测试参数直接调用已保存工具，检查员工后续调用时的实际返回。"
+        title="工具測試"
+        description="用測試參數直接調用已保存工具，檢查員工後續調用時的實際返回。"
       />
       <div className="mt-[20px] mb-[16px] flex flex-wrap justify-end gap-[16px]">
         <UIButton variant="outline" onClick={() => navigate('/enterprise/tools')} className={RETURN_BUTTON_CLASS}>
@@ -48,7 +48,7 @@ export function ToolTestPage({ currentUser, onLogout }: ToolPageProps = {}) {
             className={RETURN_BUTTON_CLASS}
           >
             <IconEdit className="size-3.5" />
-            编辑工具
+            編輯工具
           </UIButton>
         )}
       </div>
@@ -66,11 +66,11 @@ export function ToolTestPage({ currentUser, onLogout }: ToolPageProps = {}) {
                     {tool.display_name || tool.name}
                   </h4>
                   <p className="mb-[10px] text-[13px] leading-[1.65] wrap-break-word text-[#858b9c]">
-                    {tool.description || '暂无描述'}
+                    {tool.description || '暫無描述'}
                   </p>
                   <div className="flex flex-wrap items-center gap-[6px]">
                     <StatusBadge tone={tool.tool_type === 'mcp' ? 'blue' : 'gray'}>{toolTypeLabel(tool)}</StatusBadge>
-                    <StatusBadge tone={tool.enabled ? 'green' : 'gray'}>{tool.enabled ? '已启用' : '已停用'}</StatusBadge>
+                    <StatusBadge tone={tool.enabled ? 'green' : 'gray'}>{tool.enabled ? '已啟用' : '已停用'}</StatusBadge>
                     <StatusBadge tone="gray">{tool.method}</StatusBadge>
                   </div>
                 </div>
@@ -79,8 +79,8 @@ export function ToolTestPage({ currentUser, onLogout }: ToolPageProps = {}) {
               <div className="grid grid-cols-2 gap-[10px] md:grid-cols-4">
                 {[
                   { label: '工具 ID', value: tool.name },
-                  { label: '输入字段', value: schemaPropertyCount(tool.input_schema) },
-                  { label: '输出字段', value: schemaPropertyCount(tool.output_schema) },
+                  { label: '輸入字段', value: schemaPropertyCount(tool.input_schema) },
+                  { label: '輸出字段', value: schemaPropertyCount(tool.output_schema) },
                   { label: '最近更新', value: formatDateTime(tool.updated_at) },
                 ].map((item) => (
                   <div
@@ -96,7 +96,7 @@ export function ToolTestPage({ currentUser, onLogout }: ToolPageProps = {}) {
               </div>
 
               <div className="flex flex-col gap-[8px] rounded-[12px] border border-[#eceef1] bg-[#fafbfc] px-[16px] py-[14px]">
-                <span className="text-[12px] font-semibold text-[#858b9c]">调用地址</span>
+                <span className="text-[12px] font-semibold text-[#858b9c]">調用地址</span>
                 <code className="block font-mono text-[13px] leading-[1.6] wrap-break-word text-[#18181a]">
                   {tool.method} {tool.url}
                 </code>

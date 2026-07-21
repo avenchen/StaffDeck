@@ -44,7 +44,7 @@ export default function DebugPage() {
       setLastTurn(result);
       setMessages((items) => [...items, { role: 'assistant', content: result.reply }]);
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '发送失败');
+      notify.error(error instanceof Error ? error.message : '發送失敗');
     } finally {
       setLoading(false);
     }
@@ -53,7 +53,7 @@ export default function DebugPage() {
   return (
     <>
       <div className="page-title">
-        <h3>Agent 调试</h3>
+        <h3>Agent 調試</h3>
         <Input
           className="page-field w-[240px]"
           value={sessionId}
@@ -82,11 +82,11 @@ export default function DebugPage() {
                       void send();
                     }
                   }}
-                  placeholder="输入调试消息"
+                  placeholder="輸入調試消息"
                 />
                 <Button disabled={loading} onClick={() => void send()}>
                   <SendOutlined />
-                  发送
+                  發送
                 </Button>
               </div>
             </div>

@@ -123,7 +123,7 @@ export default function DashboardPage({
           }
         }
       })
-      .catch((error) => notify.error(error instanceof Error ? error.message : '加载数字员工档案失败'))
+      .catch((error) => notify.error(error instanceof Error ? error.message : '加載數字員工檔案失敗'))
       .finally(() => setLoaded(true));
   }, [agentId, currentUser, isAdmin]);
 
@@ -158,7 +158,7 @@ export default function DashboardPage({
         if (cancelled) return;
         setReplyStats({ total: 0, today: 0, byDay: {} });
         setActivityEvents([]);
-        notify.error(error instanceof Error ? error.message : '加载员工工作记录失败');
+        notify.error(error instanceof Error ? error.message : '加載員工工作記錄失敗');
       }
     }
     void loadWorkRecord();
@@ -172,7 +172,7 @@ export default function DashboardPage({
   const negativeFeedback = skills.reduce((sum, item) => sum + (item.total_negative_feedback_count || 0), 0);
   const visibleKnowledgeBases = knowledgeBases.filter((item) => !isEmptyDefaultKnowledgeBase(item));
 
-  // Avoid flashing the 开放广场 / empty state before the agents API resolves,
+  // Avoid flashing the 開放廣場 / empty state before the agents API resolves,
   // which would otherwise briefly render before the employee profile appears.
   if (!loaded && agents.length === 0) {
     return <div className="page dashboard-page" />;
@@ -182,13 +182,13 @@ export default function DashboardPage({
     return (
       <div className="page dashboard-page">
         <div className="empty-workspace-card p-[24px]">
-          <h3 className="m-0 text-[20px] font-semibold text-foreground">还没有数字员工</h3>
+          <h3 className="m-0 text-[20px] font-semibold text-foreground">還沒有數字員工</h3>
           <p className="mt-[8px] text-[14px] text-muted-foreground">
-            点击左下角「新建数字员工」开始创建，或前往员工广场选择已发布的员工。
+            點擊左下角「新建數字員工」開始創建，或前往員工廣場選擇已發佈的員工。
           </p>
           <div className="mt-[16px] flex gap-[8px]">
-            <UiButton onClick={() => navigate('/enterprise/agents')}>查看我的数字员工</UiButton>
-            <UiButton variant="outline" onClick={() => navigate('/enterprise/feedback')}>查看对话日志</UiButton>
+            <UiButton onClick={() => navigate('/enterprise/agents')}>查看我的數字員工</UiButton>
+            <UiButton variant="outline" onClick={() => navigate('/enterprise/feedback')}>查看對話日誌</UiButton>
           </div>
         </div>
       </div>
@@ -199,34 +199,34 @@ export default function DashboardPage({
     return (
       <div className="page dashboard-page">
         <div className="page-title">
-          <h3>开放广场</h3>
+          <h3>開放廣場</h3>
         </div>
         <section className="employee-hero org-hero">
           <div>
-            <span className="section-kicker">开放广场</span>
-            <h2 className="ui-typography">开放广场</h2>
+            <span className="section-kicker">開放廣場</span>
+            <h2 className="ui-typography">開放廣場</h2>
             <p className="ui-typography">
-              汇集所有可共享的 SOP、知识库、技能和工具，新建数字员工时可以从这里复制配置作为起点。
+              彙集所有可共享的 SOP、知識庫、技能和工具，新建數字員工時可以從這裡複製配置作為起點。
             </p>
           </div>
           <div className="employee-hero-metrics">
-            <MetricTile label="员工" value={agents.filter((item) => !item.is_overall).length} />
-            <MetricTile label="对话" value={sessions.length} />
-            <MetricTile label="反馈" value={feedbackSummary?.total_feedback || 0} />
+            <MetricTile label="員工" value={agents.filter((item) => !item.is_overall).length} />
+            <MetricTile label="對話" value={sessions.length} />
+            <MetricTile label="反饋" value={feedbackSummary?.total_feedback || 0} />
           </div>
         </section>
         <div className="org-dashboard-grid">
           <DashboardStat title="SOP" value={skills.length} icon={<StaffdeckIcon name="filter" />} />
           <DashboardStat title="技能" value={generalSkills.length} icon={<StaffdeckIcon name="spark" />} />
-          <DashboardStat title="知识库" value={visibleKnowledgeBases.length} icon={<StaffdeckIcon name="file" />} />
+          <DashboardStat title="知識庫" value={visibleKnowledgeBases.length} icon={<StaffdeckIcon name="file" />} />
           <DashboardStat title="可用工具" value={tools.filter((item) => item.enabled).length} icon={<StaffdeckIcon name="tool" />} />
-          <DashboardStat title="SOP 调用" value={totalCalls} icon={<StaffdeckIcon name="chat" />} />
-          <DashboardStat title="好评" value={positiveFeedback || feedbackSummary?.up_count || 0} icon={<StaffdeckIcon name="chat" />} />
-          <DashboardStat title="差评" value={negativeFeedback || feedbackSummary?.down_count || 0} icon={<StaffdeckIcon name="chat" />} />
+          <DashboardStat title="SOP 調用" value={totalCalls} icon={<StaffdeckIcon name="chat" />} />
+          <DashboardStat title="好評" value={positiveFeedback || feedbackSummary?.up_count || 0} icon={<StaffdeckIcon name="chat" />} />
+          <DashboardStat title="差評" value={negativeFeedback || feedbackSummary?.down_count || 0} icon={<StaffdeckIcon name="chat" />} />
           <div className="org-dashboard-card">
             <div className="ui-card-body p-[24px]">
               <span className="org-dashboard-icon"><StaffdeckIcon name="model" /></span>
-              <span className="text-[13px] text-muted-foreground">默认模型</span>
+              <span className="text-[13px] text-muted-foreground">默認模型</span>
               <span className="text-[15px] text-foreground">{defaultModel ? `${defaultModel.name} / ${defaultModel.model}` : '未配置'}</span>
             </div>
           </div>
@@ -254,7 +254,7 @@ export default function DashboardPage({
     ? selectedAgent.metadata.system_prompt_summary
     : '';
   const systemSummary = compactSummary(
-    staffdeckDisplayText(selectedAgent.persona_prompt || systemPromptSummary || selectedAgent.description || `${employee.roleName}，负责接收任务、调用知识库、执行 SOP 并沉淀对话质量反馈。`),
+    staffdeckDisplayText(selectedAgent.persona_prompt || systemPromptSummary || selectedAgent.description || `${employee.roleName}，負責接收任務、調用知識庫、執行 SOP 並沉澱對話質量反饋。`),
     132,
   );
 
@@ -283,13 +283,13 @@ export default function DashboardPage({
                 <button
                   type="button"
                   onClick={() => setAvatarEditorOpen(true)}
-                  aria-label="更换头像"
+                  aria-label="更換頭像"
                   className="group relative block cursor-pointer border-0 bg-transparent p-0"
                 >
                   {heroAvatar}
                   <span className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-center gap-1 bg-black/45 py-1 text-[11px] text-white opacity-0 transition-opacity group-hover:opacity-100">
                     <IconAccount className="size-3" />
-                    更换头像
+                    更換頭像
                   </span>
                 </button>
               ) : (
@@ -302,7 +302,7 @@ export default function DashboardPage({
                   onClick={() => { window.location.href = '/workspace/chat'; }}
                 >
                   <IconChat className="size-[14px]" />
-                  去对话
+                  去對話
                 </UiButton>
                 {canEditSelectedAgent && (
                   <UiButton
@@ -311,7 +311,7 @@ export default function DashboardPage({
                     onClick={() => setProfileEditorOpen(true)}
                   >
                     <IconEdit className="size-[14px]" />
-                    编辑资料
+                    編輯資料
                   </UiButton>
                 )}
               </div>
@@ -332,11 +332,11 @@ export default function DashboardPage({
                     style={{ background: selectedAgent.status === 'active' ? '#22c55e' : '#c4c9d4' }}
                   />
                   <span className="text-[12px] text-[#757f9c]">
-                    {selectedAgent.status === 'active' ? '在线' : '下线'}
+                    {selectedAgent.status === 'active' ? '在線' : '下線'}
                   </span>
                 </span>
-                <span className="text-[12px] text-[#757f9c]">创建者：{employeeCreator}</span>
-                <span className="text-[12px] text-[#757f9c]">入职时间：{employee.onboardedAt}</span>
+                <span className="text-[12px] text-[#757f9c]">創建者：{employeeCreator}</span>
+                <span className="text-[12px] text-[#757f9c]">入職時間：{employee.onboardedAt}</span>
                 <div className="flex flex-wrap items-center gap-3">
                   {employee.workStyles.slice(0, 3).map((item) => (
                     <Badge
@@ -355,10 +355,10 @@ export default function DashboardPage({
               </p>
 
               <div className="flex w-full max-w-[514px] gap-3">
-                <HeroMetric value={selectedKnowledgeCount} label="资料" />
+                <HeroMetric value={selectedKnowledgeCount} label="資料" />
                 <HeroMetric value={selectedGeneralSkillCount} label="技能" />
                 <HeroMetric value={selectedSkillCount} label="SOP" />
-                <HeroMetric value={activeScheduledTasks.length} label="定时任务" />
+                <HeroMetric value={activeScheduledTasks.length} label="定時任務" />
               </div>
             </div>
           </div>
@@ -418,7 +418,7 @@ function isEmptyDefaultKnowledgeBase(item: KnowledgeBaseRead): boolean {
     return true;
   }
   return (
-    item.name === '默认知识库'
+    item.name === '默認知識庫'
     && item.document_count === 0
     && item.bucket_count === 0
     && item.chunk_count === 0
@@ -442,10 +442,10 @@ const PROFILE_TABS: {
   Icon: ComponentType<SVGProps<SVGSVGElement>>;
   route: EnterpriseRoute;
 }[] = [
-  { key: 'work', label: '工作记录', Icon: IconProfileFile, route: EnterpriseRoute.Dashboard },
-  { key: 'scheduled', label: '定时任务', Icon: IconProfileAlarm, route: EnterpriseRoute.ScheduledTasks },
-  { key: 'memories', label: '记忆', Icon: IconProfileHistory, route: EnterpriseRoute.Memories },
-  { key: 'logs', label: '对话日志', Icon: IconProfileCalendar, route: EnterpriseRoute.Feedback },
+  { key: 'work', label: '工作記錄', Icon: IconProfileFile, route: EnterpriseRoute.Dashboard },
+  { key: 'scheduled', label: '定時任務', Icon: IconProfileAlarm, route: EnterpriseRoute.ScheduledTasks },
+  { key: 'memories', label: '記憶', Icon: IconProfileHistory, route: EnterpriseRoute.Memories },
+  { key: 'logs', label: '對話日誌', Icon: IconProfileCalendar, route: EnterpriseRoute.Feedback },
 ];
 
 function EmployeeProfileTabs({ activeKey = 'work' }: { activeKey?: ProfileTabKey }) {
@@ -460,7 +460,7 @@ function EmployeeProfileTabs({ activeKey = 'work' }: { activeKey?: ProfileTabKey
       className="flex w-full flex-col items-center"
     >
       <TabsList
-        aria-label="个人档案分区"
+        aria-label="個人檔案分區"
         className="h-[35px]! w-[504px] max-w-full gap-2 rounded-none bg-transparent p-0"
       >
         {PROFILE_TABS.map(({ key, label, Icon }) => (

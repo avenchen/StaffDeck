@@ -7,11 +7,11 @@ import IconChevronDown from '../../assets/icons/chevron-down.svg?react';
 export type PlatformColumnProps = {
   /** Small 14px glyph shown before the title. */
   icon: ReactNode;
-  /** Column title, e.g. 数字员工广场. */
+  /** Column title, e.g. 數字員工廣場. */
   title: ReactNode;
   /** Count shown on the right of the header. */
   count: number;
-  /** Unit label rendered after the count, e.g. 员工 / 内容. */
+  /** Unit label rendered after the count, e.g. 員工 / 內容. */
   countLabel: string;
   /** Filter chips rendered under the title. */
   filters?: string[];
@@ -29,8 +29,8 @@ export type PlatformColumnProps = {
 };
 
 /**
- * Shared shell for a single 开放广场 column. It captures the parts that repeat
- * across all five modules (数字员工 / 知识库 / 技能 / SOP / 工具): the icon+title
+ * Shared shell for a single 開放廣場 column. It captures the parts that repeat
+ * across all five modules (數字員工 / 知識庫 / 技能 / SOP / 工具): the icon+title
  * header with a count, the filter chip row, the divider, the card list (or an
  * empty placeholder) and the "查看全部" footer button. Each module only supplies
  * its own cards via `children`.
@@ -43,7 +43,7 @@ export default function PlatformColumn({
   filters,
   loading = false,
   isEmpty = false,
-  emptyText = '暂无开放内容',
+  emptyText = '暫無開放內容',
   onViewAll,
   children,
   className,
@@ -101,7 +101,7 @@ export default function PlatformColumn({
                   {emptyText}
                 </p>
                 <p className="mt-[4px] text-[10px] leading-[16px] text-[#a7adbb]">
-                  发布内容后会在这里展示
+                  發佈內容後會在這裡展示
                 </p>
               </div>
             </div>

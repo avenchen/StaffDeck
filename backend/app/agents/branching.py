@@ -548,7 +548,7 @@ def update_branch_skill(
     agent_id: str,
     skill: Skill,
     content: dict[str, Any],
-    change_summary: str = "分支改写",
+    change_summary: str = "分支改寫",
 ) -> AgentSkillBranch:
     branch = ensure_agent_skill_branch(db, tenant_id, agent_id, skill)
     previous_status = branch.status
@@ -580,7 +580,7 @@ def sync_branch_from_overall(
     branch.status = "active" if skill.status == "published" else "inactive"
     branch.sync_state = "synced"
     branch.updated_at = utc_now()
-    _ensure_branch_version(db, branch, "同步整体版本")
+    _ensure_branch_version(db, branch, "同步整體版本")
     return branch
 
 
@@ -621,7 +621,7 @@ def promote_branch_to_overall(db: Session, tenant_id: str, branch: AgentSkillBra
     branch.content_json = content
     branch.sync_state = "synced"
     branch.updated_at = utc_now()
-    _ensure_branch_version(db, branch, "推送到整体")
+    _ensure_branch_version(db, branch, "推送到整體")
     return skill
 
 

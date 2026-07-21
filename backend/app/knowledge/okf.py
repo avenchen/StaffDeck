@@ -269,7 +269,7 @@ def parse_okf_bundle(filename: str, content: bytes) -> list[ParsedOkfDocument]:
     if suffix in {".md", ".markdown"}:
         concept_id = normalize_concept_id(Path(filename).with_suffix("").as_posix())
         return [parse_okf_markdown(concept_id, _decode_text(content))]
-    raise ValueError("OKF 导入仅支持 .zip 或 .md 文件。")
+    raise ValueError("OKF 導入僅支持 .zip 或 .md 文件。")
 
 
 def create_concept_evidence_rows(
@@ -376,7 +376,7 @@ def lint_okf_concepts(
         if not row.frontmatter_json.get("type"):
             issues.append(_lint_issue(row, "missing_type", "概念缺少 OKF 必需 type 字段。"))
         if not row.citations_json and row.concept_type not in {"Topic", "Query Analysis"}:
-            issues.append(_lint_issue(row, "missing_citation", "概念没有 # Citations 或外部来源引用。"))
+            issues.append(_lint_issue(row, "missing_citation", "概念沒有 # Citations 或外部來源引用。"))
         for link in row.links_json or []:
             target = normalize_concept_id(str(link.get("target") or "").removeprefix("/").removesuffix(".md"))
             if not target:
@@ -384,17 +384,17 @@ def lint_okf_concepts(
             if target in inbound:
                 inbound[target] += 1
             elif not str(link.get("target") or "").startswith(("http://", "https://", "ultrarag://")):
-                issues.append(_lint_issue(row, "broken_link", f"链接目标不存在：{link.get('target')}"))
+                issues.append(_lint_issue(row, "broken_link", f"鏈接目標不存在：{link.get('target')}"))
     for row in concepts:
         if row.concept_type not in {"Source Document"} and inbound.get(row.concept_id, 0) == 0:
-            issues.append(_lint_issue(row, "orphan_concept", "概念没有入站链接，可能难以被渐进发现。"))
+            issues.append(_lint_issue(row, "orphan_concept", "概念沒有入站鏈接，可能難以被漸進發現。"))
     title_groups: dict[str, list[KnowledgeConcept]] = {}
     for row in concepts:
         title_groups.setdefault(row.title.strip().lower(), []).append(row)
     for rows in title_groups.values():
         if len(rows) > 1:
             for row in rows:
-                issues.append(_lint_issue(row, "duplicate_title", f"存在重复标题：{row.title}"))
+                issues.append(_lint_issue(row, "duplicate_title", f"存在重複標題：{row.title}"))
     return issues
 
 
@@ -417,7 +417,7 @@ def persist_lint_issues(
         ).all()
     )
     for issue in issues[:100]:
-        title = str(issue.get("title") or issue.get("issue_type") or "OKF 健康检查")
+        title = str(issue.get("title") or issue.get("issue_type") or "OKF 健康檢查")
         if title in existing_titles:
             continue
         existing_titles.add(title)
@@ -527,15 +527,15 @@ def _source_document_concept(
         [
             "# Summary",
             "",
-            summary or "由原始资料生成的 OKF 文档入口。",
+            summary or "由原始資料生成的 OKF 文檔入口。",
             "",
             "# Outline",
             "",
-            *(outline_lines or ["- 暂无章节结构"]),
+            *(outline_lines or ["- 暫無章節結構"]),
             "",
             "# Knowledge Buckets",
             "",
-            *(bucket_lines or ["- 暂无知识桶"]),
+            *(bucket_lines or ["- 暫無知識桶"]),
             "",
             "# Citations",
             "",
@@ -545,7 +545,7 @@ def _source_document_concept(
     frontmatter = {
         "type": "Source Document",
         "title": title,
-        "description": summary or f"从 {document.filename} 生成的原始资料入口页。",
+        "description": summary or f"從 {document.filename} 生成的原始資料入口頁。",
         "resource": f"ultrarag://knowledge/documents/{document.id}",
         "tags": ["source", "business-knowledge"],
         "timestamp": document.updated_at.isoformat(),
@@ -564,7 +564,7 @@ def _source_document_concept(
 def _source_section_concept(document: KnowledgeDocument, document_concept_id: str, section: dict[str, Any]) -> dict[str, Any]:
     section_id = str(section.get("section_id") or safe_path_segment(section.get("title"), "section"))
     concept_id = f"{document_concept_id}/sections/{safe_path_segment(section_id)}"
-    title = str(section.get("path") or section.get("title") or "未命名章节")
+    title = str(section.get("path") or section.get("title") or "未命名章節")
     summary = str(section.get("summary") or "")
     content = str(section.get("content") or "")
     body = "\n".join(
@@ -791,8 +791,8 @@ def _query_tokens(query: str) -> list[str]:
         tokens.append(text)
         if re.fullmatch(r"[\u4e00-\u9fff]{3,}", text):
             # Chinese queries usually have no whitespace. Add short n-grams so
-            # "刚创建订单想取消" can match concept pages containing
-            # "取消刚创建的订单" or "订单处理".
+            # "剛創建訂單想取消" can match concept pages containing
+            # "取消剛創建的訂單" or "訂單處理".
             for size in (4, 3, 2):
                 if len(text) <= size:
                     continue

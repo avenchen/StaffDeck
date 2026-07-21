@@ -23,14 +23,14 @@ class MCPClientError(RuntimeError):
 
 
 # --------------------------------------------------------------------------- #
-# Transport 归一化
+# Transport 歸一化
 # --------------------------------------------------------------------------- #
 
 def normalize_transport(config: dict[str, Any]) -> str:
-    """从连接配置推断 transport 类型。
+    """從連接配置推斷 transport 類型。
 
-    优先使用显式 transport 字段；否则根据 server/command/url 推断，
-    以兼容历史配置。streamable_http 归一化为 http。
+    優先使用顯式 transport 字段；否則根據 server/command/url 推斷，
+    以兼容歷史配置。streamable_http 歸一化為 http。
     """
     raw = str(config.get("transport") or "").strip().lower()
     if raw == "streamable_http":
@@ -48,7 +48,7 @@ def normalize_transport(config: dict[str, Any]) -> str:
 
 
 # --------------------------------------------------------------------------- #
-# 对外入口：调用工具 / 列举工具
+# 對外入口：調用工具 / 列舉工具
 # --------------------------------------------------------------------------- #
 
 def execute_mcp_tool(
@@ -57,11 +57,11 @@ def execute_mcp_tool(
     timeout_seconds: float = 10,
     tool_name: str | None = None,
 ) -> Any:
-    """连接 MCP server 并调用单个工具。
+    """連接 MCP server 並調用單個工具。
 
-    config 是「server 连接配置」（transport/url/command/headers 等）。
-    tool_name 若显式传入则优先使用，否则回退到 config 里的 tool 字段
-    （兼容历史「一个 config 一个 tool」的形态）。
+    config 是「server 連接配置」（transport/url/command/headers 等）。
+    tool_name 若顯式傳入則優先使用，否則回退到 config 裡的 tool 字段
+    （兼容歷史「一個 config 一個 tool」的形態）。
     """
     normalized = dict(config or {})
     transport = normalize_transport(normalized)
@@ -85,9 +85,9 @@ def list_mcp_tools(
     config: dict[str, Any],
     timeout_seconds: float = 10,
 ) -> list[dict[str, Any]]:
-    """连接 MCP server 并通过 tools/list 发现工具列表。
+    """連接 MCP server 並通過 tools/list 發現工具列表。
 
-    返回标准化后的工具定义列表，每项包含 name / description /
+    返回標準化後的工具定義列表，每項包含 name / description /
     input_schema / output_schema（若 server 提供）。
     """
     normalized = dict(config or {})
@@ -113,7 +113,7 @@ def list_mcp_tools(
 def _resolve_tool_name(config: dict[str, Any], override: str | None) -> str:
     name = str(override or config.get("tool") or config.get("tool_name") or config.get("name") or "").strip()
     if not name:
-        raise MCPClientError("MCP 调用缺少 tool 名称。")
+        raise MCPClientError("MCP 調用缺少 tool 名稱。")
     return name
 
 
@@ -129,13 +129,13 @@ def _normalize_tool_definition(item: dict[str, Any]) -> dict[str, Any]:
 
 
 # --------------------------------------------------------------------------- #
-# JSON-RPC 会话基类
+# JSON-RPC 會話基類
 # --------------------------------------------------------------------------- #
 
 class _MCPSession:
-    """封装一次 MCP 连接的 initialize + list/call 交互。
+    """封裝一次 MCP 連接的 initialize + list/call 交互。
 
-    子类实现 `_request`（单次 JSON-RPC 请求/响应）和资源管理。
+    子類實現 `_request`（單次 JSON-RPC 請求/響應）和資源管理。
     """
 
     def __init__(self, config: dict[str, Any], timeout_seconds: float) -> None:
@@ -162,7 +162,7 @@ class _MCPSession:
         self._request("initialize", _initialize_params())
         self._notify("notifications/initialized", {})
 
-    # 子类实现 ---------------------------------------------------------------
+    # 子類實現 ---------------------------------------------------------------
     def __enter__(self) -> "_MCPSession":
         return self
 
@@ -225,7 +225,7 @@ class _StdioSession(_MCPSession):
 
     def _require_proc(self) -> subprocess.Popen[str]:
         if self._proc is None:
-            raise MCPClientError("MCP stdio 会话未启动。")
+            raise MCPClientError("MCP stdio 會話未啟動。")
         return self._proc
 
 
@@ -237,9 +237,9 @@ def _stdio_command(config: dict[str, Any]) -> list[str]:
     elif isinstance(command, str) and command.strip():
         parts = [command.strip()]
     else:
-        raise MCPClientError("stdio MCP 连接缺少 command。")
+        raise MCPClientError("stdio MCP 連接缺少 command。")
     if not isinstance(args, list):
-        raise MCPClientError("stdio MCP 连接的 args 必须是数组。")
+        raise MCPClientError("stdio MCP 連接的 args 必須是數組。")
     return [*parts, *[str(arg) for arg in args]]
 
 
@@ -267,7 +267,7 @@ class _HttpSession(_MCPSession):
     def _endpoint(self) -> str:
         url = str(self.config.get("url") or self.config.get("endpoint") or "").strip()
         if not url:
-            raise MCPClientError("HTTP MCP 连接缺少 url/endpoint。")
+            raise MCPClientError("HTTP MCP 連接缺少 url/endpoint。")
         return url
 
     def _headers(self) -> dict[str, str]:
@@ -289,7 +289,7 @@ class _HttpSession(_MCPSession):
             response = client.post(self._endpoint(), headers=self._headers(), json=payload)
             response.raise_for_status()
         except httpx.HTTPStatusError as exc:
-            raise MCPClientError(f"HTTP MCP 返回异常状态码：{exc.response.status_code}") from exc
+            raise MCPClientError(f"HTTP MCP 返回異常狀態碼：{exc.response.status_code}") from exc
         except Exception as exc:
             raise MCPClientError(str(exc)) from exc
         session_id = response.headers.get("mcp-session-id")
@@ -297,7 +297,7 @@ class _HttpSession(_MCPSession):
             self._session_id = session_id
         body = _parse_http_mcp_response(response)
         if not isinstance(body, dict):
-            raise MCPClientError("HTTP MCP 返回内容不是 JSON-RPC object。")
+            raise MCPClientError("HTTP MCP 返回內容不是 JSON-RPC object。")
         _raise_json_rpc_error(body)
         return body.get("result")
 
@@ -309,22 +309,22 @@ class _HttpSession(_MCPSession):
 
     def _require_client(self) -> httpx.Client:
         if self._client is None:
-            raise MCPClientError("HTTP MCP 会话未启动。")
+            raise MCPClientError("HTTP MCP 會話未啟動。")
         return self._client
 
 
 def _parse_http_mcp_response(response: httpx.Response) -> Any:
-    """解析 HTTP MCP 响应，兼容纯 JSON 和 SSE 格式（text/event-stream）。"""
+    """解析 HTTP MCP 響應，兼容純 JSON 和 SSE 格式（text/event-stream）。"""
     content_type = response.headers.get("content-type", "")
     if "text/event-stream" in content_type:
         payload = _last_sse_json(response.text)
         if payload is None:
-            raise MCPClientError("SSE 响应中未找到有效的 JSON-RPC data 行。")
+            raise MCPClientError("SSE 響應中未找到有效的 JSON-RPC data 行。")
         return payload
     try:
         return response.json()
     except Exception as exc:
-        raise MCPClientError(f"HTTP MCP 响应解析失败：{exc}") from exc
+        raise MCPClientError(f"HTTP MCP 響應解析失敗：{exc}") from exc
 
 
 # --------------------------------------------------------------------------- #
@@ -334,9 +334,9 @@ def _parse_http_mcp_response(response: httpx.Response) -> Any:
 class _SseSession(_MCPSession):
     """SSE transport（MCP 2024-11-05 HTTP+SSE）。
 
-    连接流程：GET server url 建立 SSE 流，从首个 `event: endpoint`
-    拿到用于发送 JSON-RPC 的消息端点；后续请求 POST 到该端点，
-    响应通过 SSE 流按 id 匹配返回。
+    連接流程：GET server url 建立 SSE 流，從首個 `event: endpoint`
+    拿到用於發送 JSON-RPC 的消息端點；後續請求 POST 到該端點，
+    響應通過 SSE 流按 id 匹配返回。
     """
 
     def __init__(self, config: dict[str, Any], timeout_seconds: float) -> None:
@@ -351,7 +351,7 @@ class _SseSession(_MCPSession):
         self._client = httpx.Client(timeout=httpx.Timeout(self.timeout_seconds, read=None))
         url = str(self.config.get("url") or self.config.get("endpoint") or "").strip()
         if not url:
-            raise MCPClientError("SSE MCP 连接缺少 url/endpoint。")
+            raise MCPClientError("SSE MCP 連接缺少 url/endpoint。")
         raw = self.config.get("headers") if isinstance(self.config.get("headers"), dict) else {}
         headers = {"Accept": "text/event-stream", **{str(k): str(v) for k, v in raw.items()}}
         self._stream_ctx = self._client.stream("GET", url, headers=headers)
@@ -393,7 +393,7 @@ class _SseSession(_MCPSession):
             posted = client.post(str(self._message_url), headers=self._post_headers(), json=payload)
             posted.raise_for_status()
         except httpx.HTTPStatusError as exc:
-            raise MCPClientError(f"SSE MCP 返回异常状态码：{exc.response.status_code}") from exc
+            raise MCPClientError(f"SSE MCP 返回異常狀態碼：{exc.response.status_code}") from exc
         except Exception as exc:
             raise MCPClientError(str(exc)) from exc
         body = self._await_response(request_id)
@@ -416,16 +416,16 @@ class _SseSession(_MCPSession):
                         return payload
             if time.monotonic() > deadline:
                 break
-        raise MCPClientError(f"SSE MCP 等待响应超时：id={expected_id}")
+        raise MCPClientError(f"SSE MCP 等待響應超時：id={expected_id}")
 
     def _require_client(self) -> httpx.Client:
         if self._client is None or self._message_url is None:
-            raise MCPClientError("SSE MCP 会话未启动。")
+            raise MCPClientError("SSE MCP 會話未啟動。")
         return self._client
 
 
 def _iter_sse_events(response: httpx.Response):
-    """迭代 SSE 流，逐个 yield (event_type, data)。"""
+    """迭代 SSE 流，逐個 yield (event_type, data)。"""
     event_type = ""
     data_lines: list[str] = []
     for raw_line in response.iter_lines():
@@ -463,7 +463,7 @@ def _last_sse_json(text: str) -> Any:
 
 
 # --------------------------------------------------------------------------- #
-# 共享工具函数
+# 共享工具函數
 # --------------------------------------------------------------------------- #
 
 def _initialize_params() -> dict[str, Any]:
@@ -495,10 +495,10 @@ def _read_response(
         while True:
             remaining = deadline - time.monotonic()
             if remaining <= 0:
-                raise MCPClientError(f"MCP stdio 等待响应超时：id={expected_id}")
+                raise MCPClientError(f"MCP stdio 等待響應超時：id={expected_id}")
             events = selector.select(remaining)
             if not events:
-                raise MCPClientError(f"MCP stdio 等待响应超时：id={expected_id}")
+                raise MCPClientError(f"MCP stdio 等待響應超時：id={expected_id}")
             line = proc.stdout.readline()
             if not line:
                 stderr = _read_stderr(proc)

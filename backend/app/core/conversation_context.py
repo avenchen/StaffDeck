@@ -11,8 +11,8 @@ RECENT_ROUND_LIMIT = 6
 LONG_SUMMARY_TOKEN_BUDGET = 4_000
 MEDIUM_SUMMARY_TOKEN_BUDGET = 4_000
 ALLOWED_CONTEXT_ROLES = {"user", "assistant"}
-LONG_SUMMARY_PREFIX = "历史的信息可以被总结为："
-MEDIUM_SUMMARY_PREFIX = "近期的历史信息总结为："
+LONG_SUMMARY_PREFIX = "歷史的信息可以被總結為："
+MEDIUM_SUMMARY_PREFIX = "近期的歷史信息總結為："
 
 SummaryBuilder = Callable[[str, str, int], str]
 
@@ -38,13 +38,13 @@ def build_conversation_context(
         if older:
             previous_history = _joined_existing_history(state)
             state["long_term_summary"] = _summarize(
-                "长期历史信息",
+                "長期歷史信息",
                 previous_history,
                 LONG_SUMMARY_TOKEN_BUDGET,
                 summary_builder,
             )
             state["medium_term_summary"] = _summarize(
-                "近期历史信息",
+                "近期歷史信息",
                 _transcript(older),
                 MEDIUM_SUMMARY_TOKEN_BUDGET,
                 summary_builder,
@@ -139,14 +139,14 @@ def _project_messages(
         projected.append(
             {
                 "role": "user",
-                "content": f"{LONG_SUMMARY_PREFIX}\n{long_summary or '暂无长期历史摘要。'}",
+                "content": f"{LONG_SUMMARY_PREFIX}\n{long_summary or '暫無長期歷史摘要。'}",
             }
         )
     if long_summary or medium_summary:
         projected.append(
             {
                 "role": "user",
-                "content": f"{MEDIUM_SUMMARY_PREFIX}\n{medium_summary or '暂无近期历史摘要。'}",
+                "content": f"{MEDIUM_SUMMARY_PREFIX}\n{medium_summary or '暫無近期歷史摘要。'}",
             }
         )
     projected.extend(_public_message(message) for message in recent)

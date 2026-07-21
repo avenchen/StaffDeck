@@ -21,7 +21,7 @@ sign_app_bundle() {
   local app="$1"
   xattr -cr "$app" 2>/dev/null || true
   if [ -n "$MAC_SIGN_ID" ]; then
-    echo "使用 Developer ID 签名"
+    echo "使用 Developer ID 簽名"
     python3 - "$app" <<'PY' | while IFS= read -r item; do
 import subprocess
 import sys
@@ -45,7 +45,7 @@ PY
       sign_code "$item"
     done
   else
-    echo "未配置 MAC_SIGN_ID，使用 ad-hoc 签名"
+    echo "未配置 MAC_SIGN_ID，使用 ad-hoc 簽名"
     find "$app/Contents/Frameworks" -type f -name "*.dylib" 2>/dev/null \
       -exec codesign --force --timestamp=none --sign - {} \; 2>/dev/null || true
     codesign --force --timestamp=none --sign - "$app/Contents/MacOS/staffdeck" 2>/dev/null || true
@@ -53,31 +53,31 @@ PY
   sign_code "$app"
 }
 
-echo "==> [1/5] 构建前端"
+echo "==> [1/5] 構建前端"
 npm --prefix frontend-enterprise run build
 
-echo "==> [2/5] 后端 venv + 运行依赖 + 打包工具"
+echo "==> [2/5] 後端 venv + 運行依賴 + 打包工具"
 cd backend
 if [ ! -x ".venv/bin/pyinstaller" ]; then
-  # 若无 venv（如 CI 全新 checkout），自建并装运行依赖
+  # 若無 venv（如 CI 全新 checkout），自建並裝運行依賴
   if [ ! -x ".venv/bin/python" ]; then
     python3 -m venv .venv
     .venv/bin/python -m ensurepip --upgrade 2>/dev/null || true
   fi
-  # 装运行依赖（从 pyproject 提取；本项目不 editable 安装）
+  # 裝運行依賴（從 pyproject 提取；本項目不 editable 安裝）
   if .venv/bin/python -m pip --version >/dev/null 2>&1; then
     DEPS="$(.venv/bin/python -c "import tomllib,pathlib; print(' '.join(tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['dependencies']))")"
     .venv/bin/python -m pip install -U pip
     .venv/bin/python -m pip install $DEPS "pyinstaller>=6.6.0" "certifi>=2024.2.2"
   elif command -v uv >/dev/null 2>&1; then
-    # 本机 venv 由 uv 管理、无 pip：用 uv pip 补装打包工具（运行依赖已在 venv 中）
+    # 本機 venv 由 uv 管理、無 pip：用 uv pip 補裝打包工具（運行依賴已在 venv 中）
     VIRTUAL_ENV="$(pwd)/.venv" uv pip install "pyinstaller>=6.6.0" "certifi>=2024.2.2"
   else
-    echo "无法安装打包依赖：venv 既无 pip 也无 uv" >&2
+    echo "無法安裝打包依賴：venv 既無 pip 也無 uv" >&2
     exit 1
   fi
 fi
-# macOS Dock 壳依赖 pyobjc（幂等，已装则跳过）
+# macOS Dock 殼依賴 pyobjc（冪等，已裝則跳過）
 if ! .venv/bin/python -c "import AppKit" >/dev/null 2>&1; then
   if .venv/bin/python -m pip --version >/dev/null 2>&1; then
     .venv/bin/python -m pip install "pyobjc-framework-Cocoa>=10.0"
@@ -86,29 +86,29 @@ if ! .venv/bin/python -c "import AppKit" >/dev/null 2>&1; then
   fi
 fi
 
-echo "==> [3/5] PyInstaller 打包（spec 在 macOS 下同时产出 StaffDeck.app）"
+echo "==> [3/5] PyInstaller 打包（spec 在 macOS 下同時產出 StaffDeck.app）"
 .venv/bin/pyinstaller ../packaging/ultrarag.spec --noconfirm \
   --distpath ../packaging/out --workpath ../packaging/build
 cd "$REPO"
 APP="packaging/out/StaffDeck.app"
-test -d "$APP" || { echo "PyInstaller 未产出 $APP"; exit 1; }
+test -d "$APP" || { echo "PyInstaller 未產出 $APP"; exit 1; }
 
-echo "==> [4/5] 附带 python 运行时（放 .app/Contents/Resources/runtime）"
-# 注意：runtime 必须放 Resources 而非 MacOS。放 MacOS 时 codesign 会把 runtime 里
-# 每个文件都当作需签名的代码，附带 python 有大量脚本/符号链接/畸形目录（如 itcl4.2.2），
-# 导致顶层签名失败、密封无效（"a sealed resource is missing or invalid"）→ 无法双击打开。
-# 放 Resources 后按数据资源密封，顶层签名可通过，app 能正常启动。
+echo "==> [4/5] 附帶 python 運行時（放 .app/Contents/Resources/runtime）"
+# 注意：runtime 必須放 Resources 而非 MacOS。放 MacOS 時 codesign 會把 runtime 裡
+# 每個文件都當作需簽名的代碼，附帶 python 有大量腳本/符號鏈接/畸形目錄（如 itcl4.2.2），
+# 導致頂層簽名失敗、密封無效（"a sealed resource is missing or invalid"）→ 無法雙擊打開。
+# 放 Resources 後按數據資源密封，頂層簽名可通過，app 能正常啟動。
 python3 packaging/fetch_runtime_python.py packaging/runtime_dl --expect-arch "$ARCH"
 rm -rf "$APP/Contents/Resources/runtime" "$APP/Contents/MacOS/runtime"
 cp -R packaging/runtime_dl/python "$APP/Contents/Resources/runtime"
 
-echo "==> [5/5] 签名 + 打 dmg"
+echo "==> [5/5] 簽名 + 打 dmg"
 sign_app_bundle "$APP"
 
 if codesign --verify --deep --strict "$APP" 2>/dev/null; then
-  echo "✓ 签名密封验证通过"
+  echo "✓ 簽名密封驗證通過"
 else
-  echo "警告：密封校验未过，双击可能无法打开"
+  echo "警告：密封校驗未過，雙擊可能無法打開"
 fi
 
 DMG="packaging/out/StaffDeck-macos-${ARCH}.dmg"
@@ -148,7 +148,7 @@ fi
 
 if [ -n "$NOTARY_PROFILE" ]; then
   if [ -z "$MAC_SIGN_ID" ]; then
-    echo "配置 NOTARY_PROFILE 时也必须配置 MAC_SIGN_ID" >&2
+    echo "配置 NOTARY_PROFILE 時也必須配置 MAC_SIGN_ID" >&2
     exit 1
   fi
   NOTARY_ARGS=(--keychain-profile "$NOTARY_PROFILE")

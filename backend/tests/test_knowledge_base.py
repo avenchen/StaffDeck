@@ -38,12 +38,12 @@ def test_skill_card_rejects_legacy_steps_and_accepts_graph() -> None:
     with pytest.raises(Exception):
         SkillCard(
             skill_id="skill_test",
-            name="测试技能",
+            name="測試技能",
             steps=[
                 {
                     "step_id": "collect",
                     "name": "收集信息",
-                    "instruction": "收集用户信息",
+                    "instruction": "收集用戶信息",
                     "expected_user_info": ["name"],
                     "allowed_actions": ["ask_user", "continue_flow"],
                 }
@@ -52,21 +52,21 @@ def test_skill_card_rejects_legacy_steps_and_accepts_graph() -> None:
 
     card = SkillCard(
         skill_id="skill_test",
-        name="测试技能",
+        name="測試技能",
         nodes=[
             {
                 "node_id": "collect",
                 "type": "collect_info",
                 "name": "收集信息",
-                "instruction": "收集用户信息",
+                "instruction": "收集用戶信息",
                 "expected_user_info": ["name"],
                 "allowed_actions": ["ask_user", "continue_flow"],
             },
             {
                 "node_id": "reply",
                 "type": "response",
-                "name": "回复",
-                "instruction": "回复用户",
+                "name": "回覆",
+                "instruction": "回覆用戶",
                 "allowed_actions": ["answer_user"],
             },
         ],
@@ -85,7 +85,7 @@ def test_skill_card_rejects_legacy_steps_and_accepts_graph() -> None:
 def test_knowledge_ingest_creates_document_buckets_and_chunks_without_auto_discovery() -> None:
     with _test_session() as db:
         db.add(Tenant(id="tenant_demo", name="Demo"))
-        db.add(KnowledgeBase(id="kb_demo", tenant_id="tenant_demo", name="默认知识库"))
+        db.add(KnowledgeBase(id="kb_demo", tenant_id="tenant_demo", name="默認知識庫"))
         db.commit()
         service = KnowledgeService(db)
         job = service.create_ingest_job(
@@ -93,7 +93,7 @@ def test_knowledge_ingest_creates_document_buckets_and_chunks_without_auto_disco
                 tenant_id="tenant_demo",
                 knowledge_base_id="kb_demo",
                 filename="policy.md",
-                content_base64=_b64("# 售后政策\n用户可查询订单。\n\n# 配送\n根据地址评估配送。"),
+                content_base64=_b64("# 售後政策\n用戶可查詢訂單。\n\n# 配送\n根據地址評估配送。"),
             )
         )
 
@@ -119,7 +119,7 @@ def test_knowledge_ingest_creates_document_buckets_and_chunks_without_auto_disco
             KnowledgeSearchRequest(
                 tenant_id="tenant_demo",
                 knowledge_base_ids=["kb_demo"],
-                query="配送怎么处理",
+                query="配送怎麼處理",
                 mode="debug",
                 need_evidence_pack=True,
             )
@@ -141,7 +141,7 @@ def test_knowledge_ingest_creates_document_buckets_and_chunks_without_auto_disco
 def test_knowledge_ingest_cancel_queued_job_clears_embedded_content() -> None:
     with _test_session() as db:
         db.add(Tenant(id="tenant_demo", name="Demo"))
-        db.add(KnowledgeBase(id="kb_demo", tenant_id="tenant_demo", name="默认知识库"))
+        db.add(KnowledgeBase(id="kb_demo", tenant_id="tenant_demo", name="默認知識庫"))
         db.commit()
         service = KnowledgeService(db)
         job = service.create_ingest_job(
@@ -149,7 +149,7 @@ def test_knowledge_ingest_cancel_queued_job_clears_embedded_content() -> None:
                 tenant_id="tenant_demo",
                 knowledge_base_id="kb_demo",
                 filename="policy.md",
-                content_base64=_b64("# 售后政策\n用户可查询订单。"),
+                content_base64=_b64("# 售後政策\n用戶可查詢訂單。"),
             )
         )
 
@@ -166,7 +166,7 @@ def test_knowledge_ingest_cancel_queued_job_clears_embedded_content() -> None:
 def test_knowledge_ingest_cancel_running_job_cleans_partial_artifacts() -> None:
     with _test_session() as db:
         db.add(Tenant(id="tenant_demo", name="Demo"))
-        db.add(KnowledgeBase(id="kb_demo", tenant_id="tenant_demo", name="默认知识库"))
+        db.add(KnowledgeBase(id="kb_demo", tenant_id="tenant_demo", name="默認知識庫"))
         document = KnowledgeDocument(
             id="kdoc_partial",
             tenant_id="tenant_demo",
@@ -182,7 +182,7 @@ def test_knowledge_ingest_cancel_running_job_cleans_partial_artifacts() -> None:
             knowledge_base_id="kb_demo",
             document_id=document.id,
             bucket_key="partial",
-            title="半成品目录",
+            title="半成品目錄",
             summary="半成品摘要",
         )
         chunk = KnowledgeChunk(
@@ -211,7 +211,7 @@ def test_knowledge_ingest_cancel_running_job_cleans_partial_artifacts() -> None:
             document_id=document.id,
             bucket_id=bucket.id,
             suggestion_type="warning",
-            title="半成品建议",
+            title="半成品建議",
         )
         job = KnowledgeIngestJob(
             id="kjob_partial",
@@ -222,7 +222,7 @@ def test_knowledge_ingest_cancel_running_job_cleans_partial_artifacts() -> None:
             status="running",
             stage="chunking",
             progress=0.62,
-            metadata_json={"content_base64": _b64("partial"), "stage_label": "生成引用来源"},
+            metadata_json={"content_base64": _b64("partial"), "stage_label": "生成引用來源"},
         )
         db.add(document)
         db.add(bucket)
@@ -261,7 +261,7 @@ def test_knowledge_ingest_cancel_running_job_cleans_partial_artifacts() -> None:
 def test_knowledge_ingest_stale_cancel_request_finalizes_without_worker() -> None:
     with _test_session() as db:
         db.add(Tenant(id="tenant_demo", name="Demo"))
-        db.add(KnowledgeBase(id="kb_demo", tenant_id="tenant_demo", name="默认知识库"))
+        db.add(KnowledgeBase(id="kb_demo", tenant_id="tenant_demo", name="默認知識庫"))
         document = KnowledgeDocument(
             id="kdoc_stale_cancel",
             tenant_id="tenant_demo",
@@ -302,21 +302,21 @@ def test_knowledge_ingest_stale_cancel_request_finalizes_without_worker() -> Non
 def test_knowledge_search_without_model_uses_relevance_rank_order() -> None:
     with _test_session() as db:
         db.add(Tenant(id="tenant_demo", name="Demo"))
-        db.add(KnowledgeBase(id="kb_demo", tenant_id="tenant_demo", name="默认知识库"))
+        db.add(KnowledgeBase(id="kb_demo", tenant_id="tenant_demo", name="默認知識庫"))
         document = KnowledgeDocument(
             id="kdoc_frontend",
             tenant_id="tenant_demo",
             knowledge_base_id="kb_demo",
             filename="frontend.md",
             file_type="md",
-            title="前端规范资料",
+            title="前端規範資料",
             status="ready",
             bucket_count=2,
             chunk_count=2,
             metadata_json={
                 "document_card": {
-                    "title": "前端规范资料",
-                    "summary": "前端编码规范、Vue 3、组件规范和命名规范。",
+                    "title": "前端規範資料",
+                    "summary": "前端編碼規範、Vue 3、組件規範和命名規範。",
                 }
             },
         )
@@ -326,8 +326,8 @@ def test_knowledge_search_without_model_uses_relevance_rank_order() -> None:
             knowledge_base_id="kb_demo",
             document_id=document.id,
             bucket_key="citation",
-            title="知识引用测试说明",
-            summary="回答引用展示规则。",
+            title="知識引用測試說明",
+            summary="回答引用展示規則。",
         )
         frontend = KnowledgeBucket(
             id="kbucket_frontend",
@@ -335,8 +335,8 @@ def test_knowledge_search_without_model_uses_relevance_rank_order() -> None:
             knowledge_base_id="kb_demo",
             document_id=document.id,
             bucket_key="frontend",
-            title="前端编码规范",
-            summary="Vue 3、Vite、TypeScript、组件编写和命名规范。",
+            title="前端編碼規範",
+            summary="Vue 3、Vite、TypeScript、組件編寫和命名規範。",
         )
         db.add(document)
         db.add(irrelevant)
@@ -348,8 +348,8 @@ def test_knowledge_search_without_model_uses_relevance_rank_order() -> None:
                 document_id=document.id,
                 bucket_id=irrelevant.id,
                 chunk_index=0,
-                content="知识引用展示规则。",
-                summary="知识引用展示规则。",
+                content="知識引用展示規則。",
+                summary="知識引用展示規則。",
                 source_ref="citation.md",
             )
         )
@@ -360,8 +360,8 @@ def test_knowledge_search_without_model_uses_relevance_rank_order() -> None:
                 document_id=document.id,
                 bucket_id=frontend.id,
                 chunk_index=0,
-                content="前端规范包括 Vue 3、Vite、TypeScript 和组件编写规范。",
-                summary="前端规范包括 Vue 3、Vite、TypeScript 和组件编写规范。",
+                content="前端規範包括 Vue 3、Vite、TypeScript 和組件編寫規範。",
+                summary="前端規範包括 Vue 3、Vite、TypeScript 和組件編寫規範。",
                 source_ref="frontend.md",
             )
         )
@@ -371,7 +371,7 @@ def test_knowledge_search_without_model_uses_relevance_rank_order() -> None:
             KnowledgeSearchRequest(
                 tenant_id="tenant_demo",
                 knowledge_base_ids=["kb_demo"],
-                query="前端规范有哪些？",
+                query="前端規範有哪些？",
                 mode="chat",
                 max_buckets=2,
                 need_evidence_pack=True,
@@ -384,7 +384,7 @@ def test_knowledge_search_without_model_uses_relevance_rank_order() -> None:
 def test_model_driven_document_route_does_not_fall_back_to_lexical_matching(monkeypatch) -> None:
     with _test_session() as db:
         db.add(Tenant(id="tenant_demo", name="Demo"))
-        db.add(KnowledgeBase(id="kb_demo", tenant_id="tenant_demo", name="默认知识库"))
+        db.add(KnowledgeBase(id="kb_demo", tenant_id="tenant_demo", name="默認知識庫"))
         db.add(
             KnowledgeDocument(
                 id="kdoc_frontend",
@@ -392,9 +392,9 @@ def test_model_driven_document_route_does_not_fall_back_to_lexical_matching(monk
                 knowledge_base_id="kb_demo",
                 filename="frontend.md",
                 file_type="md",
-                title="前端规范资料",
+                title="前端規範資料",
                 status="ready",
-                metadata_json={"document_card": {"title": "前端规范资料", "summary": "前端编码规范。"}},
+                metadata_json={"document_card": {"title": "前端規範資料", "summary": "前端編碼規範。"}},
             )
         )
         db.commit()
@@ -404,7 +404,7 @@ def test_model_driven_document_route_does_not_fall_back_to_lexical_matching(monk
             KnowledgeSearchRequest(
                 tenant_id="tenant_demo",
                 knowledge_base_ids=["kb_demo"],
-                query="前端规范有哪些？",
+                query="前端規範有哪些？",
                 mode="chat",
             ),
             ModelConfig(id="model_route", tenant_id="tenant_demo", name="Route", model="route"),
@@ -419,16 +419,16 @@ def test_knowledge_search_records_persistent_substep_spans() -> None:
     events: list[tuple[str, dict]] = []
     with _test_session() as db:
         db.add(Tenant(id="tenant_demo", name="Demo"))
-        db.add(KnowledgeBase(id="kb_demo", tenant_id="tenant_demo", name="默认知识库"))
+        db.add(KnowledgeBase(id="kb_demo", tenant_id="tenant_demo", name="默認知識庫"))
         document = KnowledgeDocument(
             id="kdoc_frontend",
             tenant_id="tenant_demo",
             knowledge_base_id="kb_demo",
             filename="frontend.md",
             file_type="md",
-            title="前端规范资料",
+            title="前端規範資料",
             status="ready",
-            metadata_json={"document_card": {"title": "前端规范资料", "summary": "前端规范"}},
+            metadata_json={"document_card": {"title": "前端規範資料", "summary": "前端規範"}},
         )
         bucket = KnowledgeBucket(
             id="kbucket_frontend",
@@ -436,8 +436,8 @@ def test_knowledge_search_records_persistent_substep_spans() -> None:
             knowledge_base_id="kb_demo",
             document_id=document.id,
             bucket_key="frontend",
-            title="前端规范",
-            summary="Vue 3 与 TypeScript",
+            title="前端規範",
+            summary="Vue 3 與 TypeScript",
         )
         db.add(document)
         db.add(bucket)
@@ -448,8 +448,8 @@ def test_knowledge_search_records_persistent_substep_spans() -> None:
                 document_id=document.id,
                 bucket_id=bucket.id,
                 chunk_index=0,
-                content="前端规范包括 Vue 3 与 TypeScript。",
-                summary="前端规范",
+                content="前端規範包括 Vue 3 與 TypeScript。",
+                summary="前端規範",
                 source_ref="frontend.md",
             )
         )
@@ -462,7 +462,7 @@ def test_knowledge_search_records_persistent_substep_spans() -> None:
                 KnowledgeSearchRequest(
                     tenant_id="tenant_demo",
                     knowledge_base_ids=["kb_demo"],
-                    query="前端规范",
+                    query="前端規範",
                     mode="chat",
                     need_evidence_pack=True,
                 )
@@ -498,12 +498,12 @@ def test_okf_search_does_not_require_manually_curated_business_terms() -> None:
         knowledge_base_id="kb_demo",
         concept_id="sources/internal-document",
         concept_type="Source Document",
-        title="内部文档说明",
-        description="介绍可用文档及其适用范围。",
-        content_md="# 内部文档说明\n\n这份文档记录服务流程。",
+        title="內部文檔說明",
+        description="介紹可用文檔及其適用範圍。",
+        content_md="# 內部文檔說明\n\n這份文檔記錄服務流程。",
     )
 
-    assert search_concepts("文档", [concept]) == [concept]
+    assert search_concepts("文檔", [concept]) == [concept]
 
 
 def test_knowledge_search_api_uses_selected_model_config(monkeypatch) -> None:
@@ -517,8 +517,8 @@ def test_knowledge_search_api_uses_selected_model_config(monkeypatch) -> None:
 
     with _test_session() as db:
         db.add(Tenant(id="tenant_demo", name="Demo"))
-        db.add(AgentProfile(id="agent_overall", tenant_id="tenant_demo", name="开放广场", is_overall=True))
-        db.add(KnowledgeBase(id="kb_search", tenant_id="tenant_demo", name="检索知识库"))
+        db.add(AgentProfile(id="agent_overall", tenant_id="tenant_demo", name="開放廣場", is_overall=True))
+        db.add(KnowledgeBase(id="kb_search", tenant_id="tenant_demo", name="檢索知識庫"))
         db.add(
             ModelConfig(
                 id="model_default",
@@ -546,7 +546,7 @@ def test_knowledge_search_api_uses_selected_model_config(monkeypatch) -> None:
         search_knowledge(
             KnowledgeSearchRequest(
                 tenant_id="tenant_demo",
-                query="测试检索",
+                query="測試檢索",
                 model_config_id="model_selected",
             ),
             db,
@@ -557,7 +557,7 @@ def test_knowledge_search_api_uses_selected_model_config(monkeypatch) -> None:
 
 
 def test_knowledge_base_read_keeps_archived_rows_visible_despite_active_versions() -> None:
-    row = KnowledgeBase(id="kb_demo", tenant_id="tenant_demo", name="默认知识库", status="archived")
+    row = KnowledgeBase(id="kb_demo", tenant_id="tenant_demo", name="默認知識庫", status="archived")
     version = KnowledgeBaseVersion(
         tenant_id="tenant_demo",
         knowledge_base_id=row.id,
@@ -581,16 +581,16 @@ def test_knowledge_base_read_keeps_archived_rows_visible_despite_active_versions
 def test_list_documents_without_agent_scope_returns_only_open_gallery_documents() -> None:
     with _test_session() as db:
         db.add(Tenant(id="tenant_demo", name="Demo"))
-        db.add(AgentProfile(id="agent_overall", tenant_id="tenant_demo", name="开放广场", is_overall=True))
-        db.add(KnowledgeBase(id="kb_open", tenant_id="tenant_demo", name="开放知识库"))
-        db.add(KnowledgeBase(id="kb_private", tenant_id="tenant_demo", name="私有知识库"))
+        db.add(AgentProfile(id="agent_overall", tenant_id="tenant_demo", name="開放廣場", is_overall=True))
+        db.add(KnowledgeBase(id="kb_open", tenant_id="tenant_demo", name="開放知識庫"))
+        db.add(KnowledgeBase(id="kb_private", tenant_id="tenant_demo", name="私有知識庫"))
         db.add(
             KnowledgeBaseVersion(
                 id="kbv_open",
                 tenant_id="tenant_demo",
                 knowledge_base_id="kb_open",
                 version="1.0.0",
-                name="开放知识库",
+                name="開放知識庫",
             )
         )
         db.add(
@@ -599,7 +599,7 @@ def test_list_documents_without_agent_scope_returns_only_open_gallery_documents(
                 tenant_id="tenant_demo",
                 knowledge_base_id="kb_private",
                 version="1.0.0",
-                name="私有知识库",
+                name="私有知識庫",
             )
         )
         db.add(
@@ -610,7 +610,7 @@ def test_list_documents_without_agent_scope_returns_only_open_gallery_documents(
                 knowledge_base_version_id="kbv_open",
                 filename="open.md",
                 file_type="md",
-                title="开放资料",
+                title="開放資料",
                 status="ready",
             )
         )
@@ -622,7 +622,7 @@ def test_list_documents_without_agent_scope_returns_only_open_gallery_documents(
                 knowledge_base_version_id="kbv_private",
                 filename="private.md",
                 file_type="md",
-                title="私有资料",
+                title="私有資料",
                 status="ready",
             )
         )
@@ -638,14 +638,14 @@ def test_list_documents_without_agent_scope_returns_only_open_gallery_documents(
 def test_update_document_syncs_document_card_and_okf_source_concept() -> None:
     with _test_session() as db:
         db.add(Tenant(id="tenant_demo", name="Demo"))
-        db.add(KnowledgeBase(id="kb_demo", tenant_id="tenant_demo", name="默认知识库"))
+        db.add(KnowledgeBase(id="kb_demo", tenant_id="tenant_demo", name="默認知識庫"))
         db.add(
             KnowledgeBaseVersion(
                 id="kbv_demo",
                 tenant_id="tenant_demo",
                 knowledge_base_id="kb_demo",
                 version="1.0.0",
-                name="默认知识库",
+                name="默認知識庫",
                 status="active",
             )
         )
@@ -656,19 +656,19 @@ def test_update_document_syncs_document_card_and_okf_source_concept() -> None:
             knowledge_base_version_id="kbv_demo",
             filename="demo.md",
             file_type="md",
-            title="旧标题",
+            title="舊標題",
             status="ready",
             bucket_count=1,
             chunk_count=1,
             metadata_json={
-                "document_card": {"title": "旧卡片标题", "summary": "文档摘要"},
+                "document_card": {"title": "舊卡片標題", "summary": "文檔摘要"},
                 "section_tree": [
                     {
                         "section_id": "intro",
-                        "title": "介绍",
-                        "path": "介绍",
-                        "summary": "旧章节摘要",
-                        "content": "旧章节内容",
+                        "title": "介紹",
+                        "path": "介紹",
+                        "summary": "舊章節摘要",
+                        "content": "舊章節內容",
                     }
                 ],
             },
@@ -679,10 +679,10 @@ def test_update_document_syncs_document_card_and_okf_source_concept() -> None:
             knowledge_base_version_id="kbv_demo",
             document_id=document.id,
             bucket_key="intro",
-            title="介绍",
-            summary="旧桶摘要",
+            title="介紹",
+            summary="舊桶摘要",
             token_estimate=10,
-            metadata_json={"content": "旧桶内容", "section_ids": ["intro"], "section_paths": ["介绍"]},
+            metadata_json={"content": "舊桶內容", "section_ids": ["intro"], "section_paths": ["介紹"]},
         )
         stale_source = KnowledgeConcept(
             tenant_id="tenant_demo",
@@ -691,8 +691,8 @@ def test_update_document_syncs_document_card_and_okf_source_concept() -> None:
             document_id=document.id,
             concept_id="sources/old-title",
             concept_type="Source Document",
-            title="旧卡片标题",
-            description="旧来源",
+            title="舊卡片標題",
+            description="舊來源",
             content_md="# Old",
         )
         db.add(document)
@@ -702,12 +702,12 @@ def test_update_document_syncs_document_card_and_okf_source_concept() -> None:
 
         updated = update_document(
             document.id,
-            KnowledgeDocumentUpdateRequest(tenant_id="tenant_demo", title="新标题"),
+            KnowledgeDocumentUpdateRequest(tenant_id="tenant_demo", title="新標題"),
             db,
         )
 
-        assert updated.title == "新标题"
-        assert updated.metadata["document_card"]["title"] == "新标题"
+        assert updated.title == "新標題"
+        assert updated.metadata["document_card"]["title"] == "新標題"
         source_concepts = db.exec(
             select(KnowledgeConcept).where(
                 KnowledgeConcept.tenant_id == "tenant_demo",
@@ -716,21 +716,21 @@ def test_update_document_syncs_document_card_and_okf_source_concept() -> None:
             )
         ).all()
         assert len(source_concepts) == 1
-        assert source_concepts[0].title == "新标题"
+        assert source_concepts[0].title == "新標題"
         assert source_concepts[0].concept_id != "sources/old-title"
 
 
 def test_update_chunk_refreshes_bucket_content_and_okf_topic() -> None:
     with _test_session() as db:
         db.add(Tenant(id="tenant_demo", name="Demo"))
-        db.add(KnowledgeBase(id="kb_demo", tenant_id="tenant_demo", name="默认知识库"))
+        db.add(KnowledgeBase(id="kb_demo", tenant_id="tenant_demo", name="默認知識庫"))
         db.add(
             KnowledgeBaseVersion(
                 id="kbv_demo",
                 tenant_id="tenant_demo",
                 knowledge_base_id="kb_demo",
                 version="1.0.0",
-                name="默认知识库",
+                name="默認知識庫",
                 status="active",
             )
         )
@@ -741,11 +741,11 @@ def test_update_chunk_refreshes_bucket_content_and_okf_topic() -> None:
             knowledge_base_version_id="kbv_demo",
             filename="demo.md",
             file_type="md",
-            title="测试文档",
+            title="測試文檔",
             status="ready",
             bucket_count=1,
             chunk_count=1,
-            metadata_json={"document_card": {"title": "测试文档", "summary": "文档摘要"}},
+            metadata_json={"document_card": {"title": "測試文檔", "summary": "文檔摘要"}},
         )
         bucket = KnowledgeBucket(
             id="kbucket_demo",
@@ -754,10 +754,10 @@ def test_update_chunk_refreshes_bucket_content_and_okf_topic() -> None:
             knowledge_base_version_id="kbv_demo",
             document_id=document.id,
             bucket_key="refund",
-            title="退款规则",
-            summary="旧退款规则摘要",
+            title="退款規則",
+            summary="舊退款規則摘要",
             token_estimate=10,
-            metadata_json={"content": "旧退款规则内容"},
+            metadata_json={"content": "舊退款規則內容"},
         )
         chunk = KnowledgeChunk(
             id="kchunk_demo",
@@ -767,8 +767,8 @@ def test_update_chunk_refreshes_bucket_content_and_okf_topic() -> None:
             document_id=document.id,
             bucket_id=bucket.id,
             chunk_index=0,
-            content="旧退款规则内容",
-            summary="旧摘要",
+            content="舊退款規則內容",
+            summary="舊摘要",
         )
         db.add(document)
         db.add(bucket)
@@ -777,36 +777,36 @@ def test_update_chunk_refreshes_bucket_content_and_okf_topic() -> None:
 
         update_chunk(
             chunk.id,
-            KnowledgeChunkUpdateRequest(tenant_id="tenant_demo", content="新退款规则内容", summary="新摘要"),
+            KnowledgeChunkUpdateRequest(tenant_id="tenant_demo", content="新退款規則內容", summary="新摘要"),
             db,
         )
 
         refreshed_bucket = db.get(KnowledgeBucket, bucket.id)
         assert refreshed_bucket is not None
-        assert "新退款规则内容" in refreshed_bucket.metadata_json["content"]
+        assert "新退款規則內容" in refreshed_bucket.metadata_json["content"]
         topic = db.exec(
             select(KnowledgeConcept).where(
                 KnowledgeConcept.tenant_id == "tenant_demo",
                 KnowledgeConcept.document_id == document.id,
-                KnowledgeConcept.title == "退款规则",
+                KnowledgeConcept.title == "退款規則",
             )
         ).one()
-        assert "新退款规则内容" in topic.content_md
+        assert "新退款規則內容" in topic.content_md
 
 
 def test_confirm_discovery_is_required_before_tool_or_skill_enters_runtime() -> None:
     with _test_session() as db:
         db.add(Tenant(id="tenant_demo", name="Demo"))
-        db.add(KnowledgeBase(id="kb_demo", tenant_id="tenant_demo", name="默认知识库"))
+        db.add(KnowledgeBase(id="kb_demo", tenant_id="tenant_demo", name="默認知識庫"))
         suggestion = KnowledgeDiscoverySuggestion(
             tenant_id="tenant_demo",
             knowledge_base_id="kb_demo",
             document_id="doc_1",
             suggestion_type="tool",
-            title="会员权益核对",
+            title="會員權益核對",
             payload_json={
                 "name": "member.benefit_reconcile",
-                "display_name": "会员权益核对",
+                "display_name": "會員權益核對",
                 "method": "POST",
                 "url": "/api/mock/member/benefit-reconcile",
             },

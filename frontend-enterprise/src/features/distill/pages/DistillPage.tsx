@@ -403,14 +403,14 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
           {
             id: 'loaded',
             role: 'assistant',
-            content: `已加载「${result.name}」。你可以在右侧选择一个或多个区域，然后在这里描述需要怎样改写。`,
+            content: `已加載「${result.name}」。你可以在右側選擇一個或多個區域，然後在這裡描述需要怎樣改寫。`,
           },
         ]);
         setHydratedCacheKey(cacheKey);
         setCacheReady(true);
       })
       .catch((error) => {
-        notify.error(error instanceof Error ? error.message : '加载技能失败');
+        notify.error(error instanceof Error ? error.message : '加載技能失敗');
         setHydratedCacheKey(cacheKey);
         setCacheReady(true);
       });
@@ -480,8 +480,8 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
     )
       .catch((error) => {
         if (controller.signal.aborted) return;
-        updateMessage(activeJob.assistantId, '生成连接已断开，后端任务仍可继续。', { thinking: 'done' });
-        notify.error(error instanceof Error ? error.message : '恢复生成失败');
+        updateMessage(activeJob.assistantId, '生成連接已斷開，後端任務仍可繼續。', { thinking: 'done' });
+        notify.error(error instanceof Error ? error.message : '恢復生成失敗');
       })
       .finally(() => finishStream(controller));
   }, [activeJob, cacheKey, cacheReady, hydratedCacheKey]);
@@ -606,7 +606,7 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
     setTextDiffs([]);
     const assistantId = pushMessage('assistant', '', {
       thinking: 'running',
-      thinkingDetails: ['正在理解技能目标与输入信息'],
+      thinkingDetails: ['正在理解技能目標與輸入信息'],
       thinkingOpen: false,
     });
     const baseJob: ActiveDistillJob = {
@@ -626,7 +626,7 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
         (item) => {
           trackActiveJobEvent(item, baseJob);
           if (item.event === 'status') {
-            appendThinkingDetail(assistantId, String(item.data.text || '正在处理'));
+            appendThinkingDetail(assistantId, String(item.data.text || '正在處理'));
             return;
           }
           if (item.event === 'chunk_reset') {
@@ -646,7 +646,7 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
               latestPreview = preview;
               latestPreviewSignature = previewSignature;
               setDraft(preview);
-              setStreamStatus('正在解码技能结构');
+              setStreamStatus('正在解碼技能結構');
             }
             return;
           }
@@ -663,7 +663,7 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
             setSelectedPaths(DEFAULT_TARGET_PATHS);
             updateMessage(
               assistantId,
-              `已生成「${draftSkill.name}」草稿。你可以在右侧选择一个或多个区域继续改写。`,
+              `已生成「${draftSkill.name}」草稿。你可以在右側選擇一個或多個區域繼續改寫。`,
               {
                 thinking: 'done',
                 warnings: nextWarnings,
@@ -679,7 +679,7 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
             return;
           }
           if (item.event === 'error') {
-            updateMessage(assistantId, String(item.data.message || '生成失败，当前草稿未变更。'), { thinking: 'done' });
+            updateMessage(assistantId, String(item.data.message || '生成失敗，當前草稿未變更。'), { thinking: 'done' });
             setActiveJob(null);
           }
         },
@@ -687,12 +687,12 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
       );
     } catch (error) {
       if (controller.signal.aborted && !manualStopRef.current) return;
-      appendThinkingDetail(assistantId, '生成失败，已保留当前草稿');
-      updateMessage(assistantId, '生成失败，当前草稿未变更。', { thinking: 'done' });
+      appendThinkingDetail(assistantId, '生成失敗，已保留當前草稿');
+      updateMessage(assistantId, '生成失敗，當前草稿未變更。', { thinking: 'done' });
       if (controller.signal.aborted) {
         notify.info('已停止生成');
       } else {
-        notify.error(error instanceof Error ? error.message : '生成失败');
+        notify.error(error instanceof Error ? error.message : '生成失敗');
       }
     } finally {
       finishStream(controller);
@@ -717,10 +717,10 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
         : allTargetPaths(editableDraft);
     const scopeLabel = targetLabel(targets, editableDraft);
     setLoading(true);
-    setStreamStatus('正在改写选中内容');
+    setStreamStatus('正在改寫選中內容');
     const assistantId = pushMessage('assistant', '', {
       thinking: 'running',
-      thinkingDetails: initialThinkingDetails || [`改写范围：${scopeLabel}`],
+      thinkingDetails: initialThinkingDetails || [`改寫範圍：${scopeLabel}`],
       thinkingOpen: false,
     });
     const baseJob: ActiveDistillJob = {
@@ -752,7 +752,7 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
         (item) => {
           trackActiveJobEvent(item, baseJob);
           if (item.event === 'status') {
-            appendThinkingDetail(assistantId, String(item.data.text || '正在处理'));
+            appendThinkingDetail(assistantId, String(item.data.text || '正在處理'));
             return;
           }
           if (item.event === 'message_chunk') {
@@ -768,24 +768,24 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
             const nextWarnings = Array.isArray(item.data.warnings) ? item.data.warnings.map(String) : [];
             const nextToolSuggestions = normalizeToolSuggestions(item.data.tool_suggestions);
             const changedPaths = diffTargetPaths(previousDraft, nextDraft, targets);
-            const changedLabel = changedPaths.length > 0 ? targetLabel(changedPaths, nextDraft) : '未检测到结构变化';
-            appendThinkingDetail(assistantId, `模型返回改写结果：${changedLabel}`);
-            appendThinkingDetail(assistantId, '右侧已更新预览，等待确认或拒绝');
+            const changedLabel = changedPaths.length > 0 ? targetLabel(changedPaths, nextDraft) : '未檢測到結構變化';
+            appendThinkingDetail(assistantId, `模型返回改寫結果：${changedLabel}`);
+            appendThinkingDetail(assistantId, '右側已更新預覽，等待確認或拒絕');
             animateDraftChange(previousDraft, nextDraft, changedPaths);
             setPendingChange({ assistantId, previousDraft, nextDraft, changedPaths });
             setSelectedPaths((current) => reconcileSelectedPaths(current, nextDraft));
-            setStreamStatus('改写完成');
+            setStreamStatus('改寫完成');
             if (!receivedMessageChunk) {
               updateMessage(
                 assistantId,
-                String(item.data.assistant_message || '已完成局部改写。'),
+                String(item.data.assistant_message || '已完成局部改寫。'),
                 {
                   thinking: 'done',
                   warnings: nextWarnings,
                   toolSuggestions: nextToolSuggestions,
                   actionState: 'pending',
                   operations: changedPaths.length
-                    ? [{ kind: 'skill_change', label: `改写：${changedLabel}`, skillId: nextDraft.skill_id }]
+                    ? [{ kind: 'skill_change', label: `改寫：${changedLabel}`, skillId: nextDraft.skill_id }]
                     : [],
                 },
               );
@@ -796,7 +796,7 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
                 toolSuggestions: nextToolSuggestions,
                 actionState: 'pending',
                 operations: changedPaths.length
-                  ? [{ kind: 'skill_change', label: `改写：${changedLabel}`, skillId: nextDraft.skill_id }]
+                  ? [{ kind: 'skill_change', label: `改寫：${changedLabel}`, skillId: nextDraft.skill_id }]
                   : [],
               });
             }
@@ -807,7 +807,7 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
             return;
           }
           if (item.event === 'error') {
-            updateMessage(assistantId, String(item.data.message || '改写失败，当前草稿未变更。'), { thinking: 'done' });
+            updateMessage(assistantId, String(item.data.message || '改寫失敗，當前草稿未變更。'), { thinking: 'done' });
             setActiveJob(null);
           }
         },
@@ -815,12 +815,12 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
       );
     } catch (error) {
       if (controller.signal.aborted && !manualStopRef.current) return;
-      appendThinkingDetail(assistantId, '改写失败，已保留当前草稿');
-      updateMessage(assistantId, '改写失败，当前草稿未变更。', { thinking: 'done' });
+      appendThinkingDetail(assistantId, '改寫失敗，已保留當前草稿');
+      updateMessage(assistantId, '改寫失敗，當前草稿未變更。', { thinking: 'done' });
       if (controller.signal.aborted) {
-        notify.info('已停止改写');
+        notify.info('已停止改寫');
       } else {
-        notify.error(error instanceof Error ? error.message : '改写失败');
+        notify.error(error instanceof Error ? error.message : '改寫失敗');
       }
     } finally {
       finishStream(controller);
@@ -831,7 +831,7 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
     const targetDraft = lockNullableSkillIdForDraft(pendingChange?.nextDraft || draft, lockedSkillId);
     if (!targetDraft) return;
     if (!hasSkillContentChanges(targetDraft, lastSavedDraft)) {
-      notify.info('当前没有内容变化，无需保存草稿。');
+      notify.info('當前沒有內容變化，無需保存草稿。');
       return;
     }
     confirmPendingChange(false);
@@ -846,7 +846,7 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
   async function saveDraft() {
     if (!saveReviewDraft) return;
     if (!hasSkillContentChanges(saveReviewDraft, lastSavedDraft)) {
-      notify.info('当前没有内容变化，无需保存草稿。');
+      notify.info('當前沒有內容變化，無需保存草稿。');
       return;
     }
     let finalDraft: SkillCard = lockSkillIdForDraft(saveReviewDraft, lockedSkillId);
@@ -892,12 +892,12 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
       if (clearAfterSave) {
         setClearAfterSave(false);
         clearDistillWorkspace();
-        notify.success('SOP 已保存，当前改写已清空');
+        notify.success('SOP 已保存，當前改寫已清空');
       } else {
-        notify.success(renamedSkillId ? `SOP ID 已存在，已另存为 ${renamedSkillId}` : 'SOP 已保存');
+        notify.success(renamedSkillId ? `SOP ID 已存在，已另存為 ${renamedSkillId}` : 'SOP 已保存');
       }
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '保存失败');
+      notify.error(error instanceof Error ? error.message : '保存失敗');
     }
   }
 
@@ -931,7 +931,7 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
   function handleResumedJobEvent(job: ActiveDistillJob, item: { event: string; data: Record<string, unknown> }) {
     trackActiveJobEvent(item, job);
     if (item.event === 'status') {
-      appendThinkingDetail(job.assistantId, String(item.data.text || '正在处理'));
+      appendThinkingDetail(job.assistantId, String(item.data.text || '正在處理'));
       return;
     }
     if (item.event === 'message_chunk') {
@@ -949,7 +949,7 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
       return;
     }
     if (item.event === 'error') {
-      updateMessage(job.assistantId, String(item.data.message || '生成失败'), { thinking: 'done' });
+      updateMessage(job.assistantId, String(item.data.message || '生成失敗'), { thinking: 'done' });
       setActiveJob(null);
       setLoading(false);
       return;
@@ -957,7 +957,7 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
     if (item.event === 'job_complete') {
       const status = String(item.data.status || '');
       if (status === 'failed') {
-        updateMessage(job.assistantId, String(item.data.error || '生成失败'), { thinking: 'done' });
+        updateMessage(job.assistantId, String(item.data.error || '生成失敗'), { thinking: 'done' });
         setActiveJob(null);
       }
     }
@@ -978,7 +978,7 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
     appendThinkingDetail(job.assistantId, `已生成 SOP 草稿：${draftSkill.name}`);
     updateMessage(
       job.assistantId,
-      `已生成「${draftSkill.name}」草稿。你可以在右侧选择一个或多个区域继续改写。`,
+      `已生成「${draftSkill.name}」草稿。你可以在右側選擇一個或多個區域繼續改寫。`,
       {
         thinking: 'done',
         warnings: nextWarnings,
@@ -999,27 +999,27 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
     const previousDraft = lockNullableSkillIdForDraft(job.previousDraft || draft, lockedSkillId);
     if (!previousDraft) {
       setDraft(nextDraft);
-      updateMessage(job.assistantId, String(data.assistant_message || '已完成改写。'), { thinking: 'done' });
+      updateMessage(job.assistantId, String(data.assistant_message || '已完成改寫。'), { thinking: 'done' });
       return;
     }
     const targets = job.targets?.length ? job.targets : allTargetPaths(previousDraft);
     const nextWarnings = Array.isArray(data.warnings) ? data.warnings.map(String) : [];
     const nextToolSuggestions = normalizeToolSuggestions(data.tool_suggestions);
     const changedPaths = diffTargetPaths(previousDraft, nextDraft, targets);
-    const changedLabel = changedPaths.length > 0 ? targetLabel(changedPaths, nextDraft) : '未检测到结构变化';
-    appendThinkingDetail(job.assistantId, `模型返回改写结果：${changedLabel}`);
-    appendThinkingDetail(job.assistantId, '右侧已更新预览，等待确认或拒绝');
+    const changedLabel = changedPaths.length > 0 ? targetLabel(changedPaths, nextDraft) : '未檢測到結構變化';
+    appendThinkingDetail(job.assistantId, `模型返回改寫結果：${changedLabel}`);
+    appendThinkingDetail(job.assistantId, '右側已更新預覽，等待確認或拒絕');
     animateDraftChange(previousDraft, nextDraft, changedPaths);
     setPendingChange({ assistantId: job.assistantId, previousDraft, nextDraft, changedPaths });
     setSelectedPaths((current) => reconcileSelectedPaths(current, nextDraft));
-    setStreamStatus('改写完成');
-    updateMessage(job.assistantId, String(data.assistant_message || '已完成局部改写。'), {
+    setStreamStatus('改寫完成');
+    updateMessage(job.assistantId, String(data.assistant_message || '已完成局部改寫。'), {
       thinking: 'done',
       warnings: nextWarnings,
       toolSuggestions: nextToolSuggestions,
       actionState: 'pending',
       operations: changedPaths.length
-        ? [{ kind: 'skill_change', label: `改写：${changedLabel}`, skillId: nextDraft.skill_id }]
+        ? [{ kind: 'skill_change', label: `改寫：${changedLabel}`, skillId: nextDraft.skill_id }]
         : [],
     });
     if (nextToolSuggestions.length > 0) {
@@ -1031,7 +1031,7 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
     if (loading) return;
     const suffix = file.name.toLowerCase().split('.').pop() || '';
     if (!['md', 'txt', 'doc', 'docx'].includes(suffix)) {
-      notify.error('仅支持 .md、.doc、.docx、.txt 文件');
+      notify.error('僅支持 .md、.doc、.docx、.txt 文件');
       return;
     }
     const id = `file_${Date.now()}_${Math.random().toString(16).slice(2)}`;
@@ -1059,7 +1059,7 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
       setAttachments((current) =>
         current.map((item) =>
           item.id === id
-            ? { ...item, status: 'error', error: error instanceof Error ? error.message : '读取文件失败' }
+            ? { ...item, status: 'error', error: error instanceof Error ? error.message : '讀取文件失敗' }
             : item,
         ),
       );
@@ -1129,11 +1129,11 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
     );
     const existingSuggestions = suggestions.filter((suggestion) => toolSuggestionResolution(suggestion) === 'existing');
     existingSuggestions.forEach((suggestion) => {
-      appendThinkingDetail(messageId, `已匹配现有工具：${suggestion.matched_tool_display_name || suggestion.display_name || suggestion.name}`);
+      appendThinkingDetail(messageId, `已匹配現有工具：${suggestion.matched_tool_display_name || suggestion.display_name || suggestion.name}`);
     });
     if (pendingSuggestions.length === 0) return;
-    appendThinkingDetail(messageId, '正在测试工具接口');
-    setStreamStatus('正在测试工具接口');
+    appendThinkingDetail(messageId, '正在測試工具接口');
+    setStreamStatus('正在測試工具接口');
 
     let successCount = 0;
     let failureCount = 0;
@@ -1144,21 +1144,21 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
       });
       if (!result) {
         failureCount += 1;
-        appendThinkingDetail(messageId, `工具测试失败：${suggestion.display_name || suggestion.name}`);
+        appendThinkingDetail(messageId, `工具測試失敗：${suggestion.display_name || suggestion.name}`);
         continue;
       }
       if (result.success) {
         successCount += 1;
-        appendThinkingDetail(messageId, `工具测试成功：${suggestion.display_name || suggestion.name}`);
+        appendThinkingDetail(messageId, `工具測試成功：${suggestion.display_name || suggestion.name}`);
       } else {
         failureCount += 1;
         const reason = result.error?.message ? `，${result.error.message}` : '';
-        appendThinkingDetail(messageId, `工具测试失败：${suggestion.display_name || suggestion.name}${reason}`);
+        appendThinkingDetail(messageId, `工具測試失敗：${suggestion.display_name || suggestion.name}${reason}`);
       }
     }
 
-    appendThinkingDetail(messageId, `工具测试完成：${successCount} 个成功，${failureCount} 个失败`);
-    setStreamStatus('工具测试完成');
+    appendThinkingDetail(messageId, `工具測試完成：${successCount} 個成功，${failureCount} 個失敗`);
+    setStreamStatus('工具測試完成');
   }
 
   async function probeToolSuggestion(
@@ -1170,11 +1170,11 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
     if ((!options.allowWhileLoading && loading) || suggestion.probeStatus === 'probing') return null;
     const args = options.sampleArguments || suggestion.sample_arguments || {};
     if (Object.keys(args).length === 0) {
-      if (!options.silent) notify.warning('缺少样例参数，无法测试接口');
+      if (!options.silent) notify.warning('缺少樣例參數，無法測試接口');
       const result: ToolProbeResponse = {
         success: false,
         inferred_output_schema: {},
-        error: { code: 'MISSING_SAMPLE_ARGUMENTS', message: '缺少样例参数，无法测试接口' },
+        error: { code: 'MISSING_SAMPLE_ARGUMENTS', message: '缺少樣例參數，無法測試接口' },
       };
       setToolSuggestionPatch(messageId, suggestion.name, { probeStatus: 'error', probe_result: result });
       return result;
@@ -1196,22 +1196,22 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
         output_schema: nextOutputSchema || {},
       });
       if (result.success) {
-        if (!options.silent) notify.success('接口测试成功');
+        if (!options.silent) notify.success('接口測試成功');
       } else {
-        if (!options.silent) notify.error(result.error?.message || '接口测试失败');
+        if (!options.silent) notify.error(result.error?.message || '接口測試失敗');
       }
       return result;
     } catch (error) {
       const result: ToolProbeResponse = {
         success: false,
         inferred_output_schema: {},
-        error: { code: 'CLIENT_ERROR', message: error instanceof Error ? error.message : '接口测试失败' },
+        error: { code: 'CLIENT_ERROR', message: error instanceof Error ? error.message : '接口測試失敗' },
       };
       setToolSuggestionPatch(messageId, suggestion.name, {
         probeStatus: 'error',
         probe_result: result,
       });
-      if (!options.silent) notify.error(result.error?.message || '接口测试失败');
+      if (!options.silent) notify.error(result.error?.message || '接口測試失敗');
       return result;
     }
   }
@@ -1220,19 +1220,19 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
     if (!toolDetail || !toolDetailMessageId) return;
     const parsed = parseJsonObject(probeArgsText);
     if (!parsed) {
-      notify.error('样例参数必须是 JSON 对象');
+      notify.error('樣例參數必須是 JSON 對象');
       return;
     }
     setToolSuggestionPatch(toolDetailMessageId, toolDetail.name, { sample_arguments: parsed });
     setToolDetail({ ...toolDetail, sample_arguments: parsed });
-    notify.success('样例参数已更新');
+    notify.success('樣例參數已更新');
   }
 
   function probeToolDetail() {
     if (!toolDetail || !toolDetailMessageId) return;
     const parsed = parseJsonObject(probeArgsText);
     if (!parsed) {
-      notify.error('样例参数必须是 JSON 对象');
+      notify.error('樣例參數必須是 JSON 對象');
       return;
     }
     void probeToolSuggestion(toolDetailMessageId, { ...toolDetail, sample_arguments: parsed }, { sampleArguments: parsed });
@@ -1241,18 +1241,18 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
   async function confirmToolSuggestion(messageId: string, suggestion: ToolSuggestionItem) {
     if (loading) return;
     if (toolSuggestionResolution(suggestion) !== 'new_candidate') {
-      notify.warning('该工具不是可新增候选');
+      notify.warning('該工具不是可新增候選');
       return;
     }
     if (!suggestion.probe_result?.success) {
-      notify.warning('请先测试接口成功后再新增工具');
+      notify.warning('請先測試接口成功後再新增工具');
       return;
     }
     const nextSuggestions = nextToolSuggestionsWithPatch(messageId, suggestion.name, { status: 'accepted' });
     setToolSuggestionStatus(messageId, suggestion.name, 'accepted');
     const shouldCommit = toolSuggestionSelectionsComplete(nextSuggestions);
     if (!shouldCommit) {
-      notify.success('已确认，等待其他工具建议处理完成后统一更新 SOP');
+      notify.success('已確認，等待其他工具建議處理完成後統一更新 SOP');
       return;
     }
     await commitToolSuggestionSelections(messageId, nextSuggestions);
@@ -1264,7 +1264,7 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
       (item) => toolSuggestionResolution(item) === 'new_candidate' && item.status === 'accepted',
     );
     if (acceptedSuggestions.length === 0) {
-      notify.info('所有工具建议已拒绝，SOP 草稿未变更');
+      notify.info('所有工具建議已拒絕，SOP 草稿未變更');
       return;
     }
     try {
@@ -1272,7 +1272,7 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
       const createdNewTools: ToolRead[] = [];
       for (const suggestion of acceptedSuggestions) {
         if (!suggestion.probe_result?.success) {
-          throw new Error(`工具「${suggestion.display_name || suggestion.name}」尚未测试通过`);
+          throw new Error(`工具「${suggestion.display_name || suggestion.name}」尚未測試通過`);
         }
         const payload = toolPayloadFromSuggestion(suggestion, activeDraft?.skill_id);
         let createdTool: ToolRead;
@@ -1323,9 +1323,9 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
           skillId: nextDraft.skill_id,
         });
       }
-      notify.success(`已确认 ${acceptedSuggestions.length} 个工具，当前草稿已局部更新`);
+      notify.success(`已確認 ${acceptedSuggestions.length} 個工具，當前草稿已局部更新`);
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '新增工具或更新 SOP 失败');
+      notify.error(error instanceof Error ? error.message : '新增工具或更新 SOP 失敗');
     }
   }
 
@@ -1391,10 +1391,10 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
     if (loading) return;
     if (!hasUnsavedSkillChanges()) {
       setClearNewConfirm({
-        title: skillId ? '清空并新建 SOP？' : '清空当前改写？',
+        title: skillId ? '清空並新建 SOP？' : '清空當前改寫？',
         description: skillId
-          ? '清空只会进入一个新的 SOP 草稿工作台，不会删除或替换当前正在编辑的 SOP。'
-          : '当前技能没有未保存变更，确认清空当前改写内容和对话记录？',
+          ? '清空只會進入一個新的 SOP 草稿工作臺，不會刪除或替換當前正在編輯的 SOP。'
+          : '當前技能沒有未保存變更，確認清空當前改寫內容和對話記錄？',
       });
       return;
     }
@@ -1589,7 +1589,7 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
     setTextDiffs([]);
     updateMessage(pendingChange.assistantId, undefined, { actionState: 'confirmed' });
     setPendingChange(null);
-    if (showToast) notify.success('已确认改写');
+    if (showToast) notify.success('已確認改寫');
   }
 
   function rejectPendingChange() {
@@ -1601,7 +1601,7 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
     setTextDiffs([]);
     updateMessage(pendingChange.assistantId, undefined, { actionState: 'rejected' });
     setPendingChange(null);
-    notify.info('已拒绝改写并还原');
+    notify.info('已拒絕改寫並還原');
   }
 
   function requestEditHistoryMessage(item: ChatItem, index: number) {
@@ -1613,9 +1613,9 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
     const text = visibleChatContent(item);
     try {
       await navigator.clipboard.writeText(text);
-      notify.success('已复制');
+      notify.success('已複製');
     } catch {
-      notify.error('复制失败');
+      notify.error('複製失敗');
     }
   }
 
@@ -1684,7 +1684,7 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
       }
       await rewriteSelectedTarget(outgoingText, confirmedDraft, undefined, undefined, nextMessages);
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '回退失败');
+      notify.error(error instanceof Error ? error.message : '回退失敗');
     }
   }
 
@@ -1782,7 +1782,7 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
     animationTimersRef.current = [];
   }
 
-  const pageTitle = mode === 'create' && !skillId ? '新建 SOP' : '编辑 SOP';
+  const pageTitle = mode === 'create' && !skillId ? '新建 SOP' : '編輯 SOP';
 
   return (
     <div className={DISTILL_PAGE_CLASS}>
@@ -1797,14 +1797,14 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
         <DistillSectionCard
           className={cn(CHAT_CARD_CLASS, 'h-full min-h-0', dragActive && CHAT_CARD_DRAGGING_CLASS)}
           bodyClassName={CHAT_CARD_BODY_CLASS}
-          title="对话蒸馏"
+          title="對話蒸餾"
           onDragEnter={handleDragEnter}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
         >
           <div className={CHAT_PANEL_CLASS}>
-            {dragActive && <div className={CHAT_UPLOAD_DROP_HINT_CLASS}>松开上传文档</div>}
+            {dragActive && <div className={CHAT_UPLOAD_DROP_HINT_CLASS}>鬆開上傳文檔</div>}
             <div className={CHAT_MESSAGES_CLASS} ref={chatMessagesRef}>
               {messages.map((item, index) => (
                 <div key={item.id} className={chatRowClass(item.role)}>
@@ -1823,7 +1823,7 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
                           onClick={() => toggleThinking(item.id)}
                         >
                           {item.thinking === 'running' ? <LoadingOutlined /> : <CheckOutlined />}
-                          <span>{item.thinking === 'running' ? '正在学习' : '学习记录'}</span>
+                          <span>{item.thinking === 'running' ? '正在學習' : '學習記錄'}</span>
                           {item.thinkingOpen ? <DownOutlined /> : <RightOutlined />}
                         </button>
                         {item.thinkingOpen && (
@@ -1875,7 +1875,7 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
                         <div className={CHAT_EDIT_ACTIONS_CLASS}>
                           <UIButton variant="outline" onClick={cancelEditingMessage}>取消</UIButton>
                           <UIButton onClick={submitEditingMessage} disabled={!(editingMessage?.text || '').trim()}>
-                            发送
+                            發送
                           </UIButton>
                         </div>
                       </div>
@@ -1891,12 +1891,12 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
                             {visibleChatContent(item)}
                           </div>
                         ) : item.role === 'assistant' && item.thinking === 'running' ? null : item.role === 'assistant' ? (
-                          '正在处理...'
+                          '正在處理...'
                         ) : null}
                         {item.role === 'user' && (
                           <div className={CHAT_HOVER_ACTIONS_CLASS}>
                             <span className={CHAT_TIME_CLASS}>{formatMessageTime(item.createdAt)}</span>
-                            <button type="button" className={CHAT_HOVER_BUTTON_CLASS} title="复制" onClick={() => void copyHistoryMessage(item)}>
+                            <button type="button" className={CHAT_HOVER_BUTTON_CLASS} title="複製" onClick={() => void copyHistoryMessage(item)}>
                               <CopyGlyph />
                             </button>
                             <button
@@ -1956,7 +1956,7 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
                               </div>
                               <div className={TOOL_SUGGESTION_ACTIONS_CLASS}>
                                 <span className={cn(TOOL_ACTION_GROUP_CLASS, TOOL_ACTION_GROUP_DETAIL_CLASS)}>
-                                  <SimpleTooltip title="查看详情">
+                                  <SimpleTooltip title="查看詳情">
                                     <UIButton
                                       className={TOOL_ACTION_BUTTON_CLASS}
                                       variant="ghost"
@@ -1969,7 +1969,7 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
                                 </span>
                                 {canResolveSuggestion && (
                                   <span className={TOOL_ACTION_GROUP_CLASS}>
-                                    <SimpleTooltip title="确认新增">
+                                    <SimpleTooltip title="確認新增">
                                       <UIButton
                                         className={cn(TOOL_ACTION_BUTTON_CLASS, TOOL_ACTION_CONFIRM_CLASS)}
                                         variant="ghost"
@@ -1980,7 +1980,7 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
                                         <CheckCircleOutlined />
                                       </UIButton>
                                     </SimpleTooltip>
-                                    <SimpleTooltip title="拒绝">
+                                    <SimpleTooltip title="拒絕">
                                       <UIButton
                                         className={cn(TOOL_ACTION_BUTTON_CLASS, TOOL_ACTION_REJECT_CLASS)}
                                         variant="ghost"
@@ -2001,15 +2001,15 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
                     {item.actionState === 'pending' && (
                       <div className={CHAT_CONFIRM_CLASS}>
                         <UIButton size="sm" onClick={() => confirmPendingChange()}>
-                          确认
+                          確認
                         </UIButton>
                         <UIButton size="sm" variant="outline" onClick={rejectPendingChange}>
-                          拒绝
+                          拒絕
                         </UIButton>
                       </div>
                     )}
-                    {item.actionState === 'confirmed' && <div className={CHAT_DECISION_CLASS}>已确认</div>}
-                    {item.actionState === 'rejected' && <div className={CHAT_DECISION_CLASS}>已拒绝</div>}
+                    {item.actionState === 'confirmed' && <div className={CHAT_DECISION_CLASS}>已確認</div>}
+                    {item.actionState === 'rejected' && <div className={CHAT_DECISION_CLASS}>已拒絕</div>}
                   </div>
                 </div>
               ))}
@@ -2023,9 +2023,9 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
                       <FileTextOutlined />
                       <span className={UPLOAD_NAME_CLASS}>{attachment.name}</span>
                       <span className={UPLOAD_STATUS_CLASS}>
-                        {attachment.status === 'uploading' && '读取中'}
-                        {attachment.status === 'ready' && '已读取'}
-                        {attachment.status === 'error' && (attachment.error || '读取失败')}
+                        {attachment.status === 'uploading' && '讀取中'}
+                        {attachment.status === 'ready' && '已讀取'}
+                        {attachment.status === 'error' && (attachment.error || '讀取失敗')}
                       </span>
                       <UIButton
                         size="icon"
@@ -2052,8 +2052,8 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
                 rows={4}
                 placeholder={
                   draft
-                    ? '说明你要如何改写右侧选中的部分'
-                    : '输入或粘贴需要整理的 SOP 流程说明'
+                    ? '說明你要如何改寫右側選中的部分'
+                    : '輸入或粘貼需要整理的 SOP 流程說明'
                 }
               />
               <div className={CHAT_ACTIONS_CLASS}>
@@ -2075,7 +2075,7 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
                     <UIButton asChild variant="outline" disabled={uploadingFile || loading} className={CARD_OUTLINE_BUTTON_CLASS}>
                       <span>
                         <UploadOutlined />
-                        上传文件
+                        上傳文件
                       </span>
                     </UIButton>
                   </label>
@@ -2100,7 +2100,7 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
                     onClick={() => void send()}
                   >
                     {loading ? <LoadingOutlined className="animate-spin" /> : <SendOutlined />}
-                    发送
+                    發送
                   </UIButton>
                 </div>
               </div>
@@ -2111,13 +2111,13 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
         <DistillSectionCard
           className={cn(SOURCE_CARD_CLASS, 'h-full min-h-0')}
           bodyClassName={DISTILL_CARD_BODY_CLASS}
-          title={viewMode === 'source' ? '源码' : '流程图'}
+          title={viewMode === 'source' ? '源碼' : '流程圖'}
           extra={
             <div className="flex flex-wrap justify-end gap-[8px]">
               <UIButton variant="outline" className={CARD_OUTLINE_BUTTON_CLASS} disabled={loading} onClick={handleClearClick}>
                 清空
               </UIButton>
-              <SimpleTooltip title={draft && !hasSaveableDraftChanges ? '当前没有内容变化' : ''}>
+              <SimpleTooltip title={draft && !hasSaveableDraftChanges ? '當前沒有內容變化' : ''}>
                 <UIButton
                   variant="outline"
                   className={CARD_OUTLINE_BUTTON_CLASS}
@@ -2139,18 +2139,18 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
                 onClick={() => setViewMode(viewMode === 'source' ? 'flow' : 'source')}
               >
                 {viewMode === 'source' ? <BranchesOutlined /> : <CodeOutlined />}
-                {viewMode === 'source' ? '显示流程' : '显示源码'}
+                {viewMode === 'source' ? '顯示流程' : '顯示源碼'}
               </UIButton>
               <UIButton variant="outline" className={CARD_OUTLINE_BUTTON_CLASS} disabled={!draft} onClick={toggleAllTargets}>
-                {allSelected ? '清空选择' : '全选'}
+                {allSelected ? '清空選擇' : '全選'}
               </UIButton>
             </div>
           </div>
           {!draft ? (
             <div className={SOURCE_EMPTY_STATE_CLASS}>
               <FileTextOutlined className="text-[28px] text-[#c0c6d4]" />
-              <p className={SOURCE_EMPTY_TEXT_CLASS}>暂无 SOP 草稿</p>
-              <p className="text-[12px] leading-[18px] text-[#c0c6d4]">在左侧输入说明或上传文档后开始生成</p>
+              <p className={SOURCE_EMPTY_TEXT_CLASS}>暫無 SOP 草稿</p>
+              <p className="text-[12px] leading-[18px] text-[#c0c6d4]">在左側輸入說明或上傳文檔後開始生成</p>
             </div>
           ) : viewMode === 'source' ? (
             <SkillSource
@@ -2208,13 +2208,13 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
                 openSaveReview({ clearAfterSave: true });
               }}
             >
-              保存并清空
+              保存並清空
             </UIButton>
           </div>
         }
       >
         <p className="m-0 text-[14px] leading-[22px] text-foreground">
-          检测到当前 SOP 有未保存变更。你可以先保存当前内容；清空后会进入新的 SOP 草稿工作台，不会把原 SOP 替换为空。
+          檢測到當前 SOP 有未保存變更。你可以先保存當前內容；清空後會進入新的 SOP 草稿工作臺，不會把原 SOP 替換為空。
         </p>
       </KDialog>
       <KDialog
@@ -2231,22 +2231,22 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
       >
         <div className={SAVE_REVIEW_FORM_CLASS}>
           <label className={SAVE_REVIEW_FORM_LABEL_CLASS}>
-            <span>SOP名称</span>
+            <span>SOP名稱</span>
             <Input value={saveName} onChange={(event) => setSaveName(event.target.value)} />
           </label>
           <label className={SAVE_REVIEW_FORM_LABEL_CLASS}>
-            <span>业务域</span>
+            <span>業務域</span>
             <Input value={saveDomain} onChange={(event) => setSaveDomain(event.target.value)} />
           </label>
           <label className={SAVE_REVIEW_FORM_LABEL_CLASS}>
-            <span>版本号</span>
+            <span>版本號</span>
             <Input value={saveVersion} disabled={!saveReviewHasContentChanges} onChange={(event) => setSaveVersion(event.target.value)} />
           </label>
         </div>
         <div className={SAVE_REVIEW_DIFF_CLASS}>
-          <strong className="text-[13px] font-semibold text-foreground">本轮修改 diff</strong>
+          <strong className="text-[13px] font-semibold text-foreground">本輪修改 diff</strong>
           {saveReviewDiffs.length === 0 ? (
-            <EmptyState description="暂无结构差异" />
+            <EmptyState description="暫無結構差異" />
           ) : (
             saveReviewDiffs.map((diff) => (
               <div key={diff.key} className={SAVE_REVIEW_DIFF_ROW_CLASS}>
@@ -2260,20 +2260,20 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
       <KDialog
         open={Boolean(toolDetail)}
         onOpenChange={(open) => !open && setToolDetail(null)}
-        title="工具详情"
+        title="工具詳情"
         width={1040}
         footer={
           <div className={cn(TOOL_SUGGESTION_DETAIL_FOOTER_CLASS, "flex flex-wrap justify-end gap-[8px]")}>
-            <UIButton variant="outline" onClick={() => setToolDetail(null)}>关闭</UIButton>
+            <UIButton variant="outline" onClick={() => setToolDetail(null)}>關閉</UIButton>
             {toolDetail && toolSuggestionResolution(toolDetail) === 'new_candidate' && (
               <>
-                <UIButton variant="outline" onClick={applyProbeArgumentsFromDetail}>应用样例参数</UIButton>
+                <UIButton variant="outline" onClick={applyProbeArgumentsFromDetail}>應用樣例參數</UIButton>
                 <UIButton
                   disabled={toolDetail?.probeStatus === 'probing'}
                   onClick={probeToolDetail}
                 >
                   {toolDetail?.probeStatus === 'probing' ? <LoadingOutlined className="animate-spin" /> : <ApiOutlined />}
-                  {toolDetail?.probe_result ? '再次测试' : '测试接口'}
+                  {toolDetail?.probe_result ? '再次測試' : '測試接口'}
                 </UIButton>
               </>
             )}
@@ -2282,31 +2282,31 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
       >
         {toolDetail && (
           <div className={TOOL_SUGGESTION_DETAIL_CLASS}>
-            <div><strong>解析状态：</strong>{toolSuggestionResolutionLabel(toolDetail)}</div>
+            <div><strong>解析狀態：</strong>{toolSuggestionResolutionLabel(toolDetail)}</div>
             {toolDetail.matched_tool_name && (
               <div><strong>匹配工具：</strong>{toolDetail.matched_tool_display_name || toolDetail.matched_tool_name}</div>
             )}
             <div><strong>工具名：</strong>{toolDetail.name}</div>
-            <div><strong>显示名：</strong>{toolDetail.display_name || '-'}</div>
-            <div><strong>说明：</strong>{toolDetail.description || '-'}</div>
+            <div><strong>顯示名：</strong>{toolDetail.display_name || '-'}</div>
+            <div><strong>說明：</strong>{toolDetail.description || '-'}</div>
             <div><strong>方法：</strong>{toolDetail.method}</div>
             <div><strong>URL：</strong>{toolDetail.url}</div>
             {toolDetail.missing_reason && <div><strong>缺失原因：</strong>{toolDetail.missing_reason}</div>}
             <div><strong>原因：</strong>{toolDetail.reason || '-'}</div>
-            <div><strong>来源：</strong>{toolDetail.source_excerpt || '-'}</div>
-            <strong className="text-[13px] font-semibold text-foreground">样例参数</strong>
+            <div><strong>來源：</strong>{toolDetail.source_excerpt || '-'}</div>
+            <strong className="text-[13px] font-semibold text-foreground">樣例參數</strong>
             <Textarea
               value={probeArgsText}
               rows={5}
               onChange={(event) => setProbeArgsText(event.target.value)}
             />
-            <strong className="text-[13px] font-semibold text-foreground">输入 Schema</strong>
+            <strong className="text-[13px] font-semibold text-foreground">輸入 Schema</strong>
             <pre className={TOOL_SUGGESTION_DETAIL_PRE_CLASS}>{JSON.stringify(toolDetail.input_schema || {}, null, 2)}</pre>
-            <strong className="text-[13px] font-semibold text-foreground">输出 Schema</strong>
+            <strong className="text-[13px] font-semibold text-foreground">輸出 Schema</strong>
             <pre className={TOOL_SUGGESTION_DETAIL_PRE_CLASS}>{JSON.stringify(toolDetail.output_schema || {}, null, 2)}</pre>
             {toolDetail.probe_result && (
               <>
-                <strong className="text-[13px] font-semibold text-foreground">测试结果</strong>
+                <strong className="text-[13px] font-semibold text-foreground">測試結果</strong>
                 <pre className={TOOL_SUGGESTION_DETAIL_PRE_CLASS}>{JSON.stringify(toolDetail.probe_result, null, 2)}</pre>
               </>
             )}
@@ -2331,12 +2331,12 @@ export default function DistillPage({ active = true, searchParamsOverride, curre
         <ConfirmDialog
           open
           onOpenChange={(open) => !open && setRerunConfirm(null)}
-          title="重新编辑这条消息？"
-          confirmText="确认回退"
+          title="重新編輯這條消息？"
+          confirmText="確認回退"
           destructive={false}
           description={
             <div>
-              <p className="m-0 mb-[8px]">重新编辑会回到这条消息发送前的 SOP 草稿，并截断之后的推理记录。</p>
+              <p className="m-0 mb-[8px]">重新編輯會回到這條消息發送前的 SOP 草稿，並截斷之後的推理記錄。</p>
               <div className="rollback-operation-list flex flex-wrap gap-[6px]">
                 {rerunConfirm.rollbackOperations.map((operation, operationIndex) => (
                   <DistillTag key={`${operation.kind}_${operationIndex}`}>{operation.label}</DistillTag>

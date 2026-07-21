@@ -27,7 +27,7 @@ def test_four_agent_stages_use_identical_system_and_stage_local_user_content(
         if phase == "Router":
             return {"decision": "answer_only", "confidence": 0.9}
         if phase == "Step Agent":
-            return {"action": "reply", "reply": "正在处理", "is_step_completed": False}
+            return {"action": "reply", "reply": "正在處理", "is_step_completed": False}
         if phase == "Reflection":
             return {"action": "pass", "needs_retry": False}
         raise AssertionError(f"unexpected phase: {phase}")
@@ -36,7 +36,7 @@ def test_four_agent_stages_use_identical_system_and_stage_local_user_content(
         phase = payload["_agent_stage"]["phase"]
         systems[phase] = system_prompt
         payloads[phase] = payload
-        return "最终回复"
+        return "最終回覆"
 
     monkeypatch.setattr(LLMClient, "__init__", fake_init)
     monkeypatch.setattr(LLMClient, "generate_json", fake_generate_json)
@@ -44,12 +44,12 @@ def test_four_agent_stages_use_identical_system_and_stage_local_user_content(
 
     session = ChatSession(id="session_test", tenant_id="tenant_demo")
     context = {
-        "messages": [{"role": "user", "content": "当前问题"}],
+        "messages": [{"role": "user", "content": "當前問題"}],
         "metadata": {"current_turn_time": "2026-07-13T20:45:00+08:00"},
     }
-    memory = [{"content": "用户偏好简洁回答", "id": "internal_memory_id"}]
+    memory = [{"content": "用戶偏好簡潔回答", "id": "internal_memory_id"}]
     router_decision = Router().decide(
-        "当前问题",
+        "當前問題",
         session,
         [],
         model_config=None,  # type: ignore[arg-type]
@@ -57,7 +57,7 @@ def test_four_agent_stages_use_identical_system_and_stage_local_user_content(
         memory_context=memory,
     )
     step_result = StepAgent().run(
-        "当前问题",
+        "當前問題",
         session,
         None,
         [],
@@ -67,7 +67,7 @@ def test_four_agent_stages_use_identical_system_and_stage_local_user_content(
         memory_context=memory,
     )
     ReflectionAgent().review(
-        "当前问题",
+        "當前問題",
         session,
         None,
         router_decision,
@@ -80,7 +80,7 @@ def test_four_agent_stages_use_identical_system_and_stage_local_user_content(
         memory_context=memory,
     )
     ResponseGenerator().generate(
-        "当前问题",
+        "當前問題",
         session,
         None,
         router_decision,
@@ -93,13 +93,13 @@ def test_four_agent_stages_use_identical_system_and_stage_local_user_content(
 
     assert set(systems) == {"Router", "Step Agent", "Reflection", "Response Generator"}
     assert len(set(systems.values())) == 1
-    assert "统一执行引擎" in next(iter(systems.values()))
+    assert "統一執行引擎" in next(iter(systems.values()))
     for phase, payload in payloads.items():
         assert payload["_agent_stage"]["memory"] == (
-            "- 用户偏好简洁回答" if phase == "Router" else ""
+            "- 用戶偏好簡潔回答" if phase == "Router" else ""
         )
         assert payload["_agent_stage"]["turn_time"] == "2026-07-13T20:45:00+08:00"
-        assert payload["user_message"] == "当前问题"
+        assert payload["user_message"] == "當前問題"
         assert "internal_memory_id" not in str(payload)
         assert payload["_agent_stage"]["instructions"]
         assert payload["_agent_stage"]["output_contract"]
@@ -125,7 +125,7 @@ def test_general_skill_substages_use_the_same_unified_system_prompt(monkeypatch)
             return {
                 "runtime": "python",
                 "code": "print('{}')",
-                "rationale": "执行测试",
+                "rationale": "執行測試",
                 "expected_output": "JSON",
             }
         if phase == "Reflection / General Skill Review":
@@ -133,10 +133,10 @@ def test_general_skill_substages_use_the_same_unified_system_prompt(monkeypatch)
                 "result_sufficient": True,
                 "needs_retry": False,
                 "terminal": False,
-                "reason": "结果可用",
+                "reason": "結果可用",
             }
         if phase == "Response Generator / General Skill Reply":
-            return {"reply": "执行完成"}
+            return {"reply": "執行完成"}
         raise AssertionError(f"unexpected phase: {phase}")
 
     def fake_execute_plan(  # noqa: ANN001
@@ -156,15 +156,15 @@ def test_general_skill_substages_use_the_same_unified_system_prompt(monkeypatch)
     monkeypatch.setattr(GeneralSkillRunner, "_execute_plan", fake_execute_plan)
 
     context = {
-        "messages": [{"role": "user", "content": "查询北京天气"}],
+        "messages": [{"role": "user", "content": "查詢北京天氣"}],
         "metadata": {"current_turn_time": "2026-07-13T21:10:00+08:00"},
     }
     skill = GeneralSkill(
         tenant_id="tenant_demo",
         slug="weather-zh",
-        name="中国城市天气",
-        description="查询中国城市天气",
-        skill_markdown="# 天气查询",
+        name="中國城市天氣",
+        description="查詢中國城市天氣",
+        skill_markdown="# 天氣查詢",
         status="published",
     )
     model_config = SimpleNamespace(
@@ -176,7 +176,7 @@ def test_general_skill_substages_use_the_same_unified_system_prompt(monkeypatch)
     )
 
     selection = GeneralSkillSelector().decide(
-        "查询北京天气",
+        "查詢北京天氣",
         [skill],
         model_config=model_config,  # type: ignore[arg-type]
         conversation_context=context,
@@ -185,14 +185,14 @@ def test_general_skill_substages_use_the_same_unified_system_prompt(monkeypatch)
     assert selection.selected_slug == "weather-zh"
     response = GeneralSkillRunner().run(
         skill,
-        "查询北京天气",
+        "查詢北京天氣",
         model_config=model_config,  # type: ignore[arg-type]
         user_id="user_demo",
         conversation_context=context,
         memory_context=[],
     )
 
-    assert response.reply == "执行完成"
+    assert response.reply == "執行完成"
     assert set(systems) == {
         "Router / General Skill Selector",
         "Step Agent / General Skill Plan",
@@ -200,4 +200,4 @@ def test_general_skill_substages_use_the_same_unified_system_prompt(monkeypatch)
         "Response Generator / General Skill Reply",
     }
     assert len(set(systems.values())) == 1
-    assert "统一执行引擎" in next(iter(systems.values()))
+    assert "統一執行引擎" in next(iter(systems.values()))

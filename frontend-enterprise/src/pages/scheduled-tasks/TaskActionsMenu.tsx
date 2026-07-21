@@ -53,22 +53,22 @@ export function TaskActionsMenu({
       >
         <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={() => onViewRuns(task)}>
           <IconListBulleted />
-          查看记录
+          查看記錄
         </DropdownMenuItem>
         {!isArchived && (
           <>
             <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={() => onEdit(task)}>
               <IconEdit />
-              编辑
+              編輯
             </DropdownMenuItem>
             <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={() => onRunNow(task)}>
               <IconPlay />
-              立即执行
+              立即執行
             </DropdownMenuItem>
             {!isCompleted && (
               <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={() => onToggleStatus(task)}>
                 {task.status === 'active' ? <IconPause /> : <IconPlay />}
-                {task.status === 'active' ? '暂停' : '启用'}
+                {task.status === 'active' ? '暫停' : '啟用'}
               </DropdownMenuItem>
             )}
             <DropdownMenuSeparator className="my-[2px] bg-[#eef0f4]" />
@@ -78,7 +78,7 @@ export function TaskActionsMenu({
               onSelect={() => onDelete(task)}
             >
               <IconTrash />
-              删除
+              刪除
             </DropdownMenuItem>
           </>
         )}

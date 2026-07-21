@@ -87,8 +87,8 @@ export default function ToolsListPage({ currentUser, onLogout }: ToolPageProps =
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const pageTitle = isOverallAgent ? '工具广场' : '工具';
-  const listLabel = isOverallAgent ? '工具广场列表' : '员工工具';
+  const pageTitle = isOverallAgent ? '工具廣場' : '工具';
+  const listLabel = isOverallAgent ? '工具廣場列表' : '員工工具';
   const currentAgent = useMemo(() => agents.find((item) => item.id === agentId), [agents, agentId]);
   const canManageCurrentScope = currentAgent
     ? canManageEmployeeAgent(currentAgent, currentUser)
@@ -110,7 +110,7 @@ export default function ToolsListPage({ currentUser, onLogout }: ToolPageProps =
         setRows(toolRows);
         setServers(serverRows);
       })
-      .catch((error) => notify.error(error instanceof Error ? error.message : '加载工具失败'))
+      .catch((error) => notify.error(error instanceof Error ? error.message : '加載工具失敗'))
       .finally(() => setLoading(false));
   };
 
@@ -204,11 +204,11 @@ export default function ToolsListPage({ currentUser, onLogout }: ToolPageProps =
     setDeleting(true);
     try {
       await toolsApi.remove(row.id, agentId);
-      notify.success(isOverallAgent ? '已删除工具' : '已从当前员工移除');
+      notify.success(isOverallAgent ? '已刪除工具' : '已從當前員工移除');
       setDeleteTarget(null);
       await load();
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : isOverallAgent ? '删除失败' : '移除失败');
+      notify.error(error instanceof Error ? error.message : isOverallAgent ? '刪除失敗' : '移除失敗');
     } finally {
       setDeleting(false);
     }
@@ -238,11 +238,11 @@ export default function ToolsListPage({ currentUser, onLogout }: ToolPageProps =
     setDeletingServer(true);
     try {
       await mcpServersApi.remove(row.id, { agentId, removeTools: true });
-      notify.success('已删除');
+      notify.success('已刪除');
       setServerDeleteTarget(null);
       void load();
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '删除失败');
+      notify.error(error instanceof Error ? error.message : '刪除失敗');
     } finally {
       setDeletingServer(false);
     }
@@ -259,7 +259,7 @@ export default function ToolsListPage({ currentUser, onLogout }: ToolPageProps =
         || targetCandidates[0]?.id
         || '';
       if (!nextTargetAgentId) {
-        notify.warning('请先创建或选择一个数字员工，再复制工具');
+        notify.warning('請先創建或選擇一個數字員工，再複製工具');
         return;
       }
       setImportTargetAgentId(nextTargetAgentId);
@@ -278,7 +278,7 @@ export default function ToolsListPage({ currentUser, onLogout }: ToolPageProps =
         setImportSourceTools([]);
       }
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '加载员工失败');
+      notify.error(error instanceof Error ? error.message : '加載員工失敗');
     }
   }
 
@@ -292,7 +292,7 @@ export default function ToolsListPage({ currentUser, onLogout }: ToolPageProps =
       setImportSourceTools(enabledRows);
       return enabledRows;
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '加载来源工具失败');
+      notify.error(error instanceof Error ? error.message : '加載來源工具失敗');
       return [];
     }
   }
@@ -300,15 +300,15 @@ export default function ToolsListPage({ currentUser, onLogout }: ToolPageProps =
   async function submitImportTools() {
     const targetAgentId = importTargetAgentId || (!isOverallAgent ? agentId : '');
     if (!targetAgentId) {
-      notify.warning('请选择要复制到的数字员工');
+      notify.warning('請選擇要複製到的數字員工');
       return;
     }
     if (!importSourceAgentId) {
-      notify.warning(importMode === 'plaza' ? '请选择开放广场' : '请选择复制来源员工');
+      notify.warning(importMode === 'plaza' ? '請選擇開放廣場' : '請選擇複製來源員工');
       return;
     }
     if (importSelectedToolIds.length === 0) {
-      notify.warning('请选择要复制的工具');
+      notify.warning('請選擇要複製的工具');
       return;
     }
     setImportLoading(true);
@@ -320,7 +320,7 @@ export default function ToolsListPage({ currentUser, onLogout }: ToolPageProps =
       });
       const importedCount = result.imported?.length || 0;
       const missingCount = result.missing?.length || 0;
-      notify.success(`已复制 ${importedCount} 个工具${missingCount ? `，${missingCount} 个未复制` : ''}`);
+      notify.success(`已複製 ${importedCount} 個工具${missingCount ? `，${missingCount} 個未複製` : ''}`);
       setImportOpen(false);
       if (targetAgentId !== agentId) {
         window.localStorage.setItem(ENTERPRISE_AGENT_STORAGE_KEY, targetAgentId);
@@ -330,7 +330,7 @@ export default function ToolsListPage({ currentUser, onLogout }: ToolPageProps =
         await load();
       }
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '复制工具失败');
+      notify.error(error instanceof Error ? error.message : '複製工具失敗');
     } finally {
       setImportLoading(false);
     }
@@ -369,12 +369,12 @@ export default function ToolsListPage({ currentUser, onLogout }: ToolPageProps =
           {canManageCurrentScope && !isMcpChild && (
             <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={() => navigate(`/enterprise/tools/${row.id}/edit`)}>
               <IconEdit />
-              编辑
+              編輯
             </DropdownMenuItem>
           )}
           <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={() => navigate(`/enterprise/tools/${row.id}/test`)}>
             <FlaskConical />
-            测试
+            測試
           </DropdownMenuItem>
           {canManageCurrentScope && !isMcpChild && (
             <>
@@ -385,7 +385,7 @@ export default function ToolsListPage({ currentUser, onLogout }: ToolPageProps =
                 onSelect={() => setDeleteTarget(row)}
               >
                 <IconTrash />
-                {isOverallAgent ? '删除' : '移除'}
+                {isOverallAgent ? '刪除' : '移除'}
               </DropdownMenuItem>
             </>
           )}
@@ -397,7 +397,7 @@ export default function ToolsListPage({ currentUser, onLogout }: ToolPageProps =
   const columns: DataTableColumn<ToolRead>[] = [
     {
       key: 'name',
-      title: '工具名称',
+      title: '工具名稱',
       width: 200,
       className: 'text-[#18181a]',
       render: (row) => (
@@ -419,7 +419,7 @@ export default function ToolsListPage({ currentUser, onLogout }: ToolPageProps =
     },
     {
       key: 'type',
-      title: '类型',
+      title: '類型',
       width: 90,
       render: (row) => (
         <StatusBadge tone={row.tool_type === 'mcp' ? 'blue' : 'gray'}>{row.tool_type === 'mcp' ? 'MCP' : 'HTTP'}</StatusBadge>
@@ -427,7 +427,7 @@ export default function ToolsListPage({ currentUser, onLogout }: ToolPageProps =
     },
     {
       key: 'creator',
-      title: '创建者',
+      title: '創建者',
       width: 120,
       render: (row) => (
         <span className="block truncate text-[#858b9c]" title={resourceCreatorName(row)}>
@@ -444,10 +444,10 @@ export default function ToolsListPage({ currentUser, onLogout }: ToolPageProps =
     },
     {
       key: 'enabled',
-      title: '启用',
+      title: '啟用',
       width: 90,
       render: (row) => (
-        <StatusBadge tone={row.enabled ? 'green' : 'gray'}>{row.enabled ? '已启用' : '已停用'}</StatusBadge>
+        <StatusBadge tone={row.enabled ? 'green' : 'gray'}>{row.enabled ? '已啟用' : '已停用'}</StatusBadge>
       ),
     },
     {
@@ -462,7 +462,7 @@ export default function ToolsListPage({ currentUser, onLogout }: ToolPageProps =
   const serverColumns: DataTableColumn<MCPServerRead>[] = [
     {
       key: 'name',
-      title: '名称',
+      title: '名稱',
       width: 240,
       render: (row) => (
         <div className="flex min-w-0 flex-col gap-[4px]">
@@ -482,13 +482,13 @@ export default function ToolsListPage({ currentUser, onLogout }: ToolPageProps =
     },
     {
       key: 'transport',
-      title: '连接方式',
+      title: '連接方式',
       width: 140,
       render: (row) => <StatusBadge tone="gray">{transportLabel(row.connection.transport)}</StatusBadge>,
     },
     {
       key: 'endpoint',
-      title: '端点',
+      title: '端點',
       className: 'whitespace-normal',
       render: (row) => (
         <span className="line-clamp-1 wrap-break-word text-[#858b9c]">{serverEndpoint(row.connection)}</span>
@@ -496,16 +496,16 @@ export default function ToolsListPage({ currentUser, onLogout }: ToolPageProps =
     },
     {
       key: 'tool_count',
-      title: '工具数',
+      title: '工具數',
       width: 110,
-      render: (row) => <span className="text-[#858b9c]">{row.tool_count} 个工具</span>,
+      render: (row) => <span className="text-[#858b9c]">{row.tool_count} 個工具</span>,
     },
     {
       key: 'enabled',
-      title: '启用',
+      title: '啟用',
       width: 90,
       render: (row) => (
-        <StatusBadge tone={row.enabled ? 'green' : 'gray'}>{row.enabled ? '已启用' : '已停用'}</StatusBadge>
+        <StatusBadge tone={row.enabled ? 'green' : 'gray'}>{row.enabled ? '已啟用' : '已停用'}</StatusBadge>
       ),
     },
     {
@@ -523,7 +523,7 @@ export default function ToolsListPage({ currentUser, onLogout }: ToolPageProps =
             className={RETURN_BUTTON_CLASS}
           >
             <IconRefresh className="size-[14px] shrink-0" />
-            发现/同步
+            發現/同步
           </UIButton>
           {canManageCurrentScope && isOverallAgent && (
             <UIButton
@@ -532,7 +532,7 @@ export default function ToolsListPage({ currentUser, onLogout }: ToolPageProps =
               onClick={() => setServerDeleteTarget(row)}
               className={cn(RETURN_BUTTON_CLASS, 'text-[#e5484d] hover:text-[#e5484d]')}
             >
-              删除
+              刪除
             </UIButton>
           )}
         </div>
@@ -548,14 +548,14 @@ export default function ToolsListPage({ currentUser, onLogout }: ToolPageProps =
             {row.display_name || row.name}
           </strong>
           <span className="mt-[2px] block truncate text-[12px] text-[#858b9c]">{row.name}</span>
-          <span className="mt-[2px] block truncate text-[12px] text-[#858b9c]">创建者：{resourceCreatorName(row) || '-'}</span>
+          <span className="mt-[2px] block truncate text-[12px] text-[#858b9c]">創建者：{resourceCreatorName(row) || '-'}</span>
         </div>
         {renderActions(row)}
       </div>
       <div className="mt-[8px] flex flex-wrap items-center gap-[6px]">
         <StatusBadge tone="gray">{row.bucket || '未分桶'}</StatusBadge>
         <StatusBadge tone={row.tool_type === 'mcp' ? 'blue' : 'gray'}>{row.tool_type === 'mcp' ? 'MCP' : 'HTTP'}</StatusBadge>
-        <StatusBadge tone={row.enabled ? 'green' : 'gray'}>{row.enabled ? '已启用' : '已停用'}</StatusBadge>
+        <StatusBadge tone={row.enabled ? 'green' : 'gray'}>{row.enabled ? '已啟用' : '已停用'}</StatusBadge>
       </div>
       <p className="mt-[8px] line-clamp-1 wrap-break-word text-[12px] text-[#858b9c]">
         {row.method} · {row.url}
@@ -564,8 +564,8 @@ export default function ToolsListPage({ currentUser, onLogout }: ToolPageProps =
   );
 
   const listEmptyText = isOverallAgent
-    ? canManageCurrentScope ? '暂无工具，点击「新增」创建一个吧' : '暂无工具'
-    : '当前员工暂无工具';
+    ? canManageCurrentScope ? '暫無工具，點擊「新增」創建一個吧' : '暫無工具'
+    : '當前員工暫無工具';
 
   return (
     <div className="min-h-full box-border px-[48px] pt-[32px] pb-[43px] max-[900px]:px-[16px]">
@@ -598,13 +598,13 @@ export default function ToolsListPage({ currentUser, onLogout }: ToolPageProps =
               {!isOverallAgent && (
                 <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={() => handleCreateAction('plaza')}>
                   <IconTool className="size-[14px]" />
-                  从广场复制
+                  從廣場複製
                 </DropdownMenuItem>
               )}
               {!isOverallAgent && (
                 <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={() => handleCreateAction('employee')}>
                   <FlaskConical />
-                  从数字员工复制
+                  從數字員工複製
                 </DropdownMenuItem>
               )}
             </DropdownMenuContent>
@@ -613,9 +613,9 @@ export default function ToolsListPage({ currentUser, onLogout }: ToolPageProps =
       </div>
 
       <div className="flex flex-col gap-[24px] rounded-[20px_20px_0_0] bg-white p-[18px_18px_24px_18px] shadow-[0_-4px_16px_0_rgba(0,0,0,0.05)]">
-        <div className="flex flex-wrap items-stretch gap-[20px]" aria-label="工具统计">
-          <StatCard label="工具总数" value={stats.total} className="basis-[220px]" />
-          <StatCard label="已启用" value={stats.enabled} tone="green" className="basis-[220px]" />
+        <div className="flex flex-wrap items-stretch gap-[20px]" aria-label="工具統計">
+          <StatCard label="工具總數" value={stats.total} className="basis-[220px]" />
+          <StatCard label="已啟用" value={stats.enabled} tone="green" className="basis-[220px]" />
           <StatCard label="分桶" value={stats.buckets} className="basis-[220px]" />
         </div>
 
@@ -623,16 +623,16 @@ export default function ToolsListPage({ currentUser, onLogout }: ToolPageProps =
           <div className="flex flex-col gap-[18px]">
             <div className="flex items-center gap-[6px] px-[12px] text-[#757f9c]">
               <ApiOutlined className="size-[14px] shrink-0" />
-              <span className="text-[14px] font-normal leading-none">MCP 服务器（工具集）</span>
+              <span className="text-[14px] font-normal leading-none">MCP 服務器（工具集）</span>
             </div>
             <div className="hidden md:block">
               <DataTable
-                aria-label="MCP 服务器列表"
+                aria-label="MCP 服務器列表"
                 columns={serverColumns}
                 data={servers}
                 rowKey={(row) => row.id}
                 loading={loading}
-                emptyText="暂无 MCP 服务器"
+                emptyText="暫無 MCP 服務器"
               />
             </div>
             <div className="grid gap-[10px] md:hidden">
@@ -651,8 +651,8 @@ export default function ToolsListPage({ currentUser, onLogout }: ToolPageProps =
                   </div>
                   <div className="mt-[8px] flex flex-wrap items-center gap-[6px]">
                     <StatusBadge tone="gray">{transportLabel(row.connection.transport)}</StatusBadge>
-                    <StatusBadge tone={row.enabled ? 'green' : 'gray'}>{row.enabled ? '已启用' : '已停用'}</StatusBadge>
-                    <StatusBadge tone="gray">{row.tool_count} 个工具</StatusBadge>
+                    <StatusBadge tone={row.enabled ? 'green' : 'gray'}>{row.enabled ? '已啟用' : '已停用'}</StatusBadge>
+                    <StatusBadge tone="gray">{row.tool_count} 個工具</StatusBadge>
                   </div>
                   <p className="mt-[8px] line-clamp-1 wrap-break-word text-[12px] text-[#858b9c]">
                     {serverEndpoint(row.connection)}
@@ -665,7 +665,7 @@ export default function ToolsListPage({ currentUser, onLogout }: ToolPageProps =
                       className={RETURN_BUTTON_CLASS}
                     >
                       <IconRefresh className="size-[14px] shrink-0" />
-                      发现/同步
+                      發現/同步
                     </UIButton>
                     {isOverallAgent && (
                       <UIButton
@@ -674,7 +674,7 @@ export default function ToolsListPage({ currentUser, onLogout }: ToolPageProps =
                         onClick={() => setServerDeleteTarget(row)}
                         className={cn(RETURN_BUTTON_CLASS, 'text-[#e5484d] hover:text-[#e5484d]')}
                       >
-                        删除
+                        刪除
                       </UIButton>
                     )}
                   </div>
@@ -695,7 +695,7 @@ export default function ToolsListPage({ currentUser, onLogout }: ToolPageProps =
               <IconSearch className="size-[14px] shrink-0 text-[#858b9c]" />
               <input
                 value={searchText}
-                placeholder="搜索工具名称、描述、URL 或分桶"
+                placeholder="搜索工具名稱、描述、URL 或分桶"
                 onChange={(event) => setSearchText(event.target.value)}
                 className="h-full min-w-0 flex-1 bg-transparent text-[12px] text-[#17191f] outline-none placeholder:text-[#c0c6d4]"
               />
@@ -711,7 +711,7 @@ export default function ToolsListPage({ currentUser, onLogout }: ToolPageProps =
               )}
             </label>
             <UISelect value={bucketFilter} onValueChange={setBucketFilter}>
-              <SelectTrigger className={cn(SELECT_TRIGGER_CLASS, 'w-[180px]')} aria-label="分桶筛选">
+              <SelectTrigger className={cn(SELECT_TRIGGER_CLASS, 'w-[180px]')} aria-label="分桶篩選">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -745,7 +745,7 @@ export default function ToolsListPage({ currentUser, onLogout }: ToolPageProps =
 
           {filteredRows.length > 0 && (
             <Paginator
-              aria-label="工具分页"
+              aria-label="工具分頁"
               className="mt-0 mb-[6px]"
               page={pagination.page}
               pageCount={pagination.pageCount}
@@ -759,18 +759,18 @@ export default function ToolsListPage({ currentUser, onLogout }: ToolPageProps =
         open={importOpen}
         loading={importLoading}
         icon={<IconTool className="size-[14px] shrink-0" />}
-        title={importMode === 'plaza' ? '从广场复制工具' : '从数字员工复制工具'}
-        targetLabel="复制到"
-        targetPlaceholder="选择目标员工"
+        title={importMode === 'plaza' ? '從廣場複製工具' : '從數字員工複製工具'}
+        targetLabel="複製到"
+        targetPlaceholder="選擇目標員工"
         targets={importTargetCandidates().map((item) => ({ value: item.id, label: item.name }))}
         targetId={importTargetAgentId}
-        sourcePlaceholder={importMode === 'plaza' ? '选择开放广场' : '选择复制来源'}
+        sourcePlaceholder={importMode === 'plaza' ? '選擇開放廣場' : '選擇複製來源'}
         sources={importMode === 'plaza'
-          ? openGalleryImportSourceOptions(agents, '开放广场')
+          ? openGalleryImportSourceOptions(agents, '開放廣場')
           : visibleEmployeeAgents(agents, currentUser, { activeOnly: true, excludeAgentId: importTargetAgentId })
             .map((item) => ({ value: item.id, label: item.name }))}
         sourceId={importSourceAgentId}
-        itemsLabel="选择工具"
+        itemsLabel="選擇工具"
         items={importSourceTools.map((item) => ({
           id: item.id,
           label: (
@@ -781,11 +781,11 @@ export default function ToolsListPage({ currentUser, onLogout }: ToolPageProps =
           ),
         }))}
         selectedIds={importSelectedToolIds}
-        emptyText="没有可复制的工具"
+        emptyText="沒有可複製的工具"
         note={
           importMode === 'plaza'
-            ? '从开放广场复制可用工具；复制后会成为当前员工的本地工具绑定。'
-            : '从数字员工复制可用工具；不可见内容不会出现在列表。'
+            ? '從開放廣場複製可用工具；複製後會成為當前員工的本地工具綁定。'
+            : '從數字員工複製可用工具；不可見內容不會出現在列表。'
         }
         onTargetChange={handleImportTargetChange}
         onSourceChange={(value) => {
@@ -801,13 +801,13 @@ export default function ToolsListPage({ currentUser, onLogout }: ToolPageProps =
         open={Boolean(deleteTarget)}
         onOpenChange={(open) => !open && setDeleteTarget(null)}
         loading={deleting}
-        title={deleteTarget ? `${isOverallAgent ? '删除' : '移除'}工具「${deleteTarget.display_name || deleteTarget.name}」？` : ''}
+        title={deleteTarget ? `${isOverallAgent ? '刪除' : '移除'}工具「${deleteTarget.display_name || deleteTarget.name}」？` : ''}
         description={
           isOverallAgent
-            ? '删除后，引用该工具的技能将无法继续调用它，操作不可撤销。'
-            : '从当前员工移除后，工具广场中的原始工具不会被删除。'
+            ? '刪除後，引用該工具的技能將無法繼續調用它，操作不可撤銷。'
+            : '從當前員工移除後，工具廣場中的原始工具不會被刪除。'
         }
-        confirmText={isOverallAgent ? '删除' : '移除'}
+        confirmText={isOverallAgent ? '刪除' : '移除'}
         onConfirm={() => void confirmDelete()}
       />
 
@@ -817,9 +817,9 @@ export default function ToolsListPage({ currentUser, onLogout }: ToolPageProps =
           if (!open) setServerDeleteTarget(null);
         }}
         loading={deletingServer}
-        title={serverDeleteTarget ? `删除 MCP 服务器「${serverDeleteTarget.display_name || serverDeleteTarget.name}」？` : ''}
-        description={`其下 ${serverDeleteTarget?.tool_count ?? 0} 个已导入工具将一并删除，操作不可撤销。`}
-        confirmText="删除"
+        title={serverDeleteTarget ? `刪除 MCP 服務器「${serverDeleteTarget.display_name || serverDeleteTarget.name}」？` : ''}
+        description={`其下 ${serverDeleteTarget?.tool_count ?? 0} 個已導入工具將一併刪除，操作不可撤銷。`}
+        confirmText="刪除"
         onConfirm={() => void confirmDeleteServer()}
       />
     </div>

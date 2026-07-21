@@ -23,12 +23,12 @@ export default function EmptyEmployeeState({
         </div>
 
         <h2 className="mt-[24px] text-[22px] font-semibold leading-tight text-[#18181a]">
-          还没有数字员工
+          還沒有數字員工
         </h2>
         <p className="mt-[10px] text-[14px] leading-[22px] text-[#757f9c]">
           {isAdmin
-            ? '创建你的第一位数字员工，为它配置知识库、技能与工具，即可开始接管对话与任务。'
-            : '当前还没有可管理的数字员工，创建一位或从开放广场复制已发布的配置作为起点。'}
+            ? '創建你的第一位數字員工，為它配置知識庫、技能與工具，即可開始接管對話與任務。'
+            : '當前還沒有可管理的數字員工，創建一位或從開放廣場複製已發佈的配置作為起點。'}
         </p>
 
         <div className="mt-[28px] flex flex-wrap items-center justify-center gap-[12px]">
@@ -37,7 +37,7 @@ export default function EmptyEmployeeState({
             className="inline-flex h-[42px] items-center gap-[8px] rounded-[14px] bg-[#29282d] px-[22px] text-[14px] font-medium text-white hover:bg-[#3a3940]"
           >
             <IconAdd className="size-[16px]" />
-            新建数字员工
+            新建數字員工
           </UiButton>
           <UiButton
             variant="outline"
@@ -45,7 +45,7 @@ export default function EmptyEmployeeState({
             className="inline-flex h-[42px] items-center gap-[8px] rounded-[14px] border-[0.5px] border-[#e3e7f1] bg-white px-[22px] text-[14px] font-normal text-[#464c5e] hover:bg-[#f6f6f6] hover:text-[#464c5e]"
           >
             <IconGlobe className="size-[16px]" />
-            浏览开放广场
+            瀏覽開放廣場
           </UiButton>
         </div>
       </div>

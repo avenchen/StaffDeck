@@ -15,13 +15,13 @@ def test_step_agent_uses_model_json_for_slots_and_tool(monkeypatch):
         captured["payload"] = payload
         return {
             "reply": None,
-            "slot_updates": {"customer_name": "张三", "asset_id": "EQ-9", "issue": "无法启动"},
+            "slot_updates": {"customer_name": "張三", "asset_id": "EQ-9", "issue": "無法啟動"},
             "tool_call": {
                 "name": "ticket.create",
                 "arguments": {
-                    "customer_name": "张三",
+                    "customer_name": "張三",
                     "asset_id": "EQ-9",
-                    "issue": "无法启动",
+                    "issue": "無法啟動",
                 },
             },
             "next_step_id": "reply_ticket",
@@ -33,7 +33,7 @@ def test_step_agent_uses_model_json_for_slots_and_tool(monkeypatch):
     monkeypatch.setattr(LLMClient, "generate_json", fake_generate_json)
 
     result = StepAgent().run(
-        "我是张三，设备 EQ-9 无法启动",
+        "我是張三，設備 EQ-9 無法啟動",
         ChatSession(
             id="session_test",
             tenant_id="tenant_demo",
@@ -43,7 +43,7 @@ def test_step_agent_uses_model_json_for_slots_and_tool(monkeypatch):
                 "skill_id": "repair_ticket",
                 "step_id": "collect_issue",
                 "expected_fields": ["issue"],
-                "question_summary": "请描述设备问题。",
+                "question_summary": "請描述設備問題。",
             },
         ),
         _repair_skill(),
@@ -52,23 +52,23 @@ def test_step_agent_uses_model_json_for_slots_and_tool(monkeypatch):
         router_decision=RouterDecision(
             decision="start_new_task",
             target_skill_id="repair_ticket",
-            user_intent="设备报修",
+            user_intent="設備報修",
         ),
         recent_messages=[
-            {"role": "user", "content": "我是张三，设备 EQ-9 无法启动"},
+            {"role": "user", "content": "我是張三，設備 EQ-9 無法啟動"},
         ],
         memory_context=[
             {
                 "kind": "profile",
-                "content": "张三",
+                "content": "張三",
                 "metadata": {"key": "preferred_name"},
             }
         ],
     )
 
     assert "skill_id" not in captured["payload"]["active_skill"]
-    assert "统一执行引擎" in captured["system_prompt"]
-    assert "当前 SOP 的最小投影" in captured["payload"]["_agent_stage"]["instructions"]
+    assert "統一執行引擎" in captured["system_prompt"]
+    assert "當前 SOP 的最小投影" in captured["payload"]["_agent_stage"]["instructions"]
     assert captured["payload"]["active_skill"]["current_step"]["node_id"] == (
         "collect_issue"
     )
@@ -82,11 +82,11 @@ def test_step_agent_uses_model_json_for_slots_and_tool(monkeypatch):
     assert "active_step" not in captured["payload"]
     assert captured["payload"]["router_decision"] == {
         "decision": "start_new_task",
-        "user_intent": "设备报修",
+        "user_intent": "設備報修",
     }
     assert "recent_messages" not in captured["payload"]
     assert captured["payload"]["_agent_stage"]["memory"] == ""
-    assert captured["payload"]["awaiting_input"]["question_summary"] == "请描述设备问题。"
+    assert captured["payload"]["awaiting_input"]["question_summary"] == "請描述設備問題。"
     assert "repair_context" in captured["payload"]
     assert captured["payload"]["available_tools"] == [
         {
@@ -95,7 +95,7 @@ def test_step_agent_uses_model_json_for_slots_and_tool(monkeypatch):
             "input_schema": _ticket_tool().input_schema,
         }
     ]
-    assert "通用技能规则" not in captured["payload"]["_agent_stage"]["instructions"]
+    assert "通用技能規則" not in captured["payload"]["_agent_stage"]["instructions"]
     assert result.slot_updates["asset_id"] == "EQ-9"
     assert result.action == "call_tool"
     assert result.tool_call is not None
@@ -111,29 +111,29 @@ def test_step_agent_compacts_knowledge_continuation_without_duplicate_results(mo
 
     def fake_generate_json(self, system_prompt, payload):  # noqa: ANN001
         captured["payload"] = payload
-        return {"reply": "已找到相关信息", "is_step_completed": True}
+        return {"reply": "已找到相關信息", "is_step_completed": True}
 
     monkeypatch.setattr(LLMClient, "__init__", fake_init)
     monkeypatch.setattr(LLMClient, "generate_json", fake_generate_json)
     knowledge_result = {
-        "query": {"query": "设备故障"},
-        "chunks": [{"id": "chunk_1", "content": "重复切片" * 2_000}],
-        "expanded_sections": [{"content": "完整目录树" * 2_000}],
+        "query": {"query": "設備故障"},
+        "chunks": [{"id": "chunk_1", "content": "重複切片" * 2_000}],
+        "expanded_sections": [{"content": "完整目錄樹" * 2_000}],
         "evidence_pack": [
             {
                 "chunk_id": "chunk_1",
-                "source_path": "维修指南/启动失败",
-                "content": "检查电源和保险丝" * 1_000,
+                "source_path": "維修指南/啟動失敗",
+                "content": "檢查電源和保險絲" * 1_000,
             }
         ],
     }
 
     StepAgent().run(
-        "设备无法启动",
+        "設備無法啟動",
         ChatSession(
             id="session_test",
             tenant_id="tenant_demo",
-            knowledge_context_json=[{"evidence_pack": [{"content": "上一轮旧知识"}]}],
+            knowledge_context_json=[{"evidence_pack": [{"content": "上一輪舊知識"}]}],
         ),
         None,
         [],
@@ -142,7 +142,7 @@ def test_step_agent_compacts_knowledge_continuation_without_duplicate_results(mo
             "reason": "knowledge_continuation",
             "knowledge_results": knowledge_result,
         },
-        recent_messages=[{"role": "user", "content": "设备无法启动"}],
+        recent_messages=[{"role": "user", "content": "設備無法啟動"}],
         current_knowledge=[knowledge_result],
     )
 
@@ -155,7 +155,7 @@ def test_step_agent_compacts_knowledge_continuation_without_duplicate_results(mo
     assert "chunks" not in compacted
     assert "expanded_sections" not in compacted
     assert "selected_documents" not in compacted
-    assert "上一轮旧知识" not in str(captured["payload"])
+    assert "上一輪舊知識" not in str(captured["payload"])
     assert len(compacted["retrieved_knowledge"][0]["content"]) <= 803
 
 
@@ -163,23 +163,23 @@ def _repair_skill() -> Skill:
     return Skill(
         tenant_id="tenant_demo",
         skill_id="repair_ticket",
-        name="设备报修",
+        name="設備報修",
         content_json={
             "skill_id": "repair_ticket",
-            "name": "设备报修",
+            "name": "設備報修",
             "required_info": ["customer_name", "asset_id", "issue"],
             "nodes": [
                 {
                     "node_id": "collect_issue",
                     "type": "collect_info",
-                    "name": "收集报修信息",
+                    "name": "收集報修信息",
                     "expected_user_info": ["customer_name", "asset_id", "issue"],
                     "allowed_actions": ["ask_user", "call_tool:ticket.create"],
                 },
                 {
                     "node_id": "reply_ticket",
                     "type": "response",
-                    "name": "反馈工单",
+                    "name": "反饋工單",
                     "expected_user_info": [],
                     "allowed_actions": ["answer_user"],
                 },
@@ -196,7 +196,7 @@ def _ticket_tool() -> Tool:
     return Tool(
         tenant_id="tenant_demo",
         name="ticket.create",
-        display_name="创建工单",
+        display_name="創建工單",
         method="POST",
         url="http://localhost:8000/api/mock/ticket/create",
         input_schema={

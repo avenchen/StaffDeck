@@ -25,7 +25,7 @@ def _session() -> Session:
 
 def _seed_kb(db: Session) -> None:
     db.add(Tenant(id="tenant_demo", name="Demo"))
-    db.add(KnowledgeBase(id="kb_demo", tenant_id="tenant_demo", name="售后知识库", description="售后政策"))
+    db.add(KnowledgeBase(id="kb_demo", tenant_id="tenant_demo", name="售後知識庫", description="售後政策"))
     db.add(
         KnowledgeDocument(
             id="doc1",
@@ -33,7 +33,7 @@ def _seed_kb(db: Session) -> None:
             knowledge_base_id="kb_demo",
             filename="policy.md",
             file_type="md",
-            title="售后政策",
+            title="售後政策",
             status="ready",
             bucket_count=1,
             chunk_count=2,
@@ -47,7 +47,7 @@ def _seed_kb(db: Session) -> None:
             document_id="doc1",
             bucket_key="0001",
             title="退款政策",
-            summary="七天内可退款",
+            summary="七天內可退款",
             token_estimate=42,
             metadata_json={"chunk_count": 2},
         )
@@ -61,7 +61,7 @@ def _seed_kb(db: Session) -> None:
                 document_id="doc1",
                 bucket_id="bucket1",
                 chunk_index=idx,
-                content=f"退款说明第{idx}段：七天内无理由退款。",
+                content=f"退款說明第{idx}段：七天內無理由退款。",
                 source_ref=f"policy.md#{idx}",
             )
         )
@@ -72,9 +72,9 @@ def test_wiki_outline_builds_tree() -> None:
     with _session() as db:
         _seed_kb(db)
         outline = WikiService(db).outline("tenant_demo", "kb_demo", version_ids=[])
-        assert outline.name == "售后知识库"
+        assert outline.name == "售後知識庫"
         assert outline.document_count == 1
-        assert outline.documents[0].title == "售后政策"
+        assert outline.documents[0].title == "售後政策"
         assert outline.documents[0].buckets[0].title == "退款政策"
         assert outline.documents[0].buckets[0].chunk_count == 2
 
@@ -94,7 +94,7 @@ def test_wiki_ask_without_model_emits_error() -> None:
         _seed_kb(db)
         events = list(
             WikiService(db).ask_stream(
-                "tenant_demo", None, "kb_demo", [], "怎么退款", model_config=None
+                "tenant_demo", None, "kb_demo", [], "怎麼退款", model_config=None
             )
         )
         assert events[0]["event"] == "error"

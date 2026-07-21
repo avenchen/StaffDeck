@@ -26,26 +26,26 @@ from app.db.staffdeck_seed import seed_staffdeck_admin_gallery
 
 
 ADAPTIVE_FLOW_RULE = (
-    "步骤是可自适应推进的目标，不是固定问答脚本；已由当前用户消息、历史信息或路由意图满足的内容"
-    "不得重复追问，应直接推进到下一缺失信息、工具调用或最终回复。"
+    "步驟是可自適應推進的目標，不是固定問答腳本；已由當前用戶消息、歷史信息或路由意圖滿足的內容"
+    "不得重複追問，應直接推進到下一缺失信息、工具調用或最終回覆。"
 )
 
 
 REFUND_SKILL = {
     "skill_id": "after_sales_refund",
-    "name": "售后退款流程",
+    "name": "售後退款流程",
     "version": "1.0.0",
     "business_domain": "after_sales",
-    "description": "处理用户退款、退货、取消订单等诉求。",
-    "trigger_intents": ["退款", "退货", "取消订单", "不想要了"],
-    "user_utterance_examples": ["我想退货", "这个不要了", "买错了能退吗", "给我退钱"],
+    "description": "處理用戶退款、退貨、取消訂單等訴求。",
+    "trigger_intents": ["退款", "退貨", "取消訂單", "不想要了"],
+    "user_utterance_examples": ["我想退貨", "這個不要了", "買錯了能退嗎", "給我退錢"],
     "goal": [
-        "确认用户退款诉求",
-        "收集订单号",
-        "确认处理对象",
-        "查询订单状态",
-        "说明退款政策",
-        "引导用户继续处理或转人工",
+        "確認用戶退款訴求",
+        "收集訂單號",
+        "確認處理對象",
+        "查詢訂單狀態",
+        "說明退款政策",
+        "引導用戶繼續處理或轉人工",
     ],
     "required_info": ["order_id", "refund_reason"],
     "slot_filling_policy": {
@@ -53,35 +53,35 @@ REFUND_SKILL = {
         "multi_slot_per_turn": True,
         "extract_scope": "all_skill_expected_user_info",
         "skip_satisfied_steps": True,
-        "description": "每轮同时抽取用户已表达的退款类型、订单号、退款原因和确认意愿等信息，已满足的信息不再追问。",
+        "description": "每輪同時抽取用戶已表達的退款類型、訂單號、退款原因和確認意願等信息，已滿足的信息不再追問。",
         "target_info": ["refund_type", "order_id", "order_confirmed", "refund_reason"],
     },
     "nodes": [
         {
             "node_id": "identify_refund_intent",
-            "name": "确认退款诉求",
-            "instruction": "将本步骤作为目标而不是固定话术；仅当用户诉求不明确时确认用户是否要退款、退货或取消订单；如果用户已明确说退货/退款/取消订单，写入 refund_type 并直接进入下一缺失信息收集，不要反问类型。",
+            "name": "確認退款訴求",
+            "instruction": "將本步驟作為目標而不是固定話術；僅當用戶訴求不明確時確認用戶是否要退款、退貨或取消訂單；如果用戶已明確說退貨/退款/取消訂單，寫入 refund_type 並直接進入下一缺失信息收集，不要反問類型。",
             "expected_user_info": ["refund_type"],
             "allowed_actions": ["ask_clarification", "continue_flow"],
         },
         {
             "node_id": "collect_order_info",
-            "name": "收集订单信息",
-            "instruction": "将本步骤作为目标而不是固定话术；如果用户未提供订单号，直接询问订单号；如果用户明确提供订单号，写入 order_id 并进入确认步骤；如果 order_id 是根据 recent_messages、上一笔订单或上下文推断出来的，必须进入确认步骤，不得直接调用工具。不要再询问用户是退货还是退款。",
+            "name": "收集訂單信息",
+            "instruction": "將本步驟作為目標而不是固定話術；如果用戶未提供訂單號，直接詢問訂單號；如果用戶明確提供訂單號，寫入 order_id 並進入確認步驟；如果 order_id 是根據 recent_messages、上一筆訂單或上下文推斷出來的，必須進入確認步驟，不得直接調用工具。不要再詢問用戶是退貨還是退款。",
             "expected_user_info": ["order_id"],
             "allowed_actions": ["ask_user", "continue_flow"],
         },
         {
             "node_id": "confirm_refund_order",
-            "name": "确认售后订单",
-            "instruction": "在查询或处理退款/退货/取消订单前，必须向用户确认本次要处理的订单号和诉求类型。只有用户明确确认后，才能写入 order_confirmed=true 并继续；如果用户说不是、另一个、换一个，应清空或更新 order_id 并回到订单信息收集。",
+            "name": "確認售後訂單",
+            "instruction": "在查詢或處理退款/退貨/取消訂單前，必須向用戶確認本次要處理的訂單號和訴求類型。只有用戶明確確認後，才能寫入 order_confirmed=true 並繼續；如果用戶說不是、另一個、換一個，應清空或更新 order_id 並回到訂單信息收集。",
             "expected_user_info": ["order_confirmed"],
             "allowed_actions": ["ask_user", "continue_flow"],
         },
         {
             "node_id": "check_refund_eligibility",
-            "name": "查询退款资格",
-            "instruction": "将本步骤作为目标而不是固定话术；仅当 order_id 已存在且 order_confirmed=true 时调用 order.query；根据订单查询结果说明是否可能支持退款/退货，不要承诺一定成功；如还缺原因则继续收集，已满足时给出明确下一步。",
+            "name": "查詢退款資格",
+            "instruction": "將本步驟作為目標而不是固定話術；僅當 order_id 已存在且 order_confirmed=true 時調用 order.query；根據訂單查詢結果說明是否可能支持退款/退貨，不要承諾一定成功；如還缺原因則繼續收集，已滿足時給出明確下一步。",
             "expected_user_info": [],
             "allowed_actions": [
                 "continue_flow",
@@ -93,83 +93,83 @@ REFUND_SKILL = {
         {
             "node_id": "collect_refund_reason",
             "name": "收集退款原因",
-            "instruction": "将本步骤作为目标而不是固定话术；如果用户已说明退款原因，写入 refund_reason 并继续推进；否则只追问退款原因，不重复追问退款类型或订单号。",
+            "instruction": "將本步驟作為目標而不是固定話術；如果用戶已說明退款原因，寫入 refund_reason 並繼續推進；否則只追問退款原因，不重複追問退款類型或訂單號。",
             "expected_user_info": ["refund_reason"],
             "allowed_actions": ["ask_user", "continue_flow"],
         },
     ],
     "interruption_policy": {
-        "related_question": "可以临时回答，回答后回到当前退款流程。",
-        "unrelated_business": "可以切换到新技能，并保存当前流程进度。",
-        "chitchat": "简短回应后，引导用户继续退款流程。",
-        "user_wants_human": "直接转人工。",
+        "related_question": "可以臨時回答，回答後回到當前退款流程。",
+        "unrelated_business": "可以切換到新技能，並保存當前流程進度。",
+        "chitchat": "簡短回應後，引導用戶繼續退款流程。",
+        "user_wants_human": "直接轉人工。",
     },
     "response_rules": [
-        "不要承诺一定能退款。",
-        "未查询订单前，不要判断是否符合退款条件。",
-        "退款、退货或取消订单前必须先向用户确认订单号和诉求类型。",
-        "如果用户要求人工，应转人工。",
+        "不要承諾一定能退款。",
+        "未查詢訂單前，不要判斷是否符合退款條件。",
+        "退款、退貨或取消訂單前必須先向用戶確認訂單號和訴求類型。",
+        "如果用戶要求人工，應轉人工。",
         ADAPTIVE_FLOW_RULE,
     ],
 }
 
 EXCHANGE_SKILL = {
     "skill_id": "after_sales_exchange",
-    "name": "售后换货流程",
+    "name": "售後換貨流程",
     "version": "1.0.0",
     "business_domain": "after_sales",
-    "description": "处理用户换货、更换商品、尺码颜色不合适等诉求。",
-    "trigger_intents": ["换货", "更换商品", "换尺码", "换颜色"],
-    "user_utterance_examples": ["我想换货", "能不能换个颜色", "尺码不合适想换一下"],
-    "goal": ["确认换货诉求", "收集订单号", "确认换货原因", "引导用户继续处理或转人工"],
+    "description": "處理用戶換貨、更換商品、尺碼顏色不合適等訴求。",
+    "trigger_intents": ["換貨", "更換商品", "換尺碼", "換顏色"],
+    "user_utterance_examples": ["我想換貨", "能不能換個顏色", "尺碼不合適想換一下"],
+    "goal": ["確認換貨訴求", "收集訂單號", "確認換貨原因", "引導用戶繼續處理或轉人工"],
     "required_info": ["order_id", "exchange_reason"],
     "slot_filling_policy": {
         "enabled": True,
         "multi_slot_per_turn": True,
         "extract_scope": "all_skill_expected_user_info",
         "skip_satisfied_steps": True,
-        "description": "每轮同时抽取用户已表达的换货类型、订单号、换货原因等信息，已满足的信息不再追问。",
+        "description": "每輪同時抽取用戶已表達的換貨類型、訂單號、換貨原因等信息，已滿足的信息不再追問。",
         "target_info": ["exchange_type", "order_id", "exchange_reason"],
     },
     "nodes": [
         {
             "node_id": "identify_exchange_intent",
-            "name": "确认换货诉求",
-            "instruction": "将本步骤作为目标而不是固定话术；如果用户已表达换货商品或换货类型，写入 exchange_type 并继续推进；仅在诉求不明确时追问。",
+            "name": "確認換貨訴求",
+            "instruction": "將本步驟作為目標而不是固定話術；如果用戶已表達換貨商品或換貨類型，寫入 exchange_type 並繼續推進；僅在訴求不明確時追問。",
             "expected_user_info": ["exchange_type"],
             "allowed_actions": ["ask_clarification", "continue_flow"],
         },
         {
             "node_id": "collect_exchange_order_info",
-            "name": "收集订单信息",
-            "instruction": "将本步骤作为目标而不是固定话术；如果用户已提供订单号，写入 order_id 并调用 order.query；否则询问订单号，并只追问真正缺失的换货信息。",
+            "name": "收集訂單信息",
+            "instruction": "將本步驟作為目標而不是固定話術；如果用戶已提供訂單號，寫入 order_id 並調用 order.query；否則詢問訂單號，並只追問真正缺失的換貨信息。",
             "expected_user_info": ["order_id"],
             "allowed_actions": ["ask_user", "call_tool:order.query"],
         },
     ],
     "interruption_policy": {
-        "related_question": "可以临时回答，回答后回到当前换货流程。",
-        "unrelated_business": "可以切换到新技能，并保存当前流程进度。",
-        "chitchat": "简短回应后，引导用户继续换货流程。",
-        "user_wants_human": "直接转人工。",
+        "related_question": "可以臨時回答，回答後回到當前換貨流程。",
+        "unrelated_business": "可以切換到新技能，並保存當前流程進度。",
+        "chitchat": "簡短回應後，引導用戶繼續換貨流程。",
+        "user_wants_human": "直接轉人工。",
     },
-    "response_rules": ["不要承诺一定能换货。", "如政策不确定，应转人工确认。", ADAPTIVE_FLOW_RULE],
+    "response_rules": ["不要承諾一定能換貨。", "如政策不確定，應轉人工確認。", ADAPTIVE_FLOW_RULE],
 }
 
 PURCHASE_SKILL = {
     "skill_id": "skill_purchase_001",
-    "name": "购买商品流程",
+    "name": "購買商品流程",
     "version": "1.0.0",
     "business_domain": "commerce",
-    "description": "引导用户完成商品购买流程，包括收集用户信息、确认商品、生成订单并反馈结果。",
-    "trigger_intents": ["购买商品", "下单", "买东西", "购买", "place_order"],
-    "user_utterance_examples": ["我想买这个商品", "帮我下单", "我要购买 A1", "我要买一个a1"],
+    "description": "引導用戶完成商品購買流程，包括收集用戶信息、確認商品、生成訂單並反饋結果。",
+    "trigger_intents": ["購買商品", "下單", "買東西", "購買", "place_order"],
+    "user_utterance_examples": ["我想買這個商品", "幫我下單", "我要購買 A1", "我要買一個a1"],
     "goal": [
-        "获取用户身份信息",
-        "确认购买的商品及数量",
-        "确认下单意愿",
-        "生成有效订单",
-        "向用户反馈订单号及状态",
+        "獲取用戶身份信息",
+        "確認購買的商品及數量",
+        "確認下單意願",
+        "生成有效訂單",
+        "向用戶反饋訂單號及狀態",
     ],
     "required_info": ["user_name", "product_id", "quantity"],
     "slot_filling_policy": {
@@ -177,36 +177,36 @@ PURCHASE_SKILL = {
         "multi_slot_per_turn": True,
         "extract_scope": "all_skill_expected_user_info",
         "skip_satisfied_steps": True,
-        "description": "每轮同时抽取用户已表达的姓名、商品 ID、购买数量和下单确认等信息；数量需理解口语数字和量词表达，已满足的信息不再追问。",
+        "description": "每輪同時抽取用戶已表達的姓名、商品 ID、購買數量和下單確認等信息；數量需理解口語數字和量詞表達，已滿足的信息不再追問。",
         "target_info": ["user_name", "product_id", "quantity", "purchase_confirmed"],
     },
     "nodes": [
         {
             "node_id": "collect_user_name",
-            "name": "收集用户信息与商品详情",
+            "name": "收集用戶信息與商品詳情",
             "instruction": (
-                "将本步骤作为目标而不是固定话术；同时收集用户姓名、商品 ID 和数量。"
-                "用户一句话提供多个信息时必须一次性写入 slot_updates；"
-                "数值字段需要理解口语数字和量词表达，例如“一个/一件/一台”表示 1，“两个/两件”表示 2，“三份/3个”表示 3。"
-                "已提供的信息不再追问，只追问真正缺失的信息；全部满足后进入下单确认，不要直接创建订单。"
+                "將本步驟作為目標而不是固定話術；同時收集用戶姓名、商品 ID 和數量。"
+                "用戶一句話提供多個信息時必須一次性寫入 slot_updates；"
+                "數值字段需要理解口語數字和量詞表達，例如“一個/一件/一臺”表示 1，“兩個/兩件”表示 2，“三份/3個”表示 3。"
+                "已提供的信息不再追問，只追問真正缺失的信息；全部滿足後進入下單確認，不要直接創建訂單。"
             ),
             "expected_user_info": ["user_name", "product_id", "quantity"],
             "allowed_actions": ["ask_user", "continue_flow"],
         },
         {
             "node_id": "confirm_purchase",
-            "name": "确认下单信息",
-            "instruction": "创建订单前必须向用户确认姓名、商品 ID 和数量。只有用户明确确认后，才能写入 purchase_confirmed=true 并继续；如果用户修改商品、数量或姓名，应更新对应 slot 并重新确认。",
+            "name": "確認下單信息",
+            "instruction": "創建訂單前必須向用戶確認姓名、商品 ID 和數量。只有用戶明確確認後，才能寫入 purchase_confirmed=true 並繼續；如果用戶修改商品、數量或姓名，應更新對應 slot 並重新確認。",
             "expected_user_info": ["purchase_confirmed"],
             "allowed_actions": ["ask_user", "continue_flow"],
         },
         {
             "node_id": "confirm_product",
-            "name": "执行购买/创建订单",
+            "name": "執行購買/創建訂單",
             "instruction": (
-                "将本步骤作为目标而不是固定话术；仅当 user_name、product_id、quantity 已满足且 purchase_confirmed=true 时，"
-                "直接调用 product.purchase 或 order.add 创建订单，不要重复确认商品或数量。"
-                "如果工具需要 user_id 且只有 user_name，可将 user_name 作为 user_id。"
+                "將本步驟作為目標而不是固定話術；僅當 user_name、product_id、quantity 已滿足且 purchase_confirmed=true 時，"
+                "直接調用 product.purchase 或 order.add 創建訂單，不要重複確認商品或數量。"
+                "如果工具需要 user_id 且只有 user_name，可將 user_name 作為 user_id。"
             ),
             "expected_user_info": ["product_id", "quantity", "purchase_confirmed"],
             "allowed_actions": [
@@ -217,114 +217,114 @@ PURCHASE_SKILL = {
         },
         {
             "node_id": "create_order",
-            "name": "反馈订单结果",
-            "instruction": "将工具返回的订单号、商品信息、数量、金额和状态告知用户，确认购买结果；不要只说请稍候。",
+            "name": "反饋訂單結果",
+            "instruction": "將工具返回的訂單號、商品信息、數量、金額和狀態告知用戶，確認購買結果；不要只說請稍候。",
             "expected_user_info": [],
             "allowed_actions": ["answer_user"],
         },
     ],
     "interruption_policy": {
-        "related_question": "可以临时回答，回答后回到当前购买流程。",
-        "unrelated_business": "可以切换到新技能，并保存当前流程进度。",
-        "chitchat": "简短回应后，引导用户继续购买流程。",
-        "user_wants_human": "直接转人工。",
+        "related_question": "可以臨時回答，回答後回到當前購買流程。",
+        "unrelated_business": "可以切換到新技能，並保存當前流程進度。",
+        "chitchat": "簡短回應後，引導用戶繼續購買流程。",
+        "user_wants_human": "直接轉人工。",
     },
     "response_rules": [
-        "保持语气友好、专业。",
-        "明确告知用户订单号。",
-        "创建订单前必须先向用户确认姓名、商品 ID 和数量。",
-        "若商品不存在或库存不足，需明确告知用户并建议其他操作。",
+        "保持語氣友好、專業。",
+        "明確告知用戶訂單號。",
+        "創建訂單前必須先向用戶確認姓名、商品 ID 和數量。",
+        "若商品不存在或庫存不足，需明確告知用戶並建議其他操作。",
         ADAPTIVE_FLOW_RULE,
     ],
 }
 
 PRICE_COMPARE_SKILL = {
     "skill_id": "skill_price_compare_001",
-    "name": "商品比价服务",
+    "name": "商品比價服務",
     "version": "1.0.0",
     "business_domain": "commerce",
-    "description": "根据用户提供的两个商品名称，查询价格、品牌和规格后给出比价结果。",
-    "trigger_intents": ["商品比价", "价格对比", "比下价格", "比较价格", "哪个更便宜"],
+    "description": "根據用戶提供的兩個商品名稱，查詢價格、品牌和規格後給出比價結果。",
+    "trigger_intents": ["商品比價", "價格對比", "比下價格", "比較價格", "哪個更便宜"],
     "user_utterance_examples": [
-        "帮我比一下 A1 和 A3 的价格",
-        "买之前想看看 A1 和 iPhone 15 哪个更划算",
-        "A1 跟 A3 价格差多少",
+        "幫我比一下 A1 和 A3 的價格",
+        "買之前想看看 A1 和 iPhone 15 哪個更划算",
+        "A1 跟 A3 價格差多少",
     ],
-    "goal": ["收集两个待比价商品", "分别查询商品价格", "基于工具结果给出比价结论"],
+    "goal": ["收集兩個待比價商品", "分別查詢商品價格", "基於工具結果給出比價結論"],
     "required_info": ["product_name_1", "product_name_2"],
     "slot_filling_policy": {
         "enabled": True,
         "multi_slot_per_turn": True,
         "extract_scope": "all_skill_expected_user_info",
         "skip_satisfied_steps": True,
-        "description": "每轮同时抽取用户提到的两个待比较商品名称；如果只给出一个商品，应只追问另一个。",
+        "description": "每輪同時抽取用戶提到的兩個待比較商品名稱；如果只給出一個商品，應只追問另一個。",
         "target_info": ["product_name_1", "product_name_2"],
     },
     "nodes": [
         {
             "node_id": "collect_products",
-            "name": "收集待比价商品",
+            "name": "收集待比價商品",
             "instruction": (
-                "将本步骤作为目标而不是固定话术；从当前消息、历史对话和 slots 中识别两个待比价商品。"
-                "用户一次给出两个商品时，必须同时写入 product_name_1 和 product_name_2 并继续；"
-                "只缺一个商品时只追问缺失的那个，不要重复确认已给出的商品。"
+                "將本步驟作為目標而不是固定話術；從當前消息、歷史對話和 slots 中識別兩個待比價商品。"
+                "用戶一次給出兩個商品時，必須同時寫入 product_name_1 和 product_name_2 並繼續；"
+                "只缺一個商品時只追問缺失的那個，不要重複確認已給出的商品。"
             ),
             "expected_user_info": ["product_name_1", "product_name_2"],
             "allowed_actions": ["ask_user", "continue_flow"],
         },
         {
             "node_id": "query_prices",
-            "name": "查询商品价格",
+            "name": "查詢商品價格",
             "instruction": (
-                "当 product_name_1 和 product_name_2 都已获得时，依次调用 product.price_query 查询两个商品。"
-                "不要编造价格；如果只查到一个商品，应继续调用工具查询另一个商品；"
-                "两个工具结果都齐全后进入结果回复。"
+                "當 product_name_1 和 product_name_2 都已獲得時，依次調用 product.price_query 查詢兩個商品。"
+                "不要編造價格；如果只查到一個商品，應繼續調用工具查詢另一個商品；"
+                "兩個工具結果都齊全後進入結果回覆。"
             ),
             "expected_user_info": [],
             "allowed_actions": ["call_tool:product.price_query", "continue_flow"],
         },
         {
             "node_id": "reply_compare_result",
-            "name": "反馈比价结果",
+            "name": "反饋比價結果",
             "instruction": (
-                "基于累计工具结果对比两个商品的价格、品牌和规格，说明哪个更便宜、差价多少；"
-                "如果某个商品未找到或工具失败，应明确说明无法完成该商品的比价，并给出下一步建议。"
+                "基於累計工具結果對比兩個商品的價格、品牌和規格，說明哪個更便宜、差價多少；"
+                "如果某個商品未找到或工具失敗，應明確說明無法完成該商品的比價，並給出下一步建議。"
             ),
             "expected_user_info": [],
             "allowed_actions": ["answer_user"],
         },
     ],
     "interruption_policy": {
-        "related_question": "可以临时回答，回答后回到当前比价流程。",
-        "unrelated_business": "可以切换到新技能，并保存当前流程进度。",
-        "chitchat": "简短回应后，引导用户继续比价流程。",
-        "user_wants_human": "直接转人工。",
+        "related_question": "可以臨時回答，回答後回到當前比價流程。",
+        "unrelated_business": "可以切換到新技能，並保存當前流程進度。",
+        "chitchat": "簡短回應後，引導用戶繼續比價流程。",
+        "user_wants_human": "直接轉人工。",
     },
     "response_rules": [
-        "不要在没有工具结果时编造价格。",
-        "若工具未查到商品，应明确说明并请用户更换商品名或转人工。",
-        "比价结论必须引用工具返回的价格、品牌或规格信息。",
+        "不要在沒有工具結果時編造價格。",
+        "若工具未查到商品，應明確說明並請用戶更換商品名或轉人工。",
+        "比價結論必須引用工具返回的價格、品牌或規格信息。",
         ADAPTIVE_FLOW_RULE,
     ],
 }
 
 GRAPH_VISUAL_DEMO_SKILL = {
     "skill_id": "skill_graph_visual_demo",
-    "name": "图结构可视化验证流程",
+    "name": "圖結構可視化驗證流程",
     "version": "1.0.0",
     "business_domain": "demo",
-    "description": "用于验证 graph-only 技能流程图的分支、可选节点、工具节点、知识节点和终止节点展示效果。",
-    "trigger_intents": ["图结构验证", "流程图验证", "graph demo", "验证分支流程"],
+    "description": "用於驗證 graph-only 技能流程圖的分支、可選節點、工具節點、知識節點和終止節點展示效果。",
+    "trigger_intents": ["圖結構驗證", "流程圖驗證", "graph demo", "驗證分支流程"],
     "user_utterance_examples": [
-        "帮我跑一下图结构验证",
-        "我要验证一个包含分支和工具的流程",
-        "这个流程需要先查价格再确认",
+        "幫我跑一下圖結構驗證",
+        "我要驗證一個包含分支和工具的流程",
+        "這個流程需要先查價格再確認",
     ],
     "goal": [
-        "识别用户要验证的处理路径",
-        "按条件进入工具或知识分支",
-        "必要时确认",
-        "给出最终结果或转人工",
+        "識別用戶要驗證的處理路徑",
+        "按條件進入工具或知識分支",
+        "必要時確認",
+        "給出最終結果或轉人工",
     ],
     "required_info": ["request_type"],
     "slot_filling_policy": {
@@ -338,24 +338,24 @@ GRAPH_VISUAL_DEMO_SKILL = {
         {
             "node_id": "intake_request",
             "type": "collect_info",
-            "name": "识别验证请求",
-            "instruction": "识别用户想验证的是工具路径、知识路径、直接确认路径还是人工路径；若用户已说明目标，写入 request_type 并推进。",
+            "name": "識別驗證請求",
+            "instruction": "識別用戶想驗證的是工具路徑、知識路徑、直接確認路徑還是人工路徑；若用戶已說明目標，寫入 request_type 並推進。",
             "expected_user_info": ["request_type"],
             "allowed_actions": ["ask_user", "continue_flow"],
         },
         {
             "node_id": "classify_path",
             "type": "decision",
-            "name": "选择处理分支",
-            "instruction": "根据 request_type 选择后续路径：需要外部数据时进入工具节点；需要政策依据时进入知识节点；已满足条件时进入确认节点；无法判断时转人工。",
+            "name": "選擇處理分支",
+            "instruction": "根據 request_type 選擇後續路徑：需要外部數據時進入工具節點；需要政策依據時進入知識節點；已滿足條件時進入確認節點；無法判斷時轉人工。",
             "expected_user_info": [],
             "allowed_actions": ["continue_flow", "handoff_human"],
         },
         {
             "node_id": "query_product_price",
             "type": "tool_call",
-            "name": "查询商品价格",
-            "instruction": "当用户提供商品名或要求验证工具分支时，调用 product.price_query 查询商品价格、品牌和规格；工具失败时让模型基于结果决定重试、换路径或追问。",
+            "name": "查詢商品價格",
+            "instruction": "當用戶提供商品名或要求驗證工具分支時，調用 product.price_query 查詢商品價格、品牌和規格；工具失敗時讓模型基於結果決定重試、換路徑或追問。",
             "expected_user_info": ["product_name"],
             "allowed_actions": ["ask_user", "call_tool:product.price_query", "continue_flow"],
             "retry_policy": {"max_attempts": 2, "on_failure": "reflect"},
@@ -363,8 +363,8 @@ GRAPH_VISUAL_DEMO_SKILL = {
         {
             "node_id": "read_policy_knowledge",
             "type": "knowledge_query",
-            "name": "读取处理依据",
-            "instruction": "当用户需要解释规则或依据时，检索当前智能体可见知识库中的相关桶和片段，并把知识结果交给模型继续判断。",
+            "name": "讀取處理依據",
+            "instruction": "當用戶需要解釋規則或依據時，檢索當前智能體可見知識庫中的相關桶和片段，並把知識結果交給模型繼續判斷。",
             "expected_user_info": [],
             "allowed_actions": ["knowledge_query", "continue_flow"],
             "knowledge_scope": {"bucket_hint": "demo_policy"},
@@ -372,8 +372,8 @@ GRAPH_VISUAL_DEMO_SKILL = {
         {
             "node_id": "confirm_action",
             "type": "decision",
-            "name": "可选确认",
-            "instruction": "如动作会产生业务影响，先向用户确认；若用户已经明确确认，可跳过追问并继续回复。",
+            "name": "可選確認",
+            "instruction": "如動作會產生業務影響，先向用戶確認；若用戶已經明確確認，可跳過追問並繼續回覆。",
             "optional": True,
             "expected_user_info": ["confirmation"],
             "allowed_actions": ["ask_user", "continue_flow"],
@@ -381,16 +381,16 @@ GRAPH_VISUAL_DEMO_SKILL = {
         {
             "node_id": "reply_result",
             "type": "response",
-            "name": "反馈验证结果",
-            "instruction": "汇总已选择的分支、工具结果或知识依据，用简洁语言反馈本次 graph 流程验证结果。",
+            "name": "反饋驗證結果",
+            "instruction": "彙總已選擇的分支、工具結果或知識依據，用簡潔語言反饋本次 graph 流程驗證結果。",
             "expected_user_info": [],
             "allowed_actions": ["answer_user"],
         },
         {
             "node_id": "handoff_manual",
             "type": "handoff",
-            "name": "转人工处理",
-            "instruction": "当用户明确要求人工或模型判断无法可靠完成时，说明需要人工继续处理。",
+            "name": "轉人工處理",
+            "instruction": "當用戶明確要求人工或模型判斷無法可靠完成時，說明需要人工繼續處理。",
             "expected_user_info": [],
             "allowed_actions": ["handoff_human"],
         },
@@ -399,101 +399,101 @@ GRAPH_VISUAL_DEMO_SKILL = {
         {
             "source_node_id": "intake_request",
             "next_node_id": "classify_path",
-            "condition": "request_type 已识别",
+            "condition": "request_type 已識別",
             "priority": 0,
-            "label": "进入分支判断",
+            "label": "進入分支判斷",
         },
         {
             "source_node_id": "classify_path",
             "next_node_id": "query_product_price",
-            "condition": "需要外部商品数据",
+            "condition": "需要外部商品數據",
             "priority": 0,
-            "label": "工具路径",
+            "label": "工具路徑",
         },
         {
             "source_node_id": "classify_path",
             "next_node_id": "read_policy_knowledge",
-            "condition": "需要知识依据",
+            "condition": "需要知識依據",
             "priority": 1,
-            "label": "知识路径",
+            "label": "知識路徑",
         },
         {
             "source_node_id": "classify_path",
             "next_node_id": "confirm_action",
-            "condition": "信息充分但需要确认",
+            "condition": "信息充分但需要確認",
             "priority": 2,
-            "label": "确认路径",
+            "label": "確認路徑",
         },
         {
             "source_node_id": "classify_path",
             "next_node_id": "handoff_manual",
-            "condition": "用户要求人工或无法判断",
+            "condition": "用戶要求人工或無法判斷",
             "priority": 3,
-            "label": "人工路径",
+            "label": "人工路徑",
         },
         {
             "source_node_id": "query_product_price",
             "next_node_id": "confirm_action",
-            "condition": "工具结果可用",
+            "condition": "工具結果可用",
             "priority": 0,
-            "label": "核验后确认",
+            "label": "核驗後確認",
         },
         {
             "source_node_id": "query_product_price",
             "next_node_id": "handoff_manual",
-            "condition": "工具失败且反思后仍无法处理",
+            "condition": "工具失敗且反思後仍無法處理",
             "priority": 1,
-            "label": "工具失败",
+            "label": "工具失敗",
         },
         {
             "source_node_id": "read_policy_knowledge",
             "next_node_id": "reply_result",
-            "condition": "知识依据足够",
+            "condition": "知識依據足夠",
             "priority": 0,
-            "label": "依据充分",
+            "label": "依據充分",
         },
         {
             "source_node_id": "confirm_action",
             "next_node_id": "reply_result",
-            "condition": "用户确认或可跳过确认",
+            "condition": "用戶確認或可跳過確認",
             "priority": 0,
-            "label": "完成确认",
+            "label": "完成確認",
         },
         {
             "source_node_id": "confirm_action",
             "next_node_id": "handoff_manual",
-            "condition": "用户拒绝或需要人工",
+            "condition": "用戶拒絕或需要人工",
             "priority": 1,
-            "label": "确认失败",
+            "label": "確認失敗",
         },
     ],
     "start_node_id": "intake_request",
     "terminal_node_ids": ["reply_result", "handoff_manual"],
     "interruption_policy": {
-        "related_question": "可以回答后继续当前验证流程。",
-        "unrelated_business": "可保存当前验证流程并切换任务。",
-        "chitchat": "简短回应后继续引导用户完成验证。",
-        "user_wants_human": "直接转人工。",
+        "related_question": "可以回答後繼續當前驗證流程。",
+        "unrelated_business": "可保存當前驗證流程並切換任務。",
+        "chitchat": "簡短回應後繼續引導用戶完成驗證。",
+        "user_wants_human": "直接轉人工。",
     },
     "response_rules": [
-        "不要编造工具结果。",
-        "涉及知识依据时必须基于检索结果回复。",
+        "不要編造工具結果。",
+        "涉及知識依據時必須基於檢索結果回覆。",
         ADAPTIVE_FLOW_RULE,
     ],
 }
 
 ORDER_QUERY_TOOL = {
     "name": "order.query",
-    "display_name": "订单查询",
-    "description": "根据订单号查询订单状态、签收天数和是否可能支持退款。",
-    "bucket": "订单工具",
+    "display_name": "訂單查詢",
+    "description": "根據訂單號查詢訂單狀態、簽收天數和是否可能支持退款。",
+    "bucket": "訂單工具",
     "method": "POST",
     "url": "/api/mock/order/query",
     "headers_json": {},
     "auth_json": {},
     "input_schema": {
         "type": "object",
-        "properties": {"order_id": {"type": "string", "description": "订单号"}},
+        "properties": {"order_id": {"type": "string", "description": "訂單號"}},
         "required": ["order_id"],
     },
     "output_schema": {
@@ -513,16 +513,16 @@ ORDER_QUERY_TOOL = {
 
 ORDER_ARCHIVE_QUERY_TOOL = {
     "name": "order.archive_query",
-    "display_name": "历史订单查询",
-    "description": "备用订单查询工具；当 order.query 主订单中心未命中、found=false、miss_reason 或历史订单场景时，用同一 order_id 查询归档订单。",
-    "bucket": "订单工具",
+    "display_name": "歷史訂單查詢",
+    "description": "備用訂單查詢工具；當 order.query 主訂單中心未命中、found=false、miss_reason 或歷史訂單場景時，用同一 order_id 查詢歸檔訂單。",
+    "bucket": "訂單工具",
     "method": "POST",
     "url": "/api/mock/order/archive-query",
     "headers_json": {},
     "auth_json": {},
     "input_schema": {
         "type": "object",
-        "properties": {"order_id": {"type": "string", "description": "订单号"}},
+        "properties": {"order_id": {"type": "string", "description": "訂單號"}},
         "required": ["order_id"],
     },
     "output_schema": {
@@ -543,8 +543,8 @@ ORDER_ARCHIVE_QUERY_TOOL = {
 
 PRODUCT_PURCHASE_TOOL = {
     "name": "product.purchase",
-    "display_name": "购买商品",
-    "description": "模拟用户购买商品，返回支付后的订单与购买记录。",
+    "display_name": "購買商品",
+    "description": "模擬用戶購買商品，返回支付後的訂單與購買記錄。",
     "bucket": "商品工具",
     "method": "POST",
     "url": "/api/mock/product/purchase",
@@ -553,10 +553,10 @@ PRODUCT_PURCHASE_TOOL = {
     "input_schema": {
         "type": "object",
         "properties": {
-            "user_id": {"type": "string", "description": "用户 ID"},
+            "user_id": {"type": "string", "description": "用戶 ID"},
             "product_id": {"type": "string", "description": "商品 ID，如 SKU-001"},
-            "sku_id": {"type": "string", "description": "可选 SKU ID"},
-            "quantity": {"type": "integer", "minimum": 1, "maximum": 99, "description": "购买数量"},
+            "sku_id": {"type": "string", "description": "可選 SKU ID"},
+            "quantity": {"type": "integer", "minimum": 1, "maximum": 99, "description": "購買數量"},
             "payment_method": {"type": "string", "description": "支付方式"},
         },
         "required": ["product_id"],
@@ -583,9 +583,9 @@ PRODUCT_PURCHASE_TOOL = {
 
 ORDER_ADD_TOOL = {
     "name": "order.add",
-    "display_name": "订单添加",
-    "description": "模拟新增一笔订单，返回订单号、商品、金额和订单状态。",
-    "bucket": "订单工具",
+    "display_name": "訂單添加",
+    "description": "模擬新增一筆訂單，返回訂單號、商品、金額和訂單狀態。",
+    "bucket": "訂單工具",
     "method": "POST",
     "url": "/api/mock/order/add",
     "headers_json": {},
@@ -593,12 +593,12 @@ ORDER_ADD_TOOL = {
     "input_schema": {
         "type": "object",
         "properties": {
-            "user_id": {"type": "string", "description": "用户 ID"},
-            "order_id": {"type": "string", "description": "可选自定义订单号"},
+            "user_id": {"type": "string", "description": "用戶 ID"},
+            "order_id": {"type": "string", "description": "可選自定義訂單號"},
             "product_id": {"type": "string", "description": "商品 ID，如 SKU-001"},
-            "sku_id": {"type": "string", "description": "可选 SKU ID"},
-            "quantity": {"type": "integer", "minimum": 1, "maximum": 99, "description": "商品数量"},
-            "status": {"type": "string", "description": "订单初始状态"},
+            "sku_id": {"type": "string", "description": "可選 SKU ID"},
+            "quantity": {"type": "integer", "minimum": 1, "maximum": 99, "description": "商品數量"},
+            "status": {"type": "string", "description": "訂單初始狀態"},
         },
         "required": ["product_id"],
     },
@@ -623,8 +623,8 @@ ORDER_ADD_TOOL = {
 
 PRODUCT_PRICE_QUERY_TOOL = {
     "name": "product.price_query",
-    "display_name": "商品价格查询",
-    "description": "根据商品名称查询商品价格、品牌、规格和更新时间，用于商品比价。",
+    "display_name": "商品價格查詢",
+    "description": "根據商品名稱查詢商品價格、品牌、規格和更新時間，用於商品比價。",
     "bucket": "商品工具",
     "method": "POST",
     "url": "/api/mock/product/price-query",
@@ -635,7 +635,7 @@ PRODUCT_PRICE_QUERY_TOOL = {
         "properties": {
             "product_name": {
                 "type": "string",
-                "description": "商品名称或商品别名，如 A1、A3、iPhone 15",
+                "description": "商品名稱或商品別名，如 A1、A3、iPhone 15",
             }
         },
         "required": ["product_name"],
@@ -663,7 +663,7 @@ MOCK_MCP_STDIO_SERVER = paths.resource_dir() / "mock_servers" / "mcp_stdio_serve
 
 
 def _stdio_mcp_python() -> str:
-    # 打包态 sys.executable 指向 ultrarag 引导器，需用附带 Python
+    # 打包態 sys.executable 指向 ultrarag 引導器，需用附帶 Python
     if paths.is_frozen():
         from app.general_skills.runtime_env import _bundled_python
 
@@ -674,13 +674,13 @@ def _stdio_mcp_python() -> str:
 
 
 # --------------------------------------------------------------------------- #
-# MCP Servers（工具集）与其发现出的子工具
+# MCP Servers（工具集）與其發現出的子工具
 # --------------------------------------------------------------------------- #
 
 MCP_BUILTIN_DEMO_SERVER = {
     "name": "builtin_demo",
-    "display_name": "内置 Demo MCP",
-    "description": "内置 MCP demo server，用于验证 MCP 工具集的连接、发现与调用链路。",
+    "display_name": "內置 Demo MCP",
+    "description": "內置 MCP demo server，用於驗證 MCP 工具集的連接、發現與調用鏈路。",
     "bucket": "MCP 工具",
     "transport": "builtin",
     "url": None,
@@ -695,12 +695,12 @@ MCP_BUILTIN_DEMO_SERVER = {
 MCP_STDIO_DEMO_SERVER = {
     "name": "stdio_demo",
     "display_name": "Stdio Demo MCP",
-    "description": "真实 stdio MCP mock server，用于验证 MCP client transport、初始化和 tools/list、tools/call 链路。",
+    "description": "真實 stdio MCP mock server，用於驗證 MCP client transport、初始化和 tools/list、tools/call 鏈路。",
     "bucket": "MCP 工具",
     "transport": "stdio",
     "url": None,
     "headers_json": {},
-    "command": None,  # 由 _seed_mcp_servers 运行时惰性注入（见下）
+    "command": None,  # 由 _seed_mcp_servers 運行時惰性注入（見下）
     "args_json": [str(MOCK_MCP_STDIO_SERVER)],
     "env_json": {},
     "cwd": None,
@@ -712,20 +712,20 @@ MCP_SERVERS = (
     MCP_STDIO_DEMO_SERVER,
 )
 
-# 每个 MCP server 预先落地的子工具（模拟已执行过一次「发现/同步」）。
-# config_json 只放 leaf tool 名，连接配置由 mcp_server_id 关联的 server 提供。
+# 每個 MCP server 預先落地的子工具（模擬已執行過一次「發現/同步」）。
+# config_json 只放 leaf tool 名，連接配置由 mcp_server_id 關聯的 server 提供。
 MCP_SERVER_TOOLS = {
     "builtin_demo": [
         {
             "leaf": "echo",
             "display_name": "MCP Demo Echo",
-            "description": "内置 MCP demo echo 工具，回显文本并返回长度。",
+            "description": "內置 MCP demo echo 工具，回顯文本並返回長度。",
             "input_schema": {
                 "type": "object",
                 "properties": {
                     "text": {
                         "type": "string",
-                        "description": "要回显的文本",
+                        "description": "要回顯的文本",
                         "example": "hello mcp",
                     }
                 },
@@ -741,8 +741,8 @@ MCP_SERVER_TOOLS = {
     "stdio_demo": [
         {
             "leaf": "product_lookup",
-            "display_name": "MCP Stdio 商品查询",
-            "description": "stdio MCP mock server 的商品查询工具。",
+            "display_name": "MCP Stdio 商品查詢",
+            "description": "stdio MCP mock server 的商品查詢工具。",
             "input_schema": {
                 "type": "object",
                 "properties": {
@@ -773,16 +773,16 @@ DEMO_TOOLS = (
     PRODUCT_PRICE_QUERY_TOOL,
 )
 DEFAULT_PERSONA_PROMPT = (
-    "你是面壁智能的智能客服，语气专业、清晰、友好。"
-    "你需要先理解用户诉求，再基于已配置的技能和工具帮助用户完成业务办理。"
-    "不要暴露内部路由、技能 ID、步骤 ID 或工具实现细节。"
+    "你是面壁智能的智能客服，語氣專業、清晰、友好。"
+    "你需要先理解用戶訴求，再基於已配置的技能和工具幫助用戶完成業務辦理。"
+    "不要暴露內部路由、技能 ID、步驟 ID 或工具實現細節。"
 )
 
 
 def _seed_mcp_servers(session: Session) -> None:
-    """落地 demo MCP server（工具集）及其已发现的子工具。"""
+    """落地 demo MCP server（工具集）及其已發現的子工具。"""
     for server_config in MCP_SERVERS:
-        server_config = dict(server_config)  # 避免修改模块级常量
+        server_config = dict(server_config)  # 避免修改模塊級常量
         if server_config.get("name") == "stdio_demo":
             server_config["command"] = _stdio_mcp_python()
         server = session.exec(
@@ -855,7 +855,7 @@ def seed_demo_data(session: Session) -> None:
             )
         )
 
-    # 桌面/单机版默认管理员账号（admin / admin）。权限只读取数据库 role 字段。
+    # 桌面/單機版默認管理員賬號（admin / admin）。權限只讀取數據庫 role 字段。
     admin_user = session.exec(
         select(User).where(User.tenant_id == "tenant_demo", User.username == "admin")
     ).first()
@@ -1042,7 +1042,7 @@ def _publish_seeded_system_resources(session: Session) -> None:
 def _ensure_seed_agents(session: Session) -> None:
     tenant_id = "tenant_demo"
     for agent_id, name, description, is_overall in (
-        (f"agent_{tenant_id}_overall", "整体智能体", "全局资源池", True),
+        (f"agent_{tenant_id}_overall", "整體智能體", "全局資源池", True),
     ):
         existing = session.get(AgentProfile, agent_id)
         if existing:
@@ -1140,8 +1140,8 @@ def _seed_weather_general_skill(session: Session) -> None:
             or existing.status != "published"
             or needs_package_backfill
         ):
-            existing.name = existing.name or "中国城市天气"
-            existing.description = existing.description or "中国城市天气查询工具"
+            existing.name = existing.name or "中國城市天氣"
+            existing.description = existing.description or "中國城市天氣查詢工具"
             existing.homepage = existing.homepage or "https://www.weather.com.cn/"
             existing.skill_markdown = markdown
             if package_files:
@@ -1164,8 +1164,8 @@ def _seed_weather_general_skill(session: Session) -> None:
         GeneralSkill(
             tenant_id="tenant_demo",
             slug=slug,
-            name="中国城市天气",
-            description="中国城市天气查询工具",
+            name="中國城市天氣",
+            description="中國城市天氣查詢工具",
             homepage="https://www.weather.com.cn/",
             skill_markdown=markdown,
             skill_files_json=package_files,

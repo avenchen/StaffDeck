@@ -59,7 +59,7 @@ def parse_chat_attachment(filename: str, content_type: str | None, data: bytes) 
         content_type=detected_type,
         size=len(data),
         kind="binary",
-        preview="暂不支持直接读取该二进制文件内容。",
+        preview="暫不支持直接讀取該二進制文件內容。",
         python_summary=_python_file_summary(safe_name, detected_type, data, ""),
     )
 
@@ -70,21 +70,21 @@ def attachment_context_lines(attachments: Iterable[ChatAttachmentRead | dict[str
     normalized = [item for item in normalized if item]
     if not normalized:
         return lines
-    lines.append("上传附件上下文：")
+    lines.append("上傳附件上下文：")
     for index, attachment in enumerate(normalized, start=1):
         lines.append(
-            f"{index}. 文件名：{attachment.filename}；类型：{attachment.kind}/{attachment.content_type}；"
+            f"{index}. 文件名：{attachment.filename}；類型：{attachment.kind}/{attachment.content_type}；"
             f"大小：{attachment.size} bytes"
         )
         if attachment.python_summary:
             lines.append(f"Python理解摘要：{attachment.python_summary}")
         if attachment.text:
-            lines.append("可读取正文：")
+            lines.append("可讀取正文：")
             lines.append(_trim_text(attachment.text, MAX_EXTRACTED_TEXT_CHARS))
         elif attachment.preview:
-            lines.append(f"预览：{attachment.preview}")
+            lines.append(f"預覽：{attachment.preview}")
         elif attachment.kind == "image":
-            lines.append("图片附件已上传，可在前端消息中查看；如当前模型支持视觉输入，请结合图片内容回答。")
+            lines.append("圖片附件已上傳，可在前端消息中查看；如當前模型支持視覺輸入，請結合圖片內容回答。")
     return lines
 
 
@@ -97,7 +97,7 @@ def message_content_with_attachment_context(content: str, metadata: dict[str, An
     lines = attachment_context_lines(attachments)
     if not lines:
         return content
-    return "\n\n".join([content.strip() or "（用户仅上传了附件）", "\n".join(lines)])
+    return "\n\n".join([content.strip() or "（用戶僅上傳了附件）", "\n".join(lines)])
 
 
 def image_payloads_from_attachments(attachments: Iterable[ChatAttachmentRead | dict[str, Any]]) -> list[dict[str, Any]]:
@@ -159,9 +159,9 @@ def _pdf_attachment(filename: str, content_type: str, data: bytes) -> ChatAttach
             pages.append(page.extract_text() or "")
         text = "\n\n".join(page.strip() for page in pages if page.strip())
         if len(reader.pages) > 30:
-            text += f"\n\n... PDF 共 {len(reader.pages)} 页，仅提取前 30 页。"
+            text += f"\n\n... PDF 共 {len(reader.pages)} 頁，僅提取前 30 頁。"
     except Exception as exc:  # noqa: BLE001 - return readable parse error to caller.
-        error = f"PDF 解析失败：{exc}"
+        error = f"PDF 解析失敗：{exc}"
     trimmed = _trim_text(text, MAX_EXTRACTED_TEXT_CHARS)
     return ChatAttachmentRead(
         id=new_id("file"),
@@ -188,7 +188,7 @@ def _image_attachment(filename: str, content_type: str, data: bytes) -> ChatAtta
         size=len(data),
         kind="image",
         data_url=data_url,
-        preview="图片附件",
+        preview="圖片附件",
         python_summary=_python_file_summary(filename, content_type, data, ""),
     )
 
@@ -198,7 +198,7 @@ def _python_file_summary(filename: str, content_type: str, data: bytes, text: st
     if text:
         lines = text.splitlines()
         words = re.findall(r"\S+", text)
-        parts.append(f"解析得到 {len(text)} 个字符、{len(lines)} 行、约 {len(words)} 个词。")
+        parts.append(f"解析得到 {len(text)} 個字符、{len(lines)} 行、約 {len(words)} 個詞。")
         tabular = _tabular_summary(text)
         if tabular:
             parts.append(tabular)
@@ -206,7 +206,7 @@ def _python_file_summary(filename: str, content_type: str, data: bytes, text: st
         if json_summary:
             parts.append(json_summary)
     else:
-        parts.append("未抽取到可直接阅读的文本正文。")
+        parts.append("未抽取到可直接閱讀的文本正文。")
     return " ".join(parts)
 
 
@@ -222,7 +222,7 @@ def _tabular_summary(text: str) -> str:
     if not rows:
         return ""
     columns = rows[0]
-    return f"检测到表格结构，约 {len(columns)} 列；前几列：{', '.join(columns[:6])}。"
+    return f"檢測到表格結構，約 {len(columns)} 列；前幾列：{', '.join(columns[:6])}。"
 
 
 def _json_summary(text: str) -> str:
@@ -235,10 +235,10 @@ def _json_summary(text: str) -> str:
         return ""
     if isinstance(parsed, dict):
         keys = list(parsed.keys())[:8]
-        return f"检测到 JSON 对象，顶层字段：{', '.join(map(str, keys))}。"
+        return f"檢測到 JSON 對象，頂層字段：{', '.join(map(str, keys))}。"
     if isinstance(parsed, list):
-        return f"检测到 JSON 数组，元素数量：{len(parsed)}。"
-    return "检测到 JSON 标量。"
+        return f"檢測到 JSON 數組，元素數量：{len(parsed)}。"
+    return "檢測到 JSON 標量。"
 
 
 def _decode_text(data: bytes) -> str:
@@ -259,7 +259,7 @@ def _trim_text(text: str, max_chars: int) -> str:
     normalized = text.replace("\x00", "").strip()
     if len(normalized) <= max_chars:
         return normalized
-    return normalized[:max_chars].rstrip() + "\n...（内容已截断）"
+    return normalized[:max_chars].rstrip() + "\n...（內容已截斷）"
 
 
 def _is_text_file(lower_name: str, content_type: str) -> bool:

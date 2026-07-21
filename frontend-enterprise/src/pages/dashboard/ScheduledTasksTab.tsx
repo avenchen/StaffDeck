@@ -109,7 +109,7 @@ export default function ScheduledTasksTab() {
       setRows(result);
       setAllRunRows(runResult);
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '加载定时任务失败');
+      notify.error(error instanceof Error ? error.message : '加載定時任務失敗');
     } finally {
       setLoading(false);
     }
@@ -117,11 +117,11 @@ export default function ScheduledTasksTab() {
 
   async function toggleStatus(row: ScheduledTaskRead) {
     if (row.status === 'archived') {
-      notify.warning('已删除的定时任务不能重新启用');
+      notify.warning('已刪除的定時任務不能重新啟用');
       return;
     }
     if (row.status === 'completed') {
-      notify.warning('已完成的定时任务可编辑后重新启用');
+      notify.warning('已完成的定時任務可編輯後重新啟用');
       return;
     }
     const nextStatus = row.status === 'active' ? 'paused' : 'active';
@@ -130,26 +130,26 @@ export default function ScheduledTasksTab() {
         tenant_id: TENANT_ID,
         status: nextStatus,
       });
-      notify.success(nextStatus === 'active' ? '定时任务已启用' : '定时任务已暂停');
+      notify.success(nextStatus === 'active' ? '定時任務已啟用' : '定時任務已暫停');
       await load();
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '更新定时任务失败');
+      notify.error(error instanceof Error ? error.message : '更新定時任務失敗');
     }
   }
 
   async function runNow(row: ScheduledTaskRead) {
     if (row.status === 'archived') {
-      notify.warning('已删除的定时任务不能运行');
+      notify.warning('已刪除的定時任務不能運行');
       return;
     }
     try {
       const run = await api.post<ScheduledTaskRunRead>(
         `/api/enterprise/scheduled-tasks/${row.id}/run-now?tenant_id=${TENANT_ID}`,
       );
-      notify.success(run.session_id ? '已创建独立任务会话，后台开始执行' : '已触发后台执行');
+      notify.success(run.session_id ? '已創建獨立任務會話，後臺開始執行' : '已觸發後臺執行');
       await load();
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '立即执行失败');
+      notify.error(error instanceof Error ? error.message : '立即執行失敗');
     }
   }
 
@@ -162,11 +162,11 @@ export default function ScheduledTasksTab() {
     setDeleting(true);
     try {
       await api.delete(`/api/enterprise/scheduled-tasks/${deleteTarget.id}?tenant_id=${TENANT_ID}`);
-      notify.success('已删除');
+      notify.success('已刪除');
       setDeleteTarget(null);
       await load();
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '删除定时任务失败');
+      notify.error(error instanceof Error ? error.message : '刪除定時任務失敗');
     } finally {
       setDeleting(false);
     }
@@ -181,7 +181,7 @@ export default function ScheduledTasksTab() {
       );
       setRunRows(result);
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '加载执行记录失败');
+      notify.error(error instanceof Error ? error.message : '加載執行記錄失敗');
     } finally {
       setRunLoading(false);
     }
@@ -216,7 +216,7 @@ export default function ScheduledTasksTab() {
   const taskColumns: DataTableColumn<ScheduledTaskRead>[] = [
     {
       key: 'title',
-      title: '定时任务',
+      title: '定時任務',
       className: 'whitespace-normal',
       render: (row) => (
         <div className="flex min-w-0 flex-col gap-[4px]">
@@ -227,23 +227,23 @@ export default function ScheduledTasksTab() {
     },
     {
       key: 'schedule',
-      title: '计划',
+      title: '計劃',
       width: 200,
       className: 'whitespace-normal [overflow-wrap:anywhere]',
       render: (row) => formatSchedule(row),
     },
-    { key: 'status', title: '状态', width: 120, render: (row) => <TaskStatusBadge status={row.status} /> },
-    { key: 'next', title: '下次执行', width: 160, render: (row) => formatTime(row.next_run_at) },
-    { key: 'runCount', title: '已执行', width: 120, render: (row) => `${row.run_count || 0} 次` },
+    { key: 'status', title: '狀態', width: 120, render: (row) => <TaskStatusBadge status={row.status} /> },
+    { key: 'next', title: '下次執行', width: 160, render: (row) => formatTime(row.next_run_at) },
+    { key: 'runCount', title: '已執行', width: 120, render: (row) => `${row.run_count || 0} 次` },
     {
       key: 'lastResult',
-      title: '最近结果',
+      title: '最近結果',
       width: 120,
       render: (row) =>
         row.last_status ? (
           <TaskRunResultBadge status={row.last_status} />
         ) : (
-          <span>暂无</span>
+          <span>暫無</span>
         ),
     },
     { key: 'actions', title: '操作', width: 100, render: renderTaskActions },
@@ -252,7 +252,7 @@ export default function ScheduledTasksTab() {
   const runColumns: DataTableColumn<ScheduledTaskRunRead>[] = [
     {
       key: 'task',
-      title: '定时任务',
+      title: '定時任務',
       width: 240,
       className: 'whitespace-normal',
       render: (row) => (
@@ -262,25 +262,25 @@ export default function ScheduledTasksTab() {
         </div>
       ),
     },
-    { key: 'status', title: '状态', width: 120, render: (row) => <TaskRunResultBadge status={row.status} /> },
+    { key: 'status', title: '狀態', width: 120, render: (row) => <TaskRunResultBadge status={row.status} /> },
     {
       key: 'scheduled',
-      title: '计划时间',
+      title: '計劃時間',
       width: 160,
       render: (row) => formatTime(row.scheduled_for),
     },
     {
       key: 'finished',
-      title: '完成时间',
+      title: '完成時間',
       width: 160,
       render: (row) => formatTime(row.finished_at),
     },
     {
       key: 'result',
-      title: '结果',
+      title: '結果',
       className: 'whitespace-normal',
       render: (row) => (
-        <span className="wrap-break-word">{row.result_summary || row.error || '暂无'}</span>
+        <span className="wrap-break-word">{row.result_summary || row.error || '暫無'}</span>
       ),
     },
     {
@@ -294,7 +294,7 @@ export default function ScheduledTasksTab() {
           onClick={() => openChatSession(row.session_id)}
           className="h-auto p-0 text-[12px] font-normal text-[#1a71ff] hover:text-[#4a8dff] hover:no-underline disabled:text-[#c0c6d4]"
         >
-          查看会话
+          查看會話
         </UIButton>
       ),
     },
@@ -303,14 +303,14 @@ export default function ScheduledTasksTab() {
   const runModalColumns: DataTableColumn<ScheduledTaskRunRead>[] = [
     {
       key: 'scheduled',
-      title: '计划时间',
+      title: '計劃時間',
       width: 170,
       render: (row) => formatTime(row.scheduled_for),
     },
-    { key: 'status', title: '状态', width: 100, render: (row) => <TaskRunResultBadge status={row.status} /> },
+    { key: 'status', title: '狀態', width: 100, render: (row) => <TaskRunResultBadge status={row.status} /> },
     {
       key: 'session',
-      title: '会话',
+      title: '會話',
       width: 200,
       className: 'whitespace-normal',
       render: (row) =>
@@ -328,10 +328,10 @@ export default function ScheduledTasksTab() {
     },
     {
       key: 'result',
-      title: '结果',
+      title: '結果',
       className: 'whitespace-normal',
       render: (row) => (
-        <span className="wrap-break-word">{row.result_summary || row.error || '暂无'}</span>
+        <span className="wrap-break-word">{row.result_summary || row.error || '暫無'}</span>
       ),
     },
   ];
@@ -345,7 +345,7 @@ export default function ScheduledTasksTab() {
       <p className={MOBILE_SUMMARY_CLASS}>{row.prompt}</p>
       <div className={MOBILE_META_CLASS}>
         <span>
-          <b>计划</b>
+          <b>計劃</b>
           {formatSchedule(row)}
         </span>
         <span>
@@ -353,12 +353,12 @@ export default function ScheduledTasksTab() {
           {formatTime(row.next_run_at)}
         </span>
         <span>
-          <b>已执行</b>
+          <b>已執行</b>
           {row.run_count || 0} 次
         </span>
         <span>
           <b>最近</b>
-          {row.last_status ? <TaskRunResultBadge status={row.last_status} /> : '暂无'}
+          {row.last_status ? <TaskRunResultBadge status={row.last_status} /> : '暫無'}
         </span>
       </div>
       <div className="mt-[12px] flex justify-end">{renderTaskActions(row)}</div>
@@ -378,15 +378,15 @@ export default function ScheduledTasksTab() {
       )}
       <div className={MOBILE_META_CLASS}>
         <span>
-          <b>计划时间</b>
+          <b>計劃時間</b>
           {formatTime(row.scheduled_for)}
         </span>
         <span>
-          <b>完成时间</b>
+          <b>完成時間</b>
           {formatTime(row.finished_at)}
         </span>
       </div>
-      <p className={MOBILE_SUMMARY_CLASS}>{row.result_summary || row.error || '暂无结果'}</p>
+      <p className={MOBILE_SUMMARY_CLASS}>{row.result_summary || row.error || '暫無結果'}</p>
       <div className="mt-[12px] flex justify-end">
         <UIButton
           variant="link"
@@ -395,7 +395,7 @@ export default function ScheduledTasksTab() {
           className="h-auto gap-1 p-0 text-[12px] font-normal text-[#1a71ff] hover:text-[#4a8dff] hover:no-underline disabled:text-[#c0c6d4]"
         >
           <IconSearch className="size-3.5" />
-          查看会话
+          查看會話
         </UIButton>
       </div>
     </article>
@@ -409,27 +409,27 @@ export default function ScheduledTasksTab() {
         className="h-8 w-[100px] gap-1 rounded-[10px] bg-[#18181a] px-5 text-[12px] font-normal text-white hover:bg-[#303030]"
       >
         <IconAdd className="size-3.5" />
-        新增任务
+        新增任務
       </UIButton>
     </div>
   );
 
   const scheduledBody = selectedAgent?.is_overall ? (
     <div className="flex min-h-[200px] items-center justify-center rounded-[14px] bg-[#f6f6f6] text-[13px] text-[#858b9c]">
-      请先选择一个数字员工再配置定时任务。
+      請先選擇一個數字員工再配置定時任務。
     </div>
   ) : (
     <>
-      <div className="flex flex-wrap items-stretch gap-[20px]" aria-label="定时任务统计">
+      <div className="flex flex-wrap items-stretch gap-[20px]" aria-label="定時任務統計">
         <StatCard label="待完成" value={activeRows.length} className="basis-[220px]" />
         <StatCard label="已完成" value={completedCount} className="basis-[220px]" />
-        <StatCard label="执行记录" value={allRunRows.length} className="basis-[220px]" />
+        <StatCard label="執行記錄" value={allRunRows.length} className="basis-[220px]" />
       </div>
 
       <div className="flex flex-col gap-[24px]">
         <TaskSection
           icon={<IconAlarm className="size-[14px] shrink-0" />}
-          title="任务列表"
+          title="任務列表"
           filterTabs={TASK_FILTER_TABS}
           filter={taskFilter}
           onFilterChange={setTaskFilter}
@@ -438,7 +438,7 @@ export default function ScheduledTasksTab() {
           columns={taskColumns}
           rowKey={(row) => row.id}
           loading={loading}
-          emptyText="暂无定时任务"
+          emptyText="暫無定時任務"
           page={taskPagination.page}
           pageCount={taskPagination.pageCount}
           onPageChange={taskPagination.setPage}
@@ -447,7 +447,7 @@ export default function ScheduledTasksTab() {
 
         <TaskSection
           icon={<IconAlignJustify className="size-[14px] shrink-0" />}
-          title="执行记录"
+          title="執行記錄"
           filterTabs={RUN_FILTER_TABS}
           filter={runFilter}
           onFilterChange={setRunFilter}
@@ -456,7 +456,7 @@ export default function ScheduledTasksTab() {
           columns={runColumns}
           rowKey={(row) => row.id}
           loading={loading}
-          emptyText="暂无执行记录"
+          emptyText="暫無執行記錄"
           tableSize="compact"
           striped
           bordered
@@ -487,17 +487,17 @@ export default function ScheduledTasksTab() {
           <div className="flex items-center gap-[6px] px-[12px] text-[#757f9c]">
             <IconAlignJustify className="size-[14px] shrink-0" />
             <DialogTitle className="text-[14px] font-normal leading-none text-[#757f9c]">
-              执行记录
+              執行記錄
             </DialogTitle>
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto">
             <DataTable
-              aria-label="执行记录"
+              aria-label="執行記錄"
               columns={runModalColumns}
               data={runsModalPagination.pagedItems}
               rowKey={(row) => row.id}
               loading={runLoading}
-              emptyText="暂无执行记录"
+              emptyText="暫無執行記錄"
               size="compact"
               striped
               bordered
@@ -505,7 +505,7 @@ export default function ScheduledTasksTab() {
           </div>
           {runRows.length > 0 && (
             <Paginator
-              aria-label="执行记录分页"
+              aria-label="執行記錄分頁"
               className="mt-0"
               page={runsModalPagination.page}
               pageCount={runsModalPagination.pageCount}
@@ -521,8 +521,8 @@ export default function ScheduledTasksTab() {
           if (!open) setDeleteTarget(null);
         }}
         loading={deleting}
-        title={`删除定时任务「${deleteTarget?.title ?? ''}」？`}
-        description="删除后不再唤醒该员工，历史执行记录会继续保留。"
+        title={`刪除定時任務「${deleteTarget?.title ?? ''}」？`}
+        description="刪除後不再喚醒該員工，歷史執行記錄會繼續保留。"
         onConfirm={() => void confirmDelete()}
       />
     </>
@@ -531,6 +531,6 @@ export default function ScheduledTasksTab() {
 
 function ArchivedTag() {
   return (
-    <StatusBadge tone="gray">任务已删除</StatusBadge>
+    <StatusBadge tone="gray">任務已刪除</StatusBadge>
   );
 }

@@ -23,8 +23,8 @@ export default function CopyMessageButton({ text }: { text: string }) {
     <button
       type="button"
       className={cn(CHAT_FEEDBACK_BTN_CLASS, copied && 'text-[#18a058]')}
-      aria-label={copied ? '已复制' : '复制回答'}
-      title={copied ? '已复制' : '复制回答'}
+      aria-label={copied ? '已複製' : '複製回答'}
+      title={copied ? '已複製' : '複製回答'}
       onClick={() => void copy()}
     >
       {copied ? <Check width={15} height={15} /> : <Copy width={15} height={15} />}

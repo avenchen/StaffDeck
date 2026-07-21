@@ -64,7 +64,7 @@
 - ✅ 前端 Wiki 視圖（`src/pages/WikiPage.tsx`）：三欄（目錄樹 / 正文閱讀 / 問 Wiki 串流面板），
   使用 endpoint 層（`api/endpoints/knowledge.ts`）+ `useApiQuery` + `SectionCard` 共用元件
 - ✅ 導覽整合：路由 enum、側邊欄「知識 Wiki」、App.tsx 路由
-- ✅ 聊天 UX：完成的助理訊息新增「複製」按鈕（`CopyMessageButton`），串流中顯示閃爍游標
+- ✅ 聊天 UX：完成的助理訊息新增「複製」按鈕（`CopyMessageButton`），串流中顯示閃爍遊標
 
 ### 待議（需產品/團隊決策）
 

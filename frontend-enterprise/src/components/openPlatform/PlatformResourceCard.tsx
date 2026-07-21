@@ -18,20 +18,20 @@ export const platformResourceAccentStyles = ACCENT_STYLES;
 
 export type PlatformResourceCardProps = {
   title: ReactNode;
-  /** Accent metric line under the title, e.g. "12M / 6个片段". */
+  /** Accent metric line under the title, e.g. "12M / 6個片段". */
   meta: ReactNode;
   description: ReactNode;
   tags?: string[];
   /** Full 36px icon visual. When omitted a default folder tile is shown. */
   icon?: ReactNode;
-  /** Module accent color for the meta line and tag pills. Defaults to green (知识库). */
+  /** Module accent color for the meta line and tag pills. Defaults to green (知識庫). */
   accent?: PlatformResourceAccent;
   onClick?: () => void;
   className?: string;
 };
 
 /**
- * 广场 resource card shared by the 知识库 / 技能 / SOP / 工具 modules. It renders a
+ * 廣場 resource card shared by the 知識庫 / 技能 / SOP / 工具 modules. It renders a
  * colorful module icon, a title with a green meta line, a two-line description
  * and a row of green pills on a clean white card (SD1 232:4923).
  */

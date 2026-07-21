@@ -11,25 +11,25 @@ from app.core.context_projection import (
 
 def test_compact_knowledge_context_keeps_evidence_without_duplicate_payloads() -> None:
     result = {
-        "query": {"query": "退款规则"},
-        "source_message": "请查询退款规则",
+        "query": {"query": "退款規則"},
+        "source_message": "請查詢退款規則",
         "selected_documents": [
             {
                 "id": "doc_1",
-                "title": "退款规则",
-                "summary": "文档摘要" * 500,
-                "outline": ["不应进入控制模型输入"] * 100,
+                "title": "退款規則",
+                "summary": "文檔摘要" * 500,
+                "outline": ["不應進入控制模型輸入"] * 100,
             }
         ],
-        "chunks": [{"id": "chunk_1", "content": "重复切片" * 2_000}],
-        "expanded_sections": [{"content": "完整目录树" * 2_000}],
+        "chunks": [{"id": "chunk_1", "content": "重複切片" * 2_000}],
+        "expanded_sections": [{"content": "完整目錄樹" * 2_000}],
         "evidence_pack": [
             {
                 "chunk_id": "chunk_1",
-                "source_path": "退款规则/时限",
-                "summary": "七天内可申请退款",
-                "content": "有效证据" * 2_000,
-                "excerpt": "不应重复发送" * 2_000,
+                "source_path": "退款規則/時限",
+                "summary": "七天內可申請退款",
+                "content": "有效證據" * 2_000,
+                "excerpt": "不應重複發送" * 2_000,
             }
         ],
     }
@@ -41,24 +41,24 @@ def test_compact_knowledge_context_keeps_evidence_without_duplicate_payloads() -
     assert "expanded_sections" not in compacted[0]
     assert "selected_documents" not in compacted[0]
     knowledge = compacted[0]["retrieved_knowledge"]
-    assert knowledge[0]["label"] == "检索到的知识 1"
-    assert knowledge[1]["label"] == "检索到的知识 2"
+    assert knowledge[0]["label"] == "檢索到的知識 1"
+    assert knowledge[1]["label"] == "檢索到的知識 2"
     assert "chunk_id" not in knowledge[0]
     assert len(knowledge[0]["content"]) <= 803
     assert "excerpt" not in knowledge[0]
     assert "outline" not in knowledge[1]
     assert len(knowledge[1]["summary"]) <= 603
-    assert result["chunks"][0]["content"].startswith("重复切片")
+    assert result["chunks"][0]["content"].startswith("重複切片")
 
 
 def test_compact_step_result_only_projects_knowledge_results() -> None:
     payload = {
-        "reply": "已找到规则",
+        "reply": "已找到規則",
         "slot_updates": {"order_id": "A001"},
         "knowledge_results": [
             {
                 "evidence_pack": [
-                    {"chunk_id": "chunk_1", "content": "证据" * 2_000}
+                    {"chunk_id": "chunk_1", "content": "證據" * 2_000}
                 ]
             }
         ],
@@ -66,7 +66,7 @@ def test_compact_step_result_only_projects_knowledge_results() -> None:
 
     compacted = compact_step_result(payload)
 
-    assert compacted["reply"] == "已找到规则"
+    assert compacted["reply"] == "已找到規則"
     assert compacted["slot_updates"] == {"order_id": "A001"}
     assert "knowledge_results" not in compacted
     assert len(
@@ -90,13 +90,13 @@ def test_compact_conversation_context_keeps_recent_history_within_control_budget
 
 
 def test_step_skill_context_keeps_only_local_graph_and_complete_instructions() -> None:
-    current_instruction = "当前节点业务说明" * 1_000
-    target_instruction = "目标节点业务说明" * 1_000
+    current_instruction = "當前節點業務說明" * 1_000
+    target_instruction = "目標節點業務說明" * 1_000
     compacted = compact_step_skill_context(
         {
             "skill_id": "refund",
             "required_info": ["order_id"],
-            "response_rules": ["展示退款状态"],
+            "response_rules": ["展示退款狀態"],
             "nodes": [
                 {
                     "node_id": "collect_order",
@@ -146,24 +146,24 @@ def test_step_skill_context_embeds_only_direct_transition_metadata() -> None:
     compacted = compact_step_skill_context(
         {
             "nodes": [
-                {"node_id": "current", "instruction": "当前"},
-                {"node_id": "approved", "instruction": "通过"},
-                {"node_id": "rejected", "instruction": "拒绝"},
-                {"node_id": "after_approved", "instruction": "后续节点不得传入"},
+                {"node_id": "current", "instruction": "當前"},
+                {"node_id": "approved", "instruction": "通過"},
+                {"node_id": "rejected", "instruction": "拒絕"},
+                {"node_id": "after_approved", "instruction": "後續節點不得傳入"},
             ],
             "edges": [
                 {
                     "source_node_id": "current",
                     "next_node_id": "approved",
                     "condition": "amount <= limit",
-                    "label": "未超标",
+                    "label": "未超標",
                     "priority": 1,
                 },
                 {
                     "source_node_id": "current",
                     "next_node_id": "rejected",
                     "condition": "amount > limit",
-                    "label": "超标",
+                    "label": "超標",
                     "priority": 2,
                 },
                 {
@@ -183,11 +183,11 @@ def test_step_skill_context_embeds_only_direct_transition_metadata() -> None:
     ]
     assert compacted["next_steps"][0]["transition"] == {
         "condition": "amount <= limit",
-        "label": "未超标",
+        "label": "未超標",
     }
     assert compacted["next_steps"][1]["transition"] == {
         "condition": "amount > limit",
-        "label": "超标",
+        "label": "超標",
     }
     assert "after_approved" not in str(compacted)
 
@@ -201,15 +201,15 @@ def test_compact_memory_context_only_returns_deduplicated_content_text() -> None
                 "kind": "profile",
                 "content": "32",
                 "importance": 0.9,
-                "metadata": {"key": "age", "reason": "用户提供了年龄"},
+                "metadata": {"key": "age", "reason": "用戶提供了年齡"},
                 "updated_at": "2026-07-13T00:00:00",
             },
             {"id": "mem_2", "kind": "profile", "content": "32"},
-            {"id": "mem_3", "kind": "fact", "content": "近期存在肠道不适"},
+            {"id": "mem_3", "kind": "fact", "content": "近期存在腸道不適"},
         ]
     )
 
-    assert memory == "- 32\n- 近期存在肠道不适"
+    assert memory == "- 32\n- 近期存在腸道不適"
     assert "mem_" not in memory
     assert "updated_at" not in memory
 
@@ -225,7 +225,7 @@ def test_compact_runtime_state_drops_storage_and_audit_metadata() -> None:
                 "session_id": "session_1",
                 "skill_id": "medical_consultation_v1",
                 "step_id": "collect_symptoms",
-                "slots": {"duration": "两天"},
+                "slots": {"duration": "兩天"},
                 "created_at": "2026-07-13T00:00:00",
                 "updated_at": "2026-07-13T00:01:00",
                 "source_turn_id": "turn_1",
@@ -248,7 +248,7 @@ def test_compact_runtime_state_drops_storage_and_audit_metadata() -> None:
             "task_id": "task_1",
             "skill_id": "medical_consultation_v1",
             "step_id": "collect_symptoms",
-            "slots": {"duration": "两天"},
+            "slots": {"duration": "兩天"},
         }
     ]
     assert awaiting == {

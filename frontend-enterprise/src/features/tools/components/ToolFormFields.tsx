@@ -29,7 +29,7 @@ export function ToolFormFields({
   return (
     <div className="flex flex-col gap-[16px]">
       <div className="grid grid-cols-1 gap-[16px] sm:grid-cols-2">
-        <Field label="工具名称" htmlFor="tool-name">
+        <Field label="工具名稱" htmlFor="tool-name">
           <div className="relative">
             <ToolOutlined className="pointer-events-none absolute left-[10px] top-1/2 -translate-y-1/2 text-[#858b9c]" />
             <Input
@@ -45,10 +45,10 @@ export function ToolFormFields({
             />
           </div>
         </Field>
-        <Field label="展示名称" htmlFor="tool-display-name">
+        <Field label="展示名稱" htmlFor="tool-display-name">
           <Input
             id="tool-display-name"
-            placeholder="订单查询"
+            placeholder="訂單查詢"
             value={values.display_name || ''}
             onChange={(event) => setField('display_name', event.target.value)}
           />
@@ -60,7 +60,7 @@ export function ToolFormFields({
           <Input
             id="tool-bucket"
             list="tool-bucket-options"
-            placeholder="选择或输入分桶"
+            placeholder="選擇或輸入分桶"
             value={values.bucket || ''}
             onChange={(event) => setField('bucket', event.target.value)}
           />
@@ -76,7 +76,7 @@ export function ToolFormFields({
         <Textarea
           id="tool-description"
           rows={2}
-          placeholder="简单说明这个工具的用途"
+          placeholder="簡單說明這個工具的用途"
           value={values.description || ''}
           onChange={(event) => setField('description', event.target.value)}
         />
@@ -147,7 +147,7 @@ export function ToolFormFields({
         </Field>
       </div>
 
-      <Field label="Allowed Skills" htmlFor="tool-allowed-skills" hint="留空表示所有技能可调用，多个技能用英文逗号分隔。">
+      <Field label="Allowed Skills" htmlFor="tool-allowed-skills" hint="留空表示所有技能可調用，多個技能用英文逗號分隔。">
         <Input
           id="tool-allowed-skills"
           placeholder="skill_id_1,skill_id_2"
@@ -158,8 +158,8 @@ export function ToolFormFields({
 
       <div className="flex items-center justify-between rounded-[12px] border border-[#eceef1] bg-[#fafbfc] px-[14px] py-[12px]">
         <div className="flex flex-col gap-[2px]">
-          <span className={FIELD_LABEL_CLASS}>启用工具</span>
-          <span className={HINT_CLASS}>停用后员工将无法调用该工具。</span>
+          <span className={FIELD_LABEL_CLASS}>啟用工具</span>
+          <span className={HINT_CLASS}>停用後員工將無法調用該工具。</span>
         </div>
         <Switch checked={values.enabled} onCheckedChange={(next) => setField('enabled', next)} />
       </div>

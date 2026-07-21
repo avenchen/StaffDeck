@@ -32,7 +32,7 @@ export type StatCardProps = {
 };
 
 /**
- * Metric card used across the enterprise pages (定时任务 / 对话日志 / 技能 …):
+ * Metric card used across the enterprise pages (定時任務 / 對話日誌 / 技能 …):
  * a rounded tinted surface with a large value and a trailing label.
  */
 export function StatCard({ value, label, tone = 'default', valueClassName, className }: StatCardProps) {

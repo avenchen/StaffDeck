@@ -75,7 +75,7 @@ function McpServerEditorPage({ mode, currentUser, onLogout }: { mode: 'new' | 'e
         setServer(row);
         setValues(serverToFormValues(row));
       })
-      .catch((error) => notify.error(error instanceof Error ? error.message : '加载 MCP 服务器失败'))
+      .catch((error) => notify.error(error instanceof Error ? error.message : '加載 MCP 服務器失敗'))
       .finally(() => setLoading(false));
   }, [isEdit, serverId]);
 
@@ -135,7 +135,7 @@ function McpServerEditorPage({ mode, currentUser, onLogout }: { mode: 'new' | 'e
 
   async function save() {
     if (!String(values.name || '').trim()) {
-      notify.error('请填写 MCP 服务器名称');
+      notify.error('請填寫 MCP 服務器名稱');
       return;
     }
     const built = buildPayload();
@@ -152,7 +152,7 @@ function McpServerEditorPage({ mode, currentUser, onLogout }: { mode: 'new' | 'e
         navigate(`/enterprise/tools/mcp/${saved.id}/edit`, { replace: true });
       }
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '保存失败');
+      notify.error(error instanceof Error ? error.message : '保存失敗');
     } finally {
       setSaving(false);
     }
@@ -165,13 +165,13 @@ function McpServerEditorPage({ mode, currentUser, onLogout }: { mode: 'new' | 'e
     try {
       const response = await mcpServersApi.discover(built.connection, server?.id);
       if (!response.success) {
-        notify.error(response.error?.message || '发现工具失败');
+        notify.error(response.error?.message || '發現工具失敗');
         return;
       }
       setDiscovered(response.tools.map((tool) => ({ ...tool, selected: !tool.imported })));
-      notify.success(`发现 ${response.tools.length} 个工具`);
+      notify.success(`發現 ${response.tools.length} 個工具`);
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '发现工具失败');
+      notify.error(error instanceof Error ? error.message : '發現工具失敗');
     } finally {
       setDiscovering(false);
     }
@@ -179,12 +179,12 @@ function McpServerEditorPage({ mode, currentUser, onLogout }: { mode: 'new' | 'e
 
   async function sync() {
     if (!server) {
-      notify.warning('请先保存 MCP 服务器，再同步工具');
+      notify.warning('請先保存 MCP 服務器，再同步工具');
       return;
     }
     const selectedNames = discovered.filter((tool) => tool.selected).map((tool) => tool.name);
     if (discovered.length > 0 && selectedNames.length === 0) {
-      notify.warning('请至少选择一个要导入的工具');
+      notify.warning('請至少選擇一個要導入的工具');
       return;
     }
     setSyncing(true);
@@ -195,7 +195,7 @@ function McpServerEditorPage({ mode, currentUser, onLogout }: { mode: 'new' | 'e
         currentAgentId(),
       );
       if (!response.success) {
-        notify.error(response.error?.message || '同步失败');
+        notify.error(response.error?.message || '同步失敗');
         return;
       }
       notify.success(`同步完成：新增 ${response.imported.length}，更新 ${response.updated.length}`);
@@ -207,7 +207,7 @@ function McpServerEditorPage({ mode, currentUser, onLogout }: { mode: 'new' | 'e
       }
       await discover();
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '同步失败');
+      notify.error(error instanceof Error ? error.message : '同步失敗');
     } finally {
       setSyncing(false);
     }
@@ -226,7 +226,7 @@ function McpServerEditorPage({ mode, currentUser, onLogout }: { mode: 'new' | 'e
               prev.map((item) => (item.name === row.name ? { ...item, selected: next === true } : item)),
             )
           }
-          aria-label={`选择 ${row.name}`}
+          aria-label={`選擇 ${row.name}`}
         />
       ),
     },
@@ -246,15 +246,15 @@ function McpServerEditorPage({ mode, currentUser, onLogout }: { mode: 'new' | 'e
       title: '描述',
       className: 'whitespace-normal',
       render: (row) => (
-        <span className="block wrap-break-word text-[#858b9c]">{row.description || '暂无描述'}</span>
+        <span className="block wrap-break-word text-[#858b9c]">{row.description || '暫無描述'}</span>
       ),
     },
     {
       key: 'imported',
-      title: '状态',
+      title: '狀態',
       width: 96,
       render: (row) => (
-        <StatusBadge tone={row.imported ? 'green' : 'gray'}>{row.imported ? '已导入' : '未导入'}</StatusBadge>
+        <StatusBadge tone={row.imported ? 'green' : 'gray'}>{row.imported ? '已導入' : '未導入'}</StatusBadge>
       ),
     },
   ];
@@ -264,8 +264,8 @@ function McpServerEditorPage({ mode, currentUser, onLogout }: { mode: 'new' | 'e
       <AppHeader
         onLogout={onLogout}
         userName={currentUser?.username}
-        title={isEdit ? '编辑 MCP 服务器' : '新建工具'}
-        description="配置 MCP Server 连接后，可发现其提供的工具并同步为工具集。"
+        title={isEdit ? '編輯 MCP 服務器' : '新建工具'}
+        description="配置 MCP Server 連接後，可發現其提供的工具並同步為工具集。"
       />
       <div className="mt-[20px] mb-[16px] flex flex-wrap justify-end gap-[16px]">
         <UIButton variant="outline" onClick={() => navigate('/enterprise/tools')} className={RETURN_BUTTON_CLASS}>
@@ -278,13 +278,13 @@ function McpServerEditorPage({ mode, currentUser, onLogout }: { mode: 'new' | 'e
       </div>
       {!isEdit && <ToolTypeSwitcher active="mcp" />}
       <div className="grid grid-cols-1 items-start gap-[20px] xl:grid-cols-2">
-        <SectionCard title="连接配置" loading={loading && isEdit && !server}>
+        <SectionCard title="連接配置" loading={loading && isEdit && !server}>
           <div className="flex flex-col gap-[16px]">
             <div className="grid grid-cols-1 gap-[16px] sm:grid-cols-2">
               <Field
-                label="名称"
+                label="名稱"
                 htmlFor="mcp-name"
-                hint={isEdit ? '保存后不可修改名称。' : '作为唯一标识，仅支持字母/数字/下划线；中文将自动转拼音，最长 15 字符。'}
+                hint={isEdit ? '保存後不可修改名稱。' : '作為唯一標識，僅支持字母/數字/下劃線；中文將自動轉拼音，最長 15 字符。'}
               >
                 <Input
                   id="mcp-name"
@@ -294,7 +294,7 @@ function McpServerEditorPage({ mode, currentUser, onLogout }: { mode: 'new' | 'e
                   onChange={(event) => setField('name', sanitizeMcpName(event.target.value))}
                 />
               </Field>
-              <Field label="展示名称" htmlFor="mcp-display-name">
+              <Field label="展示名稱" htmlFor="mcp-display-name">
                 <Input
                   id="mcp-display-name"
                   placeholder="我的工具集"
@@ -308,7 +308,7 @@ function McpServerEditorPage({ mode, currentUser, onLogout }: { mode: 'new' | 'e
               <Textarea
                 id="mcp-description"
                 rows={2}
-                placeholder="简单说明这个工具集的用途"
+                placeholder="簡單說明這個工具集的用途"
                 value={values.description}
                 onChange={(event) => setField('description', event.target.value)}
               />
@@ -323,7 +323,7 @@ function McpServerEditorPage({ mode, currentUser, onLogout }: { mode: 'new' | 'e
               />
             </Field>
 
-            <Field label="连接方式" hint={transportOption?.hint}>
+            <Field label="連接方式" hint={transportOption?.hint}>
               <UISelect
                 value={values.transport}
                 onValueChange={(value) => setField('transport', value as MCPTransport)}
@@ -373,7 +373,7 @@ function McpServerEditorPage({ mode, currentUser, onLogout }: { mode: 'new' | 'e
                     onChange={(event) => setField('command', event.target.value)}
                   />
                 </Field>
-                <Field label="Args" htmlFor="mcp-args" hint="每行一个参数。">
+                <Field label="Args" htmlFor="mcp-args" hint="每行一個參數。">
                   <Textarea
                     id="mcp-args"
                     rows={4}
@@ -392,7 +392,7 @@ function McpServerEditorPage({ mode, currentUser, onLogout }: { mode: 'new' | 'e
                     onChange={(event) => setField('env', event.target.value)}
                   />
                 </Field>
-                <Field label="工作目录（cwd）" htmlFor="mcp-cwd">
+                <Field label="工作目錄（cwd）" htmlFor="mcp-cwd">
                   <Input
                     id="mcp-cwd"
                     placeholder="/path/to/workdir"
@@ -405,8 +405,8 @@ function McpServerEditorPage({ mode, currentUser, onLogout }: { mode: 'new' | 'e
 
             <div className="flex items-center justify-between rounded-[12px] border border-[#eceef1] bg-[#fafbfc] px-[14px] py-[12px]">
               <div className="flex flex-col gap-[2px]">
-                <span className={FIELD_LABEL_CLASS}>启用工具集</span>
-                <span className={HINT_CLASS}>停用后其下工具将无法被员工调用。</span>
+                <span className={FIELD_LABEL_CLASS}>啟用工具集</span>
+                <span className={HINT_CLASS}>停用後其下工具將無法被員工調用。</span>
               </div>
               <Switch checked={values.enabled} onCheckedChange={(next) => setField('enabled', next)} />
             </div>
@@ -414,37 +414,37 @@ function McpServerEditorPage({ mode, currentUser, onLogout }: { mode: 'new' | 'e
         </SectionCard>
 
         <SectionCard
-          title="工具发现（tools/list）"
+          title="工具發現（tools/list）"
           bodyClassName="flex flex-col gap-[14px]"
           extra={(
             <div className="flex items-center gap-[8px]">
               <UIButton variant="outline" disabled={discovering} onClick={() => void discover()} className={RETURN_BUTTON_CLASS}>
                 <IconRefresh className="size-[14px] shrink-0" />
-                发现工具
+                發現工具
               </UIButton>
               <UIButton disabled={!server || syncing} onClick={() => void sync()} className={PRIMARY_BUTTON_CLASS}>
-                导入/同步
+                導入/同步
               </UIButton>
             </div>
           )}
         >
           <p className={HINT_CLASS}>
             {server
-              ? '点击「发现工具」拉取 tools/list，勾选后「导入/同步」即可生成工具行。'
-              : '请先保存 MCP 服务器，才能导入并同步工具。'}
+              ? '點擊「發現工具」拉取 tools/list，勾選後「導入/同步」即可生成工具行。'
+              : '請先保存 MCP 服務器，才能導入並同步工具。'}
           </p>
           {discovered.length ? (
             <DataTable
-              aria-label="发现的工具"
+              aria-label="發現的工具"
               columns={discoveredColumns}
               data={discovered}
               rowKey={(row) => row.name}
               loading={discovering}
-              emptyText="未发现工具"
+              emptyText="未發現工具"
             />
           ) : (
             <div className="grid min-h-[180px] place-items-center rounded-[12px] border border-dashed border-[#eceef1] p-[20px] text-center text-[13px] text-[#858b9c]">
-              点击「发现工具」后，这里会列出该 MCP Server 提供的工具。
+              點擊「發現工具」後，這裡會列出該 MCP Server 提供的工具。
             </div>
           )}
         </SectionCard>

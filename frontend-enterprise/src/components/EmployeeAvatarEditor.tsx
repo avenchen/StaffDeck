@@ -73,7 +73,7 @@ export default function EmployeeAvatarEditor({
       setUploadedImage(dataUrl);
       setMode('upload');
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '头像读取失败');
+      notify.error(error instanceof Error ? error.message : '頭像讀取失敗');
     } finally {
       if (inputRef.current) inputRef.current.value = '';
     }
@@ -98,12 +98,12 @@ export default function EmployeeAvatarEditor({
         tenant_id: TENANT_ID,
         metadata,
       });
-      notify.success('员工头像已更新');
+      notify.success('員工頭像已更新');
       onSaved?.(saved);
       onClose();
       window.dispatchEvent(new Event('ultrarag-enterprise-agent-scope-refresh'));
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '保存头像失败');
+      notify.error(error instanceof Error ? error.message : '保存頭像失敗');
     } finally {
       setSaving(false);
     }
@@ -117,7 +117,7 @@ export default function EmployeeAvatarEditor({
       >
         <DialogHeader className="px-3">
           <DialogTitle className="text-sm font-normal leading-none text-[#757f9c]">
-            {agent ? `设置头像：${employeeDisplayName(agent)}` : '设置头像'}
+            {agent ? `設置頭像：${employeeDisplayName(agent)}` : '設置頭像'}
           </DialogTitle>
         </DialogHeader>
 
@@ -125,17 +125,17 @@ export default function EmployeeAvatarEditor({
           <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-[18px] rounded-2xl border border-border bg-[linear-gradient(135deg,color-mix(in_srgb,var(--accent-soft)_34%,transparent),transparent_58%),var(--surface-subtle)] p-[18px]">
             <EmployeeAvatar profile={profile} width={104} height={122} />
             <div>
-              <strong className="block text-sm text-foreground">{mode === 'upload' ? '自定义头像' : selected.label}</strong>
+              <strong className="block text-sm text-foreground">{mode === 'upload' ? '自定義頭像' : selected.label}</strong>
               <p className="mt-1 text-xs text-muted-foreground">
-                头像会显示在我的数字员工、数字员工档案页和对话端的员工选择中。
+                頭像會顯示在我的數字員工、數字員工檔案頁和對話端的員工選擇中。
               </p>
             </div>
           </div>
 
           <section className="space-y-3">
             <div className="flex items-baseline justify-between gap-3">
-              <strong className="text-[13px] text-foreground">默认头像</strong>
-              <span className="text-xs text-muted-foreground">选择一个适合岗位的默认头像。</span>
+              <strong className="text-[13px] text-foreground">默認頭像</strong>
+              <span className="text-xs text-muted-foreground">選擇一個適合崗位的默認頭像。</span>
             </div>
             <div className="grid grid-cols-3 gap-2.5">
               {EMPLOYEE_AVATAR_PRESETS.map((preset) => {
@@ -185,8 +185,8 @@ export default function EmployeeAvatarEditor({
               <UploadOutlined />
             </span>
             <span className="grid min-w-0 gap-0.5">
-              <span className="text-sm font-semibold text-foreground">上传自定义头像</span>
-              <span className="text-xs text-muted-foreground">支持常见图片格式，会自动裁剪为方形头像。</span>
+              <span className="text-sm font-semibold text-foreground">上傳自定義頭像</span>
+              <span className="text-xs text-muted-foreground">支持常見圖片格式，會自動裁剪為方形頭像。</span>
             </span>
           </button>
         </div>
@@ -205,7 +205,7 @@ export default function EmployeeAvatarEditor({
             onClick={() => void save()}
             className="h-8 w-[92px] rounded-[10px] bg-[#18181a] px-3 text-sm font-normal text-white hover:bg-[#303030]"
           >
-            保存头像
+            保存頭像
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -216,7 +216,7 @@ export default function EmployeeAvatarEditor({
 function readFileAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onerror = () => reject(new Error('头像读取失败'));
+    reader.onerror = () => reject(new Error('頭像讀取失敗'));
     reader.onload = () => resolve(String(reader.result || ''));
     reader.readAsDataURL(file);
   });
@@ -225,7 +225,7 @@ function readFileAsDataUrl(file: File): Promise<string> {
 function loadImage(dataUrl: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const image = new Image();
-    image.onerror = () => reject(new Error('无法解析头像图片'));
+    image.onerror = () => reject(new Error('無法解析頭像圖片'));
     image.onload = () => resolve(image);
     image.src = dataUrl;
   });
@@ -233,10 +233,10 @@ function loadImage(dataUrl: string): Promise<HTMLImageElement> {
 
 async function fileToAvatarDataUrl(file: File): Promise<string> {
   if (!file.type.startsWith('image/')) {
-    throw new Error('请选择图片文件');
+    throw new Error('請選擇圖片文件');
   }
   if (file.size > MAX_INPUT_IMAGE_BYTES) {
-    throw new Error('头像图片不能超过 5MB');
+    throw new Error('頭像圖片不能超過 5MB');
   }
 
   const image = await loadImage(await readFileAsDataUrl(file));
@@ -244,7 +244,7 @@ async function fileToAvatarDataUrl(file: File): Promise<string> {
   canvas.width = AVATAR_CANVAS_SIZE;
   canvas.height = AVATAR_CANVAS_SIZE;
   const context = canvas.getContext('2d');
-  if (!context) throw new Error('当前浏览器无法处理头像图片');
+  if (!context) throw new Error('當前瀏覽器無法處理頭像圖片');
 
   const side = Math.min(image.width, image.height);
   const sx = Math.max(0, (image.width - side) / 2);

@@ -137,7 +137,7 @@ def test_model_config(
     row = _get_model_config(db, tenant_id, config_id)
     try:
         output = LLMClient(row).generate_text(
-            "你是一个连接测试助手。请用一句中文回复连接成功。",
+            "你是一個連接測試助手。請用一句中文回覆連接成功。",
             {"message": "ping"},
         )
         return ModelConfigTestResponse(success=True, message="Model connection succeeded", output=output)

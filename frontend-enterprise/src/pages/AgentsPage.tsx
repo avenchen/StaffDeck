@@ -59,7 +59,7 @@ export default function AgentsPage({
       const rows = await api.get<AgentProfileRead[]>(`/api/enterprise/agents?tenant_id=${TENANT_ID}`);
       setAgents(rows);
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '加载员工失败');
+      notify.error(error instanceof Error ? error.message : '加載員工失敗');
     } finally {
       setLoading(false);
     }
@@ -126,7 +126,7 @@ export default function AgentsPage({
       emitAgentScopeChange(selectedRow.id);
       navigate('/enterprise/dashboard');
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '加载员工失败');
+      notify.error(error instanceof Error ? error.message : '加載員工失敗');
     } finally {
       setSelectingAgentId(null);
     }
@@ -143,11 +143,11 @@ export default function AgentsPage({
         status,
         metadata: row.metadata || {},
       });
-      notify.success(status === 'active' ? '员工已上线' : '员工已下线');
+      notify.success(status === 'active' ? '員工已上線' : '員工已下線');
       await load();
       window.dispatchEvent(new Event('ultrarag-enterprise-agent-scope-refresh'));
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '更新员工状态失败');
+      notify.error(error instanceof Error ? error.message : '更新員工狀態失敗');
     }
   }
 
@@ -163,11 +163,11 @@ export default function AgentsPage({
         tenant_id: TENANT_ID,
         metadata,
       });
-      notify.success(published ? '已发布到广场' : '已从广场下架');
+      notify.success(published ? '已發佈到廣場' : '已從廣場下架');
       await load();
       window.dispatchEvent(new Event('ultrarag-enterprise-agent-scope-refresh'));
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '更新广场状态失败');
+      notify.error(error instanceof Error ? error.message : '更新廣場狀態失敗');
     }
   }
 
@@ -188,12 +188,12 @@ export default function AgentsPage({
           window.dispatchEvent(new CustomEvent('ultrarag-enterprise-agent-scope-change', { detail: { agentId: '' } }));
         }
       }
-      notify.success('员工已删除');
+      notify.success('員工已刪除');
       setDeleteTarget(null);
       await load();
       window.dispatchEvent(new Event('ultrarag-enterprise-agent-scope-refresh'));
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : '删除员工失败');
+      notify.error(error instanceof Error ? error.message : '刪除員工失敗');
     } finally {
       setDeleting(false);
     }
@@ -204,21 +204,21 @@ export default function AgentsPage({
   }
 
   const employeeTabs: UnderlineTabItem<typeof employeeFilter>[] = [
-    { value: 'all', label: '全部员工' },
-    { value: 'online', label: '在线员工' },
-    { value: 'offline', label: '下线员工' },
+    { value: 'all', label: '全部員工' },
+    { value: 'online', label: '在線員工' },
+    { value: 'offline', label: '下線員工' },
   ];
 
   const summaryCardClass =
     'flex h-[100px] flex-1 basis-[220px] items-center gap-[16px] rounded-[20px] bg-[#f6f6f6] px-[32px] py-[20px] text-left transition-shadow';
   const summaryStats: { key: typeof employeeFilter; value: number; label: string; sub: string }[] = [
-    { key: 'all', value: employees.length, label: '员工总数', sub: `${onlineEmployees.length}位在线` },
-    { key: 'offline', value: offlineEmployees.length, label: '下线员工', sub: '0位在线' },
+    { key: 'all', value: employees.length, label: '員工總數', sub: `${onlineEmployees.length}位在線` },
+    { key: 'offline', value: offlineEmployees.length, label: '下線員工', sub: '0位在線' },
     {
       key: 'pending',
       value: pendingEmployees.length,
-      label: '待审批',
-      sub: `${pendingEmployees.filter((item) => item.status === 'active').length}位在线`,
+      label: '待審批',
+      sub: `${pendingEmployees.filter((item) => item.status === 'active').length}位在線`,
     },
   ];
 
@@ -234,7 +234,7 @@ export default function AgentsPage({
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
               placeholder="搜索"
-              aria-label="搜索员工"
+              aria-label="搜索員工"
               className="min-w-0 flex-1 border-0 bg-transparent text-[14px] text-[#18181A] outline-none placeholder:text-[#757F9C]"
             />
           </div>
@@ -242,7 +242,7 @@ export default function AgentsPage({
       />
 
 
-      <div className="flex flex-wrap items-stretch gap-[20px] my-[36px]" aria-label="数字员工统计">
+      <div className="flex flex-wrap items-stretch gap-[20px] my-[36px]" aria-label="數字員工統計">
         {summaryStats.map((stat) => (
           <button
             key={stat.key}
@@ -265,15 +265,15 @@ export default function AgentsPage({
             <IconPlus className="size-[38px]" />
           </span>
           <span className="flex min-w-0 flex-col gap-[4px]">
-            <span className="whitespace-nowrap text-[14px] text-[#464C5E]">创建新员工</span>
-            <span className="whitespace-nowrap text-[12px] text-[#757F9C]">几步搭好你的数字员工</span>
+            <span className="whitespace-nowrap text-[14px] text-[#464C5E]">創建新員工</span>
+            <span className="whitespace-nowrap text-[12px] text-[#757F9C]">幾步搭好你的數字員工</span>
           </span>
         </button>
       </div>
 
       <UnderlineTabs
         className="mb-[16px]"
-        aria-label="数字员工分类"
+        aria-label="數字員工分類"
         value={employeeFilter}
         onChange={setEmployeeFilter}
         items={employeeTabs}
@@ -319,8 +319,8 @@ export default function AgentsPage({
           if (!open) setDeleteTarget(null);
         }}
         loading={deleting}
-        title={`删除员工「${deleteTarget ? employeeDisplayName(deleteTarget) : ''}」？`}
-        description="删除后该员工的所有配置将一并移除，操作不可撤销。"
+        title={`刪除員工「${deleteTarget ? employeeDisplayName(deleteTarget) : ''}」？`}
+        description="刪除後該員工的所有配置將一併移除，操作不可撤銷。"
         onConfirm={() => void confirmDelete()}
       />
     </div>
@@ -335,10 +335,10 @@ function AgentsEmptyState() {
           <IconSearch className="size-[16px] shrink-0" />
         </span>
         <p className="mt-[12px] text-[14px] font-medium leading-[20px] text-[#7f879a]">
-          没有匹配的数字员工
+          沒有匹配的數字員工
         </p>
         <p className="mt-[4px] text-[11px] leading-[17px] text-[#a7adbb]">
-          调整筛选条件，或换个关键词再试试
+          調整篩選條件，或換個關鍵詞再試試
         </p>
       </div>
     </div>

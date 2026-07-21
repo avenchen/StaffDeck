@@ -40,7 +40,7 @@ db.seed → {agents.branching, general_skills(延遲)}                ← 循環
   - `response_generator.py`(464)、`context_projection.py`(429)、`conversation_context.py`(278)、`router.py`(233)、`step_agent.py`(262)、`reflection_agent.py`(136)、`cancellation.py`(27)。
 - **`llm/`（1,558 行）**：`client.py`(1,259) `LLMClient` 包裝 OpenAI SDK——`generate_text` / `generate_text_stream` / `generate_json`（JSON 修復重試、空回應重試、`_fit_request_messages` token 預算裁切、thinking-mode 參數）。`stage_protocol.py` 定義統一 system prompt 與各階段 payload schema；prompt 為 `llm/prompts/*.md`，每次呼叫從磁碟讀取。
 - **`agents/`（1,603 行）**：`branching.py`(1,483) 定義 per-agent 資源可見性（open-gallery 與私有綁定、branch 投影）。
-- **`knowledge/`（3,210 行）**：`service.py`(1,863) 摄取、分塊、bucket、檢索；`okf.py`(820) OKF 概念格式；`citations.py` 引用來源。
+- **`knowledge/`（3,210 行）**：`service.py`(1,863) 攝取、分塊、bucket、檢索；`okf.py`(820) OKF 概念格式；`citations.py` 引用來源。
 - **`general_skills/`（1,341 行）**：`runner.py`(1,070) `GeneralSkillSelector` + `GeneralSkillRunner`（子行程/venv 執行、stdout 串流、重試）；`runtime_env.py` 依 `GENERAL_SKILL_RUNTIME_*` 環境變數解析 Python 執行環境（4 層 fallback：指定 Python → 指定 venv → `backend/.venv` → 自建 `.runtime_venv`）。
 - **`tools/`（1,096 行）**：`mcp_client.py`(586) 支援 stdio / http / sse 三種 MCP 傳輸；`http_request.py` HTTP 工具執行。
 - **`scheduled_tasks/`（997 行）**：`service.py`(783) CRUD + rrule + 到期掃描 + 執行（跑 `AgentLoop`）；`worker.py` 背景輪詢執行緒。

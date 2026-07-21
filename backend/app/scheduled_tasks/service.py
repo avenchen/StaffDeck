@@ -63,32 +63,32 @@ class _LLMScheduledTaskDraft(BaseModel):
 
 
 SCHEDULE_DRAFT_PROMPT = """
-你是 StaffDeck 数字员工的自动任务配置解析器。
-用户已经在对话框中选择了“创建定时任务”模式。请把用户输入整理成一个可编辑的自动任务草案。
-如果用户没有写清时间计划，默认每天 09:00 执行；如果用户没有写清任务目标，用原始输入作为执行内容。
+你是 StaffDeck 數字員工的自動任務配置解析器。
+用戶已經在對話框中選擇了“創建定時任務”模式。請把用戶輸入整理成一個可編輯的自動任務草案。
+如果用戶沒有寫清時間計劃，默認每天 09:00 執行；如果用戶沒有寫清任務目標，用原始輸入作為執行內容。
 
-返回一个 JSON object，字段如下：
+返回一個 JSON object，字段如下：
 - should_create: boolean
-- title: 12 到 32 个中文字符，概括自动任务名称
-- prompt: 每次到点后交给数字员工的新会话任务描述，不要包含“帮我设个定时任务”等配置话术
-- description: 可选，解释为什么这样拆解
+- title: 12 到 32 箇中文字符，概括自動任務名稱
+- prompt: 每次到點後交給數字員工的新會話任務描述，不要包含“幫我設個定時任務”等配置話術
+- description: 可選，解釋為什麼這樣拆解
 - schedule_type: one of "once", "daily", "weekly", "monthly"
 - schedule:
   - once: {"run_at": "YYYY-MM-DDTHH:mm:ss±HH:MM"}
   - daily: {"time": "HH:mm"}
-  - weekly: {"time": "HH:mm", "weekdays": [0-6]}，0=周一，6=周日
+  - weekly: {"time": "HH:mm", "weekdays": [0-6]}，0=週一，6=週日
   - monthly: {"time": "HH:mm", "day_of_month": 1-31}
-- timezone: IANA 时区，默认使用 default_timezone
-- rrule: 可选 RRULE 字符串
+- timezone: IANA 時區，默認使用 default_timezone
+- rrule: 可選 RRULE 字符串
 - confidence: 0 到 1
-- reason: 简短说明
+- reason: 簡短說明
 
-时间不完整时可以合理补齐：只说“每天”默认 09:00；只说“每周一”默认 09:00。
-调度类型判断规则：
-- 用户只给出一个具体时间点，例如“下午2点10分”“14:10”“今晚8点”，且没有明确“每天/每日/每周/每月/定期/重复”等周期要求时，生成 once。
-- once.run_at 使用 now 所在日期和用户给出的时间；如果该时间已经过去，则顺延到下一天。
-- 只有用户明确说“每天/每日/每晚/每早/每周/每月/工作日/定期/重复”等周期要求时，才生成 daily/weekly/monthly。
-不要输出 Markdown，不要输出解释文本，只输出 JSON。
+時間不完整時可以合理補齊：只說“每天”默認 09:00；只說“每週一”默認 09:00。
+調度類型判斷規則：
+- 用戶只給出一個具體時間點，例如“下午2點10分”“14:10”“今晚8點”，且沒有明確“每天/每日/每週/每月/定期/重複”等週期要求時，生成 once。
+- once.run_at 使用 now 所在日期和用戶給出的時間；如果該時間已經過去，則順延到下一天。
+- 只有用戶明確說“每天/每日/每晚/每早/每週/每月/工作日/定期/重複”等週期要求時，才生成 daily/weekly/monthly。
+不要輸出 Markdown，不要輸出解釋文本，只輸出 JSON。
 """
 
 
@@ -157,8 +157,8 @@ def create_scheduled_task(
         tenant_id=request.tenant_id,
         agent_id=request.agent_id,
         created_by_user_id=current_user.id,
-        title=_nonempty(request.title, "自动任务名称不能为空", 80),
-        prompt=_nonempty(request.prompt, "自动任务描述不能为空", 10000),
+        title=_nonempty(request.title, "自動任務名稱不能為空", 80),
+        prompt=_nonempty(request.prompt, "自動任務描述不能為空", 10000),
         description=(request.description or "").strip() or None,
         schedule_type=request.schedule_type,
         schedule_json=schedule,
@@ -194,9 +194,9 @@ def update_scheduled_task(
         _ensure_agent_access(db, request.tenant_id, request.agent_id, current_user)
         row.agent_id = request.agent_id
     if request.title is not None:
-        row.title = _nonempty(request.title, "自动任务名称不能为空", 80)
+        row.title = _nonempty(request.title, "自動任務名稱不能為空", 80)
     if request.prompt is not None:
-        row.prompt = _nonempty(request.prompt, "自动任务描述不能为空", 10000)
+        row.prompt = _nonempty(request.prompt, "自動任務描述不能為空", 10000)
     if request.description is not None:
         row.description = request.description.strip() or None
     if request.timezone is not None:
@@ -369,7 +369,7 @@ def _prepare_scheduled_task_run(
         ).first()
         if running:
             run = _create_run(db, task, scheduled_for, "skipped")
-            run.error = "上一轮自动任务仍在执行，已按 forbid 策略跳过本次唤醒。"
+            run.error = "上一輪自動任務仍在執行，已按 forbid 策略跳過本次喚醒。"
             run.finished_at = utc_now()
             _finish_task_schedule(db, task, scheduled_for, "skipped", manual)
             db.add(run)
@@ -397,7 +397,7 @@ def _prepare_scheduled_task_run(
         tenant_id=task.tenant_id,
         user_id=task.created_by_user_id,
         agent_id=task.agent_id,
-        title=f"自动任务：{task.title}",
+        title=f"自動任務：{task.title}",
         status="active",
     )
     db.add(session)
@@ -429,7 +429,7 @@ def _execute_prepared_scheduled_task(
 ) -> ScheduledTaskRun:
     try:
         if not run.session_id:
-            raise RuntimeError("自动任务缺少独立会话")
+            raise RuntimeError("自動任務缺少獨立會話")
         request = ChatTurnRequest(
             tenant_id=task.tenant_id,
             session_id=run.session_id,
@@ -446,7 +446,7 @@ def _execute_prepared_scheduled_task(
             if item.get("event") in {"complete", "done"} and isinstance(item.get("data"), dict):
                 result = ChatTurnResponse.model_validate(item["data"])
         if result is None:
-            raise RuntimeError("自动任务执行未返回完整结果")
+            raise RuntimeError("自動任務執行未返回完整結果")
         run.status = "succeeded"
         run.result_summary = result.reply[:500]
         run.trace_json = {
@@ -569,7 +569,7 @@ def normalize_schedule(schedule_type: str, schedule: dict[str, Any], timezone: s
         run_at = raw.get("run_at") or raw.get("datetime") or raw.get("start_at")
         parsed = parse_user_datetime(str(run_at or ""), timezone)
         if not parsed:
-            raise HTTPException(status_code=400, detail="一次性自动任务需要填写执行时间")
+            raise HTTPException(status_code=400, detail="一次性自動任務需要填寫執行時間")
         return {"run_at": _to_local(parsed, timezone).isoformat()}
     if schedule_type == "daily":
         return {"time": _format_time(_parse_time(str(raw.get("time") or DEFAULT_TASK_TIME)))}
@@ -583,7 +583,7 @@ def normalize_schedule(schedule_type: str, schedule: dict[str, Any], timezone: s
             "time": _format_time(_parse_time(str(raw.get("time") or DEFAULT_TASK_TIME))),
             "day_of_month": _normalize_day_of_month(raw.get("day_of_month") or 1),
         }
-    raise HTTPException(status_code=400, detail="不支持的自动任务调度类型")
+    raise HTTPException(status_code=400, detail="不支持的自動任務調度類型")
 
 
 def build_rrule(schedule_type: str, schedule: dict[str, Any]) -> str | None:
@@ -684,12 +684,12 @@ def _execution_goal_from_message(message: str) -> str:
 def _compact_title(message: str) -> str:
     text = _execution_goal_from_message(message)
     text = re.sub(r"\s+", " ", text).strip(" ，,。")
-    return (text[:28] or "自动任务").strip()
+    return (text[:28] or "自動任務").strip()
 
 
 def _normalize_schedule_type(value: str) -> str:
     if value not in SCHEDULE_TYPES:
-        raise HTTPException(status_code=400, detail="不支持的自动任务调度类型")
+        raise HTTPException(status_code=400, detail="不支持的自動任務調度類型")
     return value
 
 
@@ -698,14 +698,14 @@ def _normalize_weekdays(value: Any) -> list[int]:
         value = [value]
     days = sorted({int(item) for item in value if str(item).strip() != ""})
     if not days or any(day < 0 or day > 6 for day in days):
-        raise HTTPException(status_code=400, detail="每周自动任务需要 0-6 的星期设置")
+        raise HTTPException(status_code=400, detail="每週自動任務需要 0-6 的星期設置")
     return days
 
 
 def _normalize_day_of_month(value: Any) -> int:
     day = int(value)
     if day < 1 or day > 31:
-        raise HTTPException(status_code=400, detail="每月执行日需要在 1 到 31 之间")
+        raise HTTPException(status_code=400, detail="每月執行日需要在 1 到 31 之間")
     return day
 
 
@@ -713,11 +713,11 @@ def _parse_time(value: str) -> time:
     text = value.strip()
     match = re.fullmatch(r"(\d{1,2})(?::(\d{1,2}))?", text)
     if not match:
-        raise HTTPException(status_code=400, detail="时间格式需要为 HH:mm")
+        raise HTTPException(status_code=400, detail="時間格式需要為 HH:mm")
     hour = int(match.group(1))
     minute = int(match.group(2) or 0)
     if hour < 0 or hour > 23 or minute < 0 or minute > 59:
-        raise HTTPException(status_code=400, detail="时间格式需要为 HH:mm")
+        raise HTTPException(status_code=400, detail="時間格式需要為 HH:mm")
     return time(hour, minute)
 
 
@@ -729,7 +729,7 @@ def _tz(value: str) -> ZoneInfo:
     try:
         return ZoneInfo(value or DEFAULT_TIMEZONE)
     except ZoneInfoNotFoundError as exc:
-        raise HTTPException(status_code=400, detail="无效时区") from exc
+        raise HTTPException(status_code=400, detail="無效時區") from exc
 
 
 def _safe_timezone(value: str | None, fallback: str = DEFAULT_TIMEZONE) -> str:
@@ -765,14 +765,14 @@ def _dt(value: datetime | None) -> str | None:
 def _ensure_agent_access(db: Session, tenant_id: str, agent_id: str, current_user: User) -> AgentProfile:
     agent = db.get(AgentProfile, agent_id)
     if not agent or agent.tenant_id != tenant_id or agent.is_overall or agent.status != "active":
-        raise HTTPException(status_code=404, detail="员工不可用")
+        raise HTTPException(status_code=404, detail="員工不可用")
     if _is_admin_user(current_user):
         return agent
     metadata = agent.metadata_json or {}
     owns_agent = _agent_owned_by_user(agent, current_user)
     in_gallery = metadata.get("published_to_gallery") is True
     if not (owns_agent or in_gallery):
-        raise HTTPException(status_code=403, detail="无权为该员工设置自动任务")
+        raise HTTPException(status_code=403, detail="無權為該員工設置自動任務")
     return agent
 
 
@@ -780,4 +780,4 @@ def _ensure_task_access(row: ScheduledTask, current_user: User) -> None:
     if _is_admin_user(current_user):
         return
     if row.created_by_user_id != current_user.id:
-        raise HTTPException(status_code=403, detail="无权访问该自动任务")
+        raise HTTPException(status_code=403, detail="無權訪問該自動任務")

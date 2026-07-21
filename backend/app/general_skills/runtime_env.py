@@ -46,10 +46,10 @@ def _backend_dir() -> Path:
 
 
 def _bundled_python() -> Path:
-    # 打包态：附带的 python-build-standalone 位置随平台不同。
-    # - macOS .app：runtime 在 Contents/Resources/runtime（放 Resources 是为了 codesign 密封通过），
-    #   sys.executable 在 Contents/MacOS/staffdeck，需跳到同级的 Resources。
-    # - Linux/Windows onedir：runtime 在可执行文件同级 runtime/。
+    # 打包態：附帶的 python-build-standalone 位置隨平臺不同。
+    # - macOS .app：runtime 在 Contents/Resources/runtime（放 Resources 是為了 codesign 密封通過），
+    #   sys.executable 在 Contents/MacOS/staffdeck，需跳到同級的 Resources。
+    # - Linux/Windows onedir：runtime 在可執行文件同級 runtime/。
     # 不用 resource_dir()==sys._MEIPASS（onedir 下指向 _internal/）。
     exe_dir = Path(sys.executable).resolve().parent
     if sys.platform == "darwin" and exe_dir.name == "MacOS" and exe_dir.parent.name == "Contents":
@@ -84,7 +84,7 @@ def _create_runtime_venv(python_path: Path) -> None:
     venv_dir.mkdir(parents=True, exist_ok=True)
     venv.EnvBuilder(with_pip=True, clear=False).create(venv_dir)
     if not python_path.exists():
-        raise GeneralSkillRuntimeError(f"通用技能运行环境创建失败：{python_path}")
+        raise GeneralSkillRuntimeError(f"通用技能運行環境創建失敗：{python_path}")
 
 
 def _ensure_packages(python_path: Path, packages: list[str]) -> None:
@@ -113,7 +113,7 @@ def _ensure_packages(python_path: Path, packages: list[str]) -> None:
     )
     if result.returncode != 0:
         raise GeneralSkillRuntimeError(
-            "通用技能运行环境依赖安装失败："
+            "通用技能運行環境依賴安裝失敗："
             + ", ".join(missing)
             + "\n"
             + (result.stderr or result.stdout or "").strip()

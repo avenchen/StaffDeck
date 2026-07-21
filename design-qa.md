@@ -19,7 +19,7 @@ Browser QA summary:
 - Figma metadata was checked for all 15 nodes. Important interaction-state corrections: `1:2165` is the chat gallery employee-filter dropdown state, `1:4286` is an expanded-sidebar model-dropdown input state, and only `1:5883` is the collapsed enterprise employee roster; `1:765` and `1:68` are expanded-sidebar roster states.
 - Formal API data path used: `/api/auth/login`, `/api/chat/agents`, `/api/chat/sessions`, `/api/enterprise/agents`, and page-owned enterprise/chat API calls.
 - Layout checks passed: no horizontal overflow, no visible error toast, no pageerror, key 1440x900 chat dimensions matched SD1 (`72/220` sidebar, `56` header, `570` empty state, `1078/960 x 100` composer).
-- In-app Browser checks verified `/chat/gallery` at expanded `220px` sidebar with `所有员工` active, visible employee-filter dropdown, top-right `切换主题`/`刷新页面` only, `/enterprise/agents` summary labels, model-dropdown input state, and dark enterprise dashboard inversion.
+- In-app Browser checks verified `/chat/gallery` at expanded `220px` sidebar with `所有員工` active, visible employee-filter dropdown, top-right `切換主題`/`刷新頁面` only, `/enterprise/agents` summary labels, model-dropdown input state, and dark enterprise dashboard inversion.
 - Chat polling was constrained to current/running sessions to prevent request storms and stacked `Failed to fetch` errors.
 - Enterprise knowledge page now suppresses non-visible OKF version probes during automatic page load.
 - Follow-up in-app browser checks matched SD1 top-right actions (`sun`/`refresh`), collapsed chat bottom icon, and composer shallow border/shadow.

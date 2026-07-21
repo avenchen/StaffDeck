@@ -83,7 +83,7 @@ export default function ChatDialogs({ chat }: { chat: UseChatSession }) {
           </DialogHeader>
           {handoffs.length === 0 ? (
             <div className={CHAT_HANDOFF_EMPTY_CLASS}>
-              {handoffsLoading ? '正在加载待回答消息' : '暂无待回答消息'}
+              {handoffsLoading ? '正在加載待回答消息' : '暫無待回答消息'}
             </div>
           ) : (
             <div className={CHAT_HANDOFF_LIST_CLASS}>
@@ -97,22 +97,22 @@ export default function ChatDialogs({ chat }: { chat: UseChatSession }) {
                     <div className={CHAT_HANDOFF_HEAD_CLASS}>
                       {profile ? <EmployeeAvatar profile={profile} size={36} radius={10} /> : null}
                       <div>
-                        <strong>{handoffAgent ? employeeDisplayNameWithCreator(handoffAgent) : '数字员工'}</strong>
-                        <span>需要人工接续</span>
+                        <strong>{handoffAgent ? employeeDisplayNameWithCreator(handoffAgent) : '數字員工'}</strong>
+                        <span>需要人工接續</span>
                       </div>
                     </div>
                     <div className={CHAT_HANDOFF_BLOCK_CLASS}>
                       <span>上下文摘要</span>
-                      <p>{handoff.context_summary || '暂无上下文摘要'}</p>
+                      <p>{handoff.context_summary || '暫無上下文摘要'}</p>
                     </div>
                     <div className={CHAT_HANDOFF_BLOCK_CLASS}>
-                      <span>这一步需要你处理</span>
-                      <p>{handoff.pending_question || '请根据当前会话补充人工回复。'}</p>
+                      <span>這一步需要你處理</span>
+                      <p>{handoff.pending_question || '請根據當前會話補充人工回覆。'}</p>
                     </div>
                     <Textarea
                       rows={3}
                       value={handoffReplies[handoff.id] || ''}
-                      placeholder="以当前数字员工的口吻回复。提交后，原会话会继续推进 SOP 流程。"
+                      placeholder="以當前數字員工的口吻回覆。提交後，原會話會繼續推進 SOP 流程。"
                       onChange={(event) => setHandoffReplies((prev) => ({
                         ...prev,
                         [handoff.id]: event.target.value,
@@ -126,9 +126,9 @@ export default function ChatDialogs({ chat }: { chat: UseChatSession }) {
                           openSession(handoff.session_id);
                         }}
                       >
-                        打开原会话
+                        打開原會話
                       </Button>
-                      <Button onClick={() => submitHandoffReply(handoff)}>回复并恢复</Button>
+                      <Button onClick={() => submitHandoffReply(handoff)}>回覆並恢復</Button>
                     </div>
                   </article>
                 );
@@ -141,7 +141,7 @@ export default function ChatDialogs({ chat }: { chat: UseChatSession }) {
       <Dialog open={Boolean(activeCitation)} onOpenChange={(open) => !open && setActiveCitation(null)}>
         <DialogContent className="max-w-[min(1160px,calc(100vw-40px))] sm:max-w-[1160px]">
           <DialogHeader>
-            <DialogTitle>引用详情</DialogTitle>
+            <DialogTitle>引用詳情</DialogTitle>
           </DialogHeader>
           {activeCitation && (
             <div className={CHAT_CITATION_DETAIL_CLASS}>
@@ -163,19 +163,19 @@ export default function ChatDialogs({ chat }: { chat: UseChatSession }) {
                 <div className={CHAT_CITATION_DETAIL_GRID_CLASS}>
                   {activeCitation.source_path && (
                     <div>
-                      <span>来源</span>
+                      <span>來源</span>
                       <strong>{citationSourceLabel(activeCitation)}</strong>
                     </div>
                   )}
                   {activeCitation.section_path && (
                     <div>
-                      <span>章节</span>
+                      <span>章節</span>
                       <strong>{citationSectionLabel(activeCitation)}</strong>
                     </div>
                   )}
                   {activeCitation.concept_id && (
                     <div>
-                      <span>知识图谱</span>
+                      <span>知識圖譜</span>
                       <strong>{activeCitation.concept_id}</strong>
                     </div>
                   )}
@@ -216,7 +216,7 @@ export default function ChatDialogs({ chat }: { chat: UseChatSession }) {
                   void saveRename();
                 }
               }}
-              placeholder="输入会话名称"
+              placeholder="輸入會話名稱"
             />
           </div>
           <div className="flex items-center justify-end gap-[8px] pt-[12px] pr-[16px] pb-[16px] pl-[12px]">
@@ -243,8 +243,8 @@ export default function ChatDialogs({ chat }: { chat: UseChatSession }) {
       <ConfirmDialog
         open={Boolean(pendingDelete)}
         onOpenChange={(open) => !open && setPendingDelete(null)}
-        title="删除会话"
-        description="删除后无法恢复该会话及其消息记录，确定继续吗？"
+        title="刪除會話"
+        description="刪除後無法恢復該會話及其消息記錄，確定繼續嗎？"
         onConfirm={() => void confirmDeleteSession()}
       />
     </>

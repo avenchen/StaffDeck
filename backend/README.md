@@ -28,21 +28,21 @@ sets the local single-port origin by default and can add a public tunnel origin 
 
 ## General Skill Code Runtime
 
-通用技能生成的 Python/Bash runner 不直接依赖系统 Python。运行时按以下顺序选择环境：
+通用技能生成的 Python/Bash runner 不直接依賴系統 Python。運行時按以下順序選擇環境：
 
 1. `GENERAL_SKILL_RUNTIME_PYTHON` 指定的 Python；
-2. `GENERAL_SKILL_RUNTIME_VENV` 指定虚拟环境中的 Python；
+2. `GENERAL_SKILL_RUNTIME_VENV` 指定虛擬環境中的 Python；
 3. `backend/.venv/bin/python`；
-4. 自动创建 `backend/.runtime_venv`。
+4. 自動創建 `backend/.runtime_venv`。
 
-`GENERAL_SKILL_RUNTIME_PACKAGES` 默认安装/校验 `requests,httpx`，用于通用 API
-访问。需要文档解析或数据处理时可以扩展为：
+`GENERAL_SKILL_RUNTIME_PACKAGES` 默認安裝/校驗 `requests,httpx`，用於通用 API
+訪問。需要文檔解析或數據處理時可以擴展為：
 
 ```bash
 GENERAL_SKILL_RUNTIME_PACKAGES="requests,httpx,beautifulsoup4,lxml,pypdf,python-docx,pandas,numpy,python-dateutil"
 ```
 
-如果部署环境禁止自动安装依赖，设置：
+如果部署環境禁止自動安裝依賴，設置：
 
 ```bash
 GENERAL_SKILL_RUNTIME_AUTO_INSTALL="false"

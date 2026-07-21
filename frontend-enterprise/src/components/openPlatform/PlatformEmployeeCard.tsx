@@ -16,14 +16,14 @@ export type PlatformEmployeeCardProps = {
   role: ReactNode;
   online?: boolean;
   description: ReactNode;
-  /** Bottom metric segments (资料 / 技能 / SOP …). */
+  /** Bottom metric segments (資料 / 技能 / SOP …). */
   stats: PlatformStat[];
   onOpen?: () => void;
   className?: string;
 };
 
 /**
- * Compact 数字员工广场 card. Mirrors the Figma layout: a grey banner holding the
+ * Compact 數字員工廣場 card. Mirrors the Figma layout: a grey banner holding the
  * avatar (which pokes above the banner), name / role / online chip and a
  * chevron affordance, followed by a two-line description and a joined stat row.
  */
@@ -62,7 +62,7 @@ export default function PlatformEmployeeCard({
                     className={cn('size-[4px] shrink-0 rounded-full', online ? 'bg-[#22c55e]' : 'bg-[#9ca3af]')}
                     aria-hidden="true"
                   />
-                  <span className="text-[8px] text-[#757f9c]">{online ? '在线' : '下线'}</span>
+                  <span className="text-[8px] text-[#757f9c]">{online ? '在線' : '下線'}</span>
                 </span>
               </span>
             </div>

@@ -73,13 +73,13 @@ def test_chat_agent_must_be_active_non_overall_agent() -> None:
         )
         db.add(current_user)
         db.add(
-            AgentProfile(id="agent_overall", tenant_id="tenant_demo", name="整体", is_overall=True)
+            AgentProfile(id="agent_overall", tenant_id="tenant_demo", name="整體", is_overall=True)
         )
         db.add(
             AgentProfile(
                 id="agent_archived",
                 tenant_id="tenant_demo",
-                name="已归档",
+                name="已歸檔",
                 is_overall=False,
                 status="archived",
             )
@@ -109,7 +109,7 @@ def test_create_chat_session_always_creates_new_agent_session() -> None:
             AgentProfile(
                 id="agent_demo",
                 tenant_id="tenant_demo",
-                name="研发",
+                name="研發",
                 is_overall=False,
                 metadata_json={"owner_user_id": "user_demo"},
             )
@@ -155,7 +155,7 @@ def test_chat_session_list_exposes_scheduled_origin_without_title_inference() ->
                 id="session_normal",
                 tenant_id="tenant_demo",
                 user_id="user_demo",
-                title="定时任务：手动命名",
+                title="定時任務：手動命名",
             )
         )
         db.add(
@@ -197,7 +197,7 @@ def test_session_title_summary_uses_first_user_message_when_title_empty(monkeypa
                 tenant_id="tenant_demo",
                 session_id="session_title",
                 role="user",
-                content="请查询北京今天的天气。",
+                content="請查詢北京今天的天氣。",
             )
         )
         db.commit()
@@ -214,9 +214,9 @@ def test_session_title_summary_uses_first_user_message_when_title_empty(monkeypa
         ).first()
 
     assert row is not None
-    assert row.title == "请查询北京今天的天气"
+    assert row.title == "請查詢北京今天的天氣"
     assert event is not None
-    assert event.payload_json["title"] == "请查询北京今天的天气"
+    assert event.payload_json["title"] == "請查詢北京今天的天氣"
 
 
 def test_session_title_summary_does_not_override_existing_title(monkeypatch) -> None:
@@ -228,7 +228,7 @@ def test_session_title_summary_does_not_override_existing_title(monkeypatch) -> 
                 id="session_manual_title",
                 tenant_id="tenant_demo",
                 user_id="user_demo",
-                title="手动标题",
+                title="手動標題",
             )
         )
         db.add(
@@ -237,7 +237,7 @@ def test_session_title_summary_does_not_override_existing_title(monkeypatch) -> 
                 tenant_id="tenant_demo",
                 session_id="session_manual_title",
                 role="user",
-                content="请查询北京今天的天气。",
+                content="請查詢北京今天的天氣。",
             )
         )
         db.commit()
@@ -251,7 +251,7 @@ def test_session_title_summary_does_not_override_existing_title(monkeypatch) -> 
         ).all()
 
     assert row is not None
-    assert row.title == "手动标题"
+    assert row.title == "手動標題"
     assert events == []
 
 
@@ -261,7 +261,7 @@ def test_scheduled_task_chat_turn_marks_user_message_metadata() -> None:
         session_id="session_demo",
         user_id="user_demo",
         agent_id="agent_demo",
-        message="每天18点复盘差评",
+        message="每天18點復盤差評",
         interaction_mode="scheduled_task",
     )
 
@@ -274,7 +274,7 @@ def test_normal_chat_turn_user_message_metadata_is_empty() -> None:
         session_id="session_demo",
         user_id="user_demo",
         agent_id="agent_demo",
-        message="每天18点复盘差评",
+        message="每天18點復盤差評",
     )
 
     assert _user_message_metadata(request) == {}
@@ -287,7 +287,7 @@ def test_chat_turn_can_select_enabled_model_config() -> None:
             ModelConfig(
                 id="model_default",
                 tenant_id="tenant_demo",
-                name="默认模型",
+                name="默認模型",
                 api_key_encrypted="",
                 model="default-model",
                 is_default=True,
@@ -297,7 +297,7 @@ def test_chat_turn_can_select_enabled_model_config() -> None:
             ModelConfig(
                 id="model_selected",
                 tenant_id="tenant_demo",
-                name="选择模型",
+                name="選擇模型",
                 api_key_encrypted="",
                 model="selected-model",
             )
@@ -321,8 +321,8 @@ def test_chat_turn_can_select_enabled_model_config() -> None:
 def test_agent_loop_only_exposes_tools_bound_to_current_employee() -> None:
     with _test_session() as db:
         db.add(Tenant(id="tenant_demo", name="Demo"))
-        agent_a = AgentProfile(id="agent_a", tenant_id="tenant_demo", name="员工 A")
-        agent_b = AgentProfile(id="agent_b", tenant_id="tenant_demo", name="员工 B")
+        agent_a = AgentProfile(id="agent_a", tenant_id="tenant_demo", name="員工 A")
+        agent_b = AgentProfile(id="agent_b", tenant_id="tenant_demo", name="員工 B")
         tool_a = Tool(
             id="tool_a",
             tenant_id="tenant_demo",
@@ -361,8 +361,8 @@ def test_agent_loop_only_exposes_tools_bound_to_current_employee() -> None:
 def test_agent_loop_rejects_unbound_tool_before_execution_or_replay() -> None:
     with _test_session() as db:
         db.add(Tenant(id="tenant_demo", name="Demo"))
-        owner = AgentProfile(id="agent_owner", tenant_id="tenant_demo", name="员工 A")
-        other = AgentProfile(id="agent_other", tenant_id="tenant_demo", name="员工 B")
+        owner = AgentProfile(id="agent_owner", tenant_id="tenant_demo", name="員工 A")
+        other = AgentProfile(id="agent_other", tenant_id="tenant_demo", name="員工 B")
         tool = Tool(
             id="tool_private",
             tenant_id="tenant_demo",
@@ -391,7 +391,7 @@ def test_agent_loop_rejects_unbound_tool_before_execution_or_replay() -> None:
                 session_id=session.id,
                 user_id="user_demo",
                 agent_id=other.id,
-                message="执行私有工具",
+                message="執行私有工具",
             ),
             session,
             ToolCall(name=tool.name, arguments={}),
@@ -440,14 +440,14 @@ def test_agent_persona_prompt_includes_employee_identity_and_metadata() -> None:
             AgentProfile(
                 id="agent_dev",
                 tenant_id="tenant_demo",
-                name="研发员工",
-                description="负责研发资料查询、SOP 执行和交付记录沉淀。",
+                name="研發員工",
+                description="負責研發資料查詢、SOP 執行和交付記錄沉澱。",
                 is_overall=False,
                 metadata_json={
-                    "role_name": "研发",
-                    "work_styles": ["目标明确", "证据优先"],
-                    "expertise_tags": ["代码检索", "SOP 执行"],
-                    "work_modes": ["理解需求", "推进执行"],
+                    "role_name": "研發",
+                    "work_styles": ["目標明確", "證據優先"],
+                    "expertise_tags": ["代碼檢索", "SOP 執行"],
+                    "work_modes": ["理解需求", "推進執行"],
                     "owner_user_id": "user_demo",
                 },
             )
@@ -457,12 +457,12 @@ def test_agent_persona_prompt_includes_employee_identity_and_metadata() -> None:
         prompt = AgentLoop(db)._get_persona_prompt("tenant_demo", "agent_dev")
 
         assert prompt is not None
-        assert "员工名称：研发员工" in prompt
-        assert "员工描述：负责研发资料查询、SOP 执行和交付记录沉淀。" in prompt
-        assert "岗位：研发" in prompt
-        assert "工作风格：目标明确、证据优先" in prompt
-        assert "擅长领域：代码检索、SOP 执行" in prompt
-        assert "工作方式：理解需求、推进执行" in prompt
+        assert "員工名稱：研發員工" in prompt
+        assert "員工描述：負責研發資料查詢、SOP 執行和交付記錄沉澱。" in prompt
+        assert "崗位：研發" in prompt
+        assert "工作風格：目標明確、證據優先" in prompt
+        assert "擅長領域：代碼檢索、SOP 執行" in prompt
+        assert "工作方式：理解需求、推進執行" in prompt
         assert "owner_user_id" not in prompt
         assert "user_demo" not in prompt
 
@@ -470,16 +470,16 @@ def test_agent_persona_prompt_includes_employee_identity_and_metadata() -> None:
 def test_agent_persona_prompt_keeps_custom_prompt_with_identity() -> None:
     with _test_session() as db:
         db.add(Tenant(id="tenant_demo", name="Demo"))
-        db.add(PersonaConfig(tenant_id="tenant_demo", system_prompt="全局员工设定"))
+        db.add(PersonaConfig(tenant_id="tenant_demo", system_prompt="全局員工設定"))
         db.add(
             AgentProfile(
                 id="agent_finance",
                 tenant_id="tenant_demo",
-                name="财务员工",
-                description="负责报销核对。",
-                persona_prompt="只能在有证据时给结论。\n必要时先追问缺失凭证。",
+                name="財務員工",
+                description="負責報銷核對。",
+                persona_prompt="只能在有證據時給結論。\n必要時先追問缺失憑證。",
                 is_overall=False,
-                metadata_json={"role_name": "财务"},
+                metadata_json={"role_name": "財務"},
             )
         )
         db.commit()
@@ -487,11 +487,11 @@ def test_agent_persona_prompt_keeps_custom_prompt_with_identity() -> None:
         prompt = AgentLoop(db)._get_persona_prompt("tenant_demo", "agent_finance")
 
         assert prompt is not None
-        assert "员工名称：财务员工" in prompt
-        assert "岗位：财务" in prompt
-        assert "员工角色补充要求：" in prompt
-        assert "只能在有证据时给结论。\n必要时先追问缺失凭证。" in prompt
-        assert "全局员工设定" not in prompt
+        assert "員工名稱：財務員工" in prompt
+        assert "崗位：財務" in prompt
+        assert "員工角色補充要求：" in prompt
+        assert "只能在有證據時給結論。\n必要時先追問缺失憑證。" in prompt
+        assert "全局員工設定" not in prompt
 
 
 def _test_session() -> Session:

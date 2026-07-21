@@ -21,9 +21,9 @@ from app.tools.tool_schema import ToolResult
 
 
 PROMPT_PATH = paths.resource_dir() / "app" / "llm" / "prompts" / "response_generator_prompt.md"
-FALLBACK_REPLY = "抱歉，我暂时无法处理这个问题。您可以换个说法，或者我可以帮您转人工。"
-MODEL_FAILURE_SUGGESTION = "请检查模型配置、API Key、网络或模型服务状态后重试。"
-TOOL_FAILURE_SUGGESTION = "请检查工具配置、调用参数或外部服务状态后重试。"
+FALLBACK_REPLY = "抱歉，我暫時無法處理這個問題。您可以換個說法，或者我可以幫您轉人工。"
+MODEL_FAILURE_SUGGESTION = "請檢查模型配置、API Key、網絡或模型服務狀態後重試。"
+TOOL_FAILURE_SUGGESTION = "請檢查工具配置、調用參數或外部服務狀態後重試。"
 
 
 def public_error_detail(value: object, fallback: str = "未知原因") -> str:
@@ -45,7 +45,7 @@ def format_runtime_failure_reply(
     normalized_code = public_error_detail(code, "").strip()
     code_part = f"（{normalized_code}）" if normalized_code else ""
     normalized_detail = normalized_detail.rstrip("。.!！")
-    suffix = (suggestion or "请稍后重试，或联系管理员查看执行记录。").strip()
+    suffix = (suggestion or "請稍後重試，或聯繫管理員查看執行記錄。").strip()
     return f"{title}{code_part}：{normalized_detail}。{suffix}"
 
 
@@ -56,9 +56,9 @@ def model_failure_suggestion(detail: object) -> str:
 def tool_failure_reply(tool_result: ToolResult) -> str:
     error = tool_result.error
     code = error.code if error else None
-    detail = error.message if error else "工具未返回可用结果"
+    detail = error.message if error else "工具未返回可用結果"
     return format_runtime_failure_reply(
-        f"工具调用失败：{tool_result.tool_name}",
+        f"工具調用失敗：{tool_result.tool_name}",
         detail,
         code,
         TOOL_FAILURE_SUGGESTION,
@@ -106,7 +106,7 @@ class ResponseGenerator:
                 reply, session, router_decision, step_result, tool_result, skill
             )
         except Exception as exc:
-            return format_runtime_failure_reply("模型调用失败", exc, "LLM_ERROR", model_failure_suggestion(exc))
+            return format_runtime_failure_reply("模型調用失敗", exc, "LLM_ERROR", model_failure_suggestion(exc))
 
     def generate_stream(
         self,
@@ -174,7 +174,7 @@ class ResponseGenerator:
             return
         except Exception as exc:
             yield from self.chunk_text(
-                format_runtime_failure_reply("模型调用失败", exc, "LLM_ERROR", model_failure_suggestion(exc))
+                format_runtime_failure_reply("模型調用失敗", exc, "LLM_ERROR", model_failure_suggestion(exc))
             )
 
     def chunk_text(self, text: str, chunk_size: int = 8) -> Iterator[str]:
@@ -265,7 +265,7 @@ class ResponseGenerator:
             compact_knowledge = compact_knowledge_context(knowledge_context)
             projected.append(
                 {
-                    "task": item.get("task") or "当前任务",
+                    "task": item.get("task") or "當前任務",
                     "current_step": compact_current_step(
                         content, str(item.get("current_step_id") or "") or None
                     ),
@@ -425,10 +425,10 @@ class ResponseGenerator:
         return None
 
     def _completion_fallback(self) -> str:
-        return "已记录完整信息。请问还有其他需要帮助的吗？"
+        return "已記錄完整信息。請問還有其他需要幫助的嗎？"
 
     def _minimal_fallback_for_session(self, session: ChatSession) -> str:
-        return "请您再补充一下具体诉求，我会继续帮您处理。"
+        return "請您再補充一下具體訴求，我會繼續幫您處理。"
 
     def _minimal_fallback(self, router_decision: RouterDecision) -> str:
         if router_decision.decision == "clarify" and router_decision.clarification_question:
@@ -457,5 +457,5 @@ class ResponseGenerator:
             memory_context=None,
             instructions=PROMPT_PATH.read_text(encoding="utf-8"),
             stage_data=stage_data,
-            output_contract="只输出最终用户可见的纯文本，不输出 JSON、Markdown 代码围栏、分析过程或内部状态。",
+            output_contract="只輸出最終用戶可見的純文本，不輸出 JSON、Markdown 代碼圍欄、分析過程或內部狀態。",
         )

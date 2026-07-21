@@ -74,7 +74,7 @@ export default function AppHeader({
         {right !== undefined ? right : (
           <DropdownMenu>
             <DropdownMenuTrigger
-              aria-label="账户菜单"
+              aria-label="賬戶菜單"
               className="flex h-[32px] shrink-0 items-center gap-[8px] rounded-[10px] pl-[4px] pr-[8px] outline-none"
             >
               <span className="grid size-[32px] shrink-0 place-items-center overflow-hidden rounded-full bg-[#eef1fb] text-[14px] font-medium leading-none text-[#7e96dc]">
@@ -91,7 +91,7 @@ export default function AppHeader({
                 className="h-[36px] cursor-pointer gap-2 rounded-[10px] px-[12px] text-[14px] text-[#464C5E]"
               >
                 <IconLogout className="size-[16px]" />
-                退出登录
+                退出登錄
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

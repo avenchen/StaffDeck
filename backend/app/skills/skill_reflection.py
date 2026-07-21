@@ -12,13 +12,13 @@ from app.skills.skill_schema import SkillCard, ToolSuggestion
 PROMPT_PATH = paths.resource_dir() / "app" / "llm" / "prompts" / "skill_reflection_prompt.md"
 MAX_REFLECTION_ROUNDS = 3
 RUBRIC_LABELS: dict[str, str] = {
-    "source_alignment": "来源一致性",
-    "closed_loop": "闭环能力",
-    "adaptive_progression": "自适应推进",
-    "tool_grounding": "工具依据",
-    "tool_call_format": "工具调用格式",
-    "side_effect_confirmation": "副作用确认",
-    "interruption_and_recovery": "中断恢复",
+    "source_alignment": "來源一致性",
+    "closed_loop": "閉環能力",
+    "adaptive_progression": "自適應推進",
+    "tool_grounding": "工具依據",
+    "tool_call_format": "工具調用格式",
+    "side_effect_confirmation": "副作用確認",
+    "interruption_and_recovery": "中斷恢復",
 }
 RUBRICS = [
     {
@@ -84,8 +84,8 @@ def reflect_skill_response_stream(
     reflection_history: list[dict[str, Any]] = []
 
     for round_index in range(1, MAX_REFLECTION_ROUNDS + 1):
-        yield _status_event(f"正在校验技能结果（{round_index}/{MAX_REFLECTION_ROUNDS}）")
-        yield _status_event("校验范围：来源一致性、闭环能力、自适应推进、工具依据、工具调用格式、副作用确认、中断恢复")
+        yield _status_event(f"正在校驗技能結果（{round_index}/{MAX_REFLECTION_ROUNDS}）")
+        yield _status_event("校驗範圍：來源一致性、閉環能力、自適應推進、工具依據、工具調用格式、副作用確認、中斷恢復")
         try:
             review = _model_review(
                 client,
@@ -103,11 +103,11 @@ def reflect_skill_response_stream(
                 },
             )
         except (LLMError, json.JSONDecodeError, TypeError, ValueError) as exc:
-            yield _status_event("校验失败，保留当前技能草稿")
+            yield _status_event("校驗失敗，保留當前技能草稿")
             return normalize_response(
                 {
                     "draft_skill": reviewed_skill.model_dump(mode="json"),
-                    "warnings": [*warnings, f"模型校验未能完成，已保留当前技能草稿：{exc}"],
+                    "warnings": [*warnings, f"模型校驗未能完成，已保留當前技能草稿：{exc}"],
                     "tool_mentions": [item.model_dump(mode="json") for item in suggestions],
                 }
             )
@@ -120,13 +120,13 @@ def reflect_skill_response_stream(
         failed = _failed_rubrics(review)
         if failed:
             for item in failed[:4]:
-                yield _status_event(f"校验发现：{_rubric_label(item)} - {_finding_text(item)}")
+                yield _status_event(f"校驗發現：{_rubric_label(item)} - {_finding_text(item)}")
         summary = str(review.get("summary") or "").strip()
         if summary:
-            yield _status_event(f"校验结论：{summary}")
+            yield _status_event(f"校驗結論：{summary}")
 
         if bool(review.get("passed")):
-            yield _status_event("校验通过，技能草稿满足当前要求")
+            yield _status_event("校驗通過，技能草稿滿足當前要求")
             return normalize_response(
                 {
                     "draft_skill": reviewed_skill.model_dump(mode="json"),
@@ -140,13 +140,13 @@ def reflect_skill_response_stream(
 
         revised_skill = review.get("draft_skill")
         if not isinstance(revised_skill, dict):
-            yield _status_event("校验未通过，但模型未返回可修正草稿")
+            yield _status_event("校驗未通過，但模型未返回可修正草稿")
             return normalize_response(
                 {
                     "draft_skill": reviewed_skill.model_dump(mode="json"),
                     "warnings": [
                         *warnings,
-                        "模型校验未通过，但未返回可修正 Skill Card，已保留当前草稿。",
+                        "模型校驗未通過，但未返回可修正 Skill Card，已保留當前草稿。",
                     ],
                     "tool_mentions": [
                         *[item.model_dump(mode="json") for item in suggestions],
@@ -155,7 +155,7 @@ def reflect_skill_response_stream(
                 }
             )
 
-        yield _status_event(f"校验未通过，正在应用第 {round_index} 轮修正")
+        yield _status_event(f"校驗未通過，正在應用第 {round_index} 輪修正")
         reviewed = normalize_response(
             {
                 "draft_skill": revised_skill,
@@ -170,11 +170,11 @@ def reflect_skill_response_stream(
         warnings = list(getattr(reviewed, "warnings", warnings))
         suggestions = list(getattr(reviewed, "tool_suggestions", suggestions))
 
-    yield _status_event("校验达到上限，保留最后一版技能草稿")
+    yield _status_event("校驗達到上限，保留最後一版技能草稿")
     return normalize_response(
         {
             "draft_skill": reviewed_skill.model_dump(mode="json"),
-            "warnings": [*warnings, f"模型校验已达到 {MAX_REFLECTION_ROUNDS} 轮上限，保留最后一版技能草稿。"],
+            "warnings": [*warnings, f"模型校驗已達到 {MAX_REFLECTION_ROUNDS} 輪上限，保留最後一版技能草稿。"],
             "tool_mentions": [item.model_dump(mode="json") for item in suggestions],
         }
     )
@@ -184,14 +184,14 @@ def _model_review(client: LLMClient, prompt: str, payload: dict[str, Any]) -> di
     text = client.generate_text(prompt, payload)
     raw = json.loads(_extract_json(text))
     if not isinstance(raw, dict):
-        raise ValueError("反思模型输出不是 JSON object")
+        raise ValueError("反思模型輸出不是 JSON object")
     return raw
 
 
 def _warnings_from_review(review: dict[str, Any], source_kind: str) -> list[str]:
     warnings: list[str] = []
     for item in _string_list(review.get("source_warnings")):
-        warnings.append(f"{_source_label(source_kind)}本身可能存在问题：{item}")
+        warnings.append(f"{_source_label(source_kind)}本身可能存在問題：{item}")
     for item in _string_list(review.get("warnings")):
         warnings.append(item)
     for item in _failed_rubrics(review):
@@ -200,7 +200,7 @@ def _warnings_from_review(review: dict[str, Any], source_kind: str) -> list[str]
             continue
         finding = _finding_text(item)
         if finding:
-            warnings.append(f"{_source_label(source_kind)}本身可能存在问题：{_rubric_label(item)} - {finding}")
+            warnings.append(f"{_source_label(source_kind)}本身可能存在問題：{_rubric_label(item)} - {finding}")
     return _dedupe(warnings)
 
 
@@ -229,7 +229,7 @@ def _reflection_history_item(review: dict[str, Any]) -> dict[str, Any]:
 def _source_label(source_kind: str) -> str:
     if source_kind == "rewrite":
         return "原始技能"
-    return "原始文档"
+    return "原始文檔"
 
 
 def _rubric_label(item: dict[str, Any]) -> str:

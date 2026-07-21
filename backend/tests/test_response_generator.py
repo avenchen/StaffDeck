@@ -9,16 +9,16 @@ def test_response_payload_has_single_source_for_each_business_fact() -> None:
     skill = Skill(
         tenant_id="tenant_demo",
         skill_id="medical",
-        name="问诊",
+        name="問診",
         status="published",
         content_json={
-            "response_rules": ["给出明确建议"],
+            "response_rules": ["給出明確建議"],
             "nodes": [
                 {
                     "node_id": "collect",
                     "type": "collect_info",
-                    "name": "收集症状",
-                    "instruction": "收集仍然缺失的症状信息。",
+                    "name": "收集症狀",
+                    "instruction": "收集仍然缺失的症狀信息。",
                     "expected_user_info": ["symptom", "duration"],
                 }
             ],
@@ -26,37 +26,37 @@ def test_response_payload_has_single_source_for_each_business_fact() -> None:
     )
     decision = RouterDecision(
         decision="continue_active",
-        source_message="腹泻两天",
-        slot_hints={"duration": "两天"},
+        source_message="腹瀉兩天",
+        slot_hints={"duration": "兩天"},
     )
     payload = ResponseGenerator()._payload(
-        "腹泻两天",
+        "腹瀉兩天",
         ChatSession(
             id="session_test",
             tenant_id="tenant_demo",
             active_skill_id="medical",
             active_step_id="collect",
-            slots_json={"symptom": "腹泻", "duration": "两天"},
+            slots_json={"symptom": "腹瀉", "duration": "兩天"},
             awaiting_input_json={"expected_fields": ["age"]},
         ),
         skill,
         decision,
         StepAgentResult(
-            reply="请补充年龄",
-            slot_updates={"duration": "两天"},
+            reply="請補充年齡",
+            slot_updates={"duration": "兩天"},
             is_step_completed=False,
         ),
         None,
     )
 
-    assert payload["current_step"]["instruction"] == "收集仍然缺失的症状信息。"
-    assert payload["slots"] == {"symptom": "腹泻", "duration": "两天"}
+    assert payload["current_step"]["instruction"] == "收集仍然缺失的症狀信息。"
+    assert payload["slots"] == {"symptom": "腹瀉", "duration": "兩天"}
     assert payload["step_summary"] == {
-        "reply": "请补充年龄",
+        "reply": "請補充年齡",
         "is_step_completed": False,
         "handoff": False,
     }
-    assert payload["response_rules"] == ["给出明确建议"]
+    assert payload["response_rules"] == ["給出明確建議"]
     assert "active_skill" not in payload
     assert "router_decision" not in payload
     assert "session" not in payload
@@ -68,19 +68,19 @@ def test_response_payload_has_single_source_for_each_business_fact() -> None:
 def test_multi_task_payload_projects_all_results_for_one_final_reply() -> None:
     generator = ResponseGenerator()
     payload = generator._payload(
-        "先查询额度，再提交报销",
+        "先查詢額度，再提交報銷",
         ChatSession(id="session_test", tenant_id="tenant_demo"),
         None,
-        RouterDecision(decision="start_new_task", user_intent="处理两个任务"),
+        RouterDecision(decision="start_new_task", user_intent="處理兩個任務"),
         StepAgentResult(),
         None,
         task_results=[
             {
-                "task": "查询额度",
+                "task": "查詢額度",
                 "slots": {"employee_id": "E-1"},
                 "step_result": {
                     "action": "reply",
-                    "reply": "剩余额度 1000 元",
+                    "reply": "剩餘額度 1000 元",
                     "knowledge_results": [],
                     "is_step_completed": True,
                     "handoff": False,
@@ -88,11 +88,11 @@ def test_multi_task_payload_projects_all_results_for_one_final_reply() -> None:
                 "tool_result": {"tool_name": "quota.query", "success": True},
             },
             {
-                "task": "提交报销",
+                "task": "提交報銷",
                 "slots": {"amount": 500},
                 "step_result": {
                     "action": "ask_user",
-                    "reply": "请补充发票",
+                    "reply": "請補充發票",
                     "knowledge_results": [],
                     "is_step_completed": False,
                     "handoff": False,
@@ -103,9 +103,9 @@ def test_multi_task_payload_projects_all_results_for_one_final_reply() -> None:
     )
 
     assert set(payload) == {"user_message", "conversation_context", "task_results"}
-    assert [item["task"] for item in payload["task_results"]] == ["查询额度", "提交报销"]
-    assert payload["task_results"][0]["step_summary"]["reply"] == "剩余额度 1000 元"
-    assert payload["task_results"][1]["step_summary"]["reply"] == "请补充发票"
+    assert [item["task"] for item in payload["task_results"]] == ["查詢額度", "提交報銷"]
+    assert payload["task_results"][0]["step_summary"]["reply"] == "剩餘額度 1000 元"
+    assert payload["task_results"][1]["step_summary"]["reply"] == "請補充發票"
 
 
 def test_clarify_does_not_leak_internal_router_prompt(monkeypatch):
@@ -113,7 +113,7 @@ def test_clarify_does_not_leak_internal_router_prompt(monkeypatch):
         return None
 
     def fake_generate_text(self, system_prompt, payload):  # noqa: ANN001
-        return "请提供当前用户消息、会话状态、技能进度及可用技能列表，以便进行准确的路由决策。"
+        return "請提供當前用戶消息、會話狀態、技能進度及可用技能列表，以便進行準確的路由決策。"
 
     monkeypatch.setattr(LLMClient, "__init__", fake_init)
     monkeypatch.setattr(LLMClient, "generate_text", fake_generate_text)
@@ -125,12 +125,12 @@ def test_clarify_does_not_leak_internal_router_prompt(monkeypatch):
     )
     decision = RouterDecision(
         decision="clarify",
-        clarification_question="请提供当前用户消息、会话状态、技能进度及可用技能列表，以便进行准确的路由决策。",
+        clarification_question="請提供當前用戶消息、會話狀態、技能進度及可用技能列表，以便進行準確的路由決策。",
     )
-    step_result = StepAgentResult(reply="好的，请描述一下设备问题，我会继续为您处理。")
+    step_result = StepAgentResult(reply="好的，請描述一下設備問題，我會繼續為您處理。")
 
     reply = ResponseGenerator().generate(
-        message="我想报修设备",
+        message="我想報修設備",
         session=session,
         skill=None,
         router_decision=decision,
@@ -140,7 +140,7 @@ def test_clarify_does_not_leak_internal_router_prompt(monkeypatch):
     )
 
     assert reply == step_result.reply
-    assert "技能进度" not in reply
+    assert "技能進度" not in reply
     assert "路由" not in reply
 
 
@@ -150,13 +150,13 @@ def test_tool_result_reply_is_model_driven(monkeypatch):
 
     def fake_generate_text(self, system_prompt, payload):  # noqa: ANN001
         assert payload["tool_result"]["tool_name"] == "ticket.create"
-        return "已创建报修工单 T-100，工程师会尽快联系您。"
+        return "已創建報修工單 T-100，工程師會盡快聯繫您。"
 
     monkeypatch.setattr(LLMClient, "__init__", fake_init)
     monkeypatch.setattr(LLMClient, "generate_text", fake_generate_text)
 
     reply = ResponseGenerator().generate(
-        message="设备坏了",
+        message="設備壞了",
         session=ChatSession(id="session_test", tenant_id="tenant_demo"),
         skill=None,
         router_decision=RouterDecision(decision="continue_active"),
@@ -169,7 +169,7 @@ def test_tool_result_reply_is_model_driven(monkeypatch):
         model_config=None,  # type: ignore[arg-type]
     )
 
-    assert reply == "已创建报修工单 T-100，工程师会尽快联系您。"
+    assert reply == "已創建報修工單 T-100，工程師會盡快聯繫您。"
 
 
 def test_failed_tool_result_returns_explicit_failure_without_model_call(monkeypatch):
@@ -179,7 +179,7 @@ def test_failed_tool_result_returns_explicit_failure_without_model_call(monkeypa
     monkeypatch.setattr(LLMClient, "generate_text", forbidden_generate_text)
 
     reply = ResponseGenerator().generate(
-        message="查一下订单",
+        message="查一下訂單",
         session=ChatSession(id="session_test", tenant_id="tenant_demo"),
         skill=None,
         router_decision=RouterDecision(decision="continue_active"),
@@ -187,12 +187,12 @@ def test_failed_tool_result_returns_explicit_failure_without_model_call(monkeypa
         tool_result=ToolResult(
             tool_name="order.query",
             success=False,
-            error=ToolError(code="HTTP_ERROR", message="工具返回异常状态码：502"),
+            error=ToolError(code="HTTP_ERROR", message="工具返回異常狀態碼：502"),
         ),
         model_config=None,  # type: ignore[arg-type]
     )
 
-    assert reply == "工具调用失败：order.query（HTTP_ERROR）：工具返回异常状态码：502。请检查工具配置、调用参数或外部服务状态后重试。"
+    assert reply == "工具調用失敗：order.query（HTTP_ERROR）：工具返回異常狀態碼：502。請檢查工具配置、調用參數或外部服務狀態後重試。"
 
 
 def test_model_failure_returns_explicit_reason(monkeypatch):
@@ -215,7 +215,7 @@ def test_model_failure_returns_explicit_reason(monkeypatch):
         model_config=None,  # type: ignore[arg-type]
     )
 
-    assert reply == "模型调用失败（LLM_ERROR）：upstream timeout。请检查模型配置、API Key、网络或模型服务状态后重试。"
+    assert reply == "模型調用失敗（LLM_ERROR）：upstream timeout。請檢查模型配置、API Key、網絡或模型服務狀態後重試。"
 
 
 def test_pending_reply_without_tool_result_uses_model_reply(monkeypatch):
@@ -223,26 +223,26 @@ def test_pending_reply_without_tool_result_uses_model_reply(monkeypatch):
         return None
 
     def fake_generate_text(self, system_prompt, payload):  # noqa: ANN001
-        return "好的，正在为您创建订单，请稍候..."
+        return "好的，正在為您創建訂單，請稍候..."
 
     monkeypatch.setattr(LLMClient, "__init__", fake_init)
     monkeypatch.setattr(LLMClient, "generate_text", fake_generate_text)
 
     reply = ResponseGenerator().generate(
-        message="一个",
+        message="一個",
         session=ChatSession(
             id="session_test",
             tenant_id="tenant_demo",
-            last_agent_question="请问您想购买多少件？",
+            last_agent_question="請問您想購買多少件？",
         ),
         skill=None,
         router_decision=RouterDecision(decision="continue_active"),
-        step_result=StepAgentResult(reply="请补充完成当前步骤所需的信息。"),
+        step_result=StepAgentResult(reply="請補充完成當前步驟所需的信息。"),
         tool_result=None,
         model_config=None,  # type: ignore[arg-type]
     )
 
-    assert reply == "好的，正在为您创建订单，请稍候..."
+    assert reply == "好的，正在為您創建訂單，請稍候..."
 
 
 def test_pending_step_reply_without_tool_result_does_not_fall_back_to_last_question(monkeypatch):
@@ -250,7 +250,7 @@ def test_pending_step_reply_without_tool_result_does_not_fall_back_to_last_quest
         return None
 
     def fake_generate_text(self, system_prompt, payload):  # noqa: ANN001
-        return "正在处理，请稍等。"
+        return "正在處理，請稍等。"
 
     monkeypatch.setattr(LLMClient, "__init__", fake_init)
     monkeypatch.setattr(LLMClient, "generate_text", fake_generate_text)
@@ -260,24 +260,24 @@ def test_pending_step_reply_without_tool_result_does_not_fall_back_to_last_quest
         session=ChatSession(
             id="session_test",
             tenant_id="tenant_demo",
-            last_agent_question="请提供您的订单号。",
+            last_agent_question="請提供您的訂單號。",
         ),
         skill=None,
         router_decision=RouterDecision(decision="continue_active"),
-        step_result=StepAgentResult(reply="正在为您提交，请稍候。"),
+        step_result=StepAgentResult(reply="正在為您提交，請稍候。"),
         tool_result=None,
         model_config=None,  # type: ignore[arg-type]
     )
 
-    assert reply == "正在处理，请稍等。"
-    assert reply != "请提供您的订单号。"
+    assert reply == "正在處理，請稍等。"
+    assert reply != "請提供您的訂單號。"
 
 
 def test_pending_phrase_in_confirmation_question_is_not_rejected(monkeypatch):
     step_reply = (
-        "好的，已为您记录购买 1 个 A1 的意向。"
-        "稍后我会为您处理 iPhone 15 的购买需求。"
-        "请问确认为您创建 1 个 A1 的订单吗？"
+        "好的，已為您記錄購買 1 個 A1 的意向。"
+        "稍後我會為您處理 iPhone 15 的購買需求。"
+        "請問確認為您創建 1 個 A1 的訂單嗎？"
     )
 
     def fake_init(self, model_config):  # noqa: ANN001
@@ -290,7 +290,7 @@ def test_pending_phrase_in_confirmation_question_is_not_rejected(monkeypatch):
     monkeypatch.setattr(LLMClient, "generate_text", fake_generate_text)
 
     reply = ResponseGenerator().generate(
-        message="嗯，我买一个A1吧，然后我还想再买一个iphone15",
+        message="嗯，我買一個A1吧，然後我還想再買一個iphone15",
         session=ChatSession(
             id="session_test",
             tenant_id="tenant_demo",
@@ -314,17 +314,17 @@ def test_pending_phrase_in_confirmation_question_is_not_rejected(monkeypatch):
     )
 
     assert reply == step_reply
-    assert "具体诉求" not in reply
+    assert "具體訴求" not in reply
 
 
 def test_response_payload_does_not_include_stale_last_question(monkeypatch):
     stale_price_reply = (
-        "您好，已为您查询到 A1 和 A3 的价格信息：\n\n"
-        "1. **A1 标准商品**：价格 **129.0 元**\n"
-        "2. **A3 高阶商品**：价格 **239.0 元**\n\n"
-        "请问您是否决定购买 A1？"
+        "您好，已為您查詢到 A1 和 A3 的價格信息：\n\n"
+        "1. **A1 標準商品**：價格 **129.0 元**\n"
+        "2. **A3 高階商品**：價格 **239.0 元**\n\n"
+        "請問您是否決定購買 A1？"
     )
-    refund_reply = "好的，已为您记录退款申请。为了继续处理，请提供您的订单号。"
+    refund_reply = "好的，已為您記錄退款申請。為了繼續處理，請提供您的訂單號。"
 
     def fake_init(self, model_config):  # noqa: ANN001
         return None
@@ -338,7 +338,7 @@ def test_response_payload_does_not_include_stale_last_question(monkeypatch):
     monkeypatch.setattr(LLMClient, "generate_text", fake_generate_text)
 
     reply = ResponseGenerator().generate(
-        message="确认退款",
+        message="確認退款",
         session=ChatSession(
             id="session_test",
             tenant_id="tenant_demo",
@@ -357,8 +357,8 @@ def test_response_payload_does_not_include_stale_last_question(monkeypatch):
 
 
 def test_stream_payload_does_not_include_stale_last_question(monkeypatch):
-    stale_price_reply = "A1 和 A3 的比价结果如下。请问您是否决定购买 A1？"
-    refund_reply = "好的，已为您记录退款申请。为了继续处理，请提供您的订单号。"
+    stale_price_reply = "A1 和 A3 的比價結果如下。請問您是否決定購買 A1？"
+    refund_reply = "好的，已為您記錄退款申請。為了繼續處理，請提供您的訂單號。"
 
     def fake_init(self, model_config):  # noqa: ANN001
         return None
@@ -373,7 +373,7 @@ def test_stream_payload_does_not_include_stale_last_question(monkeypatch):
 
     chunks = list(
         ResponseGenerator().generate_stream(
-            message="确认退款",
+            message="確認退款",
             session=ChatSession(
                 id="session_test",
                 tenant_id="tenant_demo",
@@ -394,8 +394,8 @@ def test_stream_payload_does_not_include_stale_last_question(monkeypatch):
 
 
 def test_stream_reply_with_tool_result_is_model_driven(monkeypatch):
-    stale_price_reply = "A1 和 A3 的比价结果如下。请问您是否决定购买 A1？"
-    refund_reply = "订单 MOCKD57272DB0E 的退款申请已提交，当前状态为处理中。"
+    stale_price_reply = "A1 和 A3 的比價結果如下。請問您是否決定購買 A1？"
+    refund_reply = "訂單 MOCKD57272DB0E 的退款申請已提交，當前狀態為處理中。"
 
     def fake_init(self, model_config):  # noqa: ANN001
         return None
@@ -410,7 +410,7 @@ def test_stream_reply_with_tool_result_is_model_driven(monkeypatch):
 
     chunks = list(
         ResponseGenerator().generate_stream(
-            message="确认退款",
+            message="確認退款",
             session=ChatSession(
                 id="session_test",
                 tenant_id="tenant_demo",
@@ -442,7 +442,7 @@ def test_stream_failed_tool_result_returns_explicit_failure_without_model_call(m
 
     chunks = list(
         ResponseGenerator().generate_stream(
-            message="查一下订单",
+            message="查一下訂單",
             session=ChatSession(id="session_test", tenant_id="tenant_demo"),
             skill=None,
             router_decision=RouterDecision(decision="continue_active"),
@@ -450,13 +450,13 @@ def test_stream_failed_tool_result_returns_explicit_failure_without_model_call(m
             tool_result=ToolResult(
                 tool_name="order.query",
                 success=False,
-                error=ToolError(code="TIMEOUT", message="工具调用超时。"),
+                error=ToolError(code="TIMEOUT", message="工具調用超時。"),
             ),
             model_config=None,  # type: ignore[arg-type]
         )
     )
 
-    assert "".join(chunks) == "工具调用失败：order.query（TIMEOUT）：工具调用超时。请检查工具配置、调用参数或外部服务状态后重试。"
+    assert "".join(chunks) == "工具調用失敗：order.query（TIMEOUT）：工具調用超時。請檢查工具配置、調用參數或外部服務狀態後重試。"
 
 
 def test_stream_model_failure_returns_explicit_reason(monkeypatch):
@@ -482,7 +482,7 @@ def test_stream_model_failure_returns_explicit_reason(monkeypatch):
         )
     )
 
-    assert "".join(chunks) == "模型调用失败（LLM_ERROR）：connection refused。请检查模型配置、API Key、网络或模型服务状态后重试。"
+    assert "".join(chunks) == "模型調用失敗（LLM_ERROR）：connection refused。請檢查模型配置、API Key、網絡或模型服務狀態後重試。"
 
 
 def test_stream_pending_reply_without_tool_result_is_model_driven(monkeypatch):
@@ -491,29 +491,29 @@ def test_stream_pending_reply_without_tool_result_is_model_driven(monkeypatch):
 
     def fake_generate_text_stream(self, system_prompt, payload):  # noqa: ANN001
         yield "好的，"
-        yield "正在为您创建订单，请稍候..."
+        yield "正在為您創建訂單，請稍候..."
 
     monkeypatch.setattr(LLMClient, "__init__", fake_init)
     monkeypatch.setattr(LLMClient, "generate_text_stream", fake_generate_text_stream)
 
     chunks = list(
         ResponseGenerator().generate_stream(
-            message="一个",
+            message="一個",
             session=ChatSession(
                 id="session_test",
                 tenant_id="tenant_demo",
-                last_agent_question="请问您想购买多少件？",
+                last_agent_question="請問您想購買多少件？",
             ),
             skill=None,
             router_decision=RouterDecision(decision="continue_active"),
-            step_result=StepAgentResult(reply="请补充完成当前步骤所需的信息。"),
+            step_result=StepAgentResult(reply="請補充完成當前步驟所需的信息。"),
             tool_result=None,
             model_config=None,  # type: ignore[arg-type]
         )
     )
 
     reply = "".join(chunks)
-    assert reply == "好的，正在为您创建订单，请稍候..."
+    assert reply == "好的，正在為您創建訂單，請稍候..."
 
 
 def test_stream_reply_yields_provider_chunks_without_collecting_first(monkeypatch):
@@ -532,7 +532,7 @@ def test_stream_reply_yields_provider_chunks_without_collecting_first(monkeypatc
     monkeypatch.setattr(LLMClient, "generate_text_stream", fake_generate_text_stream)
 
     stream = ResponseGenerator().generate_stream(
-        message="继续",
+        message="繼續",
         session=ChatSession(id="session_test", tenant_id="tenant_demo"),
         skill=None,
         router_decision=RouterDecision(decision="answer_only"),
@@ -555,20 +555,20 @@ def test_completed_step_reply_is_model_driven(monkeypatch):
         assert payload["progress"]["missing_current_step_info"] == []
         assert payload["progress"]["missing_required_info"] == []
         assert payload["progress"]["skill_completion_ready"] is True
-        return "请问您的退货原因是什么？"
+        return "請問您的退貨原因是什麼？"
 
     monkeypatch.setattr(LLMClient, "__init__", fake_init)
     monkeypatch.setattr(LLMClient, "generate_text", fake_generate_text)
 
     reply = ResponseGenerator().generate(
-        message="不喜欢",
+        message="不喜歡",
         session=ChatSession(
             id="session_test",
             tenant_id="tenant_demo",
             active_skill_id="refund",
             active_step_id="collect_refund_reason",
-            slots_json={"order_id": "A12345", "refund_reason": "不喜欢"},
-            last_agent_question="请问您的退货原因是什么？",
+            slots_json={"order_id": "A12345", "refund_reason": "不喜歡"},
+            last_agent_question="請問您的退貨原因是什麼？",
         ),
         skill=Skill(
             tenant_id="tenant_demo",
@@ -588,7 +588,7 @@ def test_completed_step_reply_is_model_driven(monkeypatch):
         ),
         router_decision=RouterDecision(decision="continue_active"),
         step_result=StepAgentResult(
-            reply="已记录退货原因，正在为您提交退货申请，请稍候。",
+            reply="已記錄退貨原因，正在為您提交退貨申請，請稍候。",
             is_step_completed=True,
             next_step_id="collect_refund_reason",
         ),
@@ -596,7 +596,7 @@ def test_completed_step_reply_is_model_driven(monkeypatch):
         model_config=None,  # type: ignore[arg-type]
     )
 
-    assert reply == "请问您的退货原因是什么？"
+    assert reply == "請問您的退貨原因是什麼？"
 
 
 def test_knowledge_result_does_not_prefer_generic_step_reply(monkeypatch):
@@ -615,26 +615,26 @@ def test_knowledge_result_does_not_prefer_generic_step_reply(monkeypatch):
         assert len(
             payload["retrieved_knowledge"][0]["retrieved_knowledge"][0]["content"]
         ) <= 803
-        return "前端规范包括目录组织、命名规范和组件编写规范。[1]"
+        return "前端規範包括目錄組織、命名規範和組件編寫規範。[1]"
 
     monkeypatch.setattr(LLMClient, "__init__", fake_init)
     monkeypatch.setattr(LLMClient, "generate_text", fake_generate_text)
 
     reply = ResponseGenerator().generate(
-        message="前端规范有哪些？",
+        message="前端規範有哪些？",
         session=ChatSession(id="session_test", tenant_id="tenant_demo"),
         skill=None,
-        router_decision=RouterDecision(decision="answer_only", user_intent="了解前端编码规范"),
+        router_decision=RouterDecision(decision="answer_only", user_intent="瞭解前端編碼規範"),
         step_result=StepAgentResult(
-            reply="请您再补充一下具体诉求，我会继续帮您处理。",
+            reply="請您再補充一下具體訴求，我會繼續幫您處理。",
             knowledge_results=[
                 {
-                    "source_message": "前端规范有哪些？",
+                    "source_message": "前端規範有哪些？",
                     "evidence_pack": [
                         {
-                            "source_path": "vue3-coding-standards.md / 前端编码规范 / evidence 1",
-                            "excerpt": "前端规范包括目录组织、命名规范、组件编写规范。" * 200,
-                            "reason": "命中前端规范问题",
+                            "source_path": "vue3-coding-standards.md / 前端編碼規範 / evidence 1",
+                            "excerpt": "前端規範包括目錄組織、命名規範、組件編寫規範。" * 200,
+                            "reason": "命中前端規範問題",
                         }
                     ],
                 }
@@ -644,23 +644,23 @@ def test_knowledge_result_does_not_prefer_generic_step_reply(monkeypatch):
         model_config=None,  # type: ignore[arg-type]
     )
 
-    assert reply == "前端规范包括目录组织、命名规范和组件编写规范。[1]"
+    assert reply == "前端規範包括目錄組織、命名規範和組件編寫規範。[1]"
 def test_response_generator_skips_model_for_simple_step_question(monkeypatch) -> None:
     def fail_generate_text(*_args, **_kwargs):
         raise AssertionError("simple ask_user reply must not call the response model")
 
     monkeypatch.setattr("app.core.response_generator.LLMClient.generate_text", fail_generate_text)
     reply = ResponseGenerator().generate(
-        "我要报销",
+        "我要報銷",
         ChatSession(id="session_test", tenant_id="tenant_demo"),
         None,
         RouterDecision(decision="continue_active"),
-        StepAgentResult(action="ask_user", reply="请补充报销金额。"),
+        StepAgentResult(action="ask_user", reply="請補充報銷金額。"),
         None,
         model_config=None,  # type: ignore[arg-type]
     )
 
-    assert reply == "请补充报销金额。"
+    assert reply == "請補充報銷金額。"
 
 
 def test_response_generator_stream_skips_model_for_simple_clarification(monkeypatch) -> None:
@@ -673,14 +673,14 @@ def test_response_generator_stream_skips_model_for_simple_clarification(monkeypa
     )
     chunks = list(
         ResponseGenerator().generate_stream(
-            "我要办理业务",
+            "我要辦理業務",
             ChatSession(id="session_test", tenant_id="tenant_demo"),
             None,
             RouterDecision(decision="continue_active"),
-            StepAgentResult(action="clarify", reply="请说明具体业务类型。"),
+            StepAgentResult(action="clarify", reply="請說明具體業務類型。"),
             None,
             model_config=None,  # type: ignore[arg-type]
         )
     )
 
-    assert "".join(chunks) == "请说明具体业务类型。"
+    assert "".join(chunks) == "請說明具體業務類型。"

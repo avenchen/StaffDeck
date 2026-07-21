@@ -15,7 +15,7 @@ from app.main import app
 logger = logging.getLogger("staffdeck.static")
 ROOT_DIR = paths.resource_dir()
 # frozen: dist 被收集到 _MEIPASS/frontend-enterprise/dist
-# dev:    resource_dir()==backend/，需回到仓库根找 frontend-enterprise
+# dev:    resource_dir()==backend/，需回到倉庫根找 frontend-enterprise
 ENTERPRISE_DIST = (
     ROOT_DIR / "frontend-enterprise" / "dist"
     if paths.is_frozen()
@@ -170,7 +170,7 @@ def root_redirect() -> RedirectResponse:
 @app.get("/favicon.png", include_in_schema=False)
 @app.get("/staffdeck-icon.png", include_in_schema=False)
 def brand_icon(request: Request) -> FileResponse:
-    # 品牌图标：从前端 dist 根目录 serve（favicon.ico/png、apple-touch-icon）
+    # 品牌圖標：從前端 dist 根目錄 serve（favicon.ico/png、apple-touch-icon）
     name = request.url.path.lstrip("/")
     target = ENTERPRISE_DIST / name
     if not target.exists():

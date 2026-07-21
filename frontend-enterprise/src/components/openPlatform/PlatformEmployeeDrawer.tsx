@@ -64,7 +64,7 @@ function NavChevron({
 }
 
 /**
- * SD1 数字员工广场详情侧拉（Figma 298:1416）。
+ * SD1 數字員工廣場詳情側拉（Figma 298:1416）。
  */
 export default function PlatformEmployeeDrawer({
   open,
@@ -104,12 +104,12 @@ export default function PlatformEmployeeDrawer({
               <span className="text-[12px] font-medium capitalize text-[#464c5e]">
                 {platformTitle}
               </span>
-              <NavChevron direction="prev" disabled={!hasPrev} onClick={onPrev} label="上一位员工" />
-              <NavChevron direction="next" disabled={!hasNext} onClick={onNext} label="下一位员工" />
+              <NavChevron direction="prev" disabled={!hasPrev} onClick={onPrev} label="上一位員工" />
+              <NavChevron direction="next" disabled={!hasNext} onClick={onNext} label="下一位員工" />
             </div>
             <button
               type="button"
-              aria-label="关闭"
+              aria-label="關閉"
               onClick={onClose}
               className="grid size-[14px] place-items-center text-[#757f9c] transition-colors hover:text-[#18181a]"
             >
@@ -152,7 +152,7 @@ export default function PlatformEmployeeDrawer({
                   className={cn('size-[4px] shrink-0 rounded-full shadow-[inset_1px_1px_2px_0.5px_rgba(0,0,0,0.05)]', online ? 'bg-[#22c55e]' : 'bg-[#9ca3af]')}
                   aria-hidden="true"
                 />
-                <span className="text-[10px] capitalize">{online ? '在线' : '下线'}</span>
+                <span className="text-[10px] capitalize">{online ? '在線' : '下線'}</span>
               </span>
             </div>
           </div>
@@ -176,17 +176,17 @@ export default function PlatformEmployeeDrawer({
 
           <div className="grid grid-cols-2 gap-[10px]">
             <div className="flex min-h-[60px] flex-col justify-center gap-[4px] rounded-[14px] border-[0.5px] border-[#e3e7f1] px-[16px] py-[8px]">
-              <span className="text-[10px] leading-[13px] text-[#464c5e]">分类</span>
+              <span className="text-[10px] leading-[13px] text-[#464c5e]">分類</span>
               <strong className="truncate text-[12px] leading-[16px] font-medium text-[#18181a]">{platformTitle}</strong>
             </div>
             <div className="flex min-h-[60px] flex-col justify-center gap-[4px] rounded-[14px] border-[0.5px] border-[#e3e7f1] px-[16px] py-[8px]">
-              <span className="text-[10px] leading-[13px] text-[#464c5e]">分类</span>
+              <span className="text-[10px] leading-[13px] text-[#464c5e]">分類</span>
               <strong className="truncate text-[12px] leading-[16px] font-medium text-[#18181a]">{role}</strong>
             </div>
           </div>
 
           <div className="flex min-h-0 flex-1 flex-col gap-[8px]">
-            <span className="text-[12px] capitalize text-[#464c5e]">说明</span>
+            <span className="text-[12px] capitalize text-[#464c5e]">說明</span>
             <div className="flex min-h-0 flex-1 flex-col gap-[10px]">
               {workStyles.length > 0 && (
                 <div className="flex flex-wrap gap-[10px]">
@@ -218,7 +218,7 @@ export default function PlatformEmployeeDrawer({
               className="inline-flex h-[34px] w-[80px] items-center justify-center gap-[4px] rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white text-[12px] text-[#757f9c] transition-colors hover:border-[#d20b0b] hover:text-[#d20b0b] disabled:cursor-not-allowed disabled:opacity-50"
             >
               <IconTrash className="size-[14px]" />
-              删除
+              刪除
             </button>
           )}
           <button
@@ -226,7 +226,7 @@ export default function PlatformEmployeeDrawer({
             onClick={onUse}
             className="inline-flex h-[34px] w-[80px] items-center justify-center rounded-[10px] bg-[#18181a] text-[12px] text-white transition-colors hover:bg-[#2a2a2e]"
           >
-            使用员工
+            使用員工
           </button>
         </div>
       </SheetContent>

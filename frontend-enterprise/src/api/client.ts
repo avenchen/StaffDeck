@@ -161,7 +161,7 @@ async function streamRequest(
     throw new ApiError(response.status, text, response.statusText);
   }
   if (!response.body) {
-    throw new Error('当前浏览器不支持流式响应');
+    throw new Error('當前瀏覽器不支持流式響應');
   }
 
   const reader = response.body.getReader();

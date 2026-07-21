@@ -119,7 +119,7 @@ class GeneralSkillRunner:
     ) -> GeneralSkillRunResponse:
         trace: list[dict[str, Any]] = []
         max_attempts = max(1, min(max_attempts, GENERAL_SKILL_MAX_ATTEMPTS))
-        _emit(trace, {"phase": "skill_loaded", "message": f"已加载通用技能 {skill.name}", "slug": skill.slug}, event_sink)
+        _emit(trace, {"phase": "skill_loaded", "message": f"已加載通用技能 {skill.name}", "slug": skill.slug}, event_sink)
         try:
             plan, planning_attempts = self._generate_plan_with_reflection(
                 skill,
@@ -132,7 +132,7 @@ class GeneralSkillRunner:
                 memory_context,
             )
         except LLMError as exc:
-            _emit(trace, {"phase": "plan_failed", "message": "模型生成 runner 失败", "error": str(exc)}, event_sink)
+            _emit(trace, {"phase": "plan_failed", "message": "模型生成 runner 失敗", "error": str(exc)}, event_sink)
             return GeneralSkillRunResponse(
                 skill_slug=skill.slug,
                 execution_trace=trace,
@@ -140,7 +140,7 @@ class GeneralSkillRunner:
                 stdout="",
                 stderr=str(exc),
                 structured_result={"success": False, "error": "runner_plan_failed", "message": str(exc)},
-                reply="抱歉，当前通用技能执行代码生成失败，暂时无法完成这次运行。",
+                reply="抱歉，當前通用技能執行代碼生成失敗，暫時無法完成這次運行。",
             )
 
         attempts: list[dict[str, Any]] = planning_attempts
@@ -150,7 +150,7 @@ class GeneralSkillRunner:
         for attempt in range(1, max_attempts + 1):
             _emit(
                 trace,
-                {"phase": "attempt_started", "message": f"开始第 {attempt} 次运行", "attempt": attempt},
+                {"phase": "attempt_started", "message": f"開始第 {attempt} 次運行", "attempt": attempt},
                 event_sink,
             )
             stdout, stderr, structured_result = self._execute_plan(
@@ -194,7 +194,7 @@ class GeneralSkillRunner:
                         trace,
                         {
                             "phase": "reflection_stopped",
-                            "message": f"第 {attempt} 次运行结果不足，但模型判断不可继续自动修复",
+                            "message": f"第 {attempt} 次運行結果不足，但模型判斷不可繼續自動修復",
                             "attempt": attempt,
                             "structured_result": structured_result,
                             "review": review,
@@ -204,7 +204,7 @@ class GeneralSkillRunner:
                 else:
                     _emit(
                         trace,
-                        {"phase": "reflection_passed", "message": f"第 {attempt} 次运行结果可用", "attempt": attempt},
+                        {"phase": "reflection_passed", "message": f"第 {attempt} 次運行結果可用", "attempt": attempt},
                         event_sink,
                     )
                 break
@@ -213,7 +213,7 @@ class GeneralSkillRunner:
                     trace,
                     {
                         "phase": "reflection_stopped",
-                        "message": f"已达到最多 {max_attempts} 次尝试，停止自动修复",
+                        "message": f"已達到最多 {max_attempts} 次嘗試，停止自動修復",
                         "attempt": attempt,
                     },
                     event_sink,
@@ -223,7 +223,7 @@ class GeneralSkillRunner:
                 trace,
                 {
                     "phase": "reflection_retrying",
-                    "message": f"第 {attempt} 次运行未达预期，模型正在根据结果反思修复",
+                    "message": f"第 {attempt} 次運行未達預期，模型正在根據結果反思修復",
                     "attempt": attempt,
                     "stdout_preview": stdout[:600],
                     "stderr_preview": stderr[:600],
@@ -247,7 +247,7 @@ class GeneralSkillRunner:
             except LLMError as exc:
                 _emit(
                     trace,
-                    {"phase": "repair_failed", "message": "模型反思修复代码失败", "attempt": attempt, "error": str(exc)},
+                    {"phase": "repair_failed", "message": "模型反思修復代碼失敗", "attempt": attempt, "error": str(exc)},
                     event_sink,
                 )
                 break
@@ -266,7 +266,7 @@ class GeneralSkillRunner:
                 memory_context,
             )
         except LLMError as exc:
-            _emit(trace, {"phase": "reply_failed", "message": "模型生成最终回复失败", "error": str(exc)}, event_sink)
+            _emit(trace, {"phase": "reply_failed", "message": "模型生成最終回覆失敗", "error": str(exc)}, event_sink)
             reply = _fallback_reply(structured_result)
         return GeneralSkillRunResponse(
             skill_slug=skill.slug,
@@ -288,7 +288,7 @@ class GeneralSkillRunner:
         conversation_context: dict[str, object] | None = None,
         memory_context: list[dict[str, object]] | None = None,
     ) -> GeneralSkillExecutionPlan:
-        _emit(trace, {"phase": "planning", "message": "正在根据 SKILL.md 生成 runner"}, event_sink)
+        _emit(trace, {"phase": "planning", "message": "正在根據 SKILL.md 生成 runner"}, event_sink)
         stage_data = {
             "skill": {
                 "slug": skill.slug,
@@ -402,8 +402,8 @@ class GeneralSkillRunner:
                         "result_sufficient": False,
                         "needs_retry": plan_attempt < max_attempts,
                         "terminal": False,
-                        "reason": "模型未能生成可执行 runner 计划，需要重新输出合法 JSON、runtime 和完整代码。",
-                        "repair_hint": "保留原始 skill 与 query，重新输出包含 runtime、code、rationale、expected_output 的合法 JSON。",
+                        "reason": "模型未能生成可執行 runner 計劃，需要重新輸出合法 JSON、runtime 和完整代碼。",
+                        "repair_hint": "保留原始 skill 與 query，重新輸出包含 runtime、code、rationale、expected_output 的合法 JSON。",
                     },
                 }
                 planning_failures.append(failure)
@@ -411,7 +411,7 @@ class GeneralSkillRunner:
                     trace,
                     {
                         "phase": "plan_failed",
-                        "message": f"第 {plan_attempt} 次 runner 计划生成失败",
+                        "message": f"第 {plan_attempt} 次 runner 計劃生成失敗",
                         "attempt": plan_attempt,
                         "error": str(exc),
                     },
@@ -423,7 +423,7 @@ class GeneralSkillRunner:
                     trace,
                     {
                         "phase": "reflection_retrying",
-                        "message": f"第 {plan_attempt} 次计划生成失败，模型正在反思并重新输出代码",
+                        "message": f"第 {plan_attempt} 次計劃生成失敗，模型正在反思並重新輸出代碼",
                         "attempt": plan_attempt,
                         "structured_result": failure["structured_result"],
                         "review": failure["execution_review"],
@@ -446,7 +446,7 @@ class GeneralSkillRunner:
     ) -> GeneralSkillExecutionPlan:
         _emit(
             trace,
-            {"phase": "repair_planning", "message": f"正在生成第 {next_attempt} 次运行代码", "attempt": next_attempt},
+            {"phase": "repair_planning", "message": f"正在生成第 {next_attempt} 次運行代碼", "attempt": next_attempt},
             event_sink,
         )
         stage_data = {
@@ -533,7 +533,7 @@ class GeneralSkillRunner:
             trace,
             {
                 "phase": "running_code",
-                "message": f"正在运行第 {attempt} 次 {_runtime_label(runtime)} runner",
+                "message": f"正在運行第 {attempt} 次 {_runtime_label(runtime)} runner",
                 "run_id": run_dir.name,
                 "attempt": attempt,
                 "runtime": runtime,
@@ -554,7 +554,7 @@ class GeneralSkillRunner:
                 trace,
                 {
                     "phase": "runtime_environment_failed",
-                    "message": "通用技能运行环境准备失败",
+                    "message": "通用技能運行環境準備失敗",
                     "attempt": attempt,
                     "runtime": runtime,
                     "structured_result": structured,
@@ -577,7 +577,7 @@ class GeneralSkillRunner:
             structured = {
                 "success": False,
                 "error": "bash_runtime_unsupported",
-                "message": "当前运行环境不支持 bash 技能（Windows 或打包版），请改用 Python 技能。",
+                "message": "當前運行環境不支持 bash 技能（Windows 或打包版），請改用 Python 技能。",
                 "retryable": False,
             }
             _emit(trace, {"phase": "runtime_environment_failed",
@@ -609,12 +609,12 @@ class GeneralSkillRunner:
         if timed_out:
             stdout = _truncate(stdout)
             stderr = _truncate(stderr)
-            structured = {"success": False, "error": "runner_timeout", "message": "通用技能运行超时"}
+            structured = {"success": False, "error": "runner_timeout", "message": "通用技能運行超時"}
             _emit(
                 trace,
                 {
                     "phase": "code_timeout",
-                    "message": f"{_runtime_label(runtime)} runner 执行超时",
+                    "message": f"{_runtime_label(runtime)} runner 執行超時",
                     "attempt": attempt,
                     "runtime": runtime,
                     "stdout_preview": stdout[:600],
@@ -636,7 +636,7 @@ class GeneralSkillRunner:
             trace,
             {
                 "phase": "code_finished",
-                "message": f"{_runtime_label(runtime)} runner 执行完成",
+                "message": f"{_runtime_label(runtime)} runner 執行完成",
                 "attempt": attempt,
                 "runtime": runtime,
                 "return_code": return_code,
@@ -661,7 +661,7 @@ class GeneralSkillRunner:
         conversation_context: dict[str, object] | None = None,
         memory_context: list[dict[str, object]] | None = None,
     ) -> str:
-        _emit(trace, {"phase": "replying", "message": "正在根据运行结果生成回复"}, event_sink)
+        _emit(trace, {"phase": "replying", "message": "正在根據運行結果生成回覆"}, event_sink)
         stage_data = {
             "skill": {
                 "slug": skill.slug,
@@ -694,7 +694,7 @@ class GeneralSkillRunner:
             raise LLMError(f"General skill reply returned invalid JSON schema: {exc}") from exc
         if not reply:
             raise LLMError("General skill reply is empty")
-        _emit(trace, {"phase": "reply_created", "message": "已生成最终回复"}, event_sink)
+        _emit(trace, {"phase": "reply_created", "message": "已生成最終回覆"}, event_sink)
         return reply
 
     def _review_execution_result(
@@ -716,7 +716,7 @@ class GeneralSkillRunner:
             trace,
             {
                 "phase": "reflection_reviewing",
-                "message": f"正在校验第 {attempt} 次运行结果",
+                "message": f"正在校驗第 {attempt} 次運行結果",
                 "attempt": attempt,
             },
             event_sink,
@@ -761,8 +761,8 @@ class GeneralSkillRunner:
                 "result_sufficient": not fallback_needs_retry,
                 "needs_retry": fallback_needs_retry,
                 "terminal": False,
-                "reason": f"模型校验失败，使用运行信号兜底判断：{exc}",
-                "repair_hint": "补充运行诊断或调整 runner 输出结构",
+                "reason": f"模型校驗失敗，使用運行信號兜底判斷：{exc}",
+                "repair_hint": "補充運行診斷或調整 runner 輸出結構",
             }
         if review.get("terminal") is True:
             review["needs_retry"] = False
@@ -770,7 +770,7 @@ class GeneralSkillRunner:
             trace,
             {
                 "phase": "reflection_reviewed",
-                "message": "已完成运行结果校验",
+                "message": "已完成運行結果校驗",
                 "attempt": attempt,
                 "review": review,
             },
@@ -920,11 +920,11 @@ def _stream_process_output_selectors(
                 if name == "stdout":
                     stdout_parts.append(text)
                     phase = "stdout_chunk"
-                    message = "收到运行输出"
+                    message = "收到運行輸出"
                 else:
                     stderr_parts.append(text)
                     phase = "stderr_chunk"
-                    message = "收到错误输出"
+                    message = "收到錯誤輸出"
                 _emit(
                     trace,
                     {"phase": phase, "message": message, "attempt": attempt, "text": text},
@@ -955,7 +955,7 @@ def _stream_process_output_threaded(process, trace, event_sink, attempt):
             for chunk in iter(lambda: stream.read(4096), b""):
                 q.put((name, chunk))
         finally:
-            q.put((name, b""))  # EOF 标记
+            q.put((name, b""))  # EOF 標記
 
     stream_map = [(process.stdout, "stdout"), (process.stderr, "stderr")]
     threads: list[threading.Thread] = []
@@ -985,10 +985,10 @@ def _stream_process_output_threaded(process, trace, event_sink, attempt):
         text = chunk.decode("utf-8", errors="replace")
         if name == "stdout":
             stdout_parts.append(text)
-            phase, message = "stdout_chunk", "收到运行输出"
+            phase, message = "stdout_chunk", "收到運行輸出"
         else:
             stderr_parts.append(text)
-            phase, message = "stderr_chunk", "收到错误输出"
+            phase, message = "stderr_chunk", "收到錯誤輸出"
         _emit(trace, {"phase": phase, "message": message, "attempt": attempt, "text": text}, event_sink)
 
     for t in threads:
@@ -1066,5 +1066,5 @@ def _with_min_tokens(model_config: ModelConfig, max_output_tokens: int) -> Model
 def _fallback_reply(structured_result: dict[str, Any]) -> str:
     if structured_result.get("success") is False:
         message = str(structured_result.get("message") or structured_result.get("error") or "").strip()
-        return f"抱歉，通用技能运行失败。{message}" if message else "抱歉，通用技能运行失败。"
-    return "通用技能已运行完成，结果已展示在运行输出中。"
+        return f"抱歉，通用技能運行失敗。{message}" if message else "抱歉，通用技能運行失敗。"
+    return "通用技能已運行完成，結果已展示在運行輸出中。"

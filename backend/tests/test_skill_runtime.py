@@ -116,8 +116,8 @@ def test_answer_only_does_not_switch_to_another_skill():
         active_skill_id="purchase",
         active_step_id="collect_user_name",
         slots_json={"product_id": "A1"},
-        summary="最近回复：请问姓名和数量",
-        last_agent_question="请问姓名和数量？",
+        summary="最近回覆：請問姓名和數量",
+        last_agent_question="請問姓名和數量？",
     )
     runtime = SkillRuntime()
 
@@ -157,8 +157,8 @@ def test_pending_tasks_are_queued_and_selected_explicitly_without_using_skill_st
                     "decision": "start_new_task",
                     "target_skill_id": "purchase",
                     "target_step_id": "collect_user_name",
-                    "user_intent": "退款完成后购买 A3",
-                    "source_message": "退了吧，退完我想买一个a3",
+                    "user_intent": "退款完成後購買 A3",
+                    "source_message": "退了吧，退完我想買一個a3",
                     "slot_hints": {"product_id": "A3"},
                 }
             ],
@@ -191,14 +191,14 @@ def test_runtime_never_persists_router_generated_message_content_slots():
         tenant_id="tenant_demo",
         active_skill_id="refund",
         active_step_id="confirm_refund_order",
-        slots_json={"message_content": "旧的模型改写", "order_id": "ORDER-1"},
+        slots_json={"message_content": "舊的模型改寫", "order_id": "ORDER-1"},
         pending_tasks_json=[
             {
                 "task_id": "task_purchase_a1",
                 "decision": "start_new_task",
                 "target_skill_id": "purchase",
                 "target_step_id": "collect_user_name",
-                "slot_hints": {"message_content": "pending 改写", "product_id": "A1"},
+                "slot_hints": {"message_content": "pending 改寫", "product_id": "A1"},
             }
         ],
         skill_stack_json=[
@@ -206,7 +206,7 @@ def test_runtime_never_persists_router_generated_message_content_slots():
                 "task_id": "task_purchase_a3",
                 "skill_id": "purchase",
                 "step_id": "collect_user_name",
-                "slots": {"message_content": "stack 改写", "product_id": "A3"},
+                "slots": {"message_content": "stack 改寫", "product_id": "A3"},
             }
         ],
     )
@@ -219,7 +219,7 @@ def test_runtime_never_persists_router_generated_message_content_slots():
             selected_task_id="task_purchase_a1",
             target_skill_id="purchase",
             target_step_id="collect_user_name",
-            slot_hints={"message_content": "当前轮改写", "quantity": 1},
+            slot_hints={"message_content": "當前輪改寫", "quantity": 1},
         ),
     )
 
@@ -250,7 +250,7 @@ def test_runtime_ignores_message_content_only_task_update():
             task_updates=[
                 {
                     "task_id": "task_purchase_a1",
-                    "slot_hints": {"message_content": "不要覆盖已有任务 slot"},
+                    "slot_hints": {"message_content": "不要覆蓋已有任務 slot"},
                 }
             ],
         ),
@@ -271,8 +271,8 @@ def test_pending_task_is_not_claimed_without_selected_task_id():
                 "decision": "start_new_task",
                 "target_skill_id": "purchase",
                 "target_step_id": "collect_user_name",
-                "user_intent": "退款完成后购买 A1",
-                "source_message": "退完再买 A1",
+                "user_intent": "退款完成後購買 A1",
+                "source_message": "退完再買 A1",
                 "slot_hints": {"user_name": "hm", "product_id": "A1"},
             }
         ],
@@ -322,7 +322,7 @@ def test_semantic_duplicate_pending_task_is_merged_on_append():
                     task_id="preserved_refund_001",
                     target_skill_id="after_sales_refund",
                     target_step_id="collect_order_info",
-                    user_intent="继续当前退款任务",
+                    user_intent="繼續當前退款任務",
                     slot_hints={
                         "order_id": "ORDER-1",
                         "refund_type": "退款",
@@ -333,7 +333,7 @@ def test_semantic_duplicate_pending_task_is_merged_on_append():
                     task_id="purchase_a3_001",
                     target_skill_id="purchase",
                     target_step_id="collect_user_name",
-                    user_intent="退款后购买 A3",
+                    user_intent="退款後購買 A3",
                     slot_hints={"product_id": "A3", "quantity": 1},
                 ),
             ],
@@ -398,15 +398,15 @@ def test_selected_pending_task_switch_does_not_suspend_completed_current_skill()
         tenant_id="tenant_demo",
         active_skill_id="refund",
         active_step_id="final_reply",
-        slots_json={"order_id": "ORDER-1", "refund_reason": "买贵了"},
+        slots_json={"order_id": "ORDER-1", "refund_reason": "買貴了"},
         pending_tasks_json=[
             {
                 "task_id": "task_purchase_a1",
                 "decision": "start_new_task",
                 "target_skill_id": "purchase",
                 "target_step_id": "collect_user_name",
-                "user_intent": "退款完成后购买 A1",
-                "source_message": "退完再买 A1",
+                "user_intent": "退款完成後購買 A1",
+                "source_message": "退完再買 A1",
                 "slot_hints": {"product_id": "A1"},
             }
         ],

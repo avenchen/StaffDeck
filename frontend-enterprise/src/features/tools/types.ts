@@ -28,10 +28,10 @@ export type ToolFormValues = typeof TOOL_FORM_INITIAL_VALUES & {
 };
 
 export const TRANSPORT_OPTIONS: { value: MCPTransport; label: string; hint: string }[] = [
-  { value: 'streamable_http', label: 'Streamable HTTP', hint: '通过 HTTP(S) 连接远程 MCP Server' },
-  { value: 'sse', label: 'SSE', hint: '通过 Server-Sent Events 连接远程 MCP Server' },
-  { value: 'stdio', label: 'Stdio（本地命令）', hint: '启动本地进程并通过标准输入输出通信' },
-  { value: 'builtin', label: '内置 Demo', hint: '使用内置的 builtin.demo MCP，仅用于演示' },
+  { value: 'streamable_http', label: 'Streamable HTTP', hint: '通過 HTTP(S) 連接遠程 MCP Server' },
+  { value: 'sse', label: 'SSE', hint: '通過 Server-Sent Events 連接遠程 MCP Server' },
+  { value: 'stdio', label: 'Stdio（本地命令）', hint: '啟動本地進程並通過標準輸入輸出通信' },
+  { value: 'builtin', label: '內置 Demo', hint: '使用內置的 builtin.demo MCP，僅用於演示' },
 ];
 
 export type McpFormValues = {

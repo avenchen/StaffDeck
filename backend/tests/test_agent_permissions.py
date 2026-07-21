@@ -48,7 +48,7 @@ def test_only_creator_or_admin_can_update_and_delete_agent() -> None:
         agent = AgentProfile(
             id="agent_owned",
             tenant_id="tenant_demo",
-            name="研发员工",
+            name="研發員工",
             is_overall=False,
             metadata_json={"owner_user_id": owner.id, "owner_username": owner.username},
         )
@@ -89,7 +89,7 @@ def test_non_admin_cannot_manage_overall_agent() -> None:
     with _test_session() as db:
         owner, other, admin = _seed_users(db)
         overall = AgentProfile(
-            id="agent_overall", tenant_id="tenant_demo", name="开放广场", is_overall=True
+            id="agent_overall", tenant_id="tenant_demo", name="開放廣場", is_overall=True
         )
         db.add(overall)
         db.commit()
@@ -98,7 +98,7 @@ def test_non_admin_cannot_manage_overall_agent() -> None:
             update_agent(
                 overall.id,
                 AgentProfileUpdateRequest(
-                    tenant_id="tenant_demo", description="普通用户不能改整体员工"
+                    tenant_id="tenant_demo", description="普通用戶不能改整體員工"
                 ),
                 db=db,
                 current_user=owner,
@@ -108,12 +108,12 @@ def test_non_admin_cannot_manage_overall_agent() -> None:
         updated = update_agent(
             overall.id,
             AgentProfileUpdateRequest(
-                tenant_id="tenant_demo", description="管理员可以维护整体员工"
+                tenant_id="tenant_demo", description="管理員可以維護整體員工"
             ),
             db=db,
             current_user=admin,
         )
-        assert updated.description == "管理员可以维护整体员工"
+        assert updated.description == "管理員可以維護整體員工"
 
 
 def test_resource_binding_requires_agent_manager() -> None:
@@ -122,7 +122,7 @@ def test_resource_binding_requires_agent_manager() -> None:
         agent = AgentProfile(
             id="agent_resource_owner",
             tenant_id="tenant_demo",
-            name="资源员工",
+            name="資源員工",
             is_overall=False,
             metadata_json={"owner_user_id": owner.id, "owner_username": owner.username},
         )
@@ -130,7 +130,7 @@ def test_resource_binding_requires_agent_manager() -> None:
             id="tool_weather",
             tenant_id="tenant_demo",
             name="weather",
-            display_name="天气查询",
+            display_name="天氣查詢",
             method="POST",
             url="/weather",
         )
@@ -154,13 +154,13 @@ def test_list_agents_filters_to_visible_agents_for_non_admin() -> None:
     with _test_session() as db:
         owner, other, admin = _seed_users(db)
         db.add(
-            AgentProfile(id="agent_overall", tenant_id="tenant_demo", name="整体", is_overall=True)
+            AgentProfile(id="agent_overall", tenant_id="tenant_demo", name="整體", is_overall=True)
         )
         db.add(
             AgentProfile(
                 id="agent_owned",
                 tenant_id="tenant_demo",
-                name="我的员工",
+                name="我的員工",
                 is_overall=False,
                 metadata_json={"owner_user_id": owner.id, "owner_username": owner.username},
             )
@@ -169,7 +169,7 @@ def test_list_agents_filters_to_visible_agents_for_non_admin() -> None:
             AgentProfile(
                 id="agent_gallery",
                 tenant_id="tenant_demo",
-                name="广场员工",
+                name="廣場員工",
                 is_overall=False,
                 metadata_json={"published_to_gallery": True, "owner_username": other.username},
             )
@@ -178,7 +178,7 @@ def test_list_agents_filters_to_visible_agents_for_non_admin() -> None:
             AgentProfile(
                 id="agent_private",
                 tenant_id="tenant_demo",
-                name="别人私有员工",
+                name="別人私有員工",
                 is_overall=False,
                 metadata_json={"owner_user_id": other.id, "owner_username": other.username},
             )
@@ -187,7 +187,7 @@ def test_list_agents_filters_to_visible_agents_for_non_admin() -> None:
             AgentProfile(
                 id="agent_created_by_owner_only",
                 tenant_id="tenant_demo",
-                name="创建字段命中但非本人",
+                name="創建字段命中但非本人",
                 is_overall=False,
                 metadata_json={
                     "owner_user_id": other.id,
@@ -219,7 +219,7 @@ def test_gallery_agent_is_visible_but_not_manageable_by_non_owner() -> None:
         gallery_agent = AgentProfile(
             id="agent_gallery",
             tenant_id="tenant_demo",
-            name="广场员工",
+            name="廣場員工",
             is_overall=False,
             metadata_json={
                 "published_to_gallery": True,
@@ -251,7 +251,7 @@ def test_gallery_agent_is_visible_but_not_manageable_by_non_owner() -> None:
                 ToolCreateRequest(
                     tenant_id="tenant_demo",
                     name="blocked_gallery_tool",
-                    display_name="不应创建",
+                    display_name="不應創建",
                     url="/blocked",
                 ),
                 agent_id=gallery_agent.id,
@@ -268,7 +268,7 @@ def test_agent_ownership_uses_immutable_user_id_not_username_metadata() -> None:
         agent = AgentProfile(
             id="agent_spoofed_owner_name",
             tenant_id="tenant_demo",
-            name="用户名不能授权",
+            name="用戶名不能授權",
             metadata_json={
                 "owner_user_id": other.id,
                 "owner_username": owner.username,
@@ -290,13 +290,13 @@ def test_agent_scope_viewer_allows_owned_and_gallery_but_blocks_private_agents()
         private = AgentProfile(
             id="agent_private_scope",
             tenant_id="tenant_demo",
-            name="私有员工",
+            name="私有員工",
             metadata_json={"owner_user_id": owner.id, "owner_username": owner.username},
         )
         gallery = AgentProfile(
             id="agent_gallery_scope",
             tenant_id="tenant_demo",
-            name="广场员工",
+            name="廣場員工",
             metadata_json={
                 "owner_user_id": owner.id,
                 "owner_username": owner.username,
@@ -336,14 +336,14 @@ def test_chat_agents_exclude_unused_gallery_agents_until_current_user_marks_used
         owned = AgentProfile(
             id="agent_owned",
             tenant_id="tenant_demo",
-            name="我的员工",
+            name="我的員工",
             is_overall=False,
             metadata_json={"owner_user_id": owner.id, "owner_username": owner.username},
         )
         gallery = AgentProfile(
             id="agent_gallery",
             tenant_id="tenant_demo",
-            name="广场员工",
+            name="廣場員工",
             is_overall=False,
             metadata_json={
                 "published_to_gallery": True,
@@ -354,7 +354,7 @@ def test_chat_agents_exclude_unused_gallery_agents_until_current_user_marks_used
         private = AgentProfile(
             id="agent_private",
             tenant_id="tenant_demo",
-            name="管理员可见私有员工",
+            name="管理員可見私有員工",
             is_overall=False,
             metadata_json={"owner_user_id": other.id, "owner_username": other.username},
         )
@@ -408,7 +408,7 @@ def test_create_agent_records_creator_and_blocks_non_admin_overall() -> None:
         owner, other, admin = _seed_users(db)
 
         created = create_agent(
-            AgentProfileCreateRequest(tenant_id="tenant_demo", name="新员工", source_mode="blank"),
+            AgentProfileCreateRequest(tenant_id="tenant_demo", name="新員工", source_mode="blank"),
             db=db,
             current_user=owner,
         )
@@ -427,7 +427,7 @@ def test_create_agent_records_creator_and_blocks_non_admin_overall() -> None:
                     "owner_username": other.username,
                     "created_by_user_id": other.id,
                     "created_by_username": other.username,
-                    "role_name": "管理员可修改的业务字段",
+                    "role_name": "管理員可修改的業務字段",
                 },
             ),
             db=db,
@@ -437,14 +437,14 @@ def test_create_agent_records_creator_and_blocks_non_admin_overall() -> None:
         assert admin_updated.metadata["owner_username"] == owner.username
         assert admin_updated.metadata["created_by_user_id"] == owner.id
         assert admin_updated.metadata["created_by_username"] == owner.username
-        assert admin_updated.metadata["role_name"] == "管理员可修改的业务字段"
+        assert admin_updated.metadata["role_name"] == "管理員可修改的業務字段"
 
         source = AgentProfile(
             id="agent_source",
             tenant_id="tenant_demo",
-            name="源员工",
+            name="源員工",
             is_overall=False,
-            persona_prompt="源提示词",
+            persona_prompt="源提示詞",
             metadata_json={
                 "owner_user_id": owner.id,
                 "owner_username": owner.username,
@@ -459,7 +459,7 @@ def test_create_agent_records_creator_and_blocks_non_admin_overall() -> None:
         copied = create_agent(
             AgentProfileCreateRequest(
                 tenant_id="tenant_demo",
-                name="复制员工",
+                name="複製員工",
                 source_mode="copy",
                 copy_from_agent_id=source.id,
                 metadata={
@@ -480,7 +480,7 @@ def test_create_agent_records_creator_and_blocks_non_admin_overall() -> None:
         with pytest.raises(HTTPException) as create_error:
             create_agent(
                 AgentProfileCreateRequest(
-                    tenant_id="tenant_demo", name="普通用户整体", is_overall=True
+                    tenant_id="tenant_demo", name="普通用戶整體", is_overall=True
                 ),
                 db=db,
                 current_user=owner,
@@ -489,7 +489,7 @@ def test_create_agent_records_creator_and_blocks_non_admin_overall() -> None:
 
         overall = create_agent(
             AgentProfileCreateRequest(
-                tenant_id="tenant_demo", name="管理员整体", is_overall=True, source_mode="blank"
+                tenant_id="tenant_demo", name="管理員整體", is_overall=True, source_mode="blank"
             ),
             db=db,
             current_user=admin,
@@ -502,13 +502,13 @@ def test_private_tool_edit_does_not_mutate_open_gallery_tool() -> None:
         owner, _other, _admin = _seed_users(db)
         db.add(
             AgentProfile(
-                id="agent_overall", tenant_id="tenant_demo", name="开放广场", is_overall=True
+                id="agent_overall", tenant_id="tenant_demo", name="開放廣場", is_overall=True
             )
         )
         agent = AgentProfile(
             id="agent_owned",
             tenant_id="tenant_demo",
-            name="研发员工",
+            name="研發員工",
             is_overall=False,
             metadata_json={"owner_user_id": owner.id, "owner_username": owner.username},
         )
@@ -516,7 +516,7 @@ def test_private_tool_edit_does_not_mutate_open_gallery_tool() -> None:
             id="tool_open_weather",
             tenant_id="tenant_demo",
             name="weather",
-            display_name="天气",
+            display_name="天氣",
             method="POST",
             url="/api/weather",
         )
@@ -532,8 +532,8 @@ def test_private_tool_edit_does_not_mutate_open_gallery_tool() -> None:
             ToolUpdateRequest(
                 tenant_id="tenant_demo",
                 name="weather",
-                display_name="员工天气",
-                description="员工私有配置",
+                display_name="員工天氣",
+                description="員工私有配置",
                 url="/api/private-weather",
             ),
             agent_id=agent.id,
@@ -543,9 +543,9 @@ def test_private_tool_edit_does_not_mutate_open_gallery_tool() -> None:
 
         db.refresh(open_tool)
         assert updated.id != open_tool.id
-        assert open_tool.display_name == "天气"
+        assert open_tool.display_name == "天氣"
         assert open_tool.url == "/api/weather"
-        assert updated.display_name == "员工天气"
+        assert updated.display_name == "員工天氣"
         assert updated.name.startswith("weather-agent_ow")
         visible_binding = db.exec(
             select(AgentResourceBinding).where(
@@ -573,7 +573,7 @@ def test_private_tool_edit_does_not_mutate_open_gallery_tool() -> None:
                 ToolUpdateRequest(
                     tenant_id="tenant_demo",
                     name="weather_renamed",
-                    display_name="员工天气重命名",
+                    display_name="員工天氣重命名",
                     description=updated.description,
                     url=updated.url,
                 ),
@@ -592,7 +592,7 @@ def test_tool_name_cannot_be_modified_after_create() -> None:
             AgentProfile(
                 id="agent_overall",
                 tenant_id="tenant_demo",
-                name="开放广场",
+                name="開放廣場",
                 is_overall=True,
             )
         )
@@ -600,7 +600,7 @@ def test_tool_name_cannot_be_modified_after_create() -> None:
             id="tool_weather",
             tenant_id="tenant_demo",
             name="weather",
-            display_name="天气",
+            display_name="天氣",
             method="POST",
             url="/api/weather",
         )
@@ -615,7 +615,7 @@ def test_tool_name_cannot_be_modified_after_create() -> None:
                 ToolUpdateRequest(
                     tenant_id="tenant_demo",
                     name="weather_v2",
-                    display_name="天气新版",
+                    display_name="天氣新版",
                     url="/api/weather-v2",
                 ),
                 agent_id=None,
@@ -632,13 +632,13 @@ def test_private_general_skill_edit_does_not_mutate_open_gallery_skill() -> None
         owner, _other, _admin = _seed_users(db)
         db.add(
             AgentProfile(
-                id="agent_overall", tenant_id="tenant_demo", name="开放广场", is_overall=True
+                id="agent_overall", tenant_id="tenant_demo", name="開放廣場", is_overall=True
             )
         )
         agent = AgentProfile(
             id="agent_owned",
             tenant_id="tenant_demo",
-            name="研发员工",
+            name="研發員工",
             is_overall=False,
             metadata_json={"owner_user_id": owner.id, "owner_username": owner.username},
         )
@@ -646,9 +646,9 @@ def test_private_general_skill_edit_does_not_mutate_open_gallery_skill() -> None
             id="genskill_open_weather",
             tenant_id="tenant_demo",
             slug="weather",
-            name="天气技能",
-            description="开放广场版本",
-            skill_markdown="# 天气技能\n",
+            name="天氣技能",
+            description="開放廣場版本",
+            skill_markdown="# 天氣技能\n",
             status="published",
         )
         db.add(agent)
@@ -666,9 +666,9 @@ def test_private_general_skill_edit_does_not_mutate_open_gallery_skill() -> None
                 agent_id=agent.id,
                 original_slug="weather",
                 slug="weather",
-                name="员工天气技能",
-                description="员工私有版本",
-                markdown="# 员工天气技能\n",
+                name="員工天氣技能",
+                description="員工私有版本",
+                markdown="# 員工天氣技能\n",
             ),
             db=db,
             current_user=owner,
@@ -677,9 +677,9 @@ def test_private_general_skill_edit_does_not_mutate_open_gallery_skill() -> None
         db.refresh(open_skill)
         assert updated.id != open_skill.id
         assert updated.slug.startswith("weather-")
-        assert updated.name == "员工天气技能"
-        assert open_skill.name == "天气技能"
-        assert open_skill.description == "开放广场版本"
+        assert updated.name == "員工天氣技能"
+        assert open_skill.name == "天氣技能"
+        assert open_skill.description == "開放廣場版本"
         assert (
             db.exec(
                 select(AgentResourceBinding).where(
@@ -700,8 +700,8 @@ def test_private_general_skill_edit_does_not_mutate_open_gallery_skill() -> None
                     agent_id=agent.id,
                     original_slug=updated.slug,
                     slug="weather-renamed",
-                    name="员工天气技能",
-                    markdown="# 员工天气技能\n",
+                    name="員工天氣技能",
+                    markdown="# 員工天氣技能\n",
                 ),
                 db=db,
                 current_user=owner,

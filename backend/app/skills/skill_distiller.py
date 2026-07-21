@@ -24,26 +24,26 @@ MODEL_TOOL_CATALOG_CHAR_LIMIT = 12000
 MODEL_TOOL_DESCRIPTION_CHAR_LIMIT = 240
 MODEL_TOOL_PARAMETER_LIMIT = 12
 CLOSED_LOOP_RESPONSE_RULE = (
-    "流程必须形成闭环：不得把“请稍候/正在处理/稍后反馈”作为最终回复；"
-    "需要外部事实、外部状态或外部副作用时必须调用已配置工具或转人工，并向用户给出明确结果。"
+    "流程必須形成閉環：不得把“請稍候/正在處理/稍後反饋”作為最終回覆；"
+    "需要外部事實、外部狀態或外部副作用時必須調用已配置工具或轉人工，並向用戶給出明確結果。"
 )
 ADAPTIVE_FLOW_RESPONSE_RULE = (
-    "步骤是可自适应推进的目标，不是固定问答脚本；已由当前用户消息、历史信息或路由意图满足的内容"
-    "不得重复追问，应直接推进到下一缺失信息、工具调用或最终回复。"
+    "步驟是可自適應推進的目標，不是固定問答腳本；已由當前用戶消息、歷史信息或路由意圖滿足的內容"
+    "不得重複追問，應直接推進到下一缺失信息、工具調用或最終回覆。"
 )
 CONFIRMATION_FLOW_RESPONSE_RULE = (
-    "涉及外部系统写入、用户资产变更、不可逆操作或明确需要确认的处理时，"
-    "调用工具或执行处理前必须先让用户确认关键对象、范围和操作内容。"
+    "涉及外部系統寫入、用戶資產變更、不可逆操作或明確需要確認的處理時，"
+    "調用工具或執行處理前必須先讓用戶確認關鍵對象、範圍和操作內容。"
 )
 TOOL_STEP_INSTRUCTION_SUFFIX = (
-    "工具参数满足时直接调用工具；工具成功后必须基于工具结果进入最终回复，"
-    "不要停留在“请稍候”或“正在处理”。"
+    "工具參數滿足時直接調用工具；工具成功後必須基於工具結果進入最終回覆，"
+    "不要停留在“請稍候”或“正在處理”。"
 )
 ADAPTIVE_STEP_INSTRUCTION_SUFFIX = (
-    "将本步骤作为目标而不是固定话术；如果用户当前消息、历史 slots 或路由意图已满足本步骤，"
-    "直接写入对应 slot 并继续到下一缺失信息、工具调用或最终回复，不要重复确认。"
+    "將本步驟作為目標而不是固定話術；如果用戶當前消息、歷史 slots 或路由意圖已滿足本步驟，"
+    "直接寫入對應 slot 並繼續到下一缺失信息、工具調用或最終回覆，不要重複確認。"
 )
-FINAL_RESPONSE_INSTRUCTION_SUFFIX = "给用户明确最终回复；无法闭环时转人工，不要只说请稍候。"
+FINAL_RESPONSE_INSTRUCTION_SUFFIX = "給用戶明確最終回覆；無法閉環時轉人工，不要只說請稍候。"
 
 
 class SkillDistiller:
@@ -60,30 +60,30 @@ class SkillDistiller:
         prompt = PROMPT_PATH.read_text(encoding="utf-8")
         client = LLMClient(skill_model_config(model_config))
         try:
-            yield {"event": "status", "data": {"text": "模型正在规划技能结构"}}
+            yield {"event": "status", "data": {"text": "模型正在規劃技能結構"}}
             for chunk in client.generate_text_stream(prompt, model_input):
                 chunks.append(chunk)
                 yield {"event": "chunk", "data": {"content": chunk}}
-            yield {"event": "status", "data": {"text": "正在校验模型输出结构"}}
+            yield {"event": "status", "data": {"text": "正在校驗模型輸出結構"}}
             response = self._response_from_text("".join(chunks), request)
         except (LLMError, json.JSONDecodeError, TypeError, ValueError) as exc:
             try:
-                yield {"event": "status", "data": {"text": "模型输出需要修复，正在重试"}}
+                yield {"event": "status", "data": {"text": "模型輸出需要修復，正在重試"}}
                 response = self._repair_response(client, prompt, payload, "".join(chunks), str(exc), request)
             except (LLMError, json.JSONDecodeError, TypeError, ValueError) as repair_exc:
                 try:
-                    yield {"event": "status", "data": {"text": "模型修复失败，改用分段生成"}}
+                    yield {"event": "status", "data": {"text": "模型修復失敗，改用分段生成"}}
                     response = self._staged_response(client, prompt, payload, request, str(repair_exc))
                 except (LLMError, json.JSONDecodeError, TypeError, ValueError) as staged_exc:
-                    yield {"event": "status", "data": {"text": "模型多轮生成失败，使用最低可运行草稿"}}
+                    yield {"event": "status", "data": {"text": "模型多輪生成失敗，使用最低可運行草稿"}}
                     response = self._fallback_response(
-                        request, f"模型多轮生成未能完成，已使用最低可运行草稿：{staged_exc}"
+                        request, f"模型多輪生成未能完成，已使用最低可運行草稿：{staged_exc}"
                     )
             yield {"event": "chunk_reset", "data": {}}
             for chunk in _chunk_text(_serialize_response_for_stream(response)):
                 yield {"event": "chunk", "data": {"content": chunk}}
                 sleep(STREAM_INTERVAL_SECONDS)
-        yield {"event": "status", "data": {"text": "正在校验步骤闭环与工具接入"}}
+        yield {"event": "status", "data": {"text": "正在校驗步驟閉環與工具接入"}}
         before_reflection = response.model_dump(mode="json")
         response = yield from reflect_skill_response_stream(
             client=client,
@@ -95,13 +95,13 @@ class SkillDistiller:
             tool_suggestions=response.tool_suggestions,
             normalize_response=lambda raw: self._normalize_response(raw, request),
         )
-        yield {"event": "status", "data": {"text": "正在整理校验后的技能草稿"}}
+        yield {"event": "status", "data": {"text": "正在整理校驗後的技能草稿"}}
         if response.model_dump(mode="json") != before_reflection:
             yield {"event": "chunk_reset", "data": {}}
             for chunk in _chunk_text(_serialize_response_for_stream(response)):
                 yield {"event": "chunk", "data": {"content": chunk}}
                 sleep(STREAM_INTERVAL_SECONDS)
-        yield {"event": "status", "data": {"text": "校验完成，已完成 Skill Card 结构化"}}
+        yield {"event": "status", "data": {"text": "校驗完成，已完成 Skill Card 結構化"}}
         yield {"event": "complete", "data": response.model_dump(mode="json")}
 
     def _generate_response(self, request: SkillDistillRequest, model_config: ModelConfig) -> SkillDistillResponse:
@@ -121,7 +121,7 @@ class SkillDistiller:
                     response = self._staged_response(client, prompt, payload, request, str(repair_exc))
                 except (LLMError, json.JSONDecodeError, TypeError, ValueError) as staged_exc:
                     response = self._fallback_response(
-                        request, f"模型多轮生成未能完成，已使用最低可运行草稿：{staged_exc}"
+                        request, f"模型多輪生成未能完成，已使用最低可運行草稿：{staged_exc}"
                     )
         return reflect_skill_response(
             client=client,
@@ -156,8 +156,8 @@ class SkillDistiller:
                 "previous_error": error,
                 "repair_attempt": attempt + 1,
                 "repair_instruction": (
-                    "上一次输出无法解析或未通过 Skill Card graph 校验。请修复为完整合法 JSON。"
-                    "不要解释，不要使用代码围栏。必须保留原始流程中的节点、边、工具建议和闭环约束。"
+                    "上一次輸出無法解析或未通過 Skill Card graph 校驗。請修復為完整合法 JSON。"
+                    "不要解釋，不要使用代碼圍欄。必須保留原始流程中的節點、邊、工具建議和閉環約束。"
                 ),
             }
             output = client.generate_text(prompt, repair_payload)
@@ -182,9 +182,9 @@ class SkillDistiller:
                 "generation_mode": "outline_only",
                 "previous_error": previous_error,
                 "generation_instruction": (
-                    "先生成完整但紧凑的 Skill Card graph 大纲。nodes/edges 必须覆盖原始流程全部节点与条件推进关系，"
-                    "每个 instruction 只写一句目标说明；保留 response_rules、slot_filling_policy、"
-                    "interruption_policy 和 tool_mentions。只输出 JSON。"
+                    "先生成完整但緊湊的 Skill Card graph 大綱。nodes/edges 必須覆蓋原始流程全部節點與條件推進關係，"
+                    "每個 instruction 只寫一句目標說明；保留 response_rules、slot_filling_policy、"
+                    "interruption_policy 和 tool_mentions。只輸出 JSON。"
                 ),
             },
         )
@@ -204,9 +204,9 @@ class SkillDistiller:
                     "target_node_index": index,
                     "target_node": node,
                     "generation_instruction": (
-                        "只扩写 target_node。输出 JSON：{\"node\": {...}, \"warnings\": [], "
-                        "\"tool_mentions\": []}。node 必须包含 node_id、type、name、instruction、"
-                        "expected_user_info、allowed_actions。不要输出完整技能。"
+                        "只擴寫 target_node。輸出 JSON：{\"node\": {...}, \"warnings\": [], "
+                        "\"tool_mentions\": []}。node 必須包含 node_id、type、name、instruction、"
+                        "expected_user_info、allowed_actions。不要輸出完整技能。"
                     ),
                 },
             )
@@ -218,7 +218,7 @@ class SkillDistiller:
                 if isinstance(node_raw.get("tool_mentions"), list):
                     tool_mentions.extend(item for item in node_raw["tool_mentions"] if isinstance(item, dict))
             except (json.JSONDecodeError, TypeError, ValueError) as exc:
-                warnings.append(f"模型未能扩写节点 {index + 1}，已保留大纲节点：{exc}")
+                warnings.append(f"模型未能擴寫節點 {index + 1}，已保留大綱節點：{exc}")
 
         draft_data["nodes"] = nodes
         reviewed = self._normalize_response(
@@ -232,8 +232,8 @@ class SkillDistiller:
                 "generation_mode": "final_review",
                 "current_draft": reviewed.draft_skill.model_dump(mode="json"),
                 "generation_instruction": (
-                    "检查 current_draft 是否遗漏原始流程、闭环回复、工具建议或中断策略。"
-                    "如需修正，返回完整 draft_skill；如果无需修正，也返回完整 draft_skill。只输出 JSON。"
+                    "檢查 current_draft 是否遺漏原始流程、閉環回覆、工具建議或中斷策略。"
+                    "如需修正，返回完整 draft_skill；如果無需修正，也返回完整 draft_skill。只輸出 JSON。"
                 ),
             },
         )
@@ -284,7 +284,7 @@ class SkillDistiller:
         start_node_id = _string(draft.get("start_node_id"), fallback.start_node_id)
         if start_node_id not in node_id_map:
             start_node_id = nodes[0]["node_id"]
-            warnings.append("模型输出的 start_node_id 不存在，已改为第一个节点。")
+            warnings.append("模型輸出的 start_node_id 不存在，已改為第一個節點。")
         terminal_node_ids = _string_list(draft.get("terminal_node_ids"), fallback.terminal_node_ids)
         terminal_node_ids = [node_id for node_id in terminal_node_ids if node_id in node_id_map] or [nodes[-1]["node_id"]]
         raw_tool_mentions = raw.get("tool_mentions") if isinstance(raw.get("tool_mentions"), list) else raw.get("tool_suggestions")
@@ -297,7 +297,7 @@ class SkillDistiller:
         for tool_name in missing_tool_names:
             warnings.append(
                 f"技能草稿引用了未配置工具 {tool_name}，已移出 allowed_actions；"
-                "如确需该工具，模型必须在 tool_mentions 中提供来自原文的完整工具提及。"
+                "如確需該工具，模型必須在 tool_mentions 中提供來自原文的完整工具提及。"
             )
         response_rules = _string_list(draft.get("response_rules"), fallback.response_rules)
         if CLOSED_LOOP_RESPONSE_RULE not in response_rules:
@@ -368,17 +368,17 @@ class SkillDistiller:
                 {
                     "node_id": _unique_step_id(normalized_nodes, "reply_final_result"),
                     "type": "response",
-                    "name": "反馈最终结果",
+                    "name": "反饋最終結果",
                     "instruction": (
-                        "基于已收集信息和工具结果给用户明确最终回复；"
-                        "信息不足时追问缺失信息，无法闭环时转人工，不要只说请稍候；"
+                        "基於已收集信息和工具結果給用戶明確最終回覆；"
+                        "信息不足時追問缺失信息，無法閉環時轉人工，不要只說請稍候；"
                         f"{ADAPTIVE_STEP_INSTRUCTION_SUFFIX}"
                     ),
                     "expected_user_info": [],
                     "allowed_actions": ["answer_user", "handoff_human"],
                 }
             )
-            warnings.append("原始改写缺少最终回复节点，已补充闭环反馈节点。")
+            warnings.append("原始改寫缺少最終回覆節點，已補充閉環反饋節點。")
         else:
             last_step = normalized_nodes[-1]
             _append_instruction_suffix(last_step, FINAL_RESPONSE_INSTRUCTION_SUFFIX)
@@ -449,7 +449,7 @@ class SkillDistiller:
                 "source_node_id": nodes[index]["node_id"],
                 "next_node_id": nodes[index + 1]["node_id"],
                 "priority": index,
-                "label": "默认推进",
+                "label": "默認推進",
             }
             for index in range(len(nodes) - 1)
         ]
@@ -467,8 +467,8 @@ class SkillDistiller:
                 type="decision",
                 name="理解原始流程",
                 instruction=(
-                    "根据原始流程文档理解用户目标、缺失信息和下一步处理方式；"
-                    "不要基于固定话术推进，信息不足时追问，涉及外部事实或外部副作用时转人工或等待人工补充工具配置；"
+                    "根據原始流程文檔理解用戶目標、缺失信息和下一步處理方式；"
+                    "不要基於固定話術推進，信息不足時追問，涉及外部事實或外部副作用時轉人工或等待人工補充工具配置；"
                     f"{ADAPTIVE_STEP_INSTRUCTION_SUFFIX}"
                 ),
                 expected_user_info=[],
@@ -477,9 +477,9 @@ class SkillDistiller:
             SkillGraphNode(
                 node_id="reply_result",
                 type="response",
-                name="反馈结果",
+                name="反饋結果",
                 instruction=(
-                    "根据已收集的信息和工具结果给用户明确回复；信息不足时继续追问，不要编造事实；"
+                    "根據已收集的信息和工具結果給用戶明確回覆；信息不足時繼續追問，不要編造事實；"
                     f"{ADAPTIVE_STEP_INSTRUCTION_SUFFIX}"
                 ),
                 expected_user_info=[],
@@ -491,25 +491,25 @@ class SkillDistiller:
             name=title,
             version="1.0.0",
             business_domain=request.business_domain or "general",
-            description=raw[:120] or "根据原始技能文本生成的流程。",
+            description=raw[:120] or "根據原始技能文本生成的流程。",
             trigger_intents=[title],
             user_utterance_examples=[title],
             goal=_infer_goals(raw),
             required_info=required_info,
             slot_filling_policy=_default_slot_filling_policy(required_info),
             response_rules=[
-                "信息不足时先追问，不要编造事实。",
+                "信息不足時先追問，不要編造事實。",
                 ADAPTIVE_FLOW_RESPONSE_RULE,
             ],
             nodes=nodes,
-            edges=[{"source_node_id": "understand_request", "next_node_id": "reply_result", "priority": 0, "label": "默认推进"}],
+            edges=[{"source_node_id": "understand_request", "next_node_id": "reply_result", "priority": 0, "label": "默認推進"}],
             start_node_id="understand_request",
             terminal_node_ids=["reply_result"],
             interruption_policy={
-                "related_question": "回答相关问题后回到当前流程。",
-                "unrelated_business": "可切换新流程并保留当前进度。",
-                "chitchat": "简短回应后引导用户继续当前流程。",
-                "user_wants_human": "直接转人工。",
+                "related_question": "回答相關問題後回到當前流程。",
+                "unrelated_business": "可切換新流程並保留當前進度。",
+                "chitchat": "簡短回應後引導用戶繼續當前流程。",
+                "user_wants_human": "直接轉人工。",
             },
         )
 
@@ -561,7 +561,7 @@ def _append_tool_confirmation_instruction(step: dict[str, Any], confirmation_fie
     if not confirmation_fields:
         return
     field_text = "、".join(f"{field}=true" for field in confirmation_fields)
-    _append_instruction_suffix(step, f"调用工具前必须确认字段已满足：{field_text}。")
+    _append_instruction_suffix(step, f"調用工具前必須確認字段已滿足：{field_text}。")
 
 
 def _last_step_allows_answer(steps: list[dict[str, Any]]) -> bool:
@@ -604,7 +604,7 @@ def _ensure_linear_reachability(nodes: list[dict[str, Any]], edges: list[dict[st
                 "source_node_id": source,
                 "next_node_id": target,
                 "priority": index,
-                "label": "默认推进",
+                "label": "默認推進",
             }
         )
         existing.add(pair)
@@ -628,10 +628,10 @@ def _compact_warnings(warnings: list[str]) -> list[str]:
 def _compact_warning(warning: str) -> str:
     text = warning.strip()
     replacements = (
-        ("原始改写未包含工具步骤，已按可用工具补充闭环执行步骤。", "已补充工具执行步骤。"),
-        ("原始改写缺少执行前确认步骤，已补充确认步骤。", "已补充执行前确认步骤。"),
-        ("原始改写缺少最终回复步骤，已补充闭环反馈步骤。", "已补充最终回复步骤。"),
-        ("模型未生成步骤，已使用规则生成默认步骤。", "已生成默认步骤。"),
+        ("原始改寫未包含工具步驟，已按可用工具補充閉環執行步驟。", "已補充工具執行步驟。"),
+        ("原始改寫缺少執行前確認步驟，已補充確認步驟。", "已補充執行前確認步驟。"),
+        ("原始改寫缺少最終回覆步驟，已補充閉環反饋步驟。", "已補充最終回覆步驟。"),
+        ("模型未生成步驟，已使用規則生成默認步驟。", "已生成默認步驟。"),
     )
     for source, target in replacements:
         if text == source:
@@ -647,15 +647,15 @@ def _distill_model_input(
     available_tools: Any,
     total_tool_count: int,
 ) -> str:
-    sections = [f"技能标题：{title.strip() or '新SOP'}"]
+    sections = [f"技能標題：{title.strip() or '新SOP'}"]
     if business_domain and business_domain.strip():
-        sections.append(f"业务领域：{business_domain.strip()}")
+        sections.append(f"業務領域：{business_domain.strip()}")
     sections.extend(("原始流程：", raw_content.strip()))
 
     tools = [item for item in available_tools if isinstance(item, dict)] if isinstance(available_tools, list) else []
-    sections.append("可用工具（只选择与原始流程语义匹配的工具）：")
+    sections.append("可用工具（只選擇與原始流程語義匹配的工具）：")
     if not tools:
-        sections.append("无可用工具。流程需要外部接口时，请指出缺少的接口，不要臆造工具。")
+        sections.append("無可用工具。流程需要外部接口時，請指出缺少的接口，不要臆造工具。")
         return "\n".join(sections)
 
     for tool in tools:
@@ -671,13 +671,13 @@ def _distill_model_input(
         sections.append(line)
         parameter_text = _model_tool_parameter_text(tool.get("input_schema"))
         if parameter_text:
-            sections.append(f"  输入参数：{parameter_text}")
+            sections.append(f"  輸入參數：{parameter_text}")
         if tool.get("requires_confirmation") is True:
-            sections.append("  调用前需要用户确认。")
+            sections.append("  調用前需要用戶確認。")
 
     omitted = max(0, total_tool_count - len(tools))
     if omitted:
-        sections.append(f"另有 {omitted} 个与当前流程相关性较低的工具未展开；不得猜测或调用未列出的工具。")
+        sections.append(f"另有 {omitted} 個與當前流程相關性較低的工具未展開；不得猜測或調用未列出的工具。")
     return "\n".join(sections)
 
 
@@ -773,7 +773,7 @@ def _model_tool_parameter_text(value: Any) -> str:
     for name, raw_property in properties.items():
         property_data = raw_property if isinstance(raw_property, dict) else {}
         kind = str(property_data.get("type") or "any")
-        marker = "必填" if name in required else "可选"
+        marker = "必填" if name in required else "可選"
         description = str(property_data.get("description") or "").strip()
         part = f"{name} ({kind}, {marker})"
         if description:
@@ -833,7 +833,7 @@ def _extract_json(text: str) -> str:
 def _raw_json_from_text(text: str) -> dict[str, Any]:
     raw = json.loads(_extract_json(text))
     if not isinstance(raw, dict):
-        raise ValueError("模型输出不是 JSON object")
+        raise ValueError("模型輸出不是 JSON object")
     return raw
 
 
@@ -902,7 +902,7 @@ def _default_slot_filling_policy(expected_infos: list[str]) -> dict[str, Any]:
         "multi_slot_per_turn": True,
         "extract_scope": "all_skill_expected_user_info",
         "skip_satisfied_steps": True,
-        "description": "每轮用户消息都应同时抽取所有可识别的信息；如果用户一次提供多个字段，必须一次性写入 slot_updates，不要按步骤重复追问。",
+        "description": "每輪用戶消息都應同時抽取所有可識別的信息；如果用戶一次提供多個字段，必須一次性寫入 slot_updates，不要按步驟重複追問。",
         "target_info": expected_infos,
     }
 
@@ -996,7 +996,7 @@ def _tool_resolution_warnings(suggestions: list[ToolSuggestion]) -> list[str]:
             continue
         label = suggestion.display_name or suggestion.name
         reason = suggestion.missing_reason or "缺少完整接口信息"
-        warnings.append(f"模型提到了可能的工具「{label}」，但当前不能新增：{reason}。")
+        warnings.append(f"模型提到了可能的工具「{label}」，但當前不能新增：{reason}。")
     return warnings
 
 
@@ -1009,7 +1009,7 @@ def _tool_mention_to_resolution(item: dict[str, Any], request: Any) -> ToolSugge
     input_schema = item.get("input_schema")
     output_schema = item.get("output_schema")
     source_excerpt = _string(item.get("source_excerpt"), "") or None
-    reason = _string(item.get("reason"), "") or _string(item.get("purpose"), "") or "模型从技能文档中抽取到该工具提及。"
+    reason = _string(item.get("reason"), "") or _string(item.get("purpose"), "") or "模型從技能文檔中抽取到該工具提及。"
 
     matched_tool = _match_available_tool(name, url, request.available_tools)
     if matched_tool is not None:
@@ -1025,7 +1025,7 @@ def _tool_mention_to_resolution(item: dict[str, Any], request: Any) -> ToolSugge
             sample_arguments=item.get("sample_arguments") if isinstance(item.get("sample_arguments"), dict) else {},
             source_excerpt=source_excerpt,
             probe_result=item.get("probe_result") if isinstance(item.get("probe_result"), dict) else None,
-            reason="已匹配到现有工具配置。",
+            reason="已匹配到現有工具配置。",
             resolution_status="existing",
             matched_tool_id=_string(matched_tool.get("id"), "") or None,
             matched_tool_name=matched_name,
@@ -1072,13 +1072,13 @@ def _tool_mention_to_resolution(item: dict[str, Any], request: Any) -> ToolSugge
 def _tool_mention_missing_reasons(url: str, input_schema: Any, output_schema: Any, request: Any) -> list[str]:
     reasons: list[str] = []
     if not url:
-        reasons.append("缺少可访问接口地址或路径")
+        reasons.append("缺少可訪問接口地址或路徑")
     elif not _tool_suggestion_url_in_source(url, request):
-        reasons.append("接口地址未在技能原文或改写上下文中出现")
+        reasons.append("接口地址未在技能原文或改寫上下文中出現")
     if not isinstance(input_schema, dict) or not input_schema:
-        reasons.append("缺少输入参数结构")
+        reasons.append("缺少輸入參數結構")
     if not isinstance(output_schema, dict) or not output_schema:
-        reasons.append("缺少返回结果结构")
+        reasons.append("缺少返回結果結構")
     return reasons
 
 
@@ -1157,7 +1157,7 @@ def _tool_method(value: Any, fallback: str = "POST") -> str:
 
 def _infer_goals(raw: str) -> list[str]:
     clauses = [clause.strip() for clause in _split_clauses(raw) if clause.strip()]
-    return clauses or ["理解用户诉求", "收集必要信息", "完成流程处理", "向用户反馈结果"]
+    return clauses or ["理解用戶訴求", "收集必要信息", "完成流程處理", "向用戶反饋結果"]
 
 
 def _split_clauses(text: str) -> list[str]:

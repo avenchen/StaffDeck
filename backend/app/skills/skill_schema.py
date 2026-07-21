@@ -75,7 +75,7 @@ class ToolSuggestion(BaseModel):
     name: str
     display_name: Optional[str] = None
     description: Optional[str] = None
-    bucket: str = "技能自发现工具"
+    bucket: str = "技能自發現工具"
     method: Literal["GET", "POST", "PUT", "PATCH", "DELETE"] = "POST"
     url: str = ""
     input_schema: dict[str, Any] = Field(default_factory=dict)

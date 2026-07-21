@@ -11,7 +11,7 @@ def execute_builtin_mcp(config: dict[str, Any], arguments: dict[str, Any]) -> An
     server = str(config.get("server") or config.get("server_id") or "").strip()
     tool = str(config.get("tool") or config.get("tool_name") or "").strip()
     if server != "builtin.demo":
-        raise BuiltinMCPError(f"不支持的内置 MCP server：{server or '<empty>'}")
+        raise BuiltinMCPError(f"不支持的內置 MCP server：{server or '<empty>'}")
     if tool == "echo":
         text = str(arguments.get("text") or "")
         return {"text": text, "length": len(text)}
@@ -20,18 +20,18 @@ def execute_builtin_mcp(config: dict[str, Any], arguments: dict[str, Any]) -> An
         if not isinstance(numbers, list) or not all(
             isinstance(item, (int, float)) and not isinstance(item, bool) for item in numbers
         ):
-            raise BuiltinMCPError("sum 工具需要 numbers 数字数组。")
+            raise BuiltinMCPError("sum 工具需要 numbers 數字數組。")
         total = sum(numbers)
         return {"numbers": numbers, "total": total, "count": len(numbers)}
     if tool == "product_lookup":
         product_id = str(arguments.get("product_id") or arguments.get("product_name") or "").strip().lower()
         catalog = {
-            "a1": {"product_id": "A1", "display_name": "A1 标准商品", "price": 129.0, "currency": "CNY"},
-            "a3": {"product_id": "A3", "display_name": "A3 高阶商品", "price": 239.0, "currency": "CNY"},
+            "a1": {"product_id": "A1", "display_name": "A1 標準商品", "price": 129.0, "currency": "CNY"},
+            "a3": {"product_id": "A3", "display_name": "A3 高階商品", "price": 239.0, "currency": "CNY"},
         }
         item = catalog.get(product_id)
         return {"found": bool(item), **(item or {"query": product_id})}
-    raise BuiltinMCPError(f"不支持的内置 MCP tool：{tool or '<empty>'}")
+    raise BuiltinMCPError(f"不支持的內置 MCP tool：{tool or '<empty>'}")
 
 
 def builtin_mcp_tool_names() -> list[str]:
@@ -41,10 +41,10 @@ def builtin_mcp_tool_names() -> list[str]:
 _BUILTIN_TOOL_DEFINITIONS: list[dict[str, Any]] = [
     {
         "name": "echo",
-        "description": "回显输入文本并返回其长度。",
+        "description": "回顯輸入文本並返回其長度。",
         "inputSchema": {
             "type": "object",
-            "properties": {"text": {"type": "string", "description": "要回显的文本"}},
+            "properties": {"text": {"type": "string", "description": "要回顯的文本"}},
             "required": ["text"],
         },
         "outputSchema": {
@@ -54,7 +54,7 @@ _BUILTIN_TOOL_DEFINITIONS: list[dict[str, Any]] = [
     },
     {
         "name": "sum",
-        "description": "对一组数字求和。",
+        "description": "對一組數字求和。",
         "inputSchema": {
             "type": "object",
             "properties": {"numbers": {"type": "array", "items": {"type": "number"}}},
@@ -71,7 +71,7 @@ _BUILTIN_TOOL_DEFINITIONS: list[dict[str, Any]] = [
     },
     {
         "name": "product_lookup",
-        "description": "查询 demo 商品价格数据。",
+        "description": "查詢 demo 商品價格數據。",
         "inputSchema": {
             "type": "object",
             "properties": {"product_id": {"type": "string", "description": "商品 ID，例如 A1 或 A3"}},
@@ -94,5 +94,5 @@ _BUILTIN_TOOL_DEFINITIONS: list[dict[str, Any]] = [
 def builtin_mcp_tool_definitions(config: dict[str, Any]) -> list[dict[str, Any]]:
     server = str(config.get("server") or config.get("server_id") or "builtin.demo").strip()
     if server != "builtin.demo":
-        raise BuiltinMCPError(f"不支持的内置 MCP server：{server or '<empty>'}")
+        raise BuiltinMCPError(f"不支持的內置 MCP server：{server or '<empty>'}")
     return [dict(item) for item in _BUILTIN_TOOL_DEFINITIONS]
