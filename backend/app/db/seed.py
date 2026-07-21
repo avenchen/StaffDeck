@@ -960,9 +960,9 @@ def seed_demo_data(session: Session) -> None:
         session.add(
             ModelConfig(
                 tenant_id="tenant_demo",
-                name="Demo Qwen Compatible",
-                provider="openai_compatible",
-                base_url=settings.demo_model_base_url,
+                name=settings.demo_model_name or "Default Model",
+                provider=settings.demo_model_provider,
+                base_url=settings.demo_model_base_url or None,
                 api_key_encrypted=encrypt_secret(settings.demo_model_api_key),
                 model=settings.demo_model_name,
                 temperature=0.2,
