@@ -38,7 +38,7 @@
 | 2.2 | ⬜ 抽出 `TurnContextBuilder`、`ReflectionPolicy`、`TurnFinalizer`；建立 `TurnState` 型別 | 後端 | 大 |
 | 2.3 | ⬜ 收斂 `handle_turn_stream` 為 `TurnPipeline`，阻塞/SSE 共用管線（`TurnEmitter` 介面） | 後端 | 大 |
 | 2.4 | ✅ `ToolsPage.tsx`（2,111 行、6 路由）拆為 `features/tools/`（types/styles/lib/components/pages + index barrel），純搬移零行為變更 | 前端 | 中 |
-| 2.5 | ⬜ `GeneralSkillsPage.tsx`（2,482 行）拆解 | 前端 | 中 |
+| 2.5 | ✅ `GeneralSkillsPage.tsx`（2,454 行）拆為 `features/general-skills/`（types/styles/lib/components/pages + barrel），純搬移零行為變更 | 前端 | 中 |
 | 2.6 | ⬜ `KnowledgePage.tsx`（3,305 行）拆解 | 前端 | 大 |
 | 2.7 | ⬜ `useChatSession.ts`（3,363 行）拆為 messages/stream/queue/attachments 四個 hook | 前端 | 大 |
 | 2.8 | ⬜ `DistillPage.tsx`（6,347 行）拆解（最後處理） | 前端 | 大 |
