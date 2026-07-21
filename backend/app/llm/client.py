@@ -15,6 +15,7 @@ from openai import OpenAI
 from app.config import get_settings
 from app.db.models import ModelConfig
 from app.llm.output_policy import operation_output_tokens
+from app.llm.providers import resolve_base_url
 from app.llm.stage_protocol import (
     STAGE_PROTOCOL_KEY,
     TURN_STAGE_MESSAGES_KEY,
@@ -48,7 +49,9 @@ class LLMClient:
         self.timeout_seconds = (
             get_settings().model_api_timeout_seconds or DEFAULT_MODEL_API_TIMEOUT_SECONDS
         )
-        self.base_url = str(model_config.base_url or "")
+        self.base_url = resolve_base_url(
+            getattr(model_config, "provider", ""), model_config.base_url
+        )
         self.client = OpenAI(
             api_key=api_key,
             base_url=self.base_url,

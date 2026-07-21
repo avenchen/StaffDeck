@@ -421,10 +421,23 @@ export default function ModelsPage({
                 <Input value={form.name} placeholder="例如 GPT-4o" onChange={(event) => updateForm('name', event.target.value)} />
               </LabeledField>
               <LabeledField label="Provider">
-                <Input value={form.provider} placeholder="例如 openai_compatible" onChange={(event) => updateForm('provider', event.target.value)} />
+                <Input
+                  value={form.provider}
+                  placeholder="例如 openai_compatible / gemini"
+                  list="model-provider-options"
+                  onChange={(event) => updateForm('provider', event.target.value)}
+                />
+                <datalist id="model-provider-options">
+                  <option value="openai_compatible" />
+                  <option value="gemini" />
+                  <option value="openai" />
+                </datalist>
               </LabeledField>
               <LabeledField label="Base URL">
                 <Input value={form.base_url} placeholder="https://api.openai.com/v1" onChange={(event) => updateForm('base_url', event.target.value)} />
+                <span className="text-[11px] text-[#858b9c]">
+                  Gemini 可留空，将自动使用 Google OpenAI 兼容端点；模型名称如 gemini-2.5-flash。
+                </span>
               </LabeledField>
               <LabeledField label="Model">
                 <Input value={form.model} placeholder="例如 gpt-4o" onChange={(event) => updateForm('model', event.target.value)} />
