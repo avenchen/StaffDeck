@@ -1,3 +1,4 @@
+import { useAuth } from '@/app/AuthProvider';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Ban, CircleCheck, Copy, Eye, RotateCcw, Upload, Users } from 'lucide-react';
@@ -92,13 +93,12 @@ type NumericSkillMetric =
   | 'recent_positive_rate'
   | 'recent_negative_rate';
 
-export default function SkillsPage({
-  currentUser,
-  onLogout,
-}: {
+export default function SkillsPage({}: {
   currentUser?: EnterpriseAuthUser;
   onLogout?: () => void;
 } = {}) {
+  const { user: currentUser, logout: onLogout } = useAuth();
+
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [rows, setRows] = useState<SkillRead[]>([]);

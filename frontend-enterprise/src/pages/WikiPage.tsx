@@ -1,3 +1,4 @@
+import { useAuth } from '@/app/AuthProvider';
 import { useMemo, useRef, useState } from 'react';
 
 import AppHeader from '@/components/AppHeader';
@@ -51,7 +52,9 @@ function AnswerText({ text }: { text: string }) {
   );
 }
 
-export default function WikiPage({ currentUser, onLogout }: WikiPageProps = {}) {
+export default function WikiPage({}: WikiPageProps = {}) {
+  const { user: currentUser, logout: onLogout } = useAuth();
+
   const agentId = currentAgentId();
   const [selectedKbId, setSelectedKbId] = useState<string>('');
   const [activeBucket, setActiveBucket] = useState<WikiBucketNode | null>(null);

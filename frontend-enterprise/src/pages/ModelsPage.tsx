@@ -1,3 +1,4 @@
+import { useAuth } from '@/app/AuthProvider';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Check, FlaskConical } from 'lucide-react';
 
@@ -63,13 +64,12 @@ const BLANK_MODEL_FORM: ModelForm = {
 };
 const MODEL_CONFIGS_UPDATED_EVENT = 'ultrarag-enterprise-model-configs-updated';
 
-export default function ModelsPage({
-  currentUser,
-  onLogout,
-}: {
+export default function ModelsPage({}: {
   currentUser?: EnterpriseAuthUser;
   onLogout?: () => void;
 } = {}) {
+  const { user: currentUser, logout: onLogout } = useAuth();
+
   const [rows, setRows] = useState<ModelConfigRead[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');

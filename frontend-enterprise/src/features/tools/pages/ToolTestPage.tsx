@@ -1,3 +1,4 @@
+import { useAuth } from '@/app/AuthProvider';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { toolsApi } from '@/api/endpoints/tools';
@@ -18,7 +19,9 @@ import { RETURN_BUTTON_CLASS, SUBSECTION_TITLE_CLASS } from '../styles';
 import type { ToolPageProps } from '../types';
 import type { ToolRead } from '@/types';
 
-export function ToolTestPage({ currentUser, onLogout }: ToolPageProps = {}) {
+export function ToolTestPage({}: ToolPageProps = {}) {
+  const { user: currentUser, logout: onLogout } = useAuth();
+
   const navigate = useNavigate();
   const { toolId } = useParams();
 

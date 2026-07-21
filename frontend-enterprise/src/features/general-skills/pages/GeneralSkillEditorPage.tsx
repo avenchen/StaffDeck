@@ -1,3 +1,4 @@
+import { useAuth } from '@/app/AuthProvider';
 import {
   CheckCircleOutlined,
   CloseCircleOutlined,
@@ -92,7 +93,9 @@ import { RunCodePanel } from '../components/RunCodePanel';
 import { TraceDisclosureLabel } from '../components/TraceDisclosureLabel';
 import { ClawHubDialog } from '../components/ClawHubDialog';
 
-function GeneralSkillEditorPage({ mode, currentUser, onLogout }: { mode: 'new' | 'edit' } & GeneralSkillPageProps) {
+function GeneralSkillEditorPage({ mode }: { mode: 'new' | 'edit' } & GeneralSkillPageProps) {
+  const { user: currentUser, logout: onLogout } = useAuth();
+
   const navigate = useNavigate();
   const { slug: routeSlug } = useParams();
   const [rows, setRows] = useState<GeneralSkillRead[]>([]);

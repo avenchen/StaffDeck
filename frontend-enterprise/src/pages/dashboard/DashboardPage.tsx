@@ -1,3 +1,4 @@
+import { useAuth } from '@/app/AuthProvider';
 import { useEffect, useState } from 'react';
 import type { ComponentType, ReactNode, SVGProps } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -48,17 +49,14 @@ import type {
 
 const ENTERPRISE_AGENT_STORAGE_KEY = 'ultrarag_enterprise_agent_scope';
 
-export default function DashboardPage({
-  currentUser,
-  isAdmin = false,
-  profileTab = 'work',
-  onLogout,
-}: {
+export default function DashboardPage({ isAdmin = false, profileTab = 'work' }: {
   currentUser?: EnterpriseAuthUser;
   isAdmin?: boolean;
   profileTab?: ProfileTabKey;
   onLogout?: () => void;
 }) {
+  const { user: currentUser, logout: onLogout } = useAuth();
+
   const navigate = useNavigate();
   const [agents, setAgents] = useState<AgentProfileRead[]>([]);
   const [skills, setSkills] = useState<SkillRead[]>([]);

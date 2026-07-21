@@ -1,3 +1,4 @@
+import { useAuth } from '@/app/AuthProvider';
 import { UnderlineTabs, type UnderlineTabItem } from '@/components/ui';
 import { notify } from '@/components/ui/app-toast';
 import { cn } from '@/lib/utils';
@@ -28,17 +29,14 @@ import type { AgentProfileRead } from '../types';
 
 const ENTERPRISE_AGENT_STORAGE_KEY = 'ultrarag_enterprise_agent_scope';
 
-export default function AgentsPage({
-  currentUser,
-  isAdmin = false,
-  onCreateAgent,
-  onLogout,
-}: {
+export default function AgentsPage({ isAdmin = false, onCreateAgent }: {
   currentUser?: EnterpriseAuthUser;
   isAdmin?: boolean;
   onCreateAgent?: () => void;
   onLogout?: () => void;
 }) {
+  const { user: currentUser, logout: onLogout } = useAuth();
+
   const [agents, setAgents] = useState<AgentProfileRead[]>([]);
   const [loading, setLoading] = useState(false);
   const [avatarAgent, setAvatarAgent] = useState<AgentProfileRead | null>(null);

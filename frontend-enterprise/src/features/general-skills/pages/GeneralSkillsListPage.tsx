@@ -1,3 +1,4 @@
+import { useAuth } from '@/app/AuthProvider';
 import {
   CheckCircleOutlined,
   CloseCircleOutlined,
@@ -92,7 +93,9 @@ import { RunCodePanel } from '../components/RunCodePanel';
 import { TraceDisclosureLabel } from '../components/TraceDisclosureLabel';
 import { ClawHubDialog } from '../components/ClawHubDialog';
 
-export default function GeneralSkillsListPage({ embedded = false, currentUser, onLogout }: { embedded?: boolean } & GeneralSkillPageProps) {
+export default function GeneralSkillsListPage({ embedded = false }: { embedded?: boolean } & GeneralSkillPageProps) {
+  const { user: currentUser, logout: onLogout } = useAuth();
+
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [rows, setRows] = useState<GeneralSkillRead[]>([]);

@@ -1,3 +1,4 @@
+import { useAuth } from '@/app/AuthProvider';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
@@ -25,7 +26,9 @@ export function ToolEditPage(props: ToolPageProps = {}) {
   return <ToolEditorPage mode="edit" {...props} />;
 }
 
-function ToolEditorPage({ mode, currentUser, onLogout }: { mode: 'new' | 'edit' } & ToolPageProps) {
+function ToolEditorPage({ mode }: { mode: 'new' | 'edit' } & ToolPageProps) {
+  const { user: currentUser, logout: onLogout } = useAuth();
+
   const [values, setValues] = useState<ToolFormValues>({ ...TOOL_FORM_INITIAL_VALUES });
   const [tool, setTool] = useState<ToolRead | null>(null);
   const [loading, setLoading] = useState(false);

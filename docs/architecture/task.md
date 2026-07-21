@@ -27,7 +27,7 @@
 | 1.1 | ⬜ `api/chat.py` 業務邏輯下沉（標題摘要、排程草稿偵測、接管恢復 → service） | 後端 | 中 |
 | 1.2 | ⬜ `api/agents.py`、`api/general_skills.py`、`api/skills.py` 下沉 service，單檔 < 400 行 | 後端 | 中 |
 | 1.3 | 🔄 建立 `src/api/endpoints/<domain>.ts`，逐域收編 167 處內嵌 URL（✅ tools/agents ・ ⬜ knowledge → skills → chat） | 前端 | 大 |
-| 1.4 | ⬜ `app/AuthProvider.tsx` 上線，移除 `currentUser`/`onLogout` prop drilling | 前端 | 小 |
+| 1.4 | ✅ `app/AuthProvider.tsx` + `useAuth()` 上線；18 個頁面改用 useAuth 取得 user/logout，移除 Shell 對頁面的 currentUser/onLogout prop drilling（AppHeader 因登入頁在 provider 外，維持 props） | 前端 | 小 |
 | 1.5 | ⬜ 路由表抽出 `app/routes.tsx` + `<ProtectedRoute>`，`App.tsx` 縮為組裝根 | 前端 | 中 |
 
 ### Phase 2 — 上帝物件拆解（核心，需測試護航）

@@ -1,3 +1,4 @@
+import { useAuth } from '@/app/AuthProvider';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { notify } from '@/components/ui/app-toast';
@@ -54,11 +55,9 @@ const CARD_TITLE_CLASS = 'mb-[16px] text-[14px] font-medium text-[#18181a]';
 const FIELD_LABEL_CLASS = 'text-[13px] font-medium text-[#18181a]';
 const FIELD_ERROR_CLASS = 'text-[12px] leading-none text-[#d20b0b]';
 
-function ScheduledTaskEditorPage({
-  mode,
-  currentUser,
-  onLogout,
-}: { mode: 'new' | 'edit' } & ScheduledTaskPageProps) {
+function ScheduledTaskEditorPage({ mode }: { mode: 'new' | 'edit' } & ScheduledTaskPageProps) {
+  const { user: currentUser, logout: onLogout } = useAuth();
+
   const [values, setValues] = useState<TaskFormValues>(INITIAL_VALUES);
   const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState(false);

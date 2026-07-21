@@ -1,3 +1,4 @@
+import { useAuth } from '@/app/AuthProvider';
 import {
   FileSearchOutlined,
   ProfileOutlined,
@@ -170,15 +171,13 @@ function resourceDrawerBadge(kind: PlatformKind, item: PlatformItem): string {
   return item.tags[0] || '';
 }
 
-export default function OpenPlatformPage({
-  currentUser,
-  isAdmin = false,
-  onLogout,
-}: {
+export default function OpenPlatformPage({ isAdmin = false }: {
   currentUser?: EnterpriseAuthUser;
   isAdmin?: boolean;
   onLogout?: () => void;
 }) {
+  const { user: currentUser, logout: onLogout } = useAuth();
+
   const navigate = useNavigate();
   const { kind } = useParams<{ kind?: PlatformKind }>();
   const selectedKind = kind && PLATFORM_BY_KIND.has(kind) ? kind : undefined;

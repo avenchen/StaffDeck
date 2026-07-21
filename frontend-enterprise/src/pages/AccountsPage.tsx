@@ -1,3 +1,4 @@
+import { useAuth } from '@/app/AuthProvider';
 import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { User } from 'lucide-react';
@@ -64,13 +65,12 @@ type AccountCreateDraft = {
 
 const ACCOUNT_PAGE_SIZE = 10;
 
-export default function AccountsPage({
-  currentUser,
-  onLogout,
-}: {
+export default function AccountsPage({}: {
   currentUser?: EnterpriseAuthUser;
   onLogout?: () => void;
 } = {}) {
+  const { user: currentUser, logout: onLogout } = useAuth();
+
   const [rows, setRows] = useState<EmployeeAccount[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');

@@ -1,3 +1,4 @@
+import { useAuth } from '@/app/AuthProvider';
 import {
   AuditOutlined,
   CheckOutlined,
@@ -93,7 +94,9 @@ import type {
 import { DEFAULT_INGEST_STEPS, IngestStepView, KNOWLEDGE_PAGE_SIZE, KNOWLEDGE_SEARCH_MODEL_STORAGE_KEY, KnowledgeBaseVersionRead, KnowledgePageProps, OkfLintIssue, TERMINAL_KNOWLEDGE_JOB_STATUSES } from '../types';
 import { CONCEPT_TYPE_LABELS, DiscoveryColumn, EmptyState, FileDropzone, KCard, KDialog, KDialogCancelButton, KDialogPrimaryButton, KTAG_TONE_CLASS, KTag, KnowledgeBucketLinks, KnowledgeContentView, KnowledgeDetailView, KnowledgeJobCard, KnowledgeOverviewItem, KnowledgeRelationChip, KnowledgeSearchDebug, MarkdownPreview, OKF_PREVIEW_LIMIT, STRUCTURE_PREVIEW_LIMIT, SmoothProgress, WikiConceptViewer, WikiIndexGroup, WikiViewerTitle, bucketContentMarkdown, bucketRepresentativeChunks, bucketSourceSections, bucketStatusTag, buildWikiIndexGroups, conceptPath, conceptSummary, conceptTypeColor, conceptTypeLabel, documentSourceMarkdown, effectiveKnowledgeAgentId, fileToBase64, formatDateTime, ingestSteps, isEmptyDefaultKnowledgeBase, isRecord, knowledgeDetailTitle, knowledgeJobSortTime, normalizeMarkdownForDisplay, okfFrontmatterValue, previewEvidenceItems, previewRepresentativeChunkIds, recordLabel, resolveKnowledgeAgentScope, routePhaseLabel, sortWikiConcepts, stageLabelFallback, statusTag, stringFromMetadata, stripOkfFrontmatter, typeLabel, updateOkfFrontmatterValue, wikiIndexGroupDescription, wikiIndexGroupKey, wikiIndexGroupTitle, 目錄索引Overview } from '../parts';
 
-export default function KnowledgeManagePage({ currentUser, onLogout }: KnowledgePageProps = {}) {
+export default function KnowledgeManagePage({}: KnowledgePageProps = {}) {
+  const { user: currentUser, logout: onLogout } = useAuth();
+
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [documents, setDocuments] = useState<KnowledgeDocumentRead[]>([]);

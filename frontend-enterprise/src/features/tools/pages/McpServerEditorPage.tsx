@@ -1,3 +1,4 @@
+import { useAuth } from '@/app/AuthProvider';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
@@ -45,7 +46,9 @@ export function McpServerEditPage(props: ToolPageProps = {}) {
   return <McpServerEditorPage mode="edit" {...props} />;
 }
 
-function McpServerEditorPage({ mode, currentUser, onLogout }: { mode: 'new' | 'edit' } & ToolPageProps) {
+function McpServerEditorPage({ mode }: { mode: 'new' | 'edit' } & ToolPageProps) {
+  const { user: currentUser, logout: onLogout } = useAuth();
+
   const [values, setValues] = useState<McpFormValues>({ ...MCP_FORM_INITIAL_VALUES });
   const [server, setServer] = useState<MCPServerRead | null>(null);
   const [loading, setLoading] = useState(false);

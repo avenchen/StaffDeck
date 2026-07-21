@@ -1,3 +1,4 @@
+import { useAuth } from '@/app/AuthProvider';
 import { UnderlineTabs, type UnderlineTabItem } from '@/components/ui';
 import { notify } from '@/components/ui/app-toast';
 
@@ -28,17 +29,14 @@ const ENTERPRISE_AGENT_STORAGE_KEY = 'ultrarag_enterprise_agent_scope';
 
 type GalleryScope = 'all' | 'mine' | 'gallery';
 
-export default function EmployeeGalleryPage({
-  currentUser,
-  isAdmin = false,
-  onStartChat,
-  onLogout,
-}: {
+export default function EmployeeGalleryPage({ isAdmin = false, onStartChat }: {
   currentUser?: EnterpriseAuthUser;
   isAdmin?: boolean;
   onStartChat?: (agent: AgentProfileRead) => void | Promise<void>;
   onLogout?: () => void;
 }) {
+  const { user: currentUser, logout: onLogout } = useAuth();
+
   const [agents, setAgents] = useState<AgentProfileRead[]>([]);
   const [loading, setLoading] = useState(false);
   const [avatarAgent, setAvatarAgent] = useState<AgentProfileRead | null>(null);

@@ -1,3 +1,4 @@
+import { useAuth } from '@/app/AuthProvider';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { FlaskConical } from 'lucide-react';
@@ -63,7 +64,9 @@ import { buildBucketStats, serverEndpoint, transportLabel } from '../lib/toolPay
 import { RETURN_BUTTON_CLASS } from '../styles';
 import { TOOL_PAGE_SIZE, type ToolPageProps } from '../types';
 
-export default function ToolsListPage({ currentUser, onLogout }: ToolPageProps = {}) {
+export default function ToolsListPage({}: ToolPageProps = {}) {
+  const { user: currentUser, logout: onLogout } = useAuth();
+
   const [rows, setRows] = useState<ToolRead[]>([]);
   const [agentId, setAgentId] = useState(() => window.localStorage.getItem(ENTERPRISE_AGENT_STORAGE_KEY) || '');
   const [isOverallAgent, setIsOverallAgent] = useState(true);

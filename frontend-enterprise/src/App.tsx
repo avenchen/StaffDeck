@@ -476,8 +476,6 @@ function Shell({
             <DistillPage
               active={isDistillRoute}
               searchParamsOverride={distillSearchParams}
-              currentUser={auth.user}
-              onLogout={onLogout}
             />
           </div>
           {!isDistillRoute && showEmployeeEmptyState && (
@@ -497,9 +495,7 @@ function Shell({
                 path="/enterprise/platform"
                 element={
                   <OpenPlatformPage
-                    currentUser={auth.user}
                     isAdmin={isAdmin}
-                    onLogout={onLogout}
                   />
                 }
               />
@@ -507,9 +503,7 @@ function Shell({
                 path="/enterprise/platform/:kind"
                 element={
                   <OpenPlatformPage
-                    currentUser={auth.user}
                     isAdmin={isAdmin}
-                    onLogout={onLogout}
                   />
                 }
               />
@@ -517,9 +511,7 @@ function Shell({
                 path="/enterprise/dashboard"
                 element={
                   <DashboardPage
-                    currentUser={auth.user}
                     isAdmin={isAdmin}
-                    onLogout={onLogout}
                   />
                 }
               />
@@ -527,10 +519,8 @@ function Shell({
                 path="/enterprise/agents"
                 element={
                   <AgentsPage
-                    currentUser={auth.user}
                     isAdmin={isAdmin}
                     onCreateAgent={openCreateAgentModal}
-                    onLogout={onLogout}
                   />
                 }
               />
@@ -538,10 +528,8 @@ function Shell({
                 path="/enterprise/memories"
                 element={
                   <DashboardPage
-                    currentUser={auth.user}
                     isAdmin={isAdmin}
                     profileTab="memories"
-                    onLogout={onLogout}
                   />
                 }
               />
@@ -549,8 +537,6 @@ function Shell({
                 path="/enterprise/knowledge"
                 element={
                   <KnowledgeManagePage
-                    currentUser={auth.user}
-                    onLogout={onLogout}
                   />
                 }
               />
@@ -558,8 +544,6 @@ function Shell({
                 path="/enterprise/knowledge/new"
                 element={
                   <KnowledgeAddPage
-                    currentUser={auth.user}
-                    onLogout={onLogout}
                   />
                 }
               />
@@ -567,8 +551,6 @@ function Shell({
                 path="/enterprise/wiki"
                 element={
                   <WikiPage
-                    currentUser={auth.user}
-                    onLogout={onLogout}
                   />
                 }
               />
@@ -576,10 +558,8 @@ function Shell({
                 path="/enterprise/feedback"
                 element={
                   <DashboardPage
-                    currentUser={auth.user}
                     isAdmin={isAdmin}
                     profileTab="logs"
-                    onLogout={onLogout}
                   />
                 }
               />
@@ -587,10 +567,8 @@ function Shell({
                 path="/enterprise/scheduled-tasks"
                 element={
                   <DashboardPage
-                    currentUser={auth.user}
                     isAdmin={isAdmin}
                     profileTab="scheduled"
-                    onLogout={onLogout}
                   />
                 }
               />
@@ -598,8 +576,6 @@ function Shell({
                 path="/enterprise/scheduled-tasks/new"
                 element={
                   <ScheduledTaskNewPage
-                    currentUser={auth.user}
-                    onLogout={onLogout}
                   />
                 }
               />
@@ -607,23 +583,19 @@ function Shell({
                 path="/enterprise/scheduled-tasks/:taskId/edit"
                 element={
                   <ScheduledTaskEditPage
-                    currentUser={auth.user}
-                    onLogout={onLogout}
                   />
                 }
               />
               <Route
                 path="/enterprise/skills"
                 element={
-                  <SkillsPage currentUser={auth.user} onLogout={onLogout} />
+                  <SkillsPage />
                 }
               />
               <Route
                 path="/enterprise/general-skills"
                 element={
                   <GeneralSkillsPage
-                    currentUser={auth.user}
-                    onLogout={onLogout}
                   />
                 }
               />
@@ -631,8 +603,6 @@ function Shell({
                 path="/enterprise/general-skills/new"
                 element={
                   <GeneralSkillNewPage
-                    currentUser={auth.user}
-                    onLogout={onLogout}
                   />
                 }
               />
@@ -640,8 +610,6 @@ function Shell({
                 path="/enterprise/general-skills/:slug/edit"
                 element={
                   <GeneralSkillEditPage
-                    currentUser={auth.user}
-                    onLogout={onLogout}
                   />
                 }
               />
@@ -649,7 +617,7 @@ function Shell({
                 path="/enterprise/accounts"
                 element={
                   isAdmin ? (
-                    <AccountsPage currentUser={auth.user} onLogout={onLogout} />
+                    <AccountsPage />
                   ) : (
                     <Navigate to={EnterpriseRoute.Gallery} replace />
                   )
@@ -659,7 +627,7 @@ function Shell({
                 path="/enterprise/models"
                 element={
                   isAdmin ? (
-                    <ModelsPage currentUser={auth.user} onLogout={onLogout} />
+                    <ModelsPage />
                   ) : (
                     <Navigate to={EnterpriseRoute.Gallery} replace />
                   )
@@ -668,21 +636,19 @@ function Shell({
               <Route
                 path="/enterprise/tools"
                 element={
-                  <ToolsPage currentUser={auth.user} onLogout={onLogout} />
+                  <ToolsPage />
                 }
               />
               <Route
                 path="/enterprise/tools/new"
                 element={
-                  <ToolNewPage currentUser={auth.user} onLogout={onLogout} />
+                  <ToolNewPage />
                 }
               />
               <Route
                 path="/enterprise/tools/mcp/new"
                 element={
                   <McpServerNewPage
-                    currentUser={auth.user}
-                    onLogout={onLogout}
                   />
                 }
               />
@@ -690,21 +656,19 @@ function Shell({
                 path="/enterprise/tools/mcp/:serverId/edit"
                 element={
                   <McpServerEditPage
-                    currentUser={auth.user}
-                    onLogout={onLogout}
                   />
                 }
               />
               <Route
                 path="/enterprise/tools/:toolId/edit"
                 element={
-                  <ToolEditPage currentUser={auth.user} onLogout={onLogout} />
+                  <ToolEditPage />
                 }
               />
               <Route
                 path="/enterprise/tools/:toolId/test"
                 element={
-                  <ToolTestPage currentUser={auth.user} onLogout={onLogout} />
+                  <ToolTestPage />
                 }
               />
               <Route
