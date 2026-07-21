@@ -41,7 +41,7 @@
 | 2.5 | ✅ `GeneralSkillsPage.tsx`（2,454 行）拆為 `features/general-skills/`（types/styles/lib/components/pages + barrel），純搬移零行為變更 | 前端 | 中 |
 | 2.6 | ✅ `KnowledgePage.tsx`（3,305 行）拆為 `features/knowledge/`（types + parts + pages + barrel），純搬移零行為變更 | 前端 | 大 |
 | 2.7 | ⬜ `useChatSession.ts`（3,363 行）拆為 messages/stream/queue/attachments 四個 hook | 前端 | 大 |
-| 2.8 | ⬜ `DistillPage.tsx`（6,347 行）拆解（最後處理） | 前端 | 大 |
+| 2.8 | ✅ `DistillPage.tsx`（6,347 行，最大 god-file）拆為 `features/distill/`（types + parts + page + barrel），純搬移零行為變更 | 前端 | 大 |
 | 2.9 | ⬜ `AppSidebar.tsx`（1,226 行）、`App.tsx` 剩餘部分拆解 | 前端 | 中 |
 
 ### Phase 3 — 狀態與基礎設施硬化
