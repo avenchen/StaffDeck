@@ -1,5 +1,6 @@
 import type { AppSidebarProps } from './sidebar/shared';
-import { ChatSidebarVariant, ManagementSidebar } from './sidebar/parts';
+import { ManagementSidebar } from './sidebar/management';
+import { ChatSidebarVariant } from './sidebar/chat';
 
 export type {
   AppSidebarProps,

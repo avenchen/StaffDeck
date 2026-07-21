@@ -42,7 +42,7 @@
 | 2.6 | ✅ `KnowledgePage.tsx`（3,305 行）拆為 `features/knowledge/`（types + parts + pages + barrel），純搬移零行為變更 | 前端 | 大 |
 | 2.7 | ⬜ `useChatSession.ts`（3,363 行）拆為 messages/stream/queue/attachments 四個 hook | 前端 | 大 |
 | 2.8 | ✅ `DistillPage.tsx`（6,347 行，最大 god-file）拆為 `features/distill/`（types + parts + page + barrel），純搬移零行為變更 | 前端 | 大 |
-| 2.9 | 🔄 `AppSidebar.tsx`（1,227→16 行）拆為 `components/sidebar/`（shared 配置 + parts 子元件 + 薄入口），純搬移零行為變更；parts 可再細分 nav/management/chat（後續）｜ `App.tsx` 剩餘部分待處理 | 前端 | 中 |
+| 2.9 | ✅ `AppSidebar` 拆為 `components/sidebar/`（shared + management 570 + chat 622 + 17 行入口），parts 再細分 management/chat 完成；App.tsx 拆解另立追蹤 | 前端 | 中 |
 
 ### Phase 3 — 狀態與基礎設施硬化
 
