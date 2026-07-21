@@ -30,6 +30,7 @@ import {
   type AgentCreateFormState,
 } from "./app/appTypes";
 import { deriveSelectedRoute } from "./app/routeSelection";
+import { AuthProvider } from "./app/AuthProvider";
 import {
   employeeBlankMetadata,
   canAccessEmployeeAgent,
@@ -834,7 +835,9 @@ export default function App() {
             path="/*"
             element={
               auth && !authChecked ? null : auth ? (
-                <AuthedApp auth={auth} onLogout={logout} />
+                <AuthProvider user={auth.user} logout={logout}>
+                  <AuthedApp auth={auth} onLogout={logout} />
+                </AuthProvider>
               ) : (
                 <LoginPage onLogin={setAuth} />
               )
