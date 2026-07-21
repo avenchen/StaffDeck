@@ -1,4 +1,5 @@
 from __future__ import annotations
+from app.llm.prompt_cache import read_prompt
 
 import json
 import re
@@ -55,7 +56,7 @@ class SkillEditor:
     def rewrite(self, request: SkillRewriteRequest, model_config: ModelConfig) -> SkillRewriteResponse:
         client = LLMClient(skill_model_config(model_config))
         payload = self._payload(request)
-        raw = client.generate_json(PROMPT_PATH.read_text(encoding="utf-8"), payload)
+        raw = client.generate_json(read_prompt(PROMPT_PATH), payload)
         response = self._normalize_response(raw, request)
         return reflect_skill_response(
             client=client,
@@ -72,7 +73,7 @@ class SkillEditor:
         self, request: SkillRewriteRequest, model_config: ModelConfig
     ) -> Iterator[dict[str, object]]:
         chunks: list[str] = []
-        prompt = PROMPT_PATH.read_text(encoding="utf-8")
+        prompt = read_prompt(PROMPT_PATH)
         payload = self._payload(request)
         client = LLMClient(skill_model_config(model_config))
         try:

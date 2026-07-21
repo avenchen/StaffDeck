@@ -1,4 +1,5 @@
 from __future__ import annotations
+from app.llm.prompt_cache import read_prompt
 
 from app import paths
 from app.core.context_projection import (
@@ -159,25 +160,25 @@ def _step_instructions(
     awaiting_input: dict[str, object] | None,
     available_tools: list[dict[str, object]],
 ) -> str:
-    sections = [PROMPT_PATH.read_text(encoding="utf-8").strip()]
+    sections = [read_prompt(PROMPT_PATH).strip()]
     repair_reason = str((repair_context or {}).get("reason") or "")
     if repair_context and repair_reason not in {"tool_continuation", "knowledge_continuation"}:
-        sections.append(RULE_PATHS["repair"].read_text(encoding="utf-8").strip())
+        sections.append(read_prompt(RULE_PATHS["repair"]).strip())
     if repair_reason == "tool_continuation":
         sections.append(
-            RULE_PATHS["tool_continuation"].read_text(encoding="utf-8").strip()
+            read_prompt(RULE_PATHS["tool_continuation"]).strip()
         )
     if retrieved_knowledge or repair_reason == "knowledge_continuation":
-        sections.append(RULE_PATHS["knowledge"].read_text(encoding="utf-8").strip())
+        sections.append(read_prompt(RULE_PATHS["knowledge"]).strip())
     if awaiting_input:
-        sections.append(RULE_PATHS["awaiting_input"].read_text(encoding="utf-8").strip())
+        sections.append(read_prompt(RULE_PATHS["awaiting_input"]).strip())
     if available_tools:
-        sections.append(RULE_PATHS["tools"].read_text(encoding="utf-8").strip())
+        sections.append(read_prompt(RULE_PATHS["tools"]).strip())
     if any(
         str(tool.get("name") or "").startswith(GENERAL_SKILL_TOOL_PREFIX)
         for tool in available_tools
     ):
-        sections.append(RULE_PATHS["general_skill"].read_text(encoding="utf-8").strip())
+        sections.append(read_prompt(RULE_PATHS["general_skill"]).strip())
     return "\n\n".join(section for section in sections if section)
 
 

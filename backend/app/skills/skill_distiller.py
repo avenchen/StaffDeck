@@ -1,4 +1,5 @@
 from __future__ import annotations
+from app.llm.prompt_cache import read_prompt
 
 import hashlib
 import json
@@ -57,7 +58,7 @@ class SkillDistiller:
         payload = self._payload(request)
         model_input = self._model_input(request, payload)
         chunks: list[str] = []
-        prompt = PROMPT_PATH.read_text(encoding="utf-8")
+        prompt = read_prompt(PROMPT_PATH)
         client = LLMClient(skill_model_config(model_config))
         try:
             yield {"event": "status", "data": {"text": "模型正在規劃技能結構"}}
@@ -107,7 +108,7 @@ class SkillDistiller:
     def _generate_response(self, request: SkillDistillRequest, model_config: ModelConfig) -> SkillDistillResponse:
         payload = self._payload(request)
         model_input = self._model_input(request, payload)
-        prompt = PROMPT_PATH.read_text(encoding="utf-8")
+        prompt = read_prompt(PROMPT_PATH)
         client = LLMClient(skill_model_config(model_config))
         output = ""
         try:

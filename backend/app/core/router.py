@@ -1,4 +1,5 @@
 from __future__ import annotations
+from app.llm.prompt_cache import read_prompt
 
 from typing import Any
 
@@ -38,7 +39,7 @@ class Router:
             user_message=message,
             conversation_context=compact_conversation_context(conversation_context),
             memory_context=memory_context,
-            instructions=PROMPT_PATH.read_text(encoding="utf-8"),
+            instructions=read_prompt(PROMPT_PATH),
             stage_data={
                 "current_session": _router_session_payload(session),
                 "available_skills": _available_skill_payloads(available_skills),

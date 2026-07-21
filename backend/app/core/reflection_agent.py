@@ -1,4 +1,5 @@
 from __future__ import annotations
+from app.llm.prompt_cache import read_prompt
 
 from pydantic import BaseModel
 
@@ -73,7 +74,7 @@ class ReflectionAgent:
             user_message=message,
             conversation_context=compact_conversation_context(conversation_context),
             memory_context=memory_context,
-            instructions=PROMPT_PATH.read_text(encoding="utf-8"),
+            instructions=read_prompt(PROMPT_PATH),
             stage_data=stage_data,
             output_contract=REFLECTION_OUTPUT_SCHEMA,
         )

@@ -52,7 +52,7 @@
 | 3.2 | ⬜ 解除循環依賴：`memory↔core`（`compact_step_result` 下沉）、`db.seed↔agents`（seed 移入模組 on_startup）、`db↔general_skills` | 後端 | 中 |
 | 3.3 | ⬜ 移除 `knowledge → skills.skill_schema` 跨域依賴（SkillCard 下沉共用 schema） | 後端 | 小 |
 | 3.4 | ⬜ Alembic 取代 `db/database.py` 手寫 `_migrate_*`（現有遷移轉 baseline revision） | 後端 | 中 |
-| 3.5 | ⬜ `LLMClientPool`：依 model config 快取 client；prompt 檔案載入快取（mtime 失效） | 後端 | 小 |
+| 3.5 | ✅ `_get_openai_client` 快取 OpenAI client（跨呼叫重用連線池，執行緒安全）；`prompt_cache.read_prompt` 以 mtime 快取 prompt 檔案（step_agent 每回合 8 檔→快取） | 後端 | 小 |
 | 3.6 | ⬜ 設定拆域（App/Model/GeneralSkillRuntime）+ `STAFFDECK_` 前綴（相容 `ULTRARAG_`） | 後端 | 小 |
 | 3.7 | ⬜ `stores/` 取代 localStorage + CustomEvent 匯流排（151 處、27 檔） | 前端 | 大 |
 | 3.8 | ⬜ 統一樣式慣例：淘汰 `distillPageStyles.ts`/`chatPageStyles.ts` inline style 物件 | 前端 | 中 |

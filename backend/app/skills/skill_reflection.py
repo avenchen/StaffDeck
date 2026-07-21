@@ -1,4 +1,5 @@
 from __future__ import annotations
+from app.llm.prompt_cache import read_prompt
 
 import json
 from collections.abc import Callable
@@ -76,7 +77,7 @@ def reflect_skill_response_stream(
     tool_suggestions: list[ToolSuggestion],
     normalize_response: NormalizeResponse[ResponseT],
 ):
-    prompt = PROMPT_PATH.read_text(encoding="utf-8")
+    prompt = read_prompt(PROMPT_PATH)
     reviewed = response
     reviewed_skill = candidate_skill
     warnings = list(current_warnings)

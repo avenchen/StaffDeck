@@ -29,6 +29,36 @@ class LLMError(Exception):
     """Raised when an LLM provider request or response normalization fails."""
 
 
+import threading as _threading
+
+# Cache OpenAI SDK clients so HTTP connection pools are reused across LLM calls
+# instead of building a fresh client (and connection pool) per request. The
+# LLMClient wrapper itself stays per-call — it holds per-request mutable state
+# and must not be shared across threads — but the underlying transport can be.
+# The OpenAI callable is part of the key so monkeypatched tests stay isolated.
+_OPENAI_CLIENTS: dict[tuple, Any] = {}
+_OPENAI_CLIENTS_LOCK = _threading.Lock()
+
+
+def _get_openai_client(api_key: str, base_url: str, timeout: float) -> Any:
+    key = (OpenAI, api_key, base_url, timeout)
+    client = _OPENAI_CLIENTS.get(key)
+    if client is not None:
+        return client
+    with _OPENAI_CLIENTS_LOCK:
+        client = _OPENAI_CLIENTS.get(key)
+        if client is None:
+            client = OpenAI(api_key=api_key, base_url=base_url, timeout=timeout)
+            _OPENAI_CLIENTS[key] = client
+    return client
+
+
+def reset_openai_client_cache() -> None:
+    """Drop all cached OpenAI clients (used by tests / config changes)."""
+    with _OPENAI_CLIENTS_LOCK:
+        _OPENAI_CLIENTS.clear()
+
+
 JSON_REPAIR_ATTEMPTS = 3
 EMPTY_RESPONSE_RETRIES = 2
 EMPTY_RESPONSE_MESSAGE = "Model returned an empty response"
@@ -52,11 +82,7 @@ class LLMClient:
         self.base_url = resolve_base_url(
             getattr(model_config, "provider", ""), model_config.base_url
         )
-        self.client = OpenAI(
-            api_key=api_key,
-            base_url=self.base_url,
-            timeout=self.timeout_seconds,
-        )
+        self.client = _get_openai_client(api_key, self.base_url, self.timeout_seconds)
         self.model = model_config.model
         self.temperature = model_config.temperature
         self.max_output_tokens = model_config.max_output_tokens

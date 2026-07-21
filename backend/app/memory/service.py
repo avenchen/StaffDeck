@@ -1,4 +1,5 @@
 from __future__ import annotations
+from app.llm.prompt_cache import read_prompt
 
 import hashlib
 import re
@@ -79,7 +80,7 @@ class MemoryService:
         )
         with llm_operation("memory.capture", existing_count=len(existing_rows)):
             raw_delta = LLMClient(model_config).generate_json(
-                PROMPT_PATH.read_text(encoding="utf-8"),
+                read_prompt(PROMPT_PATH),
                 {
                     "conversation_context": {
                         "messages": conversation_messages

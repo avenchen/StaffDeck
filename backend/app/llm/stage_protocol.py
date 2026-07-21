@@ -1,4 +1,5 @@
 from __future__ import annotations
+from app.llm.prompt_cache import read_prompt
 
 import copy
 import json
@@ -91,7 +92,7 @@ REFLECTION_OUTPUT_SCHEMA: dict[str, Any] = {
 
 
 def unified_system_prompt() -> str:
-    return UNIFIED_PROMPT_PATH.read_text(encoding="utf-8").strip()
+    return read_prompt(UNIFIED_PROMPT_PATH).strip()
 
 
 def stage_payload(

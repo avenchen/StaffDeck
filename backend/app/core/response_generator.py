@@ -1,4 +1,5 @@
 from __future__ import annotations
+from app.llm.prompt_cache import read_prompt
 
 import re
 from collections.abc import Iterator
@@ -455,7 +456,7 @@ class ResponseGenerator:
             if isinstance(payload.get("conversation_context"), dict)
             else {},
             memory_context=None,
-            instructions=PROMPT_PATH.read_text(encoding="utf-8"),
+            instructions=read_prompt(PROMPT_PATH),
             stage_data=stage_data,
             output_contract="只輸出最終用戶可見的純文本，不輸出 JSON、Markdown 代碼圍欄、分析過程或內部狀態。",
         )

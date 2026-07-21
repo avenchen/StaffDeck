@@ -1,4 +1,5 @@
 from __future__ import annotations
+from app.llm.prompt_cache import read_prompt
 
 import json
 import os
@@ -78,7 +79,7 @@ class GeneralSkillSelector:
             user_message=query,
             conversation_context=conversation_context,
             memory_context=memory_context,
-            instructions=SELECTOR_PROMPT.read_text(encoding="utf-8"),
+            instructions=read_prompt(SELECTOR_PROMPT),
             stage_data={
                 "general_skills": [
                     {
@@ -315,7 +316,7 @@ class GeneralSkillRunner:
             user_message=query,
             conversation_context=conversation_context,
             memory_context=memory_context,
-            instructions=RUNNER_PROMPT.read_text(encoding="utf-8"),
+            instructions=read_prompt(RUNNER_PROMPT),
             stage_data=stage_data,
             output_contract=GENERAL_SKILL_PLAN_OUTPUT,
         )
@@ -476,7 +477,7 @@ class GeneralSkillRunner:
             user_message=query,
             conversation_context=conversation_context,
             memory_context=memory_context,
-            instructions=REPAIR_PROMPT.read_text(encoding="utf-8"),
+            instructions=read_prompt(REPAIR_PROMPT),
             stage_data=stage_data,
             output_contract=GENERAL_SKILL_PLAN_OUTPUT,
         )
@@ -678,7 +679,7 @@ class GeneralSkillRunner:
             user_message=query,
             conversation_context=conversation_context,
             memory_context=memory_context,
-            instructions=REPLY_PROMPT.read_text(encoding="utf-8"),
+            instructions=read_prompt(REPLY_PROMPT),
             stage_data=stage_data,
             output_contract=GENERAL_SKILL_REPLY_OUTPUT,
         )
@@ -745,7 +746,7 @@ class GeneralSkillRunner:
             user_message=query,
             conversation_context=conversation_context,
             memory_context=memory_context,
-            instructions=REVIEW_PROMPT.read_text(encoding="utf-8"),
+            instructions=read_prompt(REVIEW_PROMPT),
             stage_data=stage_data,
             output_contract=GENERAL_SKILL_REVIEW_OUTPUT,
         )
