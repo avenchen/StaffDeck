@@ -132,25 +132,6 @@ export default function EmployeeGalleryPage({ isAdmin = false, onStartChat }: {
     }
   }
 
-  async function updateGalleryState(row: AgentProfileRead, published: boolean) {
-    try {
-      const metadata = {
-        ...(row.metadata || {}),
-        published_to_gallery: published,
-        gallery_published_at: published ? new Date().toISOString() : undefined,
-        gallery_published_by: published ? currentUser?.username : undefined,
-      };
-      await api.put<AgentProfileRead>(`/api/enterprise/agents/${row.id}`, {
-        tenant_id: TENANT_ID,
-        metadata,
-      });
-      notify.success(published ? '已發佈到廣場' : '已從廣場下架');
-      await load();
-      window.dispatchEvent(new Event('ultrarag-enterprise-agent-scope-refresh'));
-    } catch (error) {
-      notify.error(error instanceof Error ? error.message : '更新廣場狀態失敗');
-    }
-  }
 
   async function confirmDelete() {
     const row = deleteTarget;
@@ -234,7 +215,7 @@ export default function EmployeeGalleryPage({ isAdmin = false, onStartChat }: {
             showMenu={false}
             onOpen={() => void startEmployeeChat(employee)}
             onStatus={(status) => void updateStatus(employee, status)}
-            onGallery={(published) => void updateGalleryState(employee, published)}
+            onVisibility={() => undefined}
             onDelete={() => setDeleteTarget(employee)}
             onAvatar={() => setAvatarAgent(employee)}
             onEdit={() => setProfileAgent(employee)}

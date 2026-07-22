@@ -37,7 +37,7 @@ export type EmployeeCardProps = {
   showMenu?: boolean;
   onOpen: () => void;
   onStatus: (status: 'active' | 'archived') => void;
-  onGallery: (published: boolean) => void;
+  onVisibility: () => void;
   onDelete: () => void;
   onAvatar: () => void;
   onEdit: () => void;
@@ -52,7 +52,7 @@ export default function EmployeeCard({
   showMenu = true,
   onOpen,
   onStatus,
-  onGallery,
+  onVisibility,
   onDelete,
   onAvatar,
   onEdit,
@@ -62,7 +62,6 @@ export default function EmployeeCard({
   const sopCount = resourceCount(employee.resources, 'skill');
   const skillCount = resourceCount(employee.resources, 'general_skill');
   const kbCount = resourceCount(employee.resources, 'knowledge_base');
-  const galleryPublished = isGalleryEmployee(employee);
   const online = employee.status === 'active';
 
   // Show raw API values on the card (bypass the SD1 term relabeling in staffdeckDisplayText).
@@ -199,10 +198,10 @@ export default function EmployeeCard({
               className={MENU_ITEM_CLASS}
               disabled={!canManage || busy}
               onClick={(event) => event.stopPropagation()}
-              onSelect={() => onGallery(!galleryPublished)}
+              onSelect={() => onVisibility()}
             >
               <IconPlatform className="size-[16px]" />
-              {galleryPublished ? '從廣場下架' : '發佈到廣場'}
+              可見性設定
             </DropdownMenuItem>
             <DropdownMenuItem
               className={MENU_ITEM_CLASS}

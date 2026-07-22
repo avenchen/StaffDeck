@@ -156,6 +156,28 @@ export type EmployeeVisibilityOptions = {
   includeOverall?: boolean;
 };
 
+/**
+ * Client-side approximation of a digital employee's visibility for the current
+ * user, using the fields present on AgentProfileRead. `all` and same-department
+ * (exact) are computable here; department-subtree and specific-user grants are
+ * enforced by the server (agents are only returned in the roster when visible),
+ * so this treats them as covered by the server-filtered list.
+ */
+export function isAgentVisibleByFields(
+  agent: AgentProfileRead,
+  user?: EnterpriseAuthUser | null,
+): boolean {
+  if (agent.visibility_all === true) return true;
+  if (
+    agent.visibility_same_department === true
+    && !!agent.department_id
+    && agent.department_id === (user?.department_id ?? null)
+  ) {
+    return true;
+  }
+  return false;
+}
+
 export function canAccessEmployeeAgent(
   agent: AgentProfileRead,
   user?: EnterpriseAuthUser | null,
@@ -173,6 +195,7 @@ export function canAccessEmployeeAgent(
     (includeDefault && isDefaultEmployeeAgent(agent))
     || isEmployeeOwnedBy(agent, user)
     || isGalleryEmployee(agent)
+    || isAgentVisibleByFields(agent, user)
   );
 }
 
@@ -204,6 +227,7 @@ export function canSelectCurrentEmployeeAgent(
     (includeDefault && isDefaultEmployeeAgent(agent))
     || isEmployeeOwnedBy(agent, user)
     || (isGalleryEmployee(agent) && isEmployeeUsedByCurrentUser(agent))
+    || (isAgentVisibleByFields(agent, user) && isEmployeeUsedByCurrentUser(agent))
   );
 }
 

@@ -25,7 +25,10 @@ import {
   employeeProfile,
 } from '../employee';
 import { emitAgentScopeChange, persistSharedAgentScope } from '../lib/agent-scope-storage';
-import type { AgentProfileRead } from '../types';
+import { departmentsApi } from '../api/endpoints/departments';
+import { orderedDepartmentOptions } from '../lib/departments';
+import AgentVisibilityDialog from '../components/AgentVisibilityDialog';
+import type { AgentProfileRead, DepartmentRead } from '../types';
 
 const ENTERPRISE_AGENT_STORAGE_KEY = 'ultrarag_enterprise_agent_scope';
 
@@ -44,6 +47,9 @@ export default function AgentsPage({ isAdmin = false, onCreateAgent }: {
   const [deleteTarget, setDeleteTarget] = useState<AgentProfileRead | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [selectingAgentId, setSelectingAgentId] = useState<string | null>(null);
+  const [visibilityAgent, setVisibilityAgent] = useState<AgentProfileRead | null>(null);
+  const [departments, setDepartments] = useState<DepartmentRead[]>([]);
+  const [userOptions, setUserOptions] = useState<{ id: string; label: string }[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [employeeFilter, setEmployeeFilter] = useState<'all' | 'online' | 'offline' | 'pending'>('all');
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(
@@ -65,7 +71,26 @@ export default function AgentsPage({ isAdmin = false, onCreateAgent }: {
 
   useEffect(() => {
     void load();
+    departmentsApi.list().then(setDepartments).catch(() => undefined);
   }, []);
+
+  useEffect(() => {
+    // The 指定用戶 picker needs the account list, which only admins may read.
+    if (!isAdmin) {
+      setUserOptions([]);
+      return;
+    }
+    api
+      .get<{ id: string; username: string; display_name?: string }[]>(
+        `/api/auth/users?tenant_id=${TENANT_ID}`,
+      )
+      .then((rows) =>
+        setUserOptions(rows.map((row) => ({ id: row.id, label: row.display_name || row.username }))),
+      )
+      .catch(() => setUserOptions([]));
+  }, [isAdmin]);
+
+  const departmentOptions = useMemo(() => orderedDepartmentOptions(departments), [departments]);
 
   useEffect(() => {
     const handler = (event: Event) => {
@@ -146,26 +171,6 @@ export default function AgentsPage({ isAdmin = false, onCreateAgent }: {
       window.dispatchEvent(new Event('ultrarag-enterprise-agent-scope-refresh'));
     } catch (error) {
       notify.error(error instanceof Error ? error.message : '更新員工狀態失敗');
-    }
-  }
-
-  async function updateGalleryState(row: AgentProfileRead, published: boolean) {
-    try {
-      const metadata = {
-        ...(row.metadata || {}),
-        published_to_gallery: published,
-        gallery_published_at: published ? new Date().toISOString() : undefined,
-        gallery_published_by: published ? currentUser?.username : undefined,
-      };
-      await api.put<AgentProfileRead>(`/api/enterprise/agents/${row.id}`, {
-        tenant_id: TENANT_ID,
-        metadata,
-      });
-      notify.success(published ? '已發佈到廣場' : '已從廣場下架');
-      await load();
-      window.dispatchEvent(new Event('ultrarag-enterprise-agent-scope-refresh'));
-    } catch (error) {
-      notify.error(error instanceof Error ? error.message : '更新廣場狀態失敗');
     }
   }
 
@@ -287,7 +292,7 @@ export default function AgentsPage({ isAdmin = false, onCreateAgent }: {
             selected={employee.id === selectedAgentId}
             onOpen={() => void selectEmployee(employee)}
             onStatus={(status) => void updateStatus(employee, status)}
-            onGallery={(published) => void updateGalleryState(employee, published)}
+            onVisibility={() => setVisibilityAgent(employee)}
             onDelete={() => setDeleteTarget(employee)}
             onAvatar={() => setAvatarAgent(employee)}
             onEdit={() => setProfileAgent(employee)}
@@ -310,6 +315,17 @@ export default function AgentsPage({ isAdmin = false, onCreateAgent }: {
         currentUser={currentUser}
         onClose={() => setProfileAgent(null)}
         onSaved={updateAgentInList}
+      />
+      <AgentVisibilityDialog
+        agent={visibilityAgent}
+        open={Boolean(visibilityAgent)}
+        departmentOptions={departmentOptions}
+        users={userOptions}
+        onClose={() => setVisibilityAgent(null)}
+        onSaved={(row) => {
+          updateAgentInList(row);
+          window.dispatchEvent(new Event('ultrarag-enterprise-agent-scope-refresh'));
+        }}
       />
       <ConfirmDialog
         open={Boolean(deleteTarget)}

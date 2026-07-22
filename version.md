@@ -67,7 +67,10 @@
   （admin｜擁有者｜全用戶｜同部門(exact)｜指定部門(含子樹)｜指定用戶），
   agents/chat/permissions 統一委派；遷移 backfill + 相容 `published_to_gallery`
 - ✅ **API**：部門 CRUD、使用者部門指派、Agent 所屬部門 + 可見性 GET/PUT
-- ⬜ **Phase 2 前端**：部門管理/指派 UI、Agent 可見性設定面板、`employee.ts` 判定同步
+- ✅ **Phase 2 前端**：`AccountsPage` 部門管理面板 + 使用者所屬部門選擇器 + 部門欄；
+  `AgentVisibilityDialog`（所屬部門 + 全用戶/同部門/指定部門/指定用戶，取代廣場發佈），
+  由員工卡片「可見性設定」開啟；`employee.ts` 判定同步（`isAgentVisibleByFields`）；
+  types/endpoint/`EnterpriseAuthUser.department_id` 全數補齊
 
 ### 8. 專案維運
 - ✅ 專案由 fork 重新上傳至自有 repo `avenchen/AIStaff`（完整歷史）
