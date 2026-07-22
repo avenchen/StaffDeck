@@ -21,8 +21,10 @@ def resource_dir() -> Path:
 
 
 def user_data_dir() -> Path:
-    # 環境變量前綴保留 ULTRARAG_（內部標識，不改）；目錄名用對外品牌 StaffDeck
-    override = os.environ.get("ULTRARAG_DATA_DIR", "").strip()
+    # 環境變量前綴改用對外品牌 STAFFDECK_，相容舊的 ULTRARAG_；目錄名用 StaffDeck
+    from app.config import brand_env
+
+    override = brand_env("DATA_DIR")
     if override:
         base = Path(override).expanduser()
     elif sys.platform == "darwin":

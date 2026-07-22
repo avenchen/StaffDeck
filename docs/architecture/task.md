@@ -53,7 +53,7 @@
 | 3.3 | ✅ SkillCard/graph schemas 下沉至中性 `app/skill_card.py`；`skill_schema` re-export（skills 域匯入不變）；`knowledge/service` 改匯入 skill_card，knowledge→skills 依賴解除 | 後端 | 小 |
 | 3.4 | ⬜ Alembic 取代 `db/database.py` 手寫 `_migrate_*`（現有遷移轉 baseline revision） | 後端 | 中 |
 | 3.5 | ✅ `_get_openai_client` 快取 OpenAI client（跨呼叫重用連線池，執行緒安全）；`prompt_cache.read_prompt` 以 mtime 快取 prompt 檔案（step_agent 每回合 8 檔→快取） | 後端 | 小 |
-| 3.6 | ⬜ 設定拆域（App/Model/GeneralSkillRuntime）+ `STAFFDECK_` 前綴（相容 `ULTRARAG_`） | 後端 | 小 |
+| 3.6 | ✅ 設定拆域（`settings.app`/`settings.model`/`settings.general_skill_runtime` 唯讀視圖）+ `STAFFDECK_` 前綴（`AliasGenerator` 支援 STAFFDECK_ > ULTRARAG_ > 裸名；`brand_env` 供 DOTENV/DATA_DIR）；平面欄位維持相容，6 測試護航 | 後端 | 小 |
 | 3.7 | ⬜ `stores/` 取代 localStorage + CustomEvent 匯流排（151 處、27 檔） | 前端 | 大 |
 | 3.8 | ⬜ 統一樣式慣例：淘汰 `distillPageStyles.ts`/`chatPageStyles.ts` inline style 物件 | 前端 | 中 |
 
