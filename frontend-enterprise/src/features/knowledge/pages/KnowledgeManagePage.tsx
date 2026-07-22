@@ -22,6 +22,7 @@ import type { HTMLAttributes, ReactNode } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api, ApiError, TENANT_ID } from '@/api/client';
+import { knowledgeApi } from '@/api/endpoints/knowledge';
 import { isEnterpriseAdmin, type EnterpriseAuthUser } from '@/auth';
 import AppHeader from '@/components/AppHeader';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
@@ -320,10 +321,9 @@ export default function KnowledgeManagePage({}: KnowledgePageProps = {}) {
     }
     setLoading(true);
     try {
-      const suffix = scopedAgentId ? `&agent_id=${encodeURIComponent(scopedAgentId)}` : '';
       const [docRows, kbRows] = await Promise.all([
-        api.get<KnowledgeDocumentRead[]>(`/api/enterprise/knowledge/documents?tenant_id=${TENANT_ID}${suffix}`),
-        api.get<KnowledgeBaseRead[]>(`/api/enterprise/knowledge-bases?tenant_id=${TENANT_ID}${suffix}`),
+        knowledgeApi.listDocuments(scopedAgentId),
+        knowledgeApi.listBases(scopedAgentId),
       ]);
       setDocuments(docRows);
       setKnowledgeBases(kbRows);
@@ -357,9 +357,7 @@ export default function KnowledgeManagePage({}: KnowledgePageProps = {}) {
     setSearchResult(null);
     try {
       const [rows] = await Promise.all([
-        api.get<KnowledgeBucketRead[]>(
-          `/api/enterprise/knowledge/documents/${document.id}/buckets?tenant_id=${TENANT_ID}${effectiveAgentId ? `&agent_id=${encodeURIComponent(effectiveAgentId)}` : ''}`,
-        ),
+        knowledgeApi.documentBuckets(document.id, effectiveAgentId),
         loadOkfConcepts(document.knowledge_base_id, false),
       ]);
       setBuckets(rows);
@@ -376,11 +374,8 @@ export default function KnowledgeManagePage({}: KnowledgePageProps = {}) {
       return;
     }
     if (showLoading) setOkfLoading(true);
-    const suffix = effectiveAgentId ? `&agent_id=${encodeURIComponent(effectiveAgentId)}` : '';
     try {
-      const rows = await api.get<KnowledgeConceptRead[]>(
-        `/api/enterprise/knowledge-bases/${knowledgeBaseId}/okf/concepts?tenant_id=${TENANT_ID}${suffix}`,
-      );
+      const rows = await knowledgeApi.okfConcepts(knowledgeBaseId, effectiveAgentId);
       setOkfConcepts(rows);
       setOkfLintIssues([]);
     } catch (error) {
@@ -419,7 +414,7 @@ export default function KnowledgeManagePage({}: KnowledgePageProps = {}) {
     }
     setSearchLoading(true);
     try {
-      const response = await api.post<KnowledgeSearchResponse>('/api/enterprise/knowledge/search', {
+      const response = await knowledgeApi.search({
         tenant_id: TENANT_ID,
         agent_id: effectiveAgentId || undefined,
         knowledge_base_ids:
@@ -471,9 +466,7 @@ export default function KnowledgeManagePage({}: KnowledgePageProps = {}) {
     setImportSelectedKnowledgeBaseIds([]);
     if (!sourceAgentId) return [];
     try {
-      const rows = await api.get<KnowledgeBaseRead[]>(
-        `/api/enterprise/knowledge-bases?tenant_id=${TENANT_ID}&agent_id=${encodeURIComponent(sourceAgentId)}`,
-      );
+      const rows = await knowledgeApi.listBases(sourceAgentId);
       const activeRows = rows.filter((item) => item.status === 'active');
       setImportSourceKnowledgeBases(activeRows);
       return activeRows;
@@ -541,7 +534,7 @@ export default function KnowledgeManagePage({}: KnowledgePageProps = {}) {
     setOkfImporting(true);
     try {
       const contentBase64 = await fileToBase64(file);
-      await api.post('/api/enterprise/knowledge/okf/import', {
+      await knowledgeApi.importOkf({
         tenant_id: TENANT_ID,
         agent_id: effectiveAgentId || undefined,
         knowledge_base_id: selectedKnowledgeBase?.id,
@@ -563,11 +556,8 @@ export default function KnowledgeManagePage({}: KnowledgePageProps = {}) {
       notify.warning('請先選擇知識庫');
       return;
     }
-    const suffix = effectiveAgentId ? `&agent_id=${encodeURIComponent(effectiveAgentId)}` : '';
     try {
-      const blob = await api.blob(
-        `/api/enterprise/knowledge-bases/${targetKnowledgeBase.id}/okf/export?tenant_id=${TENANT_ID}${suffix}`,
-      );
+      const blob = await knowledgeApi.exportOkf(targetKnowledgeBase.id, effectiveAgentId);
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -590,11 +580,11 @@ export default function KnowledgeManagePage({}: KnowledgePageProps = {}) {
     if (targetKnowledgeBase.id !== selectedKnowledgeBase?.id) {
       selectKnowledgeBase(targetKnowledgeBase.id);
     }
-    const suffix = effectiveAgentId ? `&agent_id=${encodeURIComponent(effectiveAgentId)}` : '';
     setOkfLoading(true);
     try {
-      const result = await api.post<{ status: string; issue_count: number; issues: OkfLintIssue[] }>(
-        `/api/enterprise/knowledge-bases/${targetKnowledgeBase.id}/okf/lint?tenant_id=${TENANT_ID}${suffix}`,
+      const result = await knowledgeApi.lintOkf<{ status: string; issue_count: number; issues: OkfLintIssue[] }>(
+        targetKnowledgeBase.id,
+        effectiveAgentId,
       );
       setOkfLintIssues(result.issues || []);
       setOkfLintKnowledgeBase(targetKnowledgeBase);
@@ -625,16 +615,17 @@ export default function KnowledgeManagePage({}: KnowledgePageProps = {}) {
 
   async function saveConcept() {
     if (!editingConcept || !selectedKnowledgeBase) return;
-    const suffix = effectiveAgentId ? `?agent_id=${encodeURIComponent(effectiveAgentId)}` : '';
     try {
-      const next = await api.put<KnowledgeConceptRead>(
-        `/api/enterprise/knowledge-bases/${selectedKnowledgeBase.id}/okf/concepts/${conceptPath(editingConcept.concept_id)}${suffix}`,
+      const next = await knowledgeApi.updateOkfConcept(
+        selectedKnowledgeBase.id,
+        conceptPath(editingConcept.concept_id),
         {
           tenant_id: TENANT_ID,
           document_id: editingConcept.document_id,
           content_md: conceptDraft,
           status: editingConcept.status,
         },
+        effectiveAgentId,
       );
       setOkfConcepts((current) => current.map((item) => (item.id === next.id ? next : item)));
       setEditingConcept(null);
@@ -656,14 +647,17 @@ export default function KnowledgeManagePage({}: KnowledgePageProps = {}) {
 
   async function saveKnowledgeBase() {
     if (!editingKnowledgeBase) return;
-    const suffix = effectiveAgentId ? `?agent_id=${encodeURIComponent(effectiveAgentId)}` : '';
     try {
-      const next = await api.put<KnowledgeBaseRead>(`/api/enterprise/knowledge-bases/${editingKnowledgeBase.id}${suffix}`, {
-        tenant_id: TENANT_ID,
-        name: knowledgeBaseDraft.name,
-        description: knowledgeBaseDraft.description,
-        status: knowledgeBaseDraft.status,
-      });
+      const next = await knowledgeApi.updateBase(
+        editingKnowledgeBase.id,
+        {
+          tenant_id: TENANT_ID,
+          name: knowledgeBaseDraft.name,
+          description: knowledgeBaseDraft.description,
+          status: knowledgeBaseDraft.status,
+        },
+        effectiveAgentId,
+      );
       setKnowledgeBases((current) => current.map((item) => (item.id === next.id ? next : item)));
       setEditingKnowledgeBase(null);
       notify.success('已保存知識庫');
@@ -674,12 +668,15 @@ export default function KnowledgeManagePage({}: KnowledgePageProps = {}) {
   }
 
   async function setKnowledgeBaseStatus(row: KnowledgeBaseRead, active: boolean) {
-    const suffix = effectiveAgentId ? `?agent_id=${encodeURIComponent(effectiveAgentId)}` : '';
     try {
-      const next = await api.put<KnowledgeBaseRead>(`/api/enterprise/knowledge-bases/${row.id}${suffix}`, {
-        tenant_id: TENANT_ID,
-        status: active ? 'active' : 'archived',
-      });
+      const next = await knowledgeApi.updateBase(
+        row.id,
+        {
+          tenant_id: TENANT_ID,
+          status: active ? 'active' : 'archived',
+        },
+        effectiveAgentId,
+      );
       setKnowledgeBases((current) => current.map((item) => (item.id === next.id ? next : item)));
       notify.success(active ? '已上線知識庫' : '已下線知識庫');
       await refresh();
@@ -696,9 +693,8 @@ export default function KnowledgeManagePage({}: KnowledgePageProps = {}) {
     const row = deleteKbTarget;
     if (!row) return;
     const branchMode = !isOverallAgent;
-    const suffix = effectiveAgentId ? `&agent_id=${encodeURIComponent(effectiveAgentId)}` : '';
     try {
-      await api.delete(`/api/enterprise/knowledge-bases/${row.id}?tenant_id=${TENANT_ID}${suffix}`);
+      await knowledgeApi.deleteBase(row.id, effectiveAgentId);
       notify.success(branchMode ? '已移除知識庫' : '已刪除知識庫');
       setDeleteKbTarget(null);
       await refresh();
@@ -708,10 +704,10 @@ export default function KnowledgeManagePage({}: KnowledgePageProps = {}) {
   }
 
   async function openKnowledgeBaseVersions(row: KnowledgeBaseRead) {
-    const suffix = effectiveAgentId ? `&agent_id=${encodeURIComponent(effectiveAgentId)}` : '';
     try {
-      const versions = await api.get<KnowledgeBaseVersionRead[]>(
-        `/api/enterprise/knowledge-bases/${row.id}/versions?tenant_id=${TENANT_ID}${suffix}`,
+      const versions = await knowledgeApi.listBaseVersions<KnowledgeBaseVersionRead[]>(
+        row.id,
+        effectiveAgentId,
       );
       setVersionKnowledgeBase(row);
       setKnowledgeBaseVersions(versions);
@@ -726,7 +722,7 @@ export default function KnowledgeManagePage({}: KnowledgePageProps = {}) {
       return;
     }
     try {
-      await api.post(`/api/enterprise/knowledge-bases/${row.id}/sync-from-overall?tenant_id=${TENANT_ID}&agent_id=${encodeURIComponent(agentId)}`);
+      await knowledgeApi.syncFromOverall(row.id, agentId);
       notify.success('已從廣場同步');
       await refresh();
     } catch (error) {
@@ -740,7 +736,7 @@ export default function KnowledgeManagePage({}: KnowledgePageProps = {}) {
       return;
     }
     try {
-      await api.post(`/api/enterprise/knowledge-bases/${row.id}/promote-to-overall?tenant_id=${TENANT_ID}&agent_id=${encodeURIComponent(agentId)}`);
+      await knowledgeApi.promoteToOverall(row.id, agentId);
       notify.success('已發佈到廣場');
       await refresh();
     } catch (error) {
@@ -751,7 +747,7 @@ export default function KnowledgeManagePage({}: KnowledgePageProps = {}) {
   async function rollbackKnowledgeBaseVersion(version: KnowledgeBaseVersionRead) {
     if (!versionKnowledgeBase || !effectiveAgentId) return;
     try {
-      await api.post(`/api/enterprise/knowledge-bases/${versionKnowledgeBase.id}/rollback`, {
+      await knowledgeApi.rollbackBase(versionKnowledgeBase.id, {
         tenant_id: TENANT_ID,
         agent_id: effectiveAgentId,
         version: version.version,
@@ -775,7 +771,7 @@ export default function KnowledgeManagePage({}: KnowledgePageProps = {}) {
   async function saveDocument() {
     if (!editingDocument) return;
     try {
-      const next = await api.put<KnowledgeDocumentRead>(`/api/enterprise/knowledge/documents/${editingDocument.id}`, {
+      const next = await knowledgeApi.updateDocument(editingDocument.id, {
         tenant_id: TENANT_ID,
         title: documentDraft.title,
         status: documentDraft.status,
@@ -794,9 +790,7 @@ export default function KnowledgeManagePage({}: KnowledgePageProps = {}) {
     setEditingBucket(row);
     setBucketDraft({ title: row.title, summary: row.summary });
     try {
-      const chunks = await api.get<KnowledgeChunkRead[]>(
-        `/api/enterprise/knowledge/buckets/${row.id}/chunks?tenant_id=${TENANT_ID}${effectiveAgentId ? `&agent_id=${encodeURIComponent(effectiveAgentId)}` : ''}`,
-      );
+      const chunks = await knowledgeApi.bucketChunks(row.id, effectiveAgentId);
       setBucketChunks(chunks);
       setChunkDrafts(
         Object.fromEntries(chunks.map((chunk) => [chunk.id, { content: chunk.content, summary: chunk.summary || '' }])),
@@ -810,13 +804,13 @@ export default function KnowledgeManagePage({}: KnowledgePageProps = {}) {
     if (!editingBucket) return;
     setContentSaving(true);
     try {
-      await api.put<KnowledgeBucketRead>(`/api/enterprise/knowledge/buckets/${editingBucket.id}`, {
+      await knowledgeApi.updateBucket(editingBucket.id, {
         tenant_id: TENANT_ID,
         title: bucketDraft.title,
         summary: bucketDraft.summary,
       });
       for (const chunk of bucketChunks) {
-        await api.put<KnowledgeChunkRead>(`/api/enterprise/knowledge/chunks/${chunk.id}`, {
+        await knowledgeApi.updateChunk(chunk.id, {
           tenant_id: TENANT_ID,
           content: chunkDrafts[chunk.id]?.content ?? chunk.content,
           summary: chunkDrafts[chunk.id]?.summary ?? chunk.summary,

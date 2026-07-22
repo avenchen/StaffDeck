@@ -22,6 +22,7 @@ import type { HTMLAttributes, ReactNode } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api, ApiError, TENANT_ID } from '@/api/client';
+import { knowledgeApi } from '@/api/endpoints/knowledge';
 import { isEnterpriseAdmin, type EnterpriseAuthUser } from '@/auth';
 import AppHeader from '@/components/AppHeader';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
@@ -166,10 +167,8 @@ export function KnowledgeAddPage({}: KnowledgePageProps = {}) {
     if (activeJobs.length === 0) return;
     const timer = window.setInterval(() => {
       activeJobs.forEach((job) => {
-        void api
-          .get<KnowledgeIngestJobRead>(
-            `/api/enterprise/knowledge/jobs/${job.id}?tenant_id=${TENANT_ID}${agentId ? `&agent_id=${encodeURIComponent(agentId)}` : ''}`,
-          )
+        void knowledgeApi
+          .getJob(job.id, agentId)
           .then((next) => {
             setJobs((prev) => ({ ...prev, [next.id]: next }));
             if (TERMINAL_KNOWLEDGE_JOB_STATUSES.has(next.status)) {
@@ -198,8 +197,7 @@ export function KnowledgeAddPage({}: KnowledgePageProps = {}) {
       return;
     }
     try {
-      const suffix = agentId ? `&agent_id=${encodeURIComponent(agentId)}` : '';
-      const rows = await api.get<KnowledgeBaseRead[]>(`/api/enterprise/knowledge-bases?tenant_id=${TENANT_ID}${suffix}`);
+      const rows = await knowledgeApi.listBases(agentId);
       setKnowledgeBases(rows);
     } catch (error) {
       notify.error(error instanceof Error ? error.message : '加載知識庫失敗');
@@ -212,10 +210,7 @@ export function KnowledgeAddPage({}: KnowledgePageProps = {}) {
       return;
     }
     try {
-      const suffix = agentId ? `&agent_id=${encodeURIComponent(agentId)}` : '';
-      const rows = await api.get<KnowledgeIngestJobRead[]>(
-        `/api/enterprise/knowledge/jobs?tenant_id=${TENANT_ID}${suffix}&limit=8`,
-      );
+      const rows = await knowledgeApi.listJobs(agentId, 8);
       setJobs(Object.fromEntries(rows.map((job) => [job.id, job])));
     } catch {
       setJobs({});
@@ -229,13 +224,15 @@ export function KnowledgeAddPage({}: KnowledgePageProps = {}) {
     }
     try {
       const contentBase64 = await fileToBase64(file);
-      const suffix = agentId ? `?agent_id=${encodeURIComponent(agentId)}` : '';
-      const job = await api.post<KnowledgeIngestJobRead>(`/api/enterprise/knowledge/documents${suffix}`, {
-        tenant_id: TENANT_ID,
-        filename: file.name,
-        title: file.name.replace(/\.[^.]+$/, ''),
-        content_base64: contentBase64,
-      });
+      const job = await knowledgeApi.uploadDocument(
+        {
+          tenant_id: TENANT_ID,
+          filename: file.name,
+          title: file.name.replace(/\.[^.]+$/, ''),
+          content_base64: contentBase64,
+        },
+        agentId,
+      );
       setJobs((prev) => ({ ...prev, [job.id]: job }));
       await refreshKnowledgeBases();
       notify.success('已創建知識庫和入庫任務');
@@ -248,9 +245,7 @@ export function KnowledgeAddPage({}: KnowledgePageProps = {}) {
     if (!['queued', 'running', 'cancel_requested'].includes(job.status)) return;
     setCancellingJobIds((current) => (current.includes(job.id) ? current : [...current, job.id]));
     try {
-      const next = await api.post<KnowledgeIngestJobRead>(
-        `/api/enterprise/knowledge/jobs/${job.id}/cancel?tenant_id=${TENANT_ID}`,
-      );
+      const next = await knowledgeApi.cancelJob(job.id);
       setJobs((prev) => ({ ...prev, [next.id]: next }));
       notify.success(next.status === 'cancelled' ? '已取消入庫任務' : '已發送取消請求');
     } catch (error) {
@@ -263,8 +258,7 @@ export function KnowledgeAddPage({}: KnowledgePageProps = {}) {
   async function loadDiscoveriesForJob(job: KnowledgeIngestJobRead) {
     setCheckedDiscoveryJobIds((prev) => (prev.includes(job.id) ? prev : [...prev, job.id]));
     try {
-      const suffix = agentId ? `&agent_id=${encodeURIComponent(agentId)}` : '';
-      const rows = await api.get<KnowledgeDiscoveryRead[]>(`/api/enterprise/knowledge/discoveries?tenant_id=${TENANT_ID}${suffix}`);
+      const rows = await knowledgeApi.listDiscoveries(agentId);
       const next = rows.filter(
         (item) =>
           item.status === 'pending' &&
@@ -285,7 +279,7 @@ export function KnowledgeAddPage({}: KnowledgePageProps = {}) {
 
   async function confirmDiscovery(item: KnowledgeDiscoveryRead) {
     try {
-      await api.post(`/api/enterprise/knowledge/discoveries/${item.id}/confirm?tenant_id=${TENANT_ID}`);
+      await knowledgeApi.confirmDiscovery(item.id);
       notify.success('已確認建議');
       setPendingDiscoveries((current) => current.filter((entry) => entry.id !== item.id));
       await refreshKnowledgeBases();
@@ -296,7 +290,7 @@ export function KnowledgeAddPage({}: KnowledgePageProps = {}) {
 
   async function rejectDiscovery(item: KnowledgeDiscoveryRead) {
     try {
-      await api.post(`/api/enterprise/knowledge/discoveries/${item.id}/reject?tenant_id=${TENANT_ID}`);
+      await knowledgeApi.rejectDiscovery(item.id);
       notify.success('已拒絕建議');
       setPendingDiscoveries((current) => current.filter((entry) => entry.id !== item.id));
     } catch (error) {
