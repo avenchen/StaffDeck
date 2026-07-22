@@ -4,6 +4,7 @@ export type EnterpriseAuthUser = {
   username: string;
   display_name?: string;
   role: 'admin' | 'member';
+  department_id?: string | null;
 };
 
 export type EnterpriseAuthSession = {

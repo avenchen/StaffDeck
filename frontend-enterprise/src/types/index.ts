@@ -180,10 +180,28 @@ export type AgentProfileRead = {
   persona_prompt?: string;
   is_overall: boolean;
   status: 'active' | 'archived' | string;
+  department_id?: string | null;
+  visibility_all?: boolean;
+  visibility_same_department?: boolean;
   metadata: Record<string, unknown>;
   resources: AgentResourceBindingRead[];
   created_at: string;
   updated_at: string;
+};
+
+export type DepartmentRead = {
+  id: string;
+  tenant_id: string;
+  name: string;
+  parent_id?: string | null;
+  is_root: boolean;
+};
+
+export type AgentVisibilityRead = {
+  all: boolean;
+  same_department: boolean;
+  department_ids: string[];
+  user_ids: string[];
 };
 
 export type ToolSuggestion = {

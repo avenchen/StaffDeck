@@ -59,7 +59,17 @@
   - 中性事件持久化 → `app/session/session_events.py`（`persist_relay_only_event`）
   - chat.py 由 3,267 → 2,883 行；控制器以別名 re-export 保持相容，新增服務層單元測試
 
-### 7. 專案維運
+### 7. 部門機制（Phase 1 後端完成，Phase 2 前端進行中）
+- ✅ **資料模型**：`Department`（樹狀，根=全組織）、`User.department_id`（必填）、
+  `AgentProfile.department_id`（可選）+ `visibility_all`/`visibility_same_department` +
+  `agent_visibility_departments`/`agent_visibility_users` 關聯表
+- ✅ **可見性判定服務** `app/departments/service.py`（葉模組）：可組合疊加
+  （admin｜擁有者｜全用戶｜同部門(exact)｜指定部門(含子樹)｜指定用戶），
+  agents/chat/permissions 統一委派；遷移 backfill + 相容 `published_to_gallery`
+- ✅ **API**：部門 CRUD、使用者部門指派、Agent 所屬部門 + 可見性 GET/PUT
+- ⬜ **Phase 2 前端**：部門管理/指派 UI、Agent 可見性設定面板、`employee.ts` 判定同步
+
+### 8. 專案維運
 - ✅ 專案由 fork 重新上傳至自有 repo `avenchen/AIStaff`（完整歷史）
 - ✅ 移除 fork 帶入的 CodeQL Advanced workflow；關閉 7 個 fork 繼承的 dependabot PR（CI 恢復乾淨）
 - ✅ 部署與 Windows 更新／執行說明（`deploy.md`）
