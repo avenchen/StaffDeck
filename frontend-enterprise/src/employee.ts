@@ -167,6 +167,12 @@ export function isAgentVisibleByFields(
   agent: AgentProfileRead,
   user?: EnterpriseAuthUser | null,
 ): boolean {
+  // The roster endpoint stamps this per requesting-user flag after evaluating
+  // the full model (incl. department-subtree and specific-user grants), so trust
+  // it when present; otherwise fall back to the client-computable modes.
+  if ((agent.metadata as { visible_to_current_user?: boolean })?.visible_to_current_user === true) {
+    return true;
+  }
   if (agent.visibility_all === true) return true;
   if (
     agent.visibility_same_department === true

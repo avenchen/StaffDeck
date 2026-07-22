@@ -140,7 +140,11 @@ def test_agent_visibility_endpoint_and_list_filtering():
 
         sales_row = db.get(User, sales_user.id)
         other_row = db.get(User, other_user.id)
-        assert any(a.id == "agent_dept" for a in list_agents("t", db, sales_row))
+        sales_view = [a for a in list_agents("t", db, sales_row) if a.id == "agent_dept"]
+        assert sales_view, "department-visible agent should appear for the granted user"
+        # server stamps the per-user visibility flag so pickers are accurate for
+        # subtree/user-grant modes the client cannot compute on its own
+        assert sales_view[0].metadata.get("visible_to_current_user") is True
         assert not any(a.id == "agent_dept" for a in list_agents("t", db, other_row))
 
         # invalid user id in visibility list is rejected

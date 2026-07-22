@@ -107,15 +107,23 @@ def list_agents(
         .order_by(AgentProfile.is_overall.desc(), AgentProfile.updated_at.desc())
     ).all()
     rows = [row for row in rows if not _agent_hidden_from_staffdeck(row)]
+    resolver = AgentVisibilityResolver(db, tenant_id, user)
     if not _is_admin_user(user):
         # Non-admin users still need the overall agent as a read-only open-gallery
         # source for copy/use flows. Mutations remain guarded by manage/update
         # endpoints, so this only exposes the source scope.
-        resolver = AgentVisibilityResolver(db, tenant_id, user)
         rows = [row for row in rows if row.is_overall or resolver.visible(row)]
     bindings = _bindings_by_agent(db, tenant_id)
     used_agent_ids = _used_agent_ids_for_user(db, tenant_id, user)
-    return [agent_read(row, bindings.get(row.id, []), row.id in used_agent_ids) for row in rows]
+    return [
+        agent_read(
+            row,
+            bindings.get(row.id, []),
+            row.id in used_agent_ids,
+            visible_to_current_user=resolver.visible(row),
+        )
+        for row in rows
+    ]
 
 
 @enterprise_router.post("", response_model=AgentProfileRead)
@@ -887,11 +895,14 @@ def agent_read(
     row: AgentProfile,
     bindings: list[AgentResourceBinding],
     used_by_current_user: bool | None = None,
+    visible_to_current_user: bool | None = None,
 ) -> AgentProfileRead:
     metadata = dict(row.metadata_json or {})
     if used_by_current_user is not None:
         metadata["used_by_current_user"] = used_by_current_user
         metadata["chat_used_by_current_user"] = used_by_current_user
+    if visible_to_current_user is not None:
+        metadata["visible_to_current_user"] = visible_to_current_user
     return AgentProfileRead(
         id=row.id,
         tenant_id=row.tenant_id,
