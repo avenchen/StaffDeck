@@ -103,9 +103,49 @@ curl http://127.0.0.1:5173/api/health
 
 新增的**知識 Wiki** 頁面在：`/enterprise/wiki`（側邊欄「知識 Wiki」）。
 
+**部門機制**：於 `/enterprise/accounts`（賬號管理）有「部門管理」面板與使用者「所屬部門」選擇器；
+員工卡片選單的「可見性設定」可設定數位員工的所屬部門與可見範圍（開放給全用戶／同部門／
+指定部門（含子部門）／指定用戶，可組合疊加）。資料庫綱要於啟動時自動升級，無須手動遷移。
+
 ---
 
-## 6. 測試與品質檢查
+## 6. 更新既有安裝（含部門機制自動遷移）
+
+從舊版更新到含部門機制的版本時，資料庫綱要會在**啟動時自動升級**（`init_db` 會建立
+`departments` / `agent_visibility_*` 資料表、為 `users` / `agent_profiles` 補欄位、
+建立各租戶根部門「全組織」、把未指派部門的使用者掛到根，並把舊「發佈到廣場」
+（`published_to_gallery`）的員工轉為「開放給全用戶」）。此遷移**冪等**，重覆啟動安全，
+既有資料保留。**不需要手動下遷移指令。**
+
+### macOS / Linux
+
+```bash
+scripts/dev_down.sh                                   # 停止服務
+cp backend/skill_agent_loop.db backend/skill_agent_loop.db.bak 2>/dev/null || true  # 建議先備份
+git pull origin main                                  # 或你追蹤的分支
+backend/.venv/bin/python -m pip install -e "backend[dev]"   # 套件有變更時
+npm --prefix frontend-enterprise ci                   # 前端相依有變更時
+scripts/dev_up.sh                                     # 重新建置前端並啟動（自動遷移）
+```
+
+### Windows（PowerShell，於專案根目錄）
+
+```powershell
+scripts\dev_down.ps1                                  # 停止服務
+Copy-Item backend\skill_agent_loop.db backend\skill_agent_loop.db.bak -ErrorAction SilentlyContinue  # 建議先備份
+git pull origin main                                  # 或你追蹤的分支
+backend\.venv\Scripts\python.exe -m pip install -e "backend[dev]"   # 套件有變更時
+npm --prefix frontend-enterprise ci                   # 前端相依有變更時
+scripts\dev_up.ps1                                    # 重新建置前端並啟動（自動遷移）
+```
+
+啟動後開 `http://127.0.0.1:5173/enterprise/accounts`（實際埠以 `dev_status` 為準）確認
+「部門管理」面板出現、使用者列表有「部門」欄，即代表部門機制已生效。
+還原：停服務後把 `.bak` 覆蓋回 `backend/skill_agent_loop.db` 即可。
+
+---
+
+## 7. 測試與品質檢查
 
 ```bash
 # 後端測試
@@ -117,7 +157,7 @@ npm --prefix frontend-enterprise run build   # 內含 tsc -b + vite build
 
 ---
 
-## 7. 桌面版打包（選用）
+## 8. 桌面版打包（選用）
 
 `packaging/` 內含 macOS / Windows / Linux 的打包資產與腳本：
 
@@ -131,7 +171,7 @@ packaging/build_linux.sh      # Linux .deb
 
 ---
 
-## 8. 遠端／容器環境注意事項
+## 9. 遠端／容器環境注意事項
 
 - 服務對外開放時，把該來源加入 `CORS_ORIGINS`；`dev_up.sh` 可用 `PUBLIC_APP_ORIGIN` 加入公開通道來源。
 - 容器磁碟為固定配額；`df` 顯示 Avail 為 0 但 Used 很低時代表配額用盡，刪除建置產物（`frontend-enterprise/dist`、`node_modules` 快取等）即可釋出。
@@ -147,3 +187,5 @@ packaging/build_linux.sh      # Linux .deb
 | 埠 5173 被佔用 | 會自動改用 5173–5199；用 `scripts/dev_status.sh` 查實際埠 |
 | 前端相依安裝 403 | 見第 2 節的官方 registry 指令 |
 | 知識 Wiki 問答無回覆 | 需在「模型配置」設定可用的預設模型；瀏覽與大綱不需模型 |
+| 更新後沒看到部門面板 | 確認已重新啟動（遷移於啟動時執行）；以 admin 登入；面板在 `/enterprise/accounts` |
+| 使用者看不到某數位員工 | 檢查該員工「可見性設定」是否涵蓋此使用者（全用戶／同部門／指定部門含子／指定用戶）與使用者所屬部門 |
