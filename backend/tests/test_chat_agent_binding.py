@@ -188,7 +188,7 @@ def test_chat_session_list_exposes_scheduled_origin_without_title_inference() ->
 
 def test_session_title_summary_uses_first_user_message_when_title_empty(monkeypatch) -> None:
     engine = _test_engine()
-    monkeypatch.setattr(chat_api, "engine", engine)
+    monkeypatch.setattr("app.chat_service.session_title.engine", engine)
     with Session(engine) as db:
         db.add(ChatSession(id="session_title", tenant_id="tenant_demo", user_id="user_demo"))
         db.add(
@@ -221,7 +221,7 @@ def test_session_title_summary_uses_first_user_message_when_title_empty(monkeypa
 
 def test_session_title_summary_does_not_override_existing_title(monkeypatch) -> None:
     engine = _test_engine()
-    monkeypatch.setattr(chat_api, "engine", engine)
+    monkeypatch.setattr("app.chat_service.session_title.engine", engine)
     with Session(engine) as db:
         db.add(
             ChatSession(
