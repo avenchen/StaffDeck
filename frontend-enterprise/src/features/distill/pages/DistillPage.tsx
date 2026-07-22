@@ -251,6 +251,7 @@ import {
   type ToolStatusBadgeVariant,
 } from '@/pages/distillPageStyles';
 import { api, ApiError, streamGet, streamPost, TENANT_ID } from '@/api/client';
+import { skillsApi } from '@/api/endpoints/skills';
 import type { ModelConfigRead, SkillCard, SkillRead, ToolProbeResponse, ToolRead, ToolSuggestion } from '@/types';
 
 import { ActiveDistillJob, BASE_ACTION_OPTIONS, CONDITION_PRESET_OPTIONS, CONDITION_PRESET_TEXT, ChatAttachment, ChatItem, DEFAULT_DISTILL_MESSAGES, DEFAULT_TARGET_PATHS, DISTILL_REWRITE_MODEL_STORAGE_KEY, DistillCacheSnapshot, DistillHistoryOperation, DistillHistoryOperationKind, DistillHistorySnapshot, DistillPageProps, ENTERPRISE_AGENT_STORAGE_KEY, EditingMessage, NODE_TYPE_OPTIONS, PendingChange, ProbeToolOptions, RETRY_STRATEGY_OPTIONS, SelectOption, TargetSelection, TextDiffAnimation, TextDiffPhase, ToolActionStatus, ToolDescriptionMap, ToolStatusMap, ToolSuggestionItem, UploadAttachment, ViewMode } from '../types';
@@ -385,8 +386,8 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
       return;
     }
 
-    api
-      .get<SkillRead>(`/api/enterprise/skills/${encodeURIComponent(skillId)}?tenant_id=${TENANT_ID}${agentQuery}`)
+    skillsApi
+      .get(skillId, activeAgentId)
       .then((result) => {
         const nextContent = lockSkillIdForDraft(result.content, result.skill_id || skillId || '');
         const nextResult = nextContent === result.content ? result : { ...result, content: nextContent };
@@ -857,14 +858,14 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
     try {
       let savedSkill: SkillRead;
       if (loadedSkill) {
-        savedSkill = await api.put<SkillRead>(`/api/enterprise/skills/${loadedSkill.skill_id}${agentOnlyQuery}`, {
+        savedSkill = await skillsApi.update(loadedSkill.skill_id, {
           tenant_id: TENANT_ID,
           content: finalDraft,
           status: loadedSkill.status,
-        });
+        }, activeAgentId);
       } else {
         try {
-          savedSkill = await api.post<SkillRead>(`/api/enterprise/skills${agentOnlyQuery}`, { tenant_id: TENANT_ID, content: finalDraft, status: 'published' });
+          savedSkill = await skillsApi.create({ tenant_id: TENANT_ID, content: finalDraft, status: 'published' }, activeAgentId);
         } catch (error) {
           if (!(error instanceof ApiError) || error.status !== 409) throw error;
           finalDraft = {
@@ -872,7 +873,7 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
             skill_id: uniqueDraftSkillId(finalDraft.skill_id),
           };
           renamedSkillId = finalDraft.skill_id;
-          savedSkill = await api.post<SkillRead>(`/api/enterprise/skills${agentOnlyQuery}`, { tenant_id: TENANT_ID, content: finalDraft, status: 'published' });
+          savedSkill = await skillsApi.create({ tenant_id: TENANT_ID, content: finalDraft, status: 'published' }, activeAgentId);
         }
       }
       const savedContent = lockSkillIdForDraft(savedSkill.content, savedSkill.skill_id || lockedSkillId);
@@ -908,7 +909,7 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
     const jobId = activeJob?.jobId;
     manualStopRef.current = true;
     if (jobId) {
-      void api.post(`/api/enterprise/skills/jobs/${encodeURIComponent(jobId)}/cancel`);
+      void skillsApi.cancelJob(jobId);
     }
     abortRef.current?.abort();
     abortRef.current = null;
@@ -1708,23 +1709,21 @@ export default function DistillPage({ active = true, searchParamsOverride }: Dis
     for (const operation of versionOps) {
       const skillId = String(operation.skillId);
       if (snapshot.loadedSkill) {
-        await api.put<SkillRead>(`/api/enterprise/skills/${encodeURIComponent(snapshot.loadedSkill.skill_id)}${agentOnlyQuery}`, {
+        await skillsApi.update(snapshot.loadedSkill.skill_id, {
           tenant_id: TENANT_ID,
           content: snapshot.loadedSkill.content,
           status: snapshot.loadedSkill.status,
-        });
+        }, activeAgentId);
         if (operation.version && operation.version !== snapshot.loadedSkill.version) {
           try {
-            await api.delete(
-              `/api/enterprise/skills/${encodeURIComponent(skillId)}/versions/${encodeURIComponent(operation.version)}?tenant_id=${TENANT_ID}${agentQuery}`,
-            );
+            await skillsApi.deleteVersion(skillId, operation.version, activeAgentId);
           } catch {
             // A saved version may be shared with current state or already removed. The active draft has been restored.
           }
         }
       } else {
         try {
-          await api.delete(`/api/enterprise/skills/${encodeURIComponent(skillId)}?tenant_id=${TENANT_ID}${agentQuery}`);
+          await skillsApi.remove(skillId, activeAgentId);
         } catch {
           // If the skill was not persisted, there is nothing else to roll back.
         }

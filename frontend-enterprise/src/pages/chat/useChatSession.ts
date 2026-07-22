@@ -21,6 +21,7 @@ import {
   uploadChatAttachments,
   type StreamEvent,
 } from '@/api/client';
+import { chatApi } from '@/api/endpoints/chat';
 import { clearEnterpriseAuthSession, getEnterpriseAuthSession } from '@/auth';
 import { emitAgentScopeChange, persistSharedAgentScope } from '@/lib/agent-scope-storage';
 import { getClientTimeZone } from '@/lib/timezone';
@@ -619,7 +620,7 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
   const loadAgents = useCallback(async (preferredAgentId?: string) => {
     setAgentsLoaded(false);
     try {
-      const rows = await api.get<AgentProfileRead[]>(`/api/chat/agents?tenant_id=${tenantId}`);
+      const rows = await chatApi.listAgents(tenantId);
       setAgents(rows);
       setSelectedAgentId((current) => {
         const employeeRows = visibleChatEmployees(rows, auth?.user);
@@ -1040,8 +1041,8 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
   ));
 
   const loadSessions = useCallback(() => {
-    api
-      .get<ChatSession[]>(`/api/chat/sessions?tenant_id=${tenantId}`)
+    chatApi
+      .listSessions(tenantId)
       .then((rows) => {
         const previousIds = new Set(knownSessionIdsRef.current);
         const initialized = sessionsInitializedRef.current;
@@ -1097,8 +1098,8 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
   }, [forgetMissingSession, loadSessions, navigate, sessionId]);
 
   const loadMessages = useCallback((id: string) => {
-    return api
-      .get<ChatMessage[]>(`/api/chat/sessions/${id}/messages?tenant_id=${tenantId}`)
+    return chatApi
+      .sessionMessages(id, tenantId)
       .then((rows) => {
         const slot = getSlot(id);
         slot.serverMessages = attachTurnIdsToServerMessages(rows, slot.realtimeMessages);
@@ -1124,8 +1125,8 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
   }, [clearStreamSlot, getSlot, getStreamSlot, handleMissingSession, notifyRequestError, notifyStore, pruneRealtime, tenantId]);
 
   const loadTraces = useCallback((id: string) => {
-    return api
-      .get<TurnTraceRead[]>(`/api/chat/sessions/${id}/trace?tenant_id=${tenantId}`)
+    return chatApi
+      .sessionTrace(id, tenantId)
       .then((rows) => {
         const slot = getSlot(id);
         const stream = getStreamSlot(id);
@@ -1302,8 +1303,8 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
   const loadHandoffs = useCallback(() => {
     if (!auth) return Promise.resolve();
     setHandoffsLoading(true);
-    return api
-      .get<HumanHandoffRead[]>(`/api/chat/handoffs?tenant_id=${tenantId}&status=pending`)
+    return chatApi
+      .listHandoffs(tenantId)
       .then(setHandoffs)
       .catch((error) => {
         notifyRequestError('handoffs', error, '待回答加載失敗');
@@ -1313,7 +1314,7 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
 
   const replyToHandoff = useCallback(async (handoff: HumanHandoffRead, reply: string): Promise<boolean> => {
     try {
-      await api.post<HumanHandoffRead>(`/api/chat/handoffs/${handoff.id}/reply`, { tenant_id: tenantId, reply });
+      await chatApi.replyHandoff(handoff.id, { tenant_id: tenantId, reply });
       notify.success('已回覆，原會話會繼續執行');
       setHandoffs((rows) => rows.filter((item) => item.id !== handoff.id));
       setHandoffReplies((prev) => {
@@ -1586,8 +1587,8 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
 
   useEffect(() => {
     if (!auth) return;
-    api
-      .get<UIConfigRead>(`/api/chat/ui-config?tenant_id=${tenantId}`)
+    chatApi
+      .uiConfig(tenantId)
       .then(setUiConfig)
       .catch(() => undefined);
   }, [auth, tenantId]);
@@ -1667,7 +1668,7 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
       notify.warning('請輸入會話名稱');
       return;
     }
-    const updated = await api.put<ChatSession>(`/api/chat/sessions/${renameSession.id}`, {
+    const updated = await chatApi.renameSession(renameSession.id, {
       tenant_id: tenantId,
       title,
     });
@@ -1690,7 +1691,7 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
     streamRef.current.delete(target.id);
     storeRef.current.delete(target.id);
     try {
-      await api.delete(`/api/chat/sessions/${target.id}?tenant_id=${tenantId}`);
+      await chatApi.deleteSession(target.id, tenantId);
       forgetMissingSession(target.id);
       if (target.id === sessionId) {
         navigate(CHAT_BASE_PATH);
@@ -1722,7 +1723,7 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
       void loadSessions();
     };
     const cancelRequest = cancelledTurnId && !isDraftConversationKey(activeConversationId)
-      ? api.postKeepalive(`/api/chat/sessions/${activeConversationId}/cancel`, {
+      ? chatApi.cancelSession(activeConversationId, {
           tenant_id: tenantId,
           turn_id: cancelledTurnId,
         }).catch(() => undefined)
@@ -1780,9 +1781,9 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
     updateMessageFeedback(sessionId, item.id, next);
     try {
       if (next) {
-        await api.post(`/api/chat/messages/${item.id}/feedback`, { tenant_id: tenantId, rating: next });
+        await chatApi.setMessageFeedback(item.id, { tenant_id: tenantId, rating: next });
       } else {
-        await api.delete(`/api/chat/messages/${item.id}/feedback?tenant_id=${tenantId}`);
+        await chatApi.clearMessageFeedback(item.id, tenantId);
       }
     } catch (error) {
       updateMessageFeedback(sessionId, item.id, previous);
@@ -1797,7 +1798,7 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
   const confirmScheduledTask = useCallback(async (draft: ScheduledTaskDraftRead, draftKey?: string) => {
     if (!sessionId) return;
     try {
-      const saved = await api.post<ScheduledTaskRead>('/api/chat/scheduled-tasks', {
+      const saved = await chatApi.createScheduledTask({
         tenant_id: tenantId,
         agent_id: draft.agent_id,
         title: draft.title,
@@ -2434,8 +2435,8 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
 
   const pollScheduledSessionEvents = useCallback((id: string) => {
     if (locallyCancelledSessionIdsRef.current.has(id)) return Promise.resolve();
-    return api
-      .get<ChatSessionEventRead[]>(`/api/chat/sessions/${id}/events?tenant_id=${tenantId}`)
+    return chatApi
+      .sessionEvents(id, tenantId)
       .then((events) => {
         const traceEvents = events.filter((event) => Boolean(eventTraceTurnId(event)));
         if (!traceEvents.length) return;

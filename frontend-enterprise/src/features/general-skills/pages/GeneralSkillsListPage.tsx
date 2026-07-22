@@ -17,6 +17,7 @@ import { Ban, CircleCheck, Copy, Users } from 'lucide-react';
 import { ContextMenu } from 'radix-ui';
 
 import { api, streamPost, TENANT_ID } from '@/api/client';
+import { generalSkillsApi } from '@/api/endpoints/generalSkills';
 import { isEnterpriseAdmin, type EnterpriseAuthUser } from '@/auth';
 import AppHeader from '@/components/AppHeader';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
@@ -128,10 +129,9 @@ export default function GeneralSkillsListPage({ embedded = false }: { embedded?:
     : isEnterpriseAdmin(currentUser) && isOverallAgent;
 
   const load = () => {
-    const agentSuffix = agentId ? `&agent_id=${encodeURIComponent(agentId)}` : '';
     setLoading(true);
-    return api
-      .get<GeneralSkillRead[]>(`/api/enterprise/general-skills?tenant_id=${TENANT_ID}${agentSuffix}`)
+    return generalSkillsApi
+      .list(agentId)
       .then(setRows)
       .catch((error) => notify.error(error.message))
       .finally(() => setLoading(false));
@@ -207,10 +207,7 @@ export default function GeneralSkillsListPage({ embedded = false }: { embedded?:
 
   async function setSkillPublished(row: GeneralSkillRead, published: boolean) {
     try {
-      const agentSuffix = agentId ? `&agent_id=${encodeURIComponent(agentId)}` : '';
-      const next = await api.post<GeneralSkillRead>(
-        `/api/enterprise/general-skills/${row.slug}/${published ? 'publish' : 'archive'}?tenant_id=${TENANT_ID}${agentSuffix}`,
-      );
+      const next = await generalSkillsApi.setStatus(row.slug, published, agentId);
       setRows((current) => current.map((item) => (item.id === next.id ? next : item)));
       notify.success(published ? '已啟用技能' : '已停用技能');
     } catch (error) {
@@ -224,8 +221,7 @@ export default function GeneralSkillsListPage({ embedded = false }: { embedded?:
     const branchMode = !isOverallAgent;
     setDeleting(true);
     try {
-      const agentSuffix = agentId ? `&agent_id=${encodeURIComponent(agentId)}` : '';
-      await api.delete(`/api/enterprise/general-skills/${row.slug}?tenant_id=${TENANT_ID}${agentSuffix}`);
+      await generalSkillsApi.remove(row.slug, agentId);
       setRows((current) => current.filter((item) => item.id !== row.id));
       notify.success(branchMode ? '已移除技能' : '已刪除技能');
       setDeleteTarget(null);
@@ -280,9 +276,7 @@ export default function GeneralSkillsListPage({ embedded = false }: { embedded?:
     setAgentImportSelectedSkillIds([]);
     if (!sourceAgentId) return [];
     try {
-      const sourceRows = await api.get<GeneralSkillRead[]>(
-        `/api/enterprise/general-skills?tenant_id=${TENANT_ID}&agent_id=${encodeURIComponent(sourceAgentId)}`,
-      );
+      const sourceRows = await generalSkillsApi.list(sourceAgentId);
       const existingIds = new Set(rows.map((item) => item.id));
       const publishedRows = sourceRows.filter((item) => item.status === 'published' && !existingIds.has(item.id));
       setAgentImportSourceSkills(publishedRows);
@@ -334,7 +328,7 @@ export default function GeneralSkillsListPage({ embedded = false }: { embedded?:
     clawhubAbortRef.current = controller;
     setClawhubLoading(true);
     try {
-      const row = await api.postWithSignal<GeneralSkillRead>('/api/enterprise/general-skills/import-skillhub', {
+      const row = await generalSkillsApi.importSkillhub({
         tenant_id: TENANT_ID,
         agent_id: !isOverallAgent && agentId ? agentId : undefined,
         source: clawhubSource.trim(),

@@ -17,6 +17,7 @@ import { Ban, CircleCheck, Copy, Users } from 'lucide-react';
 import { ContextMenu } from 'radix-ui';
 
 import { api, streamPost, TENANT_ID } from '@/api/client';
+import { generalSkillsApi } from '@/api/endpoints/generalSkills';
 import { isEnterpriseAdmin, type EnterpriseAuthUser } from '@/auth';
 import AppHeader from '@/components/AppHeader';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
@@ -169,9 +170,8 @@ function GeneralSkillEditorPage({ mode }: { mode: 'new' | 'edit' } & GeneralSkil
       : '維護當前數字員工技能的定義、文件包和運行測試。');
 
   const load = () => {
-    const agentSuffix = agentId ? `&agent_id=${encodeURIComponent(agentId)}` : '';
-    return api
-      .get<GeneralSkillRead[]>(`/api/enterprise/general-skills?tenant_id=${TENANT_ID}${agentSuffix}`)
+    return generalSkillsApi
+      .list(agentId)
       .then((items) => {
         setRows(items);
         if (mode === 'edit') {
@@ -275,7 +275,7 @@ function GeneralSkillEditorPage({ mode }: { mode: 'new' | 'edit' } & GeneralSkil
     }
     setSaving(true);
     try {
-      const row = await api.post<GeneralSkillRead>('/api/enterprise/general-skills/import', {
+      const row = await generalSkillsApi.import({
         tenant_id: TENANT_ID,
         agent_id: !isOverallAgent && agentId ? agentId : undefined,
         name: skillName.trim() || undefined,
@@ -359,10 +359,7 @@ function GeneralSkillEditorPage({ mode }: { mode: 'new' | 'edit' } & GeneralSkil
       return;
     }
     try {
-      const agentSuffix = agentId ? `&agent_id=${encodeURIComponent(agentId)}` : '';
-      const next = await api.post<GeneralSkillRead>(
-        `/api/enterprise/general-skills/${row.slug}/${published ? 'publish' : 'archive'}?tenant_id=${TENANT_ID}${agentSuffix}`,
-      );
+      const next = await generalSkillsApi.setStatus(row.slug, published, agentId);
       replaceRow(next);
       notify.success(published ? '已啟用技能' : '已停用技能');
     } catch (error) {
@@ -379,8 +376,7 @@ function GeneralSkillEditorPage({ mode }: { mode: 'new' | 'edit' } & GeneralSkil
     }
     const branchMode = !isOverallAgent;
     try {
-      const agentSuffix = agentId ? `&agent_id=${encodeURIComponent(agentId)}` : '';
-      await api.delete(`/api/enterprise/general-skills/${row.slug}?tenant_id=${TENANT_ID}${agentSuffix}`);
+      await generalSkillsApi.remove(row.slug, agentId);
       const nextRows = rows.filter((item) => item.id !== row.id);
       setRows(nextRows);
       if (selectedSlug === row.slug || editingSlug === row.slug) {
@@ -487,9 +483,7 @@ function GeneralSkillEditorPage({ mode }: { mode: 'new' | 'edit' } & GeneralSkil
     setAgentImportSelectedSkillIds([]);
     if (!sourceAgentId) return;
     try {
-      const sourceRows = await api.get<GeneralSkillRead[]>(
-        `/api/enterprise/general-skills?tenant_id=${TENANT_ID}&agent_id=${encodeURIComponent(sourceAgentId)}`,
-      );
+      const sourceRows = await generalSkillsApi.list(sourceAgentId);
       const existingIds = new Set(rows.map((item) => item.id));
       setAgentImportSourceSkills(sourceRows.filter((item) => item.status === 'published' && !existingIds.has(item.id)));
     } catch (error) {
@@ -538,7 +532,7 @@ function GeneralSkillEditorPage({ mode }: { mode: 'new' | 'edit' } & GeneralSkil
     clawhubAbortRef.current = controller;
     setClawhubLoading(true);
     try {
-      const row = await api.postWithSignal<GeneralSkillRead>('/api/enterprise/general-skills/import-skillhub', {
+      const row = await generalSkillsApi.importSkillhub({
         tenant_id: TENANT_ID,
         agent_id: !isOverallAgent && agentId ? agentId : undefined,
         source: clawhubSource.trim(),
@@ -573,7 +567,7 @@ function GeneralSkillEditorPage({ mode }: { mode: 'new' | 'edit' } & GeneralSkil
     try {
       const contentBase64 = await fileToBase64(file);
       if (controller.signal.aborted) return;
-      const row = await api.postWithSignal<GeneralSkillRead>('/api/enterprise/general-skills/import-package', {
+      const row = await generalSkillsApi.importPackage({
         tenant_id: TENANT_ID,
         agent_id: !isOverallAgent && agentId ? agentId : undefined,
         filename: file.name,

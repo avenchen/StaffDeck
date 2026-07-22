@@ -36,6 +36,7 @@ import { DetailField } from '@/components/DetailField';
 import { ResourceImportDialog } from '@/components/ResourceImportDialog';
 
 import { api, TENANT_ID } from '../api/client';
+import { skillsApi } from '../api/endpoints/skills';
 import IconAdd from '../assets/icons/add.svg?react';
 import IconChevronDown from '../assets/icons/chevron-down.svg?react';
 import IconClear from '../assets/icons/field-clear.svg?react';
@@ -137,8 +138,7 @@ export default function SkillsPage({}: {
   const load = async () => {
     setLoading(true);
     try {
-      const suffix = agentId ? `&agent_id=${encodeURIComponent(agentId)}` : '';
-      const result = await api.get<SkillRead[]>(`/api/enterprise/skills?tenant_id=${TENANT_ID}${suffix}`);
+      const result = await skillsApi.list(agentId);
       setRows(result);
       const agentRows = await api.get<AgentProfileRead[]>(`/api/enterprise/agents?tenant_id=${TENANT_ID}`);
       setAgents(agentRows);
@@ -478,7 +478,7 @@ export default function SkillsPage({}: {
 
   async function publish(row: SkillRead) {
     try {
-      await api.post(`/api/enterprise/skills/${row.skill_id}/publish?tenant_id=${TENANT_ID}${agentQuery()}`);
+      await skillsApi.publish(row.skill_id, agentId);
       notify.success('已啟用');
       await load();
     } catch (error) {
@@ -488,7 +488,7 @@ export default function SkillsPage({}: {
 
   async function archive(row: SkillRead) {
     try {
-      await api.post(`/api/enterprise/skills/${row.skill_id}/archive?tenant_id=${TENANT_ID}${agentQuery()}`);
+      await skillsApi.archive(row.skill_id, agentId);
       notify.success('已停用');
       await load();
     } catch (error) {
@@ -498,7 +498,7 @@ export default function SkillsPage({}: {
 
   async function markDraft(row: SkillRead) {
     try {
-      await api.post(`/api/enterprise/skills/${row.skill_id}/draft?tenant_id=${TENANT_ID}${agentQuery()}`);
+      await skillsApi.markDraft(row.skill_id, agentId);
       notify.success('已轉為草稿');
       await load();
     } catch (error) {
@@ -511,9 +511,7 @@ export default function SkillsPage({}: {
     setVersionModalOpen(true);
     setVersionRows([]);
     try {
-      const result = await api.get<SkillVersionRead[]>(
-        `/api/enterprise/skills/${encodeURIComponent(row.skill_id)}/versions?tenant_id=${TENANT_ID}${agentQuery()}`,
-      );
+      const result = await skillsApi.listVersions(row.skill_id, agentId);
       setVersionRows(result);
     } catch (error) {
       notify.error(error instanceof Error ? error.message : '加載版本失敗');
@@ -522,9 +520,7 @@ export default function SkillsPage({}: {
 
   async function showVersionDetail(row: SkillVersionRead) {
     try {
-      const result = await api.get<SkillVersionRead>(
-        `/api/enterprise/skills/${encodeURIComponent(row.skill_id)}/versions/${encodeURIComponent(row.version)}?tenant_id=${TENANT_ID}${agentQuery()}`,
-      );
+      const result = await skillsApi.getVersion(row.skill_id, row.version, agentId);
       setDetailVersion(result);
     } catch (error) {
       notify.error(error instanceof Error ? error.message : '加載版本詳情失敗');
@@ -534,9 +530,7 @@ export default function SkillsPage({}: {
   async function syncFromOverall(row: SkillRead) {
     if (!agentId) return;
     try {
-      await api.post(
-        `/api/enterprise/agents/${agentId}/skills/${encodeURIComponent(row.skill_id)}/sync-from-overall?tenant_id=${TENANT_ID}`,
-      );
+      await skillsApi.syncFromOverall(agentId, row.skill_id);
       notify.success('已從廣場同步');
       await load();
     } catch (error) {
@@ -550,7 +544,7 @@ export default function SkillsPage({}: {
     const branchMode = !isOverallAgent;
     setConfirmLoading(true);
     try {
-      await api.delete(`/api/enterprise/skills/${row.skill_id}?tenant_id=${TENANT_ID}${agentQuery()}`);
+      await skillsApi.remove(row.skill_id, agentId);
       notify.success(branchMode ? '已移除' : '已刪除');
       setDeleteTarget(null);
       await load();
@@ -566,9 +560,7 @@ export default function SkillsPage({}: {
     if (!row) return;
     setConfirmLoading(true);
     try {
-      const result = await api.post<SkillRead>(
-        `/api/enterprise/skills/${encodeURIComponent(row.skill_id)}/versions/${encodeURIComponent(row.version)}/rollback?tenant_id=${TENANT_ID}${agentQuery()}`,
-      );
+      const result = await skillsApi.rollbackVersion(row.skill_id, row.version, agentId);
       notify.success(`已回滾到 ${row.version}`);
       setRollbackTarget(null);
       await load();
@@ -596,10 +588,6 @@ export default function SkillsPage({}: {
     } finally {
       setConfirmLoading(false);
     }
-  }
-
-  function agentQuery() {
-    return agentId ? `&agent_id=${encodeURIComponent(agentId)}` : '';
   }
 
   const listEmptyText = isOverallAgent

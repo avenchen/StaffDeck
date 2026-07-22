@@ -1,6 +1,7 @@
 import { type CSSProperties } from 'react';
 
 import { api, TENANT_ID } from '@/api/client';
+import { chatApi } from '@/api/endpoints/chat';
 import AppSidebar from '@/components/AppSidebar';
 import { notify } from '@/components/ui/app-toast';
 import { SidebarProvider } from '@/components/ui/sidebar';
@@ -19,7 +20,7 @@ export default function ChatGalleryPage() {
 
   async function startGalleryChat(agent: AgentProfileRead) {
     try {
-      await api.post<AgentProfileRead>(`/api/chat/agents/${agent.id}/use?tenant_id=${TENANT_ID}`, {});
+      await chatApi.useAgent(agent.id, TENANT_ID, {});
       await chat.refreshAgents(agent.id);
       chat.setSessionAgentFilter(agent.id);
       chat.openDraftForAgent(agent.id);
