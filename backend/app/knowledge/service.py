@@ -44,7 +44,7 @@ from app.knowledge.okf import (
 from app.knowledge.citations import CITATION_EXCERPT_CHAR_LIMIT
 from app.llm import LLMClient, LLMError
 from app.observability.spans import llm_operation, observed_span
-from app.skills.skill_schema import SkillCard
+from app.skill_card import SkillCard
 
 
 PROMPT_DIR = paths.resource_dir() / "app" / "llm" / "prompts"
