@@ -4,6 +4,7 @@ from sqlalchemy.pool import StaticPool
 from sqlmodel import Session, SQLModel, create_engine, select
 
 import app.api.chat as chat_api
+from app.chat_service import handoff_resume
 from app.core.agent_loop import AgentLoop
 from app.db.models import AgentEvent, AgentProfile, ChatSession, HumanHandoffRequest, Message, Skill, Tenant, User, utc_now
 from app.session.slot_policy import strip_router_generated_message_slots
@@ -593,8 +594,8 @@ def test_handoff_resume_worker_continues_original_session_once(monkeypatch):
         def handle_turn(self, request: ChatTurnRequest) -> None:
             handled_requests.append(request)
 
-    monkeypatch.setattr(chat_api, "engine", engine)
-    monkeypatch.setattr(chat_api, "AgentLoop", FakeAgentLoop)
+    monkeypatch.setattr(handoff_resume, "engine", engine)
+    monkeypatch.setattr(handoff_resume, "AgentLoop", FakeAgentLoop)
     with Session(engine) as db:
         _admin, user, _other = _seed_handoff_users(db)
         db.add(
@@ -623,8 +624,8 @@ def test_handoff_resume_worker_continues_original_session_once(monkeypatch):
         )
         db.commit()
 
-    chat_api._resume_human_handoff_worker("handoff_worker")
-    chat_api._resume_human_handoff_worker("handoff_worker")
+    handoff_resume.resume_human_handoff_worker("handoff_worker")
+    handoff_resume.resume_human_handoff_worker("handoff_worker")
 
     assert len(handled_requests) == 1
     request = handled_requests[0]
@@ -656,8 +657,8 @@ def test_handoff_resume_worker_persists_failed_resume(monkeypatch):
         def handle_turn(self, request: ChatTurnRequest) -> None:
             raise RuntimeError(f"resume failed for {request.session_id}")
 
-    monkeypatch.setattr(chat_api, "engine", engine)
-    monkeypatch.setattr(chat_api, "AgentLoop", FailingAgentLoop)
+    monkeypatch.setattr(handoff_resume, "engine", engine)
+    monkeypatch.setattr(handoff_resume, "AgentLoop", FailingAgentLoop)
     with Session(engine) as db:
         _admin, user, _other = _seed_handoff_users(db)
         db.add(
@@ -684,7 +685,7 @@ def test_handoff_resume_worker_persists_failed_resume(monkeypatch):
         )
         db.commit()
 
-    chat_api._resume_human_handoff_worker("handoff_worker_failed")
+    handoff_resume.resume_human_handoff_worker("handoff_worker_failed")
 
     with Session(engine) as db:
         handoff = db.get(HumanHandoffRequest, "handoff_worker_failed")

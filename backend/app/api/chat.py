@@ -59,6 +59,9 @@ from app.chat_service.session_title import (
     session_title_summary_payload as _session_title_summary_payload,
     summarize_session_title_once as _summarize_session_title_once,
 )
+from app.chat_service.handoff_resume import (
+    resume_human_handoff_async as _resume_human_handoff_async,
+)
 from app.session.attachments import parse_chat_attachment
 from app.session.helpers import public_session
 from app.session.session_schema import (
@@ -303,81 +306,6 @@ def _normalized_session_event_payload(row: AgentEvent) -> dict[str, object]:
     if "run_id" not in normalized and data.get("run_id"):
         normalized["run_id"] = str(data.get("run_id"))
     return normalized
-
-
-def _resume_human_handoff_async(handoff_id: str) -> None:
-    thread = threading.Thread(target=_resume_human_handoff_worker, args=(handoff_id,), daemon=True)
-    thread.start()
-
-
-def _resume_human_handoff_worker(handoff_id: str) -> None:
-    try:
-        with Session(engine) as db:
-            handoff = db.get(HumanHandoffRequest, handoff_id)
-            if not handoff or handoff.status != "answered" or not handoff.human_reply:
-                return
-            chat_session = db.get(ChatSession, handoff.session_id)
-            if not chat_session or chat_session.tenant_id != handoff.tenant_id:
-                return
-            metadata = dict(handoff.metadata_json or {})
-            if metadata.get("resume_started_at"):
-                return
-            now = utc_now()
-            metadata["resume_started_at"] = now.isoformat()
-            handoff.metadata_json = metadata
-            db.add(handoff)
-            db.add(
-                AgentEvent(
-                    tenant_id=handoff.tenant_id,
-                    session_id=handoff.session_id,
-                    event_type="human_handoff_resume_started",
-                    payload_json={
-                        "handoff_id": handoff.id,
-                        "agent_id": handoff.agent_id,
-                        "trigger_skill_id": handoff.trigger_skill_id,
-                        "trigger_step_id": handoff.trigger_step_id,
-                    },
-                    created_at=now,
-                )
-            )
-            db.commit()
-
-            request = ChatTurnRequest(
-                tenant_id=handoff.tenant_id,
-                session_id=handoff.session_id,
-                agent_id=handoff.agent_id or chat_session.agent_id,
-                user_id=handoff.requester_user_id or chat_session.user_id or "",
-                message=handoff.human_reply,
-                channel="human_handoff_resume",
-                debug=False,
-            )
-            AgentLoop(db).handle_turn(request)
-            metadata = dict(handoff.metadata_json or {})
-            metadata["resume_finished_at"] = utc_now().isoformat()
-            handoff.metadata_json = metadata
-            db.add(handoff)
-            db.commit()
-    except Exception as exc:
-        with Session(engine) as db:
-            handoff = db.get(HumanHandoffRequest, handoff_id)
-            if not handoff:
-                return
-            metadata = dict(handoff.metadata_json or {})
-            metadata["resume_failed_at"] = utc_now().isoformat()
-            metadata["resume_error"] = str(exc)[:300]
-            handoff.status = "failed"
-            handoff.metadata_json = metadata
-            handoff.updated_at = utc_now()
-            db.add(handoff)
-            db.add(
-                AgentEvent(
-                    tenant_id=handoff.tenant_id,
-                    session_id=handoff.session_id,
-                    event_type="human_handoff_resume_failed",
-                    payload_json={"handoff_id": handoff.id, "error": str(exc)[:300]},
-                )
-            )
-            db.commit()
 
 
 def _maybe_handle_scheduled_task_request(
