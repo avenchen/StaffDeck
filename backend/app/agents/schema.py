@@ -26,6 +26,7 @@ class AgentProfileUpdateRequest(BaseModel):
     description: Optional[str] = None
     persona_prompt: Optional[str] = None
     status: Optional[Literal["active", "archived"]] = None
+    department_id: Optional[str] = None
     metadata: Optional[dict[str, Any]] = None
 
 
@@ -51,6 +52,9 @@ class AgentProfileRead(BaseModel):
     persona_prompt: Optional[str] = None
     is_overall: bool
     status: str
+    department_id: Optional[str] = None
+    visibility_all: bool = False
+    visibility_same_department: bool = False
     metadata: dict[str, Any] = Field(default_factory=dict)
     resources: list[AgentResourceBindingRead] = Field(default_factory=list)
     created_at: str

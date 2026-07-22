@@ -972,6 +972,16 @@ def seed_demo_data(session: Session) -> None:
             )
         )
 
+    # Every user belongs to a department: ensure the tenant root and backfill.
+    from app.departments.service import ensure_root_department
+
+    root = ensure_root_department(session, "tenant_demo")
+    for user in session.exec(
+        select(User).where(User.tenant_id == "tenant_demo", User.department_id.is_(None))
+    ).all():
+        user.department_id = root.id
+        session.add(user)
+
     session.commit()
 
 

@@ -28,6 +28,7 @@ class UserCreateRequest(BaseModel):
     password: str
     display_name: Optional[str] = None
     role: Literal["admin", "member"] = MEMBER_ROLE
+    department_id: Optional[str] = None
 
 
 class UserUpdateRequest(BaseModel):
@@ -35,6 +36,7 @@ class UserUpdateRequest(BaseModel):
     display_name: Optional[str] = None
     password: Optional[str] = None
     role: Optional[Literal["admin", "member"]] = None
+    department_id: Optional[str] = None
 
 
 class UserRead(BaseModel):
@@ -43,6 +45,7 @@ class UserRead(BaseModel):
     username: str
     display_name: Optional[str] = None
     role: Literal["admin", "member"]
+    department_id: Optional[str] = None
     created_at: Optional[str] = None
     updated_at: Optional[str] = None
 
@@ -91,11 +94,13 @@ def create_user(
     ).first()
     if existing:
         raise HTTPException(status_code=409, detail="Account already exists")
+    department_id = _resolve_department_id(db, request.tenant_id, request.department_id)
     user = User(
         tenant_id=request.tenant_id,
         username=username,
         display_name=(request.display_name or username).strip()[:80],
         role=request.role,
+        department_id=department_id,
         password_hash=hash_password(request.password),
     )
     db.add(user)
@@ -139,6 +144,8 @@ def update_user(
         if user.id == current_user.id:
             raise HTTPException(status_code=400, detail="Cannot change your own account role")
         user.role = request.role
+    if request.department_id is not None:
+        user.department_id = _resolve_department_id(db, request.tenant_id, request.department_id)
     user.updated_at = utc_now()
     db.add(user)
     db.commit()
@@ -164,6 +171,20 @@ def delete_user(
     return {"ok": True}
 
 
+def _resolve_department_id(db: Session, tenant_id: str, department_id: Optional[str]) -> str:
+    """Validate a requested department belongs to the tenant; default to the
+    tenant root when none is supplied (every user must belong to a department)."""
+    from app.db.models import Department
+    from app.departments.service import ensure_root_department
+
+    if department_id:
+        dept = db.get(Department, department_id)
+        if not dept or dept.tenant_id != tenant_id:
+            raise HTTPException(status_code=400, detail="Invalid department")
+        return dept.id
+    return ensure_root_department(db, tenant_id).id
+
+
 def _user_read(user: User) -> UserRead:
     return UserRead(
         id=user.id,
@@ -171,6 +192,7 @@ def _user_read(user: User) -> UserRead:
         username=user.username,
         display_name=user.display_name,
         role=user.role,
+        department_id=user.department_id,
         created_at=user.created_at.isoformat() if user.created_at else None,
         updated_at=user.updated_at.isoformat() if user.updated_at else None,
     )

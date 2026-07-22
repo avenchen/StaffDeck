@@ -19,6 +19,7 @@ from app.api import (
     agents,
     auth,
     chat,
+    departments,
     feedback,
     general_skills,
     knowledge,
@@ -60,6 +61,7 @@ MODULES: tuple[AppModule, ...] = (
         routers=(ui_config.chat_router, ui_config.enterprise_router),
     ),
     AppModule(name="auth", routers=(auth.router,)),
+    AppModule(name="departments", routers=(departments.router,)),
     AppModule(name="general-skills", routers=(general_skills.router,)),
     AppModule(
         name="knowledge",

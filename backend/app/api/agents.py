@@ -2,9 +2,11 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from time import sleep
+from typing import Optional
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel
 from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlmodel import Session, select
 
@@ -66,6 +68,8 @@ from app.security.permissions import is_admin_user as _is_admin_user
 from app.departments.service import (
     AgentVisibilityResolver,
     agent_visible_to_user as _service_agent_visible_to_user,
+    get_agent_visibility,
+    set_agent_visibility,
 )
 from app.security.tenant import ensure_tenant
 
@@ -270,6 +274,10 @@ def update_agent(
         row.persona_prompt = request.persona_prompt
     if request.status is not None:
         row.status = request.status
+    if request.department_id is not None:
+        row.department_id = _resolve_agent_department_id(
+            db, request.tenant_id, request.department_id
+        )
     if request.metadata is not None:
         row.metadata_json = _metadata_preserving_creator(
             row.metadata_json or {}, request.metadata, user
@@ -279,6 +287,77 @@ def update_agent(
     db.commit()
     db.refresh(row)
     return agent_read(row, _bindings_by_agent(db, request.tenant_id).get(row.id, []))
+
+
+def _resolve_agent_department_id(db: Session, tenant_id: str, department_id: str) -> str | None:
+    """Validate an agent's optional owning department. Empty string clears it."""
+    from app.db.models import Department
+
+    if not department_id:
+        return None
+    dept = db.get(Department, department_id)
+    if not dept or dept.tenant_id != tenant_id:
+        raise HTTPException(status_code=400, detail="Invalid department")
+    return dept.id
+
+
+class AgentVisibilityUpdateRequest(BaseModel):
+    tenant_id: str
+    all: Optional[bool] = None
+    same_department: Optional[bool] = None
+    department_ids: Optional[list[str]] = None
+    user_ids: Optional[list[str]] = None
+
+
+class AgentVisibilityRead(BaseModel):
+    all: bool
+    same_department: bool
+    department_ids: list[str]
+    user_ids: list[str]
+
+
+@enterprise_router.get("/{agent_id}/visibility", response_model=AgentVisibilityRead)
+def get_agent_visibility_endpoint(
+    agent_id: str,
+    tenant_id: str = Query(...),
+    db: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+) -> AgentVisibilityRead:
+    row = _get_agent(db, tenant_id, agent_id)
+    _ensure_can_manage_agent(row, current_user)
+    return AgentVisibilityRead(**get_agent_visibility(db, row))
+
+
+@enterprise_router.put("/{agent_id}/visibility", response_model=AgentVisibilityRead)
+def update_agent_visibility_endpoint(
+    agent_id: str,
+    request: AgentVisibilityUpdateRequest,
+    db: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+) -> AgentVisibilityRead:
+    row = _get_agent(db, request.tenant_id, agent_id)
+    _ensure_can_manage_agent(row, current_user)
+    if request.department_ids is not None:
+        for dept_id in request.department_ids:
+            _resolve_agent_department_id(db, request.tenant_id, dept_id)
+    if request.user_ids is not None:
+        for user_id in request.user_ids:
+            member = db.get(User, user_id)
+            if not member or member.tenant_id != request.tenant_id:
+                raise HTTPException(status_code=400, detail="Invalid user in visibility list")
+    set_agent_visibility(
+        db,
+        row,
+        all=request.all,
+        same_department=request.same_department,
+        department_ids=request.department_ids,
+        user_ids=request.user_ids,
+    )
+    row.updated_at = utc_now()
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+    return AgentVisibilityRead(**get_agent_visibility(db, row))
 
 
 @enterprise_router.delete("/{agent_id}")
@@ -821,6 +900,9 @@ def agent_read(
         persona_prompt=row.persona_prompt,
         is_overall=row.is_overall,
         status=row.status,
+        department_id=row.department_id,
+        visibility_all=bool(row.visibility_all),
+        visibility_same_department=bool(row.visibility_same_department),
         metadata=metadata,
         resources=[binding_read(binding) for binding in bindings],
         created_at=row.created_at.isoformat(),
