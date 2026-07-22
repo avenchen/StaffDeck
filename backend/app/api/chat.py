@@ -42,6 +42,7 @@ from app.observability.spans import (
 )
 from app.security.auth import get_current_user
 from app.security.permissions import agent_owned_by_user, is_admin_user
+from app.departments.service import agent_visible_to_user
 from app.security.tenant import ensure_tenant
 from app.scheduled_tasks.schema import ScheduledTaskDraftRead
 from app.scheduled_tasks.service import detect_scheduled_task_draft
@@ -1760,7 +1761,7 @@ def _ensure_chat_agent_available(
     row = db.get(AgentProfile, agent_id)
     if not row or row.tenant_id != tenant_id or row.status != "active" or row.is_overall:
         raise HTTPException(status_code=404, detail="Agent not available")
-    if not _chat_agent_visible_to_user(row, current_user):
+    if not _chat_agent_visible_to_user(db, row, current_user):
         raise HTTPException(status_code=403, detail="Agent not available")
     return row
 
@@ -2154,11 +2155,8 @@ def _ensure_request_tenant(tenant_id: str, current_user: User) -> None:
         raise HTTPException(status_code=403, detail="Tenant mismatch")
 
 
-def _chat_agent_visible_to_user(row: AgentProfile, user: User) -> bool:
-    if is_admin_user(user):
-        return True
-    metadata = row.metadata_json or {}
-    return agent_owned_by_user(row, user) or metadata.get("published_to_gallery") is True
+def _chat_agent_visible_to_user(db: Session, row: AgentProfile, user: User) -> bool:
+    return agent_visible_to_user(db, row, user)
 
 
 def _normalize_title(value: str | None) -> str | None:

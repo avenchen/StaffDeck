@@ -44,6 +44,7 @@ def init_db() -> None:
     _configure_sqlite_runtime()
     SQLModel.metadata.create_all(engine)
     _migrate_sqlite_skill_schema()
+    _migrate_department_schema()
 
 
 def _configure_sqlite_runtime() -> None:
@@ -260,6 +261,62 @@ def _migrate_sqlite_skill_schema() -> None:
             _normalize_agent_branch_rows(conn, tables)
             _seed_agent_branch_state(conn, inspector, tables)
             _sync_explicit_skill_tool_bindings(conn, tables)
+
+
+def _migrate_department_schema() -> None:
+    if not database_url.startswith("sqlite"):
+        return
+    from sqlmodel import Session, select
+
+    from app.db.models import AgentProfile, Department, Tenant, User
+
+    inspector = inspect(engine)
+    tables = set(inspector.get_table_names())
+    with engine.begin() as conn:
+        if "users" in tables:
+            cols = {column["name"] for column in inspector.get_columns("users")}
+            if "department_id" not in cols:
+                conn.execute(text("ALTER TABLE users ADD COLUMN department_id VARCHAR"))
+        if "agent_profiles" in tables:
+            cols = {column["name"] for column in inspector.get_columns("agent_profiles")}
+            if "department_id" not in cols:
+                conn.execute(text("ALTER TABLE agent_profiles ADD COLUMN department_id VARCHAR"))
+            if "visibility_all" not in cols:
+                conn.execute(
+                    text("ALTER TABLE agent_profiles ADD COLUMN visibility_all BOOLEAN NOT NULL DEFAULT 0")
+                )
+            if "visibility_same_department" not in cols:
+                conn.execute(
+                    text(
+                        "ALTER TABLE agent_profiles ADD COLUMN visibility_same_department BOOLEAN NOT NULL DEFAULT 0"
+                    )
+                )
+
+    # Backfill (idempotent): a root department per tenant, every user assigned to
+    # one, and the legacy published_to_gallery flag mapped to visibility_all.
+    with Session(engine) as db:
+        for tenant in db.exec(select(Tenant)).all():
+            root = db.exec(
+                select(Department).where(
+                    Department.tenant_id == tenant.id,
+                    Department.parent_id.is_(None),
+                )
+            ).first()
+            if not root:
+                root = Department(tenant_id=tenant.id, name="全組織", parent_id=None)
+                db.add(root)
+                db.flush()
+            for user in db.exec(
+                select(User).where(User.tenant_id == tenant.id, User.department_id.is_(None))
+            ).all():
+                user.department_id = root.id
+                db.add(user)
+        for agent in db.exec(select(AgentProfile)).all():
+            meta = agent.metadata_json or {}
+            if meta.get("published_to_gallery") is True and not agent.visibility_all:
+                agent.visibility_all = True
+                db.add(agent)
+        db.commit()
 
 
 def _migrate_default_model_output_limit(conn, tables: set[str]) -> None:

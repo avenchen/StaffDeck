@@ -25,6 +25,21 @@ class Tenant(SQLModel, table=True):
     updated_at: datetime = Field(default_factory=utc_now)
 
 
+class Department(SQLModel, table=True):
+    __tablename__ = "departments"
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "parent_id", "name", name="uq_department_tenant_parent_name"),
+    )
+
+    id: str = Field(default_factory=lambda: new_id("dept"), primary_key=True)
+    tenant_id: str = Field(index=True)
+    name: str
+    # parent_id is None only for the tenant root department (represents the whole org).
+    parent_id: Optional[str] = Field(default=None, index=True)
+    created_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime = Field(default_factory=utc_now)
+
+
 class User(SQLModel, table=True):
     __tablename__ = "users"
     __table_args__ = (UniqueConstraint("tenant_id", "username", name="uq_user_tenant_username"),)
@@ -34,6 +49,8 @@ class User(SQLModel, table=True):
     username: str = Field(index=True)
     display_name: Optional[str] = None
     role: str = Field(default="member", index=True)
+    # Every user belongs to a department (backfilled to the tenant root on migration).
+    department_id: Optional[str] = Field(default=None, index=True)
     password_hash: str
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)
@@ -361,9 +378,45 @@ class AgentProfile(SQLModel, table=True):
     persona_prompt: Optional[str] = None
     is_overall: bool = Field(default=False, index=True)
     status: str = Field(default="active", index=True)
+    # Optional owning department for the digital employee.
+    department_id: Optional[str] = Field(default=None, index=True)
+    # Composable visibility grants (union). Owner and admin can always see it.
+    #   visibility_all              -> visible to every user in the tenant
+    #   visibility_same_department  -> visible to users in the agent's own department
+    #   agent_visibility_departments -> visible to the listed departments (subtree-inclusive)
+    #   agent_visibility_users       -> visible to the listed users
+    visibility_all: bool = Field(default=False)
+    visibility_same_department: bool = Field(default=False)
     metadata_json: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)
+
+
+class AgentVisibilityDepartment(SQLModel, table=True):
+    __tablename__ = "agent_visibility_departments"
+    __table_args__ = (
+        UniqueConstraint("agent_id", "department_id", name="uq_agent_visibility_department"),
+    )
+
+    id: str = Field(default_factory=lambda: new_id("agentvisdept"), primary_key=True)
+    tenant_id: str = Field(index=True)
+    agent_id: str = Field(index=True)
+    # Grant covers this department and all of its descendants (subtree-inclusive).
+    department_id: str = Field(index=True)
+    created_at: datetime = Field(default_factory=utc_now)
+
+
+class AgentVisibilityUser(SQLModel, table=True):
+    __tablename__ = "agent_visibility_users"
+    __table_args__ = (
+        UniqueConstraint("agent_id", "user_id", name="uq_agent_visibility_user"),
+    )
+
+    id: str = Field(default_factory=lambda: new_id("agentvisuser"), primary_key=True)
+    tenant_id: str = Field(index=True)
+    agent_id: str = Field(index=True)
+    user_id: str = Field(index=True)
+    created_at: datetime = Field(default_factory=utc_now)
 
 
 class AgentUsage(SQLModel, table=True):

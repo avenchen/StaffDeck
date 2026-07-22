@@ -63,6 +63,10 @@ from app.db.models import (
 from app.security.auth import get_current_user
 from app.security.permissions import agent_owned_by_user as _agent_owned_by_user
 from app.security.permissions import is_admin_user as _is_admin_user
+from app.departments.service import (
+    AgentVisibilityResolver,
+    agent_visible_to_user as _service_agent_visible_to_user,
+)
 from app.security.tenant import ensure_tenant
 
 IMPORT_LOCK_RETRY_ATTEMPTS = 2
@@ -103,7 +107,8 @@ def list_agents(
         # Non-admin users still need the overall agent as a read-only open-gallery
         # source for copy/use flows. Mutations remain guarded by manage/update
         # endpoints, so this only exposes the source scope.
-        rows = [row for row in rows if row.is_overall or _agent_visible_to_user(row, user)]
+        resolver = AgentVisibilityResolver(db, tenant_id, user)
+        rows = [row for row in rows if row.is_overall or resolver.visible(row)]
     bindings = _bindings_by_agent(db, tenant_id)
     used_agent_ids = _used_agent_ids_for_user(db, tenant_id, user)
     return [agent_read(row, bindings.get(row.id, []), row.id in used_agent_ids) for row in rows]
@@ -147,7 +152,7 @@ def create_agent(
             pass
         elif copy_from_agent_id:
             source_agent = _get_agent(db, request.tenant_id, copy_from_agent_id)
-            _ensure_can_copy_from_agent(source_agent, user)
+            _ensure_can_copy_from_agent(db, source_agent, user)
             if not row.persona_prompt:
                 row.persona_prompt = source_agent.persona_prompt
             _copy_agent_scope_from_source(db, request.tenant_id, source_agent, row)
@@ -171,7 +176,7 @@ def get_agent(
     current_user: User = Depends(get_current_user),
 ) -> AgentProfileRead:
     row = _get_agent(db, tenant_id, agent_id)
-    _ensure_can_access_agent(row, current_user)
+    _ensure_can_access_agent(db, row, current_user)
     return agent_read(row, _bindings_by_agent(db, tenant_id).get(row.id, []))
 
 
@@ -184,7 +189,7 @@ def get_agent_work_record(
     current_user: User = Depends(get_current_user),
 ) -> AgentWorkRecordRead:
     agent = _get_agent(db, tenant_id, agent_id)
-    _ensure_can_access_agent(agent, current_user)
+    _ensure_can_access_agent(db, agent, current_user)
     try:
         local_timezone = ZoneInfo(timezone)
     except (ZoneInfoNotFoundError, ValueError) as exc:
@@ -304,7 +309,7 @@ def get_agent_resources(
     db: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> list[AgentResourceBindingRead]:
-    _ensure_can_access_agent(_get_agent(db, tenant_id, agent_id), current_user)
+    _ensure_can_access_agent(db, _get_agent(db, tenant_id, agent_id), current_user)
     rows = db.exec(
         select(AgentResourceBinding)
         .where(
@@ -388,7 +393,7 @@ def _import_agent_resources_once(
     source_agent = _get_agent(db, request.tenant_id, request.source_agent_id)
     user = current_user
     _ensure_can_import_to_agent(target_agent, user)
-    _ensure_can_copy_from_agent(source_agent, user)
+    _ensure_can_copy_from_agent(db, source_agent, user)
     if source_agent.id == target_agent.id:
         raise HTTPException(status_code=400, detail="Source and target agent cannot be the same")
     resource_ids = _dedupe_ids(request.resource_ids)
@@ -457,7 +462,7 @@ def get_agent_skills(
     db: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> list[dict[str, object]]:
-    _ensure_can_access_agent(_get_agent(db, tenant_id, agent_id), current_user)
+    _ensure_can_access_agent(db, _get_agent(db, tenant_id, agent_id), current_user)
     return [
         _skill_branch_read(skill)
         for skill in visible_skill_rows(db, tenant_id, agent_id, include_inactive=True)
@@ -541,7 +546,7 @@ def list_agent_skill_versions(
     db: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> list[dict[str, object]]:
-    _ensure_can_access_agent(_get_agent(db, tenant_id, agent_id), current_user)
+    _ensure_can_access_agent(db, _get_agent(db, tenant_id, agent_id), current_user)
     return [
         {
             "id": row.id,
@@ -635,7 +640,7 @@ def use_chat_agent(
     if (
         row.is_overall
         or row.status != "active"
-        or not _chat_agent_visible_to_user(row, current_user)
+        or not _chat_agent_visible_to_user(db, row, current_user)
     ):
         raise HTTPException(status_code=403, detail="Cannot access this agent")
     _mark_agent_used(db, tenant_id, current_user, row.id)
@@ -832,15 +837,12 @@ def _ensure_request_tenant(tenant_id: str, user: User) -> None:
         raise HTTPException(status_code=403, detail="Tenant mismatch")
 
 
-def _agent_visible_to_user(row: AgentProfile, user: User) -> bool:
+def _agent_visible_to_user(db: Session, row: AgentProfile, user: User) -> bool:
     if _agent_hidden_from_staffdeck(row):
         return False
-    if _is_admin_user(user):
-        return True
     if row.is_overall:
         return True
-    metadata = row.metadata_json or {}
-    return _agent_owned_by_user(row, user) or metadata.get("published_to_gallery") is True
+    return _service_agent_visible_to_user(db, row, user)
 
 
 def _agent_hidden_from_staffdeck(row: AgentProfile) -> bool:
@@ -909,15 +911,15 @@ def _chat_agent_selectable_to_user(row: AgentProfile, user: User, used_agent_ids
     return _is_admin_user(user)
 
 
-def _ensure_can_access_agent(row: AgentProfile, user: User) -> None:
+def _ensure_can_access_agent(db: Session, row: AgentProfile, user: User) -> None:
     _ensure_request_tenant(row.tenant_id, user)
-    if not _agent_visible_to_user(row, user):
+    if not _agent_visible_to_user(db, row, user):
         raise HTTPException(status_code=403, detail="Cannot access this agent")
 
 
-def _ensure_can_copy_from_agent(row: AgentProfile, user: User) -> None:
+def _ensure_can_copy_from_agent(db: Session, row: AgentProfile, user: User) -> None:
     _ensure_request_tenant(row.tenant_id, user)
-    if row.is_overall or _agent_visible_to_user(row, user):
+    if row.is_overall or _agent_visible_to_user(db, row, user):
         return
     raise HTTPException(status_code=403, detail="Cannot copy resources from this agent")
 
@@ -986,8 +988,8 @@ def _metadata_preserving_creator(
     return normalized
 
 
-def _chat_agent_visible_to_user(row: AgentProfile, user: User) -> bool:
-    return _agent_visible_to_user(row, user)
+def _chat_agent_visible_to_user(db: Session, row: AgentProfile, user: User) -> bool:
+    return _agent_visible_to_user(db, row, user)
 
 
 def binding_read(row: AgentResourceBinding) -> AgentResourceBindingRead:

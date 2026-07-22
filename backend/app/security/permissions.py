@@ -42,12 +42,9 @@ def require_agent_scope_viewer(
     row = db.get(AgentProfile, agent_id)
     if not row or row.tenant_id != tenant_id:
         raise HTTPException(status_code=404, detail="Agent not found")
-    if (
-        is_admin_user(current_user)
-        or row.is_overall
-        or agent_owned_by_user(row, current_user)
-        or (row.metadata_json or {}).get("published_to_gallery") is True
-    ):
+    from app.departments.service import agent_visible_to_user
+
+    if row.is_overall or agent_visible_to_user(db, row, current_user):
         return current_user
     raise HTTPException(status_code=403, detail="Cannot access this staff")
 
