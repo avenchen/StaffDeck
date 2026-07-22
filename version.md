@@ -52,7 +52,12 @@
 - ✅ **聊天對話 UX**：完成的助理訊息新增「複製」按鈕（`CopyMessageButton`），串流中顯示閃爍遊標
 - ✅ **Gemini API 支援**：`app/llm/providers.py`（`resolve_base_url(provider, base_url)`，Gemini 走 Google OpenAI 相容端點）；`config.demo_model_provider`；`.env.example` 說明；前端 ModelsPage provider datalist；單元測試
 - ✅ **簡體 → 繁體全面轉換**：OpenCC `s2tw` 套用至 208 個檔案（原始碼、測試、prompt、seed JSON、en.json key）
-- ✅ **1.1（部分）**：排程草稿純展示函式下沉至 `app/scheduled_tasks/formatting.py`（零 DB/LLM/engine 依賴）
+- ✅ **1.1（完成）**：`api/chat.py` 業務邏輯下沉服務層
+  - 排程草稿格式化 → `app/scheduled_tasks/formatting.py`（純函式）
+  - 標題摘要背景服務 → `app/chat_service/session_title.py`
+  - 人工接管恢復 → `app/chat_service/handoff_resume.py`
+  - 中性事件持久化 → `app/session/session_events.py`（`persist_relay_only_event`）
+  - chat.py 由 3,267 → 2,883 行；控制器以別名 re-export 保持相容，新增服務層單元測試
 
 ### 7. 專案維運
 - ✅ 專案由 fork 重新上傳至自有 repo `avenchen/AIStaff`（完整歷史）
