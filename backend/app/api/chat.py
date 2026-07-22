@@ -6,7 +6,7 @@ import re
 import threading
 import time
 import traceback
-from collections.abc import Callable, Iterator
+from collections.abc import Iterator
 from datetime import timedelta
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
@@ -48,7 +48,12 @@ from app.security.auth import get_current_user
 from app.security.permissions import agent_owned_by_user, is_admin_user
 from app.security.tenant import ensure_tenant
 from app.scheduled_tasks.schema import ScheduledTaskDraftRead
-from app.scheduled_tasks.service import DEFAULT_TASK_TIME, detect_scheduled_task_draft
+from app.scheduled_tasks.service import detect_scheduled_task_draft
+from app.scheduled_tasks.formatting import (
+    scheduled_task_draft_reply,
+    scheduled_task_trace_detail,
+    scheduled_task_trace_lines,
+)
 from app.session.attachments import parse_chat_attachment
 from app.session.helpers import public_session
 from app.session.session_schema import (
@@ -74,7 +79,6 @@ STREAM_INTERRUPTED_TRACEBACK_CHAR_LIMIT = 6000
 MAX_CHAT_ATTACHMENT_BYTES = 12 * 1024 * 1024
 MAX_CHAT_ATTACHMENTS = 8
 SESSION_TITLE_SUMMARY_EVENT = "session_title_summarized"
-SCHEDULE_WEEKDAY_LABELS = ("週一", "週二", "週三", "週四", "週五", "週六", "週日")
 EVENT_PAYLOAD_META_KEYS = {"id", "event", "type", "event_type", "created_at", "data"}
 STREAM_RELAY_EVENT_ALIASES = {
     "router_decision_created": "router_decision",
@@ -599,7 +603,7 @@ def _maybe_handle_scheduled_task_request(
     if not draft or not draft.should_create:
         return None
 
-    reply = _scheduled_task_draft_reply(draft)
+    reply = scheduled_task_draft_reply(draft)
     now = utc_now()
     intent_time = now + timedelta(microseconds=1)
     parse_time = now + timedelta(microseconds=2)
@@ -747,100 +751,6 @@ def _add_stream_status_event(
             created_at=created_at or utc_now(),
         )
     )
-
-
-def _scheduled_task_draft_reply(draft: ScheduledTaskDraftRead) -> str:
-    lines = [
-        "我已按你選擇的定時項目整理成自動任務草案。",
-        f"任務：{draft.title}",
-        f"計劃：{_format_draft_schedule(draft)}",
-        f"執行內容：{draft.prompt}",
-        "確認下方卡片後才會啟用；確認前不會創建自動任務。",
-    ]
-    return "\n".join(lines)
-
-
-def _format_draft_schedule(draft: ScheduledTaskDraftRead) -> str:
-    return _format_scheduled_task_schedule(draft.schedule_type, draft.schedule or {})
-
-
-def _format_once_schedule(schedule: dict) -> str:
-    return f"一次性 {schedule.get('run_at') or '待確認時間'}"
-
-
-def _format_weekly_schedule(schedule: dict) -> str:
-    return f"每週 {_format_weekday_labels(schedule.get('weekdays'))} {schedule.get('time') or DEFAULT_TASK_TIME}"
-
-
-def _format_monthly_schedule(schedule: dict) -> str:
-    return f"每月 {schedule.get('day_of_month') or 1} 號 {schedule.get('time') or DEFAULT_TASK_TIME}"
-
-
-def _format_daily_schedule(schedule: dict) -> str:
-    return f"每天 {schedule.get('time') or DEFAULT_TASK_TIME}"
-
-
-SCHEDULE_TEXT_FORMATTERS: dict[str, Callable[[dict], str]] = {
-    "once": _format_once_schedule,
-    "weekly": _format_weekly_schedule,
-    "monthly": _format_monthly_schedule,
-    "daily": _format_daily_schedule,
-}
-
-
-def _format_scheduled_task_schedule(schedule_type: object, schedule_value: object) -> str:
-    schedule = schedule_value if isinstance(schedule_value, dict) else {}
-    schedule_type_text = str(schedule_type or "daily")
-    formatter = SCHEDULE_TEXT_FORMATTERS.get(schedule_type_text, _format_daily_schedule)
-    return formatter(schedule)
-
-
-def _format_weekday_labels(value: object) -> str:
-    if not isinstance(value, list):
-        return SCHEDULE_WEEKDAY_LABELS[0]
-    labels: list[str] = []
-    for item in value:
-        text = str(item).strip()
-        if not text.isdigit():
-            continue
-        day = int(text)
-        if 0 <= day < len(SCHEDULE_WEEKDAY_LABELS):
-            labels.append(SCHEDULE_WEEKDAY_LABELS[day])
-    return "、".join(labels) or SCHEDULE_WEEKDAY_LABELS[0]
-
-
-def _scheduled_task_trace_detail(payload: dict) -> str | None:
-    title = str(payload.get("title") or "").strip()
-    schedule = _format_scheduled_task_schedule(payload.get("schedule_type"), payload.get("schedule"))
-    detail = " · ".join(part for part in (title, schedule, "等待確認後啟用") if part)
-    return detail or None
-
-
-def _scheduled_task_trace_lines(payload: dict, *, state: str = "completed") -> list[dict]:
-    schedule = _format_scheduled_task_schedule(payload.get("schedule_type"), payload.get("schedule"))
-    return [
-        {
-            "id": "scheduled_task_intent",
-            "kind": "decision",
-            "text": "識別定時任務需求",
-            "detail": "用戶選擇了創建定時任務模式",
-            "state": "completed",
-        },
-        {
-            "id": "scheduled_task_parse",
-            "kind": "decision",
-            "text": "解析執行計劃",
-            "detail": f"計劃：{schedule}" if schedule else None,
-            "state": "completed",
-        },
-        {
-            "id": "scheduled_task_draft",
-            "kind": "decision",
-            "text": "生成定時任務草案",
-            "detail": _scheduled_task_trace_detail(payload),
-            "state": state,
-        },
-    ]
 
 
 def _persist_scheduled_task_draft(
@@ -2684,7 +2594,7 @@ def _with_scheduled_draft_message_traces(traces: list[dict], messages: list[Mess
                 "user_message_id": previous_user.id,
                 "started_at": previous_user.created_at.isoformat(),
                 "completed_at": message.created_at.isoformat(),
-                "lines": _scheduled_task_trace_lines(draft),
+                "lines": scheduled_task_trace_lines(draft),
             }
         )
         traced_turn_ids.add(previous_user.id)
@@ -2775,7 +2685,7 @@ def _event_trace_line(
                 "id": "scheduled_task_draft",
                 "kind": "decision",
                 "text": text or "生成定時任務草案",
-                "detail": _scheduled_task_trace_detail(payload),
+                "detail": scheduled_task_trace_detail(payload),
                 "state": "running",
             }
         if phase == "routing":
@@ -2984,7 +2894,7 @@ def _event_trace_line(
             )
         return lines or None
     if event.event_type == "scheduled_task_draft_created":
-        return _scheduled_task_trace_lines(payload)
+        return scheduled_task_trace_lines(payload)
     if event.event_type == "router_decision_created":
         intent = str(payload.get("user_intent") or "").strip()
         reason = str(payload.get("reason") or "").strip()

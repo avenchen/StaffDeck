@@ -6,13 +6,15 @@ from sqlmodel import Session, SQLModel, create_engine, select
 from app.api.chat import (
     _build_turn_traces,
     _events_after_cursor,
-    _format_scheduled_task_schedule,
     _message_turn_ids_from_events,
     _persist_chat_turn_cancelled,
     _persist_chat_turn_interrupted,
     _relay_event_payload,
     list_chat_session_spans,
     message_read,
+)
+from app.scheduled_tasks.formatting import (
+    format_scheduled_task_schedule as _format_scheduled_task_schedule,
 )
 from app.db.models import AgentEvent, ChatSession, KnowledgeConcept, Message, Tenant, User
 from app.observability.event_log import EventLog
