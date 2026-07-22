@@ -71,6 +71,8 @@
   `AgentVisibilityDialog`（所屬部門 + 全用戶/同部門/指定部門/指定用戶，取代廣場發佈），
   由員工卡片「可見性設定」開啟；`employee.ts` 判定同步（`isAgentVisibleByFields`）；
   types/endpoint/`EnterpriseAuthUser.department_id` 全數補齊
+- ✅ **Picker 完整化**：`list_agents` 對每筆 agent 標記伺服器計算的
+  `visible_to_current_user`（涵蓋四種可見性模式），前端 picker 對子樹/指定用戶模式亦精確顯示
 
 ### 8. 專案維運
 - ✅ 專案由 fork 重新上傳至自有 repo `avenchen/AIStaff`（完整歷史）
