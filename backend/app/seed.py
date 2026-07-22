@@ -22,7 +22,7 @@ from app.db.models import (
 )
 from app.security.encryption import encrypt_secret
 from app.security.auth import hash_password
-from app.db.staffdeck_seed import seed_staffdeck_admin_gallery
+from app.staffdeck_seed import seed_staffdeck_admin_gallery
 
 
 ADAPTIVE_FLOW_RULE = (

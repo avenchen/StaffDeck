@@ -6,7 +6,7 @@ from sqlmodel import Session
 
 from app.db import get_session
 from app.db.models import PersonaConfig, User, utc_now
-from app.db.seed import DEFAULT_PERSONA_PROMPT
+from app.seed import DEFAULT_PERSONA_PROMPT
 from app.security.auth import get_current_user, require_current_tenant
 from app.security.permissions import ensure_tenant_admin
 from app.security.tenant import ensure_tenant

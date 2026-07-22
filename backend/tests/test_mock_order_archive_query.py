@@ -16,7 +16,7 @@ from app.api.mock import (
     mock_order_query,
     mock_product_purchase,
 )
-from app.db.seed import DEMO_TOOLS
+from app.seed import DEMO_TOOLS
 
 
 def test_primary_order_query_returns_configured_order() -> None:

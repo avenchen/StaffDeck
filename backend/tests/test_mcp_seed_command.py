@@ -2,7 +2,7 @@ from sqlalchemy.pool import StaticPool
 from sqlmodel import Session, SQLModel, create_engine, select
 
 from app import paths
-from app.db import seed
+from app import seed
 from app.db.models import MCPServer
 
 

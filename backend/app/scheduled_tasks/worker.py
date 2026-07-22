@@ -8,7 +8,7 @@ from time import sleep
 from sqlmodel import Session
 
 from app.db import engine, init_db
-from app.db.seed import seed_demo_data
+from app.seed import seed_demo_data
 from app.scheduled_tasks.service import WORKER_SLEEP_SECONDS, due_scheduled_tasks, execute_scheduled_task
 
 

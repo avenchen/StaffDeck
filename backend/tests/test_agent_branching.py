@@ -51,7 +51,7 @@ from app.db.models import (
     Tool,
     User,
 )
-from app.db.seed import EXCHANGE_SKILL, REFUND_SKILL, _publish_seeded_system_resources
+from app.seed import EXCHANGE_SKILL, REFUND_SKILL, _publish_seeded_system_resources
 from app.knowledge.okf import upsert_concepts
 from app.knowledge.schema import KnowledgeBaseUpdateRequest
 from app.skills.skill_schema import SkillCard, SkillUpdateRequest

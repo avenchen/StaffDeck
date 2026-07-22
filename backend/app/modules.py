@@ -37,7 +37,7 @@ from app.api import (
 )
 from app.async_jobs import shutdown_async_jobs
 from app.db import engine, init_db
-from app.db.seed import seed_demo_data
+from app.seed import seed_demo_data
 from app.module_registry import AppModule
 from app.scheduled_tasks.worker import start_background_worker, stop_background_worker
 

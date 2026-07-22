@@ -49,7 +49,7 @@
 | # | 工作 | 範圍 | 預估 |
 | --- | --- | --- | --- |
 | 3.1 | ⬜ `ChatSession` 8 個 JSON 欄位收斂為 typed `TurnStateSnapshot`，由 `SlotStateMachine` 獨佔讀寫 | 後端 | 大 |
-| 3.2 | ⬜ 解除循環依賴：`memory↔core`（`compact_step_result` 下沉）、`db.seed↔agents`（seed 移入模組 on_startup）、`db↔general_skills` | 後端 | 中 |
+| 3.2 | ✅ 解除循環依賴：`memory↔core`（`compact_step_result`/知識壓縮下沉至中性 `app/knowledge_projection.py`，memory 不再 import core）；`db.seed↔agents`、`db↔general_skills`（`seed.py`/`staffdeck_seed.py` 由 `app/db/` 上移至 `app/`，db 套件成為零領域依賴葉節點；fixtures 與 spec 同步） | 後端 | 中 |
 | 3.3 | ✅ SkillCard/graph schemas 下沉至中性 `app/skill_card.py`；`skill_schema` re-export（skills 域匯入不變）；`knowledge/service` 改匯入 skill_card，knowledge→skills 依賴解除 | 後端 | 小 |
 | 3.4 | ⬜ Alembic 取代 `db/database.py` 手寫 `_migrate_*`（現有遷移轉 baseline revision） | 後端 | 中 |
 | 3.5 | ✅ `_get_openai_client` 快取 OpenAI client（跨呼叫重用連線池，執行緒安全）；`prompt_cache.read_prompt` 以 mtime 快取 prompt 檔案（step_agent 每回合 8 檔→快取） | 後端 | 小 |

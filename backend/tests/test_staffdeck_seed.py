@@ -5,8 +5,8 @@ from sqlmodel import SQLModel, Session, create_engine, select
 from app.api.agents import list_agents
 from app.api.knowledge_bases import list_knowledge_bases
 from app.db.models import AgentProfile, Tenant, User
-from app.db.seed import seed_demo_data
-from app.db import staffdeck_seed
+from app.seed import seed_demo_data
+from app import staffdeck_seed
 
 
 EXPECTED_KNOWLEDGE_COUNTS = {
